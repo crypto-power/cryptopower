@@ -203,7 +203,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
-
+				// hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
 			case values.StrSend:
 				allWallets := hp.AssetsManager.AllWallets()
 				isSendAvailable := false
@@ -259,8 +259,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	for _, item := range hp.floatingActionButton.FloatingActionButton {
 		for item.Clickable.Clicked() {
 			if strings.ToLower(item.PageID) == values.StrReceive {
-				receiveModal := components.NewReceiveModal(hp.Load)
-				hp.ParentWindow().ShowModal(receiveModal)
+				hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
 			}
 		}
 	}

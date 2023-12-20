@@ -33,16 +33,18 @@ type ReceivePage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	modalLayout *cryptomaterial.Modal
 
-	pageContainer     layout.List
-	scrollContainer   *widget.List
-	isNewAddr, isInfo bool
-	currentAddress    string
-	qrImage           *image.Image
-	newAddr, copy     *cryptomaterial.Clickable
-	info, more        cryptomaterial.IconButton
-	card              cryptomaterial.Card
-	selector          *components.WalletAndAccountSelector
+	pageContainer         layout.List
+	scrollContainer       *widget.List
+	isNewAddr, isInfo     bool
+	currentAddress        string
+	qrImage               *image.Image
+	newAddr, copy         *cryptomaterial.Clickable
+	info, more            cryptomaterial.IconButton
+	card                  cryptomaterial.Card
+	sourceAccountselector *components.WalletAndAccountSelector
+	sourceWalletSelector  *components.WalletAndAccountSelector
 
 	isCopying      bool
 	backdrop       *widget.Clickable
@@ -72,31 +74,79 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *ReceivePage {
 	pg.info.Inset, pg.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
-		Title(values.String(values.StrTo)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {
-			currentAddress, err := pg.selectedWallet.CurrentAddress(selectedAccount.Number)
-			if err != nil {
-				log.Errorf("Error getting current address: %v", err)
-			} else {
-				pg.currentAddress = currentAddress
-			}
+	if wallet == nil {
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrReceive), pg.IsMobileView())
+		pg.GenericPageModal = pg.modalLayout.GenericPageModal
+		pg.initWalletSelectors() // will auto select the first wallet in the dropdown as pg.selectedWallet
+	} else {
+		pg.sourceAccountselector = components.NewWalletAndAccountSelector(pg.Load).
+			Title(values.String(values.StrTo)).
+			AccountSelected(func(selectedAccount *sharedW.Account) {
+				currentAddress, err := pg.selectedWallet.CurrentAddress(selectedAccount.Number)
+				if err != nil {
+					log.Errorf("Error getting current address: %v", err)
+				} else {
+					pg.currentAddress = currentAddress
+				}
 
-			pg.generateQRForAddress()
-		}).
-		AccountValidator(func(account *sharedW.Account) bool {
-			// Filter out imported account and mixed.
-			if account.Number == load.MaxInt32 {
+				pg.generateQRForAddress()
+			}).
+			AccountValidator(func(account *sharedW.Account) bool {
+				// Filter out imported account and mixed.
+				if account.Number == load.MaxInt32 {
+					return false
+				}
+				if account.Number != load.MixedAccountNumber(pg.selectedWallet) {
+					return true
+				}
 				return false
-			}
-			if account.Number != load.MixedAccountNumber(pg.selectedWallet) {
-				return true
-			}
-			return false
-		})
-	pg.selector.SelectFirstValidAccount(pg.selectedWallet)
+			})
+		pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)
+	}
 
 	return pg
+}
+
+func (pg *ReceivePage) initWalletSelectors() {
+	// Source wallet picker
+	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load).
+		Title(values.String(values.StrSelectWallet))
+	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
+
+	// Source account picker
+	pg.sourceAccountselector = components.NewWalletAndAccountSelector(pg.Load).
+		Title(values.String(values.StrSelectAcc)).
+		AccountValidator(func(account *sharedW.Account) bool {
+			accountIsValid := account.Number != load.MaxInt32
+
+			return accountIsValid
+		})
+	pg.sourceAccountselector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
+
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+		pg.selectedWallet = selectedWallet
+		pg.sourceAccountselector.SelectFirstValidAccount(selectedWallet)
+		pg.generateQRForAddress()
+	})
+
+	pg.sourceAccountselector.AccountSelected(func(selectedAccount *sharedW.Account) {
+		pg.generateQRForAddress()
+	})
+
+	pg.generateQRForAddress()
+}
+
+// OnResume is called to initialize data and get UI elements ready to be
+// displayed. This is called just before Handle() and Layout() are called (in
+// that order).
+
+// OnResume is like OnNavigatedTo but OnResume is called if this page is
+// displayed as a modal while OnNavigatedTo is called if this page is displayed
+// as a full page. Either OnResume or OnNavigatedTo is called to initialize
+// data and get UI elements ready to be displayed. This is called just before
+// Handle() and Layout() are called (in that order).
+func (pg *ReceivePage) OnResume() {
+	pg.OnNavigatedTo()
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -109,10 +159,10 @@ func (pg *ReceivePage) OnNavigatedTo() {
 		return
 	}
 
-	pg.selector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
-	pg.selector.SelectFirstValidAccount(pg.selectedWallet)  // Want to reset the user's selection everytime this page appears?
+	pg.sourceAccountselector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
+	pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)  // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
-	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.selector.SelectedAccount().Number)
+	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.sourceAccountselector.SelectedAccount().Number)
 	if err != nil {
 		errStr := fmt.Sprintf("Error getting current address: %v", err)
 		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
@@ -164,22 +214,54 @@ func (pg *ReceivePage) getLogo() *cryptomaterial.Image {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ReceivePage) Layout(gtx C) D {
+	if pg.modalLayout != nil {
+		var modalWidth float32 = 450
+		if pg.IsMobileView() {
+			modalWidth = 0
+		}
+		modalContent := []layout.Widget{pg.contentLayout}
+		return pg.modalLayout.Layout(gtx, modalContent, modalWidth)
+	}
+	return pg.contentLayout(gtx)
+}
+
+func (pg *ReceivePage) contentLayout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
 	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 		textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+		uniformSize := values.MarginPadding16
+		if pg.modalLayout == nil {
+			uniformSize = values.MarginPadding0
+		}
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			return layout.UniformInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)).Layout(gtx, func(gtx C) D {
+			return layout.UniformInset(values.MarginPaddingTransform(pg.IsMobileView(), uniformSize)).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.headerLayout),
 					layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
+					layout.Rigid(func(gtx C) D {
+						if pg.modalLayout == nil {
+							return D{}
+						}
+						lbl := pg.Theme.Label(textSize16, values.String(values.StrSourceWallet))
+						lbl.Font.Weight = font.Bold
+						return lbl.Layout(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if pg.modalLayout == nil {
+							return D{}
+						}
+						return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+						})
+					}),
 					layout.Rigid(func(gtx C) D {
 						lbl := pg.Theme.Label(textSize16, values.String(values.StrAccount))
 						lbl.Font.Weight = font.Bold
 						return lbl.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						return pg.selector.Layout(pg.ParentWindow(), gtx)
+						return pg.sourceAccountselector.Layout(pg.ParentWindow(), gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
 						return components.VerticalInset(values.MarginPadding24).Layout(gtx, pg.Theme.Separator().Layout)
@@ -348,7 +430,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 }
 
 func (pg *ReceivePage) generateNewAddress() (string, error) {
-	selectedAccount := pg.selector.SelectedAccount()
+	selectedAccount := pg.sourceAccountselector.SelectedAccount()
 	selectedWallet := pg.AssetsManager.WalletWithID(selectedAccount.WalletID)
 
 generateAddress:
@@ -380,5 +462,24 @@ func (pg *ReceivePage) handleCopyEvent(gtx C) {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedFrom() {
-	pg.selector.StopTxNtfnListener()
+	pg.sourceAccountselector.StopTxNtfnListener()
+}
+
+func (pg *ReceivePage) Handle() {
+	if pg.modalLayout.BackdropClicked(true) {
+		pg.modalLayout.Dismiss()
+	} else {
+		pg.HandleUserInteractions()
+	}
+}
+
+// OnDismiss is like OnNavigatedFrom but OnDismiss is called if this page is
+// displayed as a modal while OnNavigatedFrom is called if this page is
+// displayed as a full page. Either OnDismiss or OnNavigatedFrom is called
+// after the modal is dismissed.
+// NOTE: The modal may be re-displayed on the app's window, in which case
+// OnResume() will be called again. This method should not destroy UI
+// components unless they'll be recreated in the OnResume() method.
+func (pg *ReceivePage) OnDismiss() {
+	pg.OnNavigatedFrom()
 }

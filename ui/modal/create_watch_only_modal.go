@@ -39,7 +39,7 @@ type CreateWatchOnlyModal struct {
 func NewCreateWatchOnlyModal(l *load.Load) *CreateWatchOnlyModal {
 	cm := &CreateWatchOnlyModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("create_watch_only_modal"),
+		Modal:        l.Theme.ModalFloatTitle("create_watch_only_modal", l.IsMobileView()),
 		btnPositve:   l.Theme.Button(values.String(values.StrImport)),
 		btnNegative:  l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable: true,

@@ -33,7 +33,8 @@ type ReceiveModal struct {
 	okBtn cryptomaterial.Button
 
 	addressEditor cryptomaterial.Editor
-	copyRedirect  *cryptomaterial.Clickable
+	copyButton    *cryptomaterial.Clickable
+	newAddr1      *cryptomaterial.Clickable
 
 	sourceAccountSelector *WalletAndAccountSelector
 	sourceWalletSelector  *WalletAndAccountSelector
@@ -42,16 +43,17 @@ type ReceiveModal struct {
 	currentAddress    string
 	qrImage           *image.Image
 	newAddr           cryptomaterial.Button
-	info, more        cryptomaterial.IconButton
+	infoButton, more  cryptomaterial.IconButton
 	receiveAddress    cryptomaterial.Label
 }
 
 func NewReceiveModal(l *load.Load) *ReceiveModal {
 	rm := &ReceiveModal{
 		Load:           l,
-		Modal:          l.Theme.ModalFloatTitle(values.String(values.StrReceive)),
-		copyRedirect:   l.Theme.NewClickable(false),
-		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
+		Modal:          l.Theme.ModalFloatTitle(values.String(values.StrReceive), l.IsMobileView()),
+		copyButton:     l.Theme.NewClickable(false),
+		newAddr1:       l.Theme.NewClickable(false),
+		infoButton:     l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		more:           l.Theme.IconButton(l.Theme.Icons.NavigationMore),
 		newAddr:        l.Theme.Button(values.String(values.StrGenerateAddress)),
 		receiveAddress: l.Theme.Label(values.TextSize20, ""),
@@ -63,7 +65,7 @@ func NewReceiveModal(l *load.Load) *ReceiveModal {
 	rm.addressEditor = l.Theme.IconEditor(new(widget.Editor), "", l.Theme.Icons.ContentCopy, true)
 	rm.addressEditor.Editor.SingleLine = true
 
-	rm.info.Inset, rm.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
+	// rm.info.Inset, rm.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
 	rm.more.Inset = layout.UniformInset(values.MarginPadding0)
 	rm.newAddr.Inset = layout.UniformInset(values.MarginPadding10)
 	rm.newAddr.Color = rm.Theme.Color.Text
@@ -121,7 +123,7 @@ func (rm *ReceiveModal) Handle() {
 		rm.isNewAddr = false
 	}
 
-	if rm.info.Button.Clicked() {
+	if rm.infoButton.Button.Clicked() {
 		textWithUnit := values.String(values.StrReceive) + " " + string(rm.sourceWalletSelector.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(rm.Load).
 			Title(textWithUnit).
@@ -189,196 +191,320 @@ func (rm *ReceiveModal) generateCurrentAddress() error {
 }
 
 func (rm *ReceiveModal) Layout(gtx layout.Context) D {
-	walletSyned := rm.sourceWalletSelector.selectedWallet.IsSynced()
-	w := []layout.Widget{
-		func(gtx C) D {
-			return layout.Stack{Alignment: layout.S}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return layout.Stack{Alignment: layout.NE}.Layout(gtx,
-						layout.Expanded(func(gtx C) D {
-							return layout.Inset{
-								Bottom: values.MarginPadding16,
-							}.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Bottom: values.MarginPadding8,
-										}.Layout(gtx, func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													assetTxt := rm.sourceWalletSelector.selectedWallet.GetAssetType().ToFull()
-													txt := rm.Theme.Label(values.TextSize20, values.String(values.StrReceive)+" "+assetTxt)
-													txt.Font.Weight = font.SemiBold
-													return txt.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													return rm.info.Layout(gtx)
-												}),
-											)
-										})
+	// walletSyned := rm.sourceWalletSelector.selectedWallet.IsSynced()
+	// w := []layout.Widget{
+	w := rm.tem()
+	// w := func(ctx C) D {
+	// 	gtx.Constraints.Max.X = gtx.Dp(450)
+	// 	return HorizontalInset(values.MarginPadding1).Layout(gtx, func(ctx C) D {
+	// 		textSize16 := values.TextSizeTransform(rm.IsMobileView(), values.TextSize16)
+	// 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+	// 			layout.Rigid(rm.headerLayout),
+	// 			layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
+	// 			layout.Rigid(func(gtx C) D {
+	// 				lbl := rm.Theme.Label(textSize16, values.String(values.StrAccount))
+	// 				lbl.Font.Weight = font.Bold
+	// 				return lbl.Layout(gtx)
+	// 			}),
+	// 			layout.Rigid(func(gtx C) D {
+	// 				return rm.sourceWalletSelector.Layout(rm.ParentWindow(), gtx)
+	// 			}),
+	// 			layout.Rigid(func(gtx C) D {
+	// 				return rm.sourceAccountSelector.Layout(rm.ParentWindow(), gtx)
+	// 			}),
+	// 			layout.Rigid(func(gtx C) D {
+	// 				return VerticalInset(values.MarginPadding24).Layout(gtx, rm.Theme.Separator().Layout)
+	// 			}),
+	// 			layout.Rigid(func(gtx C) D {
+	// 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	// 				return layout.Center.Layout(gtx, func(gtx C) D {
+	// 					return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+	// 						layout.Rigid(func(gtx C) D {
+	// 							txt := rm.Theme.Body2(values.String(values.StrMyAddress))
+	// 							txt.Color = rm.Theme.Color.GrayText2
+	// 							return txt.Layout(gtx)
+	// 						}),
+	// 						layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+	// 						layout.Rigid(func(gtx C) D {
+	// 							if rm.qrImage == nil || !walletSyned {
+	// 								// Display generated address only on a synced wallet
+	// 								return D{}
+	// 							}
+	// 							return rm.Theme.ImageIcon(gtx, *rm.qrImage, 150)
+	// 						}),
+	// 					)
+	// 				})
+	// 			}),
+	// 			layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+	// 			layout.Rigid(rm.addressLayout),
+	// 			layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
+	// 			layout.Rigid(rm.copyAndNewAddressLayout),
+	// 		)
+	// 	})
+	// }
+	return rm.Modal.Layout(gtx, []layout.Widget{w}, 450)
+}
 
-									}),
-									layout.Rigid(func(gtx C) D {
-										return rm.Theme.List(rm.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+func (rm *ReceiveModal) copyAndNewAddressLayout(gtx C) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Center.Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return rm.buttonIconLayout(gtx, rm.Theme.Icons.CopyIcon, values.String(values.StrCopy), rm.copyButton)
+			}),
+			layout.Rigid(layout.Spacer{Width: values.MarginPadding32}.Layout),
+			layout.Rigid(func(gtx C) D {
+				return rm.buttonIconLayout(gtx, rm.Theme.Icons.Restore, values.String(values.StrRegenerate), rm.newAddr1)
+			}),
+		)
+	})
+}
+
+func (rm *ReceiveModal) buttonIconLayout(gtx C, icon *cryptomaterial.Image, text string, clickable *cryptomaterial.Clickable) D {
+	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			dp40 := gtx.Dp(values.MarginPadding40)
+			return cryptomaterial.LinearLayout{
+				Width:       dp40,
+				Height:      dp40,
+				Background:  rm.Theme.Color.Gray2,
+				Orientation: layout.Horizontal,
+				Direction:   layout.Center,
+				Border: cryptomaterial.Border{
+					Radius: cryptomaterial.Radius(20),
+				},
+				Clickable: clickable,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10}.Layout(gtx, icon.Layout24dp)
+				}),
+			)
+		}),
+		layout.Rigid(rm.Theme.Label(values.TextSizeTransform(rm.IsMobileView(), values.TextSize14), text).Layout),
+	)
+}
+
+func (rm *ReceiveModal) addressLayout(gtx C) D {
+	walletSyned := rm.sourceWalletSelector.selectedWallet.IsSynced()
+	border := widget.Border{
+		Color:        rm.Theme.Color.Gray4,
+		CornerRadius: values.MarginPadding10,
+		Width:        values.MarginPadding2,
+	}
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return border.Layout(gtx, func(gtx C) D {
+		return VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
+			lbl := rm.Theme.Label(values.TextSizeTransform(rm.IsMobileView(), values.TextSize16), "")
+			if rm.currentAddress != "" && walletSyned {
+				lbl.Text = rm.currentAddress
+			}
+			return layout.Center.Layout(gtx, lbl.Layout)
+		})
+	})
+}
+
+func (rm *ReceiveModal) tem() layout.Widget {
+	walletSyned := rm.sourceWalletSelector.selectedWallet.IsSynced()
+	return func(gtx C) D {
+		return layout.Stack{Alignment: layout.S}.Layout(gtx,
+			layout.Expanded(func(gtx C) D {
+				return layout.Stack{Alignment: layout.NE}.Layout(gtx,
+					layout.Expanded(func(gtx C) D {
+						return layout.Inset{
+							Bottom: values.MarginPadding16,
+						}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Bottom: values.MarginPadding8,
+									}.Layout(gtx, func(gtx C) D {
+										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												assetTxt := rm.sourceWalletSelector.selectedWallet.GetAssetType().ToFull()
+												txt := rm.Theme.Label(values.TextSize20, values.String(values.StrReceive)+" "+assetTxt)
+												txt.Font.Weight = font.SemiBold
+												return txt.Layout(gtx)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return rm.infoButton.Layout(gtx)
+											}),
+										)
+									})
+
+								}),
+								layout.Rigid(func(gtx C) D {
+									return rm.Theme.List(rm.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+										return cryptomaterial.LinearLayout{
+											Width:     cryptomaterial.MatchParent,
+											Height:    cryptomaterial.WrapContent,
+											Direction: layout.Center,
+										}.Layout2(gtx, func(gtx C) D {
 											return cryptomaterial.LinearLayout{
-												Width:     cryptomaterial.MatchParent,
-												Height:    cryptomaterial.WrapContent,
-												Direction: layout.Center,
+												Width:  cryptomaterial.MatchParent,
+												Height: cryptomaterial.WrapContent,
 											}.Layout2(gtx, func(gtx C) D {
-												return cryptomaterial.LinearLayout{
-													Width:  cryptomaterial.MatchParent,
-													Height: cryptomaterial.WrapContent,
-												}.Layout2(gtx, func(gtx C) D {
-													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-														layout.Rigid(func(gtx C) D {
-															return layout.Inset{
-																Bottom: values.MarginPadding16,
-															}.Layout(gtx, func(gtx C) D {
-																return cryptomaterial.LinearLayout{
-																	Width:       cryptomaterial.MatchParent,
-																	Height:      cryptomaterial.WrapContent,
-																	Orientation: layout.Vertical,
-																	Margin:      layout.Inset{Bottom: values.MarginPadding16},
-																}.Layout(gtx,
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Inset{
-																			Bottom: values.MarginPadding16,
-																		}.Layout(gtx, func(gtx C) D {
-																			return rm.sourceWalletSelector.Layout(rm.ParentWindow(), gtx)
-																		})
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		return rm.sourceAccountSelector.Layout(rm.ParentWindow(), gtx)
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		if !walletSyned {
-																			txt := rm.Theme.Label(values.TextSize14, values.String(values.StrSourceWalletNotSynced))
-																			txt.Font.Weight = font.SemiBold
-																			txt.Color = rm.Theme.Color.Danger
-																			return txt.Layout(gtx)
-																		}
-																		return D{}
-																	}),
-																)
-															})
-														}),
-														layout.Rigid(func(gtx C) D {
-															gtx.Constraints.Min.X = gtx.Constraints.Max.X
-															if walletSyned {
-																return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-																	layout.Rigid(func(gtx C) D {
-																		txt := rm.Theme.Body2(values.String(values.StrYourAddress))
-																		txt.Color = rm.Theme.Color.GrayText2
+												return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Bottom: values.MarginPadding16,
+														}.Layout(gtx, func(gtx C) D {
+															return cryptomaterial.LinearLayout{
+																Width:       cryptomaterial.MatchParent,
+																Height:      cryptomaterial.WrapContent,
+																Orientation: layout.Vertical,
+																Margin:      layout.Inset{Bottom: values.MarginPadding16},
+															}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	return layout.Inset{
+																		Bottom: values.MarginPadding16,
+																	}.Layout(gtx, func(gtx C) D {
+																		return rm.sourceWalletSelector.Layout(rm.ParentWindow(), gtx)
+																	})
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return rm.sourceAccountSelector.Layout(rm.ParentWindow(), gtx)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	if !walletSyned {
+																		txt := rm.Theme.Label(values.TextSize14, values.String(values.StrSourceWalletNotSynced))
+																		txt.Font.Weight = font.SemiBold
+																		txt.Color = rm.Theme.Color.Danger
 																		return txt.Layout(gtx)
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-																			layout.Rigid(func(gtx C) D {
-																				if rm.isNewAddr {
-																					m := op.Record(gtx.Ops)
-																					layout.Inset{Top: values.MarginPadding30, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
-																						return rm.Theme.Shadow().Layout(gtx, rm.newAddr.Layout)
-																					})
-																					op.Defer(gtx.Ops, m.Stop())
-																				}
-																				return D{}
-																			}),
-																			layout.Rigid(rm.more.Layout),
-																		)
-																	}),
-																)
-															}
-															return D{}
-														}),
-														layout.Rigid(func(gtx C) D {
-															return layout.Inset{
-																Top: values.MarginPadding16,
-															}.Layout(gtx, func(gtx C) D {
-																return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-																	if walletSyned {
-																		return layout.Flex{}.Layout(gtx,
-																			layout.Flexed(0.9, rm.Load.Theme.Body1(rm.addressEditor.Editor.Text()).Layout),
-																			layout.Flexed(0.1, func(gtx C) D {
-																				return layout.E.Layout(gtx, func(gtx C) D {
-																					mGtx := gtx
-																					if rm.addressEditor.Editor.Text() == "" {
-																						mGtx = gtx.Disabled()
-																					}
-																					if rm.copyRedirect.Clicked() {
-																						clipboard.WriteOp{Text: rm.addressEditor.Editor.Text()}.Add(mGtx.Ops)
-																						rm.Load.Toast.Notify(values.String(values.StrCopied))
-																					}
-																					return rm.copyRedirect.Layout(mGtx, rm.Load.Theme.Icons.CopyIcon.Layout24dp)
-																				})
-																			}),
-																		)
 																	}
 																	return D{}
-																})
+																}),
+															)
+														})
+													}),
+													layout.Rigid(func(gtx C) D {
+														gtx.Constraints.Min.X = gtx.Constraints.Max.X
+														if walletSyned {
+															return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	txt := rm.Theme.Body2(values.String(values.StrYourAddress))
+																	txt.Color = rm.Theme.Color.GrayText2
+																	return txt.Layout(gtx)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+																		layout.Rigid(func(gtx C) D {
+																			if rm.isNewAddr {
+																				m := op.Record(gtx.Ops)
+																				layout.Inset{Top: values.MarginPadding30, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
+																					return rm.Theme.Shadow().Layout(gtx, rm.newAddr.Layout)
+																				})
+																				op.Defer(gtx.Ops, m.Stop())
+																			}
+																			return D{}
+																		}),
+																		layout.Rigid(rm.more.Layout),
+																	)
+																}),
+															)
+														}
+														return D{}
+													}),
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Top: values.MarginPadding16,
+														}.Layout(gtx, func(gtx C) D {
+															return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+																if walletSyned {
+																	return layout.Flex{}.Layout(gtx,
+																		layout.Flexed(0.9, rm.Load.Theme.Body1(rm.addressEditor.Editor.Text()).Layout),
+																		layout.Flexed(0.1, func(gtx C) D {
+																			return layout.E.Layout(gtx, func(gtx C) D {
+																				mGtx := gtx
+																				if rm.addressEditor.Editor.Text() == "" {
+																					mGtx = gtx.Disabled()
+																				}
+																				if rm.copyButton.Clicked() {
+																					clipboard.WriteOp{Text: rm.addressEditor.Editor.Text()}.Add(mGtx.Ops)
+																					rm.Load.Toast.Notify(values.String(values.StrCopied))
+																				}
+																				return rm.copyButton.Layout(mGtx, rm.Load.Theme.Icons.CopyIcon.Layout24dp)
+																			})
+																		}),
+																	)
+																}
+																return D{}
 															})
-														}),
-														layout.Rigid(func(gtx C) D {
-															return layout.Inset{
-																Bottom: values.MarginPadding16,
-															}.Layout(gtx, func(gtx C) D {
-																return cryptomaterial.LinearLayout{
-																	Width:       cryptomaterial.MatchParent,
-																	Height:      cryptomaterial.WrapContent,
-																	Orientation: layout.Vertical,
-																	Margin:      layout.Inset{Bottom: values.MarginPadding16},
-																	Direction:   layout.Center,
-																	Alignment:   layout.Middle,
-																}.Layout(gtx,
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Center.Layout(gtx, func(gtx C) D {
-																			return layout.Flex{
-																				Axis:      layout.Vertical,
-																				Alignment: layout.Middle,
-																			}.Layout(gtx,
-																				layout.Rigid(func(gtx C) D {
-																					if rm.qrImage == nil || !walletSyned {
-																						// Display generated address only on a synced wallet
-																						return D{}
-																					}
+														})
+													}),
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Bottom: values.MarginPadding16,
+														}.Layout(gtx, func(gtx C) D {
+															return cryptomaterial.LinearLayout{
+																Width:       cryptomaterial.MatchParent,
+																Height:      cryptomaterial.WrapContent,
+																Orientation: layout.Vertical,
+																Margin:      layout.Inset{Bottom: values.MarginPadding16},
+																Direction:   layout.Center,
+																Alignment:   layout.Middle,
+															}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	return layout.Center.Layout(gtx, func(gtx C) D {
+																		return layout.Flex{
+																			Axis:      layout.Vertical,
+																			Alignment: layout.Middle,
+																		}.Layout(gtx,
+																			layout.Rigid(func(gtx C) D {
+																				if rm.qrImage == nil || !walletSyned {
+																					// Display generated address only on a synced wallet
+																					return D{}
+																				}
 
-																					return rm.Theme.ImageIcon(gtx, *rm.qrImage, 180)
-																				}),
-																			)
-																		})
-																	}),
-																)
-															})
-														}),
-													)
-												})
+																				return rm.Theme.ImageIcon(gtx, *rm.qrImage, 180)
+																			}),
+																		)
+																	})
+																}),
+															)
+														})
+													}),
+												)
 											})
 										})
-									}),
+									})
+								}),
+							)
+						})
+					}),
+				)
+			}),
+			layout.Stacked(func(gtx C) D {
+				gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+
+				return layout.S.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, func(gtx C) D {
+								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									layout.Rigid(rm.okBtn.Layout),
 								)
 							})
 						}),
 					)
-				}),
-				layout.Stacked(func(gtx C) D {
-					gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 
-					return layout.S.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Flexed(1, func(gtx C) D {
-								return layout.E.Layout(gtx, func(gtx C) D {
-									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-										layout.Rigid(rm.okBtn.Layout),
-									)
-								})
-							}),
-						)
-
-					})
-				}),
-			)
-		},
+				})
+			}),
+		)
+		// }
 	}
-	return rm.Modal.Layout(gtx, w, 450)
+}
+
+func (rm *ReceiveModal) headerLayout(gtx C) D {
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			lbl := rm.Theme.H6(values.String(values.StrReceive))
+			lbl.TextSize = values.TextSizeTransform(rm.IsMobileView(), values.TextSize20)
+			return lbl.Layout(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, rm.infoButton.Layout)
+		}),
+	)
 }
 
 func (rm *ReceiveModal) initWalletSelectors() {

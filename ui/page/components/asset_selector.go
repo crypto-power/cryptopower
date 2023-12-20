@@ -205,7 +205,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 func newAssetTypeModal(l *load.Load) *assetTypeModal {
 	atm := &assetTypeModal{
 		Load:          l,
-		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer)),
+		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer), l.IsMobileView()),
 		assetTypeList: layout.List{Axis: layout.Vertical},
 		isCancelable:  true,
 		dialogTitle:   values.String(values.StrSelectAssetType),

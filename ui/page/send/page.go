@@ -110,7 +110,7 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		// When this page is opened from the home page, the wallet to use is not
 		// specified. This page will be opened as a modal and a wallet selector
 		// will be displayed.
-		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend))
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend), pg.IsMobileView())
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 		pg.initWalletSelector() // will auto select the first wallet in the dropdown as pg.selectedWallet
 	} else {
