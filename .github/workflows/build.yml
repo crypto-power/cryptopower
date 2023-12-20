@@ -1,6 +1,7 @@
 name: Cross-Platform Build on New Tag
 
 on:
+  pull_request:
   push:
     tags:
       - '*'
