@@ -65,7 +65,7 @@ type WriteClipboard struct {
 func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Time) (*Window, error) {
 	appTitle := giouiApp.Title(values.String(values.StrAppName))
 	// appSize overwrites gioui's default app size of 'Size(800, 600)'
-	appSize := giouiApp.Size(values.AppWidth, values.AppHeight)
+	appSize := giouiApp.Size(values.MobileAppWidth, values.MobileAppHeight)
 	// appMinSize is the minimum size the app.
 	appMinSize := giouiApp.MinSize(values.MobileAppWidth, values.MobileAppHeight)
 	// Display network on the app title if its not on mainnet.

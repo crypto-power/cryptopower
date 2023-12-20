@@ -195,7 +195,7 @@ func (pg *ReceivePage) Layout(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return layout.Center.Layout(gtx, func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									txt := pg.Theme.Body2(values.String(values.StrMyAddress))
@@ -225,7 +225,7 @@ func (pg *ReceivePage) Layout(gtx C) D {
 
 func (pg *ReceivePage) copyAndNewAddressLayout(gtx C) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return pg.buttonIconLayout(gtx, pg.Theme.Icons.CopyIcon, values.String(values.StrCopy), pg.copy)
@@ -278,7 +278,7 @@ func (pg *ReceivePage) pageBackdropLayout(gtx C) {
 }
 
 func (pg *ReceivePage) headerLayout(gtx C) D {
-	return layout.Flex{}.Layout(gtx,
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			lbl := pg.Theme.H6(values.String(values.StrReceive))
 			lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
@@ -298,7 +298,7 @@ func (pg *ReceivePage) addressLayout(gtx C) D {
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return border.Layout(gtx, func(gtx C) D {
-		return components.VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return components.VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
 			lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), "")
 			if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
 				lbl.Text = pg.currentAddress
