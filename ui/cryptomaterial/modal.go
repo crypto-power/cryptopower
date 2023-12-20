@@ -117,7 +117,7 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 			}
 
 			maxWidth := float32(360)
-			if len(width) > 0 {
+			if len(width) > 0 && width[0] > 0 {
 				maxWidth = width[0]
 			} else if currentAppWidth := gtx.Metric.PxToDp(gtx.Constraints.Max.X); currentAppWidth <= values.StartMobileView {
 				// maxWidth must be less than currentAppWidth on mobile, so the

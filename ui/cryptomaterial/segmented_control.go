@@ -130,7 +130,6 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 	if sc.disableUniformPadding {
 		return widget(gtx)
 	}
-
 	return UniformPadding(gtx, widget, sc.isMobileView)
 }
 

@@ -43,11 +43,15 @@ func (pg *Page) initLayoutWidgets() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
-	if pg.modalLayout != nil {
-		modalContent := []layout.Widget{pg.contentLayout}
-		return pg.modalLayout.Layout(gtx, modalContent, 450)
+	if pg.modalLayout == nil {
+		return pg.contentLayout(gtx)
 	}
-	return pg.contentLayout(gtx)
+	var modalWidth float32 = 450
+	if pg.IsMobileView() {
+		modalWidth = 0
+	}
+	modalContent := []layout.Widget{pg.contentLayout}
+	return pg.modalLayout.Layout(gtx, modalContent, modalWidth)
 }
 
 func (pg *Page) contentLayout(gtx C) D {
@@ -279,11 +283,15 @@ func (pg *Page) balanceSection(gtx C) D {
 }
 
 func (pg *Page) sectionWrapper(gtx C, body layout.Widget) D {
+	margin16 := values.MarginPadding16
+	if pg.modalLayout != nil {
+		margin16 = values.MarginPadding0
+	}
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
-		Padding:     layout.UniformInset(values.MarginPadding16),
+		Padding:     layout.UniformInset(margin16),
 		Background:  pg.Theme.Color.Surface,
 		Border: cryptomaterial.Border{
 			Radius: cryptomaterial.Radius(8),

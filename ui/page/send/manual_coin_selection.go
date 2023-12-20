@@ -128,6 +128,7 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	pg.clearButton.Color = l.Theme.Color.Danger
 	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding4)
 	pg.clearButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.Danger)
+	pg.clearButton.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 
 	pg.txSize = pg.Theme.Label(values.TextSize14, "--")
 	pg.totalAmount = pg.Theme.Label(values.TextSize14, "--")
@@ -387,7 +388,7 @@ func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
 								})
 							}),
 						)
-					})
+					}, pg.IsMobileView())
 				}),
 			)
 		}),
@@ -412,50 +413,46 @@ func (pg *ManualCoinSelectionPage) topSection(gtx C) D {
 						return pg.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding8)
 					})
 				}),
-				layout.Rigid(pg.Theme.H6(values.String(values.StrCoinSelection)).Layout),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					lbl := pg.Theme.H6(values.String(values.StrCoinSelection))
+					lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
+					return lbl.Layout(gtx)
+				}),
 			)
 		})
 	})
 }
 
 func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			topContainer := layout.UniformInset(values.MarginPadding15)
 			return topContainer.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrSummary))
+							textLabel := pg.Theme.Label(textSize16, values.String(values.StrSummary))
 							textLabel.Font.Weight = font.SemiBold
 							return textLabel.Layout(gtx)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Flexed(0.22, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrSelectedUTXO)+": ").Layout),
-									layout.Flexed(1, func(gtx C) D {
-										return layout.W.Layout(gtx, pg.selectedUTXOs.Layout)
-									}),
-								)
+						axis := layout.Horizontal
+						if pg.IsMobileView() {
+							axis = layout.Vertical
+						}
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Flex{Axis: axis, Spacing: layout.SpaceBetween}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.sumaryContent(gtx, values.String(values.StrSelectedUTXO)+": ", pg.selectedUTXOs)
 							}),
-							layout.Flexed(0.38, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize14, values.StringF(values.StrTxSize, " : ")).Layout),
-									layout.Flexed(1, func(gtx C) D {
-										return layout.W.Layout(gtx, pg.txSize.Layout)
-									}),
-								)
+							layout.Rigid(func(gtx C) D {
+								return pg.sumaryContent(gtx, values.StringF(values.StrTxSize, " : "), pg.txSize)
+
 							}),
-							layout.Flexed(0.4, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrTotalAmount)+": ").Layout),
-									layout.Flexed(1, func(gtx C) D {
-										return layout.W.Layout(gtx, pg.totalAmount.Layout)
-									}),
-								)
+							layout.Rigid(func(gtx C) D {
+								return pg.sumaryContent(gtx, values.String(values.StrTotalAmount)+": ", pg.totalAmount)
 							}),
 						)
 					}),
@@ -465,14 +462,24 @@ func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
 	})
 }
 
+func (pg *ManualCoinSelectionPage) sumaryContent(gtx C, text string, valueLable cryptomaterial.Label) D {
+	textSize14 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
+	valueLable.TextSize = textSize14
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(pg.Theme.Label(textSize14, text).Layout),
+		layout.Rigid(valueLable.Layout),
+	)
+}
+
 func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
+	textSize14 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
 		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrAccountList))
+					textLabel := pg.Theme.Label(textSize16, values.String(values.StrAccountList))
 					textLabel.Font.Weight = font.SemiBold
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(textLabel.Layout),
@@ -483,7 +490,7 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					collapsibleHeader := func(gtx C) D {
-						t := pg.Theme.Label(values.TextSize16, pg.accountUTXOs.Account)
+						t := pg.Theme.Label(textSize16, pg.accountUTXOs.Account)
 						t.Font.Weight = font.SemiBold
 						return t.Layout(gtx)
 					}
@@ -492,7 +499,7 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 						if len(pg.accountUTXOs.Details) == 0 {
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
 							return layout.Center.Layout(gtx,
-								pg.Theme.Label(values.TextSize14, values.String(values.StrNoUTXOs)).Layout,
+								pg.Theme.Label(textSize14, values.String(values.StrNoUTXOs)).Layout,
 							)
 						}
 						return pg.accountListItemsSection(gtx, pg.accountUTXOs.Details)
@@ -515,7 +522,7 @@ func (pg *ManualCoinSelectionPage) generateLabel(txt interface{}, clickable *cry
 		txtStr = fmt.Sprintf("%d", n)
 	}
 
-	lb := pg.Theme.Label(values.TextSize14, txtStr)
+	lb := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize14), txtStr)
 	if len(txtStr) > MaxAddressLen {
 		// Only addresses have texts longer than 16 characters.
 		lb.Text = txtStr[:MaxAddressLen] + "..."
@@ -542,7 +549,6 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 			}),
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
 				return pg.Theme.List(pg.listContainer).Layout(gtx, len(utxos), func(gtx C, index int) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {

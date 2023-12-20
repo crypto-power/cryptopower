@@ -43,6 +43,7 @@ func newRecipient(l *load.Load, selectedWallet sharedW.Asset) *recipient {
 	assetType := rp.selectedWallet.GetAssetType()
 
 	rp.amount = newSendAmount(l.Theme, assetType)
+	rp.amount.amountEditor.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 	rp.sendDestination = newSendDestination(l, assetType)
 
 	rp.description = rp.Theme.Editor(new(widget.Editor), values.String(values.StrNote))
@@ -51,6 +52,7 @@ func newRecipient(l *load.Load, selectedWallet sharedW.Asset) *recipient {
 	rp.description.IsTitleLabel = false
 	// Set the maximum characters the editor can accept.
 	rp.description.Editor.MaxLen = MaxTxLabelSize
+	rp.description.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 
 	return rp
 }
@@ -205,7 +207,7 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 				if !rp.sendDestination.sendToAddress {
 					layoutBody = rp.walletAccountlayout(window)
 				}
-				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody)
+				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody, rp.IsMobileView())
 			}),
 			layout.Rigid(rp.addressAndAmountlayout),
 			layout.Rigid(rp.txLabelSection),

@@ -41,7 +41,6 @@ type Collapsible struct {
 }
 
 type CollapsibleWithOption struct {
-	isExpanded      bool
 	button          *widget.Clickable
 	BackgroundColor color.NRGBA
 	card            Card
