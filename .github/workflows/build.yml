@@ -45,4 +45,15 @@ jobs:
         build-args: |
           BUILDOS=${{ matrix.os }}
           BUILDARCH=${{ matrix.arch }}
-          BUILDNAME=myapp-${{ matrix.os }}-${{ matrix.arch }}
+          BUILDNAME=cryptopower-${{ matrix.os }}-${{ matrix.arch }}
+    - name: Create Container
+      run: |
+        docker create --name temp-container user/app:latest
+        docker cp temp-container:/app/myapp-linux-amd64 ./myapp-linux-amd64
+        docker rm temp-container
+
+    - name: Upload Binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: myapp-binary
+        path: ./myapp-linux-amd64
