@@ -1,4 +1,4 @@
-package root
+package exchange
 
 import (
 	"gioui.org/layout"
@@ -8,9 +8,7 @@ import (
 	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/dcrdex"
-	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -108,12 +106,12 @@ func (pg *TradePage) HandleUserInteractions() {
 			pg.Display(dcrdex.NewDEXPage(pg.Load))
 		}
 	case 1: // Centralized Exchange
-		if pg.CurrentPageID() != exchange.CreateOrderPageID {
-			pg.Display(exchange.NewCreateOrderPage(pg.Load))
+		if pg.CurrentPageID() != CreateOrderPageID {
+			pg.Display(NewCreateOrderPage(pg.Load))
 		}
 	case 2: // Trade History
-		if pg.CurrentPageID() != exchange.OrderHistoryPageID {
-			pg.Display(exchange.NewOrderHistoryPage(pg.Load))
+		if pg.CurrentPageID() != OrderHistoryPageID {
+			pg.Display(NewOrderHistoryPage(pg.Load))
 		}
 	}
 
@@ -137,32 +135,9 @@ func (pg *TradePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TradePage) Layout(gtx C) D {
-	if pg.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
 	return pg.layoutDesktop(gtx)
 }
 
 func (pg *TradePage) layoutDesktop(gtx C) D {
-	return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
-}
-
-func (pg *TradePage) layoutMobile(gtx C) D {
-	return components.UniformMobile(gtx, false, true, func(gtx C) D {
-		return layout.Flex{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		}.Layout(gtx,
-			layout.Rigid(pg.sectionNavTab),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return pg.CurrentPage().Layout(gtx)
-				})
-			}),
-		)
-	})
-}
-
-func (pg *TradePage) sectionNavTab(gtx C) D {
-	return pg.tab.GroupTileLayout(gtx)
+	return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
 }

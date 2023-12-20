@@ -89,7 +89,7 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 			maxTextWidth = textWidth
 		}
 	}
-	padding := 60 // Extra space for dropdown arrow and padding.
+	padding := 30 // Extra space for dropdown arrow and padding.
 	dropdownWidth := maxTextWidth + padding
 	pg.statusDropdown.Width = unit.Dp(dropdownWidth)
 
@@ -109,7 +109,6 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 	pg.orderDropdown.Width = values.MarginPadding100
 	if l.IsMobileView() {
 		pg.orderDropdown.Width = values.MarginPadding85
-		pg.statusDropdown.Width = values.DP118
 	}
 	settingCommonDropdown(pg.Theme, pg.statusDropdown)
 	settingCommonDropdown(pg.Theme, pg.orderDropdown)
@@ -152,7 +151,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
 		orderItems := pg.scroll.FetchedData()
-		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
+		pg.ParentWindow().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
 	if pg.refreshClickable.Clicked() {
@@ -202,7 +201,6 @@ func (pg *OrderHistoryPage) Layout(gtx C) D {
 	}
 	inset := layout.Inset{
 		Right:  padding,
-		Left:   padding,
 		Bottom: values.MarginPadding16,
 	}
 	return inset.Layout(gtx, func(gtx C) D {
@@ -409,7 +407,6 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.
 		pg.previousStatus = statusFilter
 	}
 
-	// searchKey := pg.searchEditor.Editor.Text()
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true, statusFilter)
 	return orders, len(orders), isReset, nil
 }
