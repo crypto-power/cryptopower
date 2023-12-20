@@ -418,7 +418,7 @@ type SelectorItem struct {
 func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal {
 	sm := &selectorModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("SelectorModal"),
+		Modal:        l.Theme.ModalFloatTitle("SelectorModal", l.IsMobileView()),
 		walletsList:  layout.List{Axis: layout.Vertical},
 		isCancelable: true,
 		infoBackdrop: new(widget.Clickable),

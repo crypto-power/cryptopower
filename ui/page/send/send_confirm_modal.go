@@ -41,7 +41,7 @@ type sendConfirmModal struct {
 func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset) *sendConfirmModal {
 	scm := &sendConfirmModal{
 		Load:           l,
-		Modal:          l.Theme.ModalFloatTitle("send_confirm_modal"),
+		Modal:          l.Theme.ModalFloatTitle("send_confirm_modal", l.IsMobileView()),
 		authoredTxData: data,
 		asset:          asset,
 	}

@@ -55,7 +55,7 @@ type CreatePasswordModal struct {
 func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 	cm := &CreatePasswordModal{
 		Load:                   l,
-		Modal:                  l.Theme.ModalFloatTitle("create_password_modal"),
+		Modal:                  l.Theme.ModalFloatTitle("create_password_modal", l.IsMobileView()),
 		passwordStrength:       l.Theme.ProgressBar(0),
 		btnPositive:            l.Theme.Button(values.String(values.StrConfirm)),
 		btnNegative:            l.Theme.OutlineButton(values.String(values.StrCancel)),

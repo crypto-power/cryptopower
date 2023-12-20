@@ -59,7 +59,7 @@ type orderSettingsModal struct {
 func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
 	osm := &orderSettingsModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
+		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView()),
 		orderData:    data,
 		copyRedirect: l.Theme.NewClickable(false),
 	}

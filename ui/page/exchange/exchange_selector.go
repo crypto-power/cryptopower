@@ -202,7 +202,7 @@ func (es *ExSelector) Layout(window app.WindowNavigator, gtx C) D {
 func newExchangeModal(l *load.Load) *exchangeModal {
 	em := &exchangeModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer)),
+		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer), l.IsMobileView()),
 		exchangeList: layout.List{Axis: layout.Vertical},
 		isCancelable: true,
 		dialogTitle:  values.String(values.StrSelectAServer),

@@ -44,7 +44,7 @@ type confirmOrderModal struct {
 func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 	com := &confirmOrderModal{
 		Load:      l,
-		Modal:     l.Theme.ModalFloatTitle(values.String(values.StrConfirmYourOrder)),
+		Modal:     l.Theme.ModalFloatTitle(values.String(values.StrConfirmYourOrder), l.IsMobileView()),
 		orderData: data,
 	}
 

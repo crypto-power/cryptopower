@@ -885,5 +885,7 @@ const EN = `
 "stakingTx" = "Staking Transactions"
 "filter" = "Filter"
 "export" = "Export"
+"myAddress" = "My Address"
+"regenerate" = "Regenerate"
 "integratedExchange" = "Integrated Exchange"
 `

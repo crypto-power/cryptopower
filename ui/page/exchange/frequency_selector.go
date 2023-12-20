@@ -120,7 +120,7 @@ func (fs *FrequencySelector) Layout(window app.WindowNavigator, gtx C) D {
 func newFrequencyModal(l *load.Load) *frequencyModal {
 	fm := &frequencyModal{
 		Load:          l,
-		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectFrequency)),
+		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectFrequency), l.IsMobileView()),
 		frequencyList: layout.List{Axis: layout.Vertical},
 		isCancelable:  true,
 		dialogTitle:   values.String(values.StrSelectFrequency),

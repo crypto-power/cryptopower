@@ -83,7 +83,7 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items [
 
 		preferenceItems:   items,
 		optionsRadioGroup: new(widget.Enum),
-		Modal:             l.Theme.ModalFloatTitle("list_preference"),
+		Modal:             l.Theme.ModalFloatTitle("list_preference", l.IsMobileView()),
 	}
 
 	lp.btnSave.Font.Weight = font.Medium
