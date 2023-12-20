@@ -117,6 +117,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			title := fs.Theme.Body1(values.String(values.StrFeeRates))
+			title.TextSize = values.TextSizeTransform(fs.IsMobileView(), values.TextSize16)
 			title.Font.Weight = font.SemiBold
 			return layout.Inset{Bottom: values.MarginPadding4}.Layout(gtx, title.Layout)
 		}),
@@ -182,7 +183,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 						col = fs.Theme.Color.Danger
 					}
 
-					lbl := fs.Theme.Label(values.TextSize14, txt)
+					lbl := fs.Theme.Label(values.TextSizeTransform(fs.IsMobileView(), values.TextSize14), txt)
 					lbl.Color = col
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
 					return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {

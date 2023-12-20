@@ -22,7 +22,6 @@ const (
 	SendPageID = "Send"
 
 	// MaxTxLabelSize defines the maximum number of characters to be allowed on
-	// txLabelInputEditor component.
 	MaxTxLabelSize = 100
 )
 
@@ -59,12 +58,9 @@ type Page struct {
 
 	isFetchingExchangeRate bool
 
-	exchangeRate        float64
-	usdExchangeSet      bool
-	exchangeRateMessage string
-	confirmTxModal      *sendConfirmModal
-
-	txLabelInputEditor cryptomaterial.Editor
+	exchangeRate   float64
+	usdExchangeSet bool
+	confirmTxModal *sendConfirmModal
 
 	*authoredTxData
 	selectedWallet  sharedW.Asset

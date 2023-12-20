@@ -215,7 +215,7 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 
 func (rp *recipient) topLayout(gtx C, index int) D {
 	txt := fmt.Sprintf("%s: %s %v", values.String(values.StrTo), values.String(values.StrRecipient), index)
-	titleTxt := rp.Theme.Label(values.TextSize16, txt)
+	titleTxt := rp.Theme.Label(values.TextSizeTransform(rp.IsMobileView(), values.TextSize16), txt)
 	titleTxt.Color = rp.Theme.Color.GrayText2
 
 	return layout.Flex{}.Layout(gtx,
@@ -255,7 +255,7 @@ func (rp *recipient) contentWrapper(gtx C, title string, content layout.Widget) 
 	}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				lbl := rp.Theme.Label(values.TextSize16, title)
+				lbl := rp.Theme.Label(values.TextSizeTransform(rp.IsMobileView(), values.TextSize16), title)
 				lbl.Font.Weight = font.SemiBold
 				return layout.Inset{
 					Bottom: values.MarginPadding4,

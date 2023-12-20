@@ -44,13 +44,13 @@ func (pg *Page) initLayoutWidgets() {
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
 	if pg.modalLayout != nil {
-		modalContent := []layout.Widget{pg.layoutDesktop}
+		modalContent := []layout.Widget{pg.contentLayout}
 		return pg.modalLayout.Layout(gtx, modalContent, 450)
 	}
-	return pg.layoutDesktop(gtx)
+	return pg.contentLayout(gtx)
 }
 
-func (pg *Page) layoutDesktop(gtx C) D {
+func (pg *Page) contentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sendLayout,
 		pg.recipientsLayout,
@@ -71,7 +71,7 @@ func (pg *Page) layoutDesktop(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-				mp := values.MarginPadding32
+				mp := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding32)
 				if i == len(pageContent)-1 {
 					mp = values.MarginPadding0
 				}
@@ -116,7 +116,7 @@ func (pg *Page) sendLayout(gtx C) D {
 				if pg.selectedWallet.IsSynced() {
 					return D{}
 				}
-				txt := pg.Theme.Label(values.TextSize14, values.String(values.StrFunctionUnavailable))
+				txt := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize14), values.String(values.StrFunctionUnavailable))
 				txt.Font.Weight = font.SemiBold
 				txt.Color = pg.Theme.Color.Danger
 				return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, txt.Layout)
@@ -129,7 +129,7 @@ func (pg *Page) titleLayout(gtx C) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Right: values.MarginPadding6}.Layout(gtx, func(gtx C) D {
-				lbl := pg.Theme.Label(values.TextSize20, values.String(values.StrSend))
+				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize20), values.String(values.StrSend))
 				lbl.Font.Weight = font.SemiBold
 				return lbl.Layout(gtx)
 			})
@@ -168,7 +168,7 @@ func (pg *Page) recipientsLayout(gtx C) D {
 func (pg *Page) advanceOptionsLayout(gtx C) D {
 	return pg.sectionWrapper(gtx, func(gtx C) D {
 		collapsibleHeader := func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrAdvancedOptions))
+			lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), values.String(values.StrAdvancedOptions))
 			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
 		}
@@ -216,7 +216,7 @@ func (pg *Page) coinSelectionSection(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			inset := layout.UniformInset(values.MarginPadding15)
 			return inset.Layout(gtx, func(gtx C) D {
-				textLabel := pg.Theme.Label(values.TextSize16, selectedOption)
+				textLabel := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), selectedOption)
 				textLabel.Font.Weight = font.SemiBold
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(textLabel.Layout),
@@ -304,7 +304,7 @@ func (pg *Page) contentWrapper(gtx C, title string, zeroBottomPadding bool, cont
 	}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				lbl := pg.Theme.Label(values.TextSize16, title)
+				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), title)
 				lbl.Font.Weight = font.SemiBold
 				return layout.Inset{
 					Bottom: values.MarginPadding4,
@@ -316,9 +316,10 @@ func (pg *Page) contentWrapper(gtx C, title string, zeroBottomPadding bool, cont
 }
 
 func (pg *Page) contentRow(gtx C, leftValue, rightValue string) D {
+	textSize := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSize16, leftValue)
+			lbl := pg.Theme.Label(textSize, leftValue)
 			lbl.Color = pg.Theme.Color.GrayText2
 			return lbl.Layout(gtx)
 		}),
@@ -326,7 +327,7 @@ func (pg *Page) contentRow(gtx C, leftValue, rightValue string) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						lbl := pg.Theme.Label(values.TextSize16, rightValue)
+						lbl := pg.Theme.Label(textSize, rightValue)
 						lbl.Color = pg.Theme.Color.Text
 						lbl.Font.Weight = font.SemiBold
 						return lbl.Layout(gtx)
