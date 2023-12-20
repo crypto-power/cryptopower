@@ -53,7 +53,8 @@ func NewTradePage(l *load.Load) *TradePage {
 	}
 	filteredTabTitles := tabTitles
 	if l.IsMobileView() {
-		// Remove the first item for mobile view
+		// Remove dcrdex for mobile view,
+		// dcrdex isn't supported on mobile yet
 		filteredTabTitles = filteredTabTitles[1:]
 	}
 
@@ -135,9 +136,5 @@ func (pg *TradePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TradePage) Layout(gtx C) D {
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *TradePage) layoutDesktop(gtx C) D {
 	return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
 }

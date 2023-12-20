@@ -98,11 +98,7 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 		{Text: values.String(values.StrOldest)},
 	}, values.ProposalDropdownGroup, 1, 0, true)
 
-	if pg.statusDropdown.Reversed() {
-		pg.statusDropdown.ExpandedLayoutInset.Right = values.MarginPadding10
-	} else {
-		pg.statusDropdown.ExpandedLayoutInset.Left = values.MarginPadding10
-	}
+	pg.statusDropdown.ExpandedLayoutInset.Right = values.MarginPadding10
 
 	pg.statusDropdown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropdown.CollapsedLayoutTextDirection = layout.E
@@ -110,8 +106,8 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 	if l.IsMobileView() {
 		pg.orderDropdown.Width = values.MarginPadding85
 	}
-	settingCommonDropdown(pg.Theme, pg.statusDropdown)
-	settingCommonDropdown(pg.Theme, pg.orderDropdown)
+	useCommonDropdownSettings(pg.Theme, pg.statusDropdown)
+	useCommonDropdownSettings(pg.Theme, pg.orderDropdown)
 	pg.statusDropdown.SetConvertTextSize(pg.ConvertTextSize)
 	pg.orderDropdown.SetConvertTextSize(pg.ConvertTextSize)
 
@@ -188,19 +184,14 @@ func (pg *OrderHistoryPage) initServerSelector() {
 
 	pg.serverDropdown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 2, 0, false)
 	pg.serverDropdown.Width = values.MarginPadding150
-	settingCommonDropdown(pg.Theme, pg.serverDropdown)
+	useCommonDropdownSettings(pg.Theme, pg.serverDropdown)
 	pg.serverDropdown.SetConvertTextSize(pg.ConvertTextSize)
 }
 
 func (pg *OrderHistoryPage) Layout(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
-	padding := values.MarginPadding0
-	if pg.IsMobileView() {
-		padding = values.MarginPadding12
-	}
 	inset := layout.Inset{
-		Right:  padding,
 		Bottom: values.MarginPadding16,
 	}
 	return inset.Layout(gtx, func(gtx C) D {
@@ -371,7 +362,7 @@ func (pg *OrderHistoryPage) rightDropdown(gtx C) D {
 	})
 }
 
-func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.DropDown) {
+func useCommonDropdownSettings(t *cryptomaterial.Theme, drodown *cryptomaterial.DropDown) {
 	drodown.FontWeight = font.SemiBold
 	drodown.Hoverable = false
 	drodown.SelectedItemIconColor = &t.Color.Primary
