@@ -254,11 +254,6 @@ func (pg *Page) OnNavigatedTo() {
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
-		// go func() {
-		// 	load.GetAPIFeeRate(pg.selectedWallet)
-		// 	pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
-		// 	pg.ParentWindow().Reload()
-		// }()
 		go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 	}
@@ -447,10 +442,6 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	pg.nextButton.SetEnabled(pg.recipient.isValidated())
-
-	if pg.sourceAccountSelector.Changed() {
-		pg.recipient.validateAmount()
-	}
 
 	if pg.infoButton.Button.Clicked() {
 		textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
