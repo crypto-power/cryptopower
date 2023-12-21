@@ -27,17 +27,14 @@ type recipient struct {
 
 	sendDestination *destination
 	amount          *sendAmount
-
-	exchangeRate           float64
-	isFetchingExchangeRate bool
-	usdExchangeSet         bool
+	pageParam       getPageFields
 }
 
-func newRecipient(l *load.Load, selectedWallet sharedW.Asset) *recipient {
+func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields) *recipient {
 	rp := &recipient{
 		Load:           l,
 		selectedWallet: selectedWallet,
-		exchangeRate:   -1,
+		pageParam:      pageParam,
 	}
 
 	assetType := rp.selectedWallet.GetAssetType()
@@ -269,7 +266,30 @@ func (rp *recipient) contentWrapper(gtx C, title string, content layout.Widget) 
 }
 
 func (rp *recipient) addressAndAmountlayout(gtx C) D {
-	return rp.contentWrapper(gtx, values.String(values.StrAmount), rp.amount.amountEditor.Layout)
+	widget := func(gtx C) D { return rp.amount.amountEditor.Layout(gtx) }
+	if rp.pageParam().exchangeRate != -1 && rp.pageParam().usdExchangeSet {
+		widget = func(gtx C) D {
+			return layout.Flex{
+				Axis:      layout.Horizontal,
+				Alignment: layout.Middle,
+			}.Layout(gtx,
+				layout.Flexed(0.45, func(gtx C) D {
+					return rp.amount.amountEditor.Layout(gtx)
+				}),
+				layout.Flexed(0.1, func(gtx C) D {
+					return layout.Center.Layout(gtx, func(gtx C) D {
+						icon := rp.Theme.Icons.CurrencySwapIcon
+						return icon.Layout12dp(gtx)
+					})
+				}),
+				layout.Flexed(0.45, func(gtx C) D {
+					return rp.amount.usdAmountEditor.Layout(gtx)
+				}),
+			)
+		}
+
+	}
+	return rp.contentWrapper(gtx, values.String(values.StrAmount), widget)
 }
 
 func (rp *recipient) txLabelSection(gtx C) D {

@@ -58,10 +58,7 @@ func (pg *Page) contentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sendLayout,
 		pg.recipientsLayout,
-	}
-
-	if pg.modalLayout == nil || (pg.modalLayout != nil && pg.selectedWallet.GetAssetType() != libutils.DCRWalletAsset) {
-		pageContent = append(pageContent, pg.advanceOptionsLayout)
+		pg.advanceOptionsLayout,
 	}
 
 	cgtx := gtx
@@ -222,20 +219,20 @@ func (pg *Page) coinSelectionSection(gtx C) D {
 			return inset.Layout(gtx, func(gtx C) D {
 				textLabel := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), selectedOption)
 				textLabel.Font.Weight = font.SemiBold
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(textLabel.Layout),
-					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, func(gtx C) D {
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.WrapContent,
-								Height:      cryptomaterial.WrapContent,
-								Orientation: layout.Horizontal,
-								Alignment:   layout.Middle,
-								Clickable:   pg.toCoinSelection,
-							}.Layout2(gtx, pg.Theme.Icons.ChevronRight.Layout20dp)
-						})
-					}),
-				)
+				return cryptomaterial.LinearLayout{
+					Width:       cryptomaterial.WrapContent,
+					Height:      cryptomaterial.WrapContent,
+					Orientation: layout.Horizontal,
+					Alignment:   layout.Middle,
+					Clickable:   pg.toCoinSelection,
+				}.Layout2(gtx, func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
+						layout.Rigid(textLabel.Layout),
+						layout.Rigid(pg.Theme.Icons.ChevronRight.Layout20dp),
+					)
+				})
+
 			})
 		})
 	})

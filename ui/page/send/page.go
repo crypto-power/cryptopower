@@ -72,6 +72,14 @@ type Page struct {
 	selectedUTXOs selectedUTXOsInfo
 }
 
+type getPageFields func() pageFields
+
+type pageFields struct {
+	exchangeRate           float64
+	usdExchangeSet         bool
+	isFetchingExchangeRate bool
+}
+
 type authoredTxData struct {
 	destinationAddress  string
 	destinationAccount  *sharedW.Account
@@ -119,7 +127,7 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	}
 	pg.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc).ShowSizeAndCost()
 
-	pg.recipient = newRecipient(l, pg.selectedWallet)
+	pg.recipient = newRecipient(l, pg.selectedWallet, pg.pageFields)
 	pg.recipient.onAddressChanged(func() {
 		pg.validateAndConstructTx()
 	})
@@ -129,10 +137,17 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	})
 
 	pg.initializeAccountSelectors()
-
 	pg.initLayoutWidgets()
 
 	return pg
+}
+
+func (pg *Page) pageFields() pageFields {
+	return pageFields{
+		exchangeRate:           pg.exchangeRate,
+		usdExchangeSet:         pg.usdExchangeSet,
+		isFetchingExchangeRate: pg.isFetchingExchangeRate,
+	}
 }
 
 // initWalletSelector is used for the send modal for wallet selection.
@@ -145,6 +160,8 @@ func (pg *Page) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.selectedWallet = selectedWallet
+		go load.GetAPIFeeRate(pg.selectedWallet)
+		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 		pg.recipient.setDestinationAssetType(selectedWallet.GetAssetType())
 		pg.initializeAccountSelectors()
 		pg.recipient.resetDestinationAccountSelector()
@@ -237,6 +254,11 @@ func (pg *Page) OnNavigatedTo() {
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
+		// go func() {
+		// 	load.GetAPIFeeRate(pg.selectedWallet)
+		// 	pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
+		// 	pg.ParentWindow().Reload()
+		// }()
 		go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 	}
@@ -275,6 +297,7 @@ func (pg *Page) fetchExchangeRate() {
 	}
 
 	pg.exchangeRate = rate.LastTradePrice
+	pg.recipient.amount.setExchangeRate(pg.exchangeRate)
 	pg.validateAndConstructTx() // convert estimates to usd
 
 	pg.isFetchingExchangeRate = false

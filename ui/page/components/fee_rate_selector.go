@@ -138,10 +138,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 									},
 								}
 								return border.Layout(gtx, func(gtx C) D {
-									return layout.Inset{
-										Top:    values.MarginPadding4,
-										Bottom: values.MarginPadding4,
-									}.Layout(gtx, fs.ratesEditor.Layout)
+									return VerticalInset(values.MarginPadding4).Layout(gtx, fs.ratesEditor.Layout)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
