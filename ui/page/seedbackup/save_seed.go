@@ -244,15 +244,15 @@ func (pg *SaveSeedPage) desktopSeedRow(gtx C, row saveSeedRow) D {
 	if pg.IsMobileView() {
 		itemWidth := gtx.Constraints.Max.X / 2 // Divide total width into 2 rows for mobile
 		flexChils = []layout.FlexChild{
-			seedItem(pg.Theme, gtx, itemWidth, row.rowIndex, row.word1),
-			seedItem(pg.Theme, gtx, itemWidth, row.rowIndex+17, row.word2),
+			seedItem(pg.Theme, itemWidth, row.rowIndex, row.word1),
+			seedItem(pg.Theme, itemWidth, row.rowIndex+17, row.word2),
 		}
 	} else {
 		itemWidth := gtx.Constraints.Max.X / 3 // Divide total width into 3 rows for deskop
 		flexChils = []layout.FlexChild{
-			seedItem(pg.Theme, gtx, itemWidth, row.rowIndex, row.word1),
-			seedItem(pg.Theme, gtx, itemWidth, row.rowIndex+11, row.word2),
-			seedItem(pg.Theme, gtx, itemWidth, row.rowIndex+22, row.word3),
+			seedItem(pg.Theme, itemWidth, row.rowIndex, row.word1),
+			seedItem(pg.Theme, itemWidth, row.rowIndex+11, row.word2),
+			seedItem(pg.Theme, itemWidth, row.rowIndex+22, row.word3),
 		}
 	}
 	return cryptomaterial.LinearLayout{
@@ -339,7 +339,7 @@ func (pg *SaveSeedPage) handleCopyEvent(gtx C) {
 	}
 }
 
-func seedItem(theme *cryptomaterial.Theme, gtx C, width, index int, word string) layout.FlexChild {
+func seedItem(theme *cryptomaterial.Theme, width, index int, word string) layout.FlexChild {
 	return layout.Rigid(func(gtx C) D {
 		if word == "" {
 			return D{}

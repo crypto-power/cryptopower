@@ -328,7 +328,7 @@ func (pg *VerifySeedPage) seedListRow(gtx C, index int, multiSeed shuffledSeedWo
 	if multiSeed.selectedIndex != -1 {
 		text = multiSeed.words[multiSeed.selectedIndex]
 	}
-	seedItem := seedItem(pg.Theme, gtx, gtx.Constraints.Max.X, index+1, text)
+	seedItem := seedItem(pg.Theme, gtx.Constraints.Max.X, index+1, text)
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
