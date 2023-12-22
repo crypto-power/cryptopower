@@ -402,18 +402,17 @@ func (pg *ManualCoinSelectionPage) topSection(gtx C) D {
 				Width:       cryptomaterial.WrapContent,
 				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Horizontal,
-				Alignment:   layout.Start,
+				Alignment:   layout.Middle,
 				Clickable:   pg.fromCoinSelection,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
-						Top:   values.MarginPadding8,
 						Right: values.MarginPadding6,
 					}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding8)
+						return pg.Theme.Icons.ChevronLeft.Layout24dp(gtx)
 					})
 				}),
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				layout.Rigid(func(gtx C) D {
 					lbl := pg.Theme.H6(values.String(values.StrCoinSelection))
 					lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
 					return lbl.Layout(gtx)
