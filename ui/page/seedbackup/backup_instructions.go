@@ -66,7 +66,7 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 	}
 
 	for i := range bi.checkBoxes {
-		bi.checkBoxes[i].TextSize = values.TextSize16
+		bi.checkBoxes[i].TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 	}
 
 	bi.infoList = &layout.List{Axis: layout.Vertical}
@@ -78,8 +78,7 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *BackupInstructionsPage) OnNavigatedTo() {
-}
+func (pg *BackupInstructionsPage) OnNavigatedTo() {}
 
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
@@ -120,7 +119,7 @@ func (pg *BackupInstructionsPage) OnNavigatedFrom() {}
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
+func (pg *BackupInstructionsPage) Layout(gtx C) D {
 	sp := components.SubPage{
 		Load:       pg.Load,
 		Title:      values.String(values.StrKeepInMind),
@@ -156,10 +155,10 @@ func (pg *BackupInstructionsPage) verifyCheckBoxes() bool {
 func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Widget, infoText string, actionBtn cryptomaterial.Button, showActionBtn bool) D {
 	bodyLayout := func(gtx C) D {
 		return layout.Stack{}.Layout(gtx,
-			layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			layout.Expanded(func(gtx C) D {
 				return body(gtx)
 			}),
-			layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+			layout.Stacked(func(gtx C) D {
 				if !showActionBtn {
 					return D{}
 				}
@@ -187,12 +186,10 @@ func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Wid
 					layout.Rigid(func(gtx C) D {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return actionBtn.Layout(gtx)
-					}))
+					}),
+				)
 			}),
 		)
 	}
-	if isMobile {
-		return components.UniformMobile(gtx, false, false, bodyLayout)
-	}
-	return cryptomaterial.UniformPadding(gtx, bodyLayout)
+	return cryptomaterial.UniformPadding(gtx, bodyLayout, isMobile)
 }

@@ -248,13 +248,8 @@ func (pg *VerifySeedPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	margin16 := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)
 	sp := components.SubPage{
 		Load:       pg.Load,
 		Title:      values.String(values.StrVerifySeed),
@@ -266,12 +261,12 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding0, Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
 							}),
-							layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrPasteSeedWords)).Layout),
+							layout.Rigid(pg.Theme.Label(textSize16, values.String(values.StrPasteSeedWords)).Layout),
 						)
 					})
 				}),
@@ -279,97 +274,35 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					if pg.toggleSeedInput.IsChecked() {
 						return D{}
 					}
-					label := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectPhrasesToVerify))
+					label := pg.Theme.Label(textSize16, values.String(values.StrSelectPhrasesToVerify))
 					label.Color = pg.Theme.Color.GrayText1
 					return label.Layout(gtx)
 				}),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
 				layout.Rigid(func(gtx C) D {
 					if pg.toggleSeedInput.IsChecked() {
-						return layout.Inset{
-							Top: values.MarginPadding16,
-						}.Layout(gtx, func(gtx C) D {
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.MatchParent,
-								Height:      cryptomaterial.MatchParent,
-								Orientation: layout.Vertical,
-								Margin:      layout.Inset{Bottom: values.MarginPadding16},
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.MatchParent,
+							Orientation: layout.Vertical,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+									return layout.UniformInset(margin16).Layout(gtx, func(gtx C) D {
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-											layout.Rigid(func(gtx layout.Context) D {
-												return layout.Inset{
-													Left:  values.MarginPadding16,
-													Right: values.MarginPadding16,
-													Top:   values.MarginPadding30,
-												}.Layout(gtx, func(gtx C) D {
-													return pg.seedInputEditor.Layout(gtx)
-												})
-											}),
+											layout.Rigid(pg.seedInputEditor.Layout),
+											layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
 											layout.Rigid(func(gtx C) D {
-												return layout.Flex{}.Layout(gtx,
-													layout.Flexed(1, func(gtx C) D {
-														return layout.E.Layout(gtx, func(gtx C) D {
-															return layout.Inset{
-																Left:   values.MarginPadding16,
-																Right:  values.MarginPadding16,
-																Top:    values.MarginPadding16,
-																Bottom: values.MarginPadding16,
-															}.Layout(gtx, func(gtx C) D {
-																pg.verifySeedButton.Text = values.String(values.StrVerify)
-																return pg.verifySeedButton.Layout(gtx)
-															})
-														})
-													}),
-												)
+												gtx.Constraints.Min.X = gtx.Constraints.Max.X
+												pg.verifySeedButton.Text = values.String(values.StrVerify)
+												return layout.E.Layout(gtx, pg.verifySeedButton.Layout)
 											}),
 										)
 									})
-								}),
-							)
-						})
+								})
+							}),
+						)
 					}
-					return layout.Inset{
-						Bottom: values.MarginPadding96,
-					}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.List(pg.list).Layout(gtx, len(pg.multiSeedList), func(gtx C, i int) D {
-							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-								return pg.seedListRow(gtx, i, pg.multiSeedList[i])
-							})
-						})
-					})
-				}),
-			)
-		},
-	}
-
-	pg.actionButton.SetEnabled(pg.allSeedsSelected())
-	layout := func(gtx C) D {
-		return sp.Layout(pg.ParentWindow(), gtx)
-	}
-	if pg.toggleSeedInput.IsChecked() {
-		return container(gtx, false, *pg.Theme, layout, "", pg.actionButton, false)
-	}
-	return container(gtx, false, *pg.Theme, layout, "", pg.actionButton, true)
-}
-
-func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
-	sp := components.SubPage{
-		Load:       pg.Load,
-		Title:      values.String(values.StrVerifySeed),
-		SubTitle:   values.String(values.StrStep2of2),
-		BackButton: pg.backButton,
-		Back: func() {
-			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
-		},
-		Body: func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectPhrasesToVerify))
-					label.Color = pg.Theme.Color.GrayText1
-					return label.Layout(gtx)
-				}),
-				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
 						Bottom: values.MarginPadding96,
 					}.Layout(gtx, func(gtx C) D {
@@ -386,39 +319,37 @@ func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	layout := func(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return container(gtx, true, *pg.Theme, layout, "", pg.actionButton, true)
+	return container(gtx, pg.IsMobileView(), *pg.Theme, layout, "", pg.actionButton, !pg.toggleSeedInput.IsChecked())
 }
 
 func (pg *VerifySeedPage) seedListRow(gtx C, index int, multiSeed shuffledSeedWords) D {
+	marginPading16 := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)
+	text := "-"
+	if multiSeed.selectedIndex != -1 {
+		text = multiSeed.words[multiSeed.selectedIndex]
+	}
+	seedItem := seedItem(pg.Theme, gtx, gtx.Constraints.Max.X, index+1, text)
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Background:  pg.Theme.Color.Surface,
 		Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
-		Margin:      layout.Inset{Top: values.MarginPadding4, Bottom: values.MarginPadding4},
-		Padding:     layout.Inset{Top: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding8, Left: values.MarginPadding16},
+		Margin:      components.VerticalInset(values.MarginPadding4),
+		Padding:     layout.Inset{Top: marginPading16, Right: marginPading16, Bottom: values.MarginPadding8, Left: marginPading16},
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			text := "-"
-			if multiSeed.selectedIndex != -1 {
-				text = multiSeed.words[multiSeed.selectedIndex]
-			}
-			return seedItem(pg.Theme, gtx, gtx.Constraints.Max.X, index+1, text)
-		}),
+		seedItem,
+		layout.Rigid(layout.Spacer{Height: marginPading16}.Layout),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
-			return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-				widgets := []layout.Widget{
-					func(gtx C) D { return pg.seedButton(gtx, 0, multiSeed) },
-					func(gtx C) D { return pg.seedButton(gtx, 1, multiSeed) },
-					func(gtx C) D { return pg.seedButton(gtx, 2, multiSeed) },
-					func(gtx C) D { return pg.seedButton(gtx, 3, multiSeed) },
-				}
-				return pg.listGroupSeed[index].Layout(gtx, len(widgets), func(gtx C, i int) D {
-					return layout.UniformInset(values.MarginPadding0).Layout(gtx, widgets[i])
-				})
+			widgets := []layout.Widget{
+				func(gtx C) D { return pg.seedButton(gtx, 0, multiSeed) },
+				func(gtx C) D { return pg.seedButton(gtx, 1, multiSeed) },
+				func(gtx C) D { return pg.seedButton(gtx, 2, multiSeed) },
+				func(gtx C) D { return pg.seedButton(gtx, 3, multiSeed) },
+			}
+			return pg.listGroupSeed[index].Layout(gtx, len(widgets), func(gtx C, i int) D {
+				return widgets[i](gtx)
 			})
 		}),
 	)
@@ -433,14 +364,20 @@ func (pg *VerifySeedPage) seedButton(gtx C, index int, multiSeed shuffledSeedWor
 	}
 
 	return multiSeed.clickables[index].Layout(gtx, func(gtx C) D {
+		width := values.MarginPadding100
+		height := values.MarginPadding40
+		if pg.IsMobileView() {
+			width = values.MarginPadding85
+			height = values.MarginPadding30
+		}
 		return cryptomaterial.LinearLayout{
-			Width:      gtx.Dp(values.MarginPadding100),
-			Height:     gtx.Dp(values.MarginPadding40),
+			Width:      gtx.Dp(width),
+			Height:     gtx.Dp(height),
 			Background: pg.Theme.Color.Surface,
 			Direction:  layout.Center,
 			Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(8), Color: borderColor, Width: values.MarginPadding2},
 		}.Layout2(gtx, func(gtx C) D {
-			label := pg.Theme.Label(values.TextSize16, multiSeed.words[index])
+			label := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), multiSeed.words[index])
 			label.Color = textColor
 			return label.Layout(gtx)
 		})
