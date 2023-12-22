@@ -17,7 +17,6 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	dexbtc "decred.org/dcrdex/client/asset/btc"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/dexc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -1046,18 +1045,11 @@ func (pg *DEXOnboarding) postBond() {
 	postBondFn := func(walletPass string) {
 		// Add bond wallet to core if it does not exist.
 		if !pg.dexc.HasWallet(int32(bondAsset.ID)) {
-			cfg := map[string]string{
-				dexc.DexWalletIDConfigKey: fmt.Sprintf("%d", asset.GetWalletID()),
-			}
-
 			selectedAcct := pg.bondSourceAccountSelector.SelectedAccount()
-			if asset.GetAssetType() == libutils.BTCWalletAsset {
-				cfg[dexbtc.WalletAccountNameConfigKey] = selectedAcct.Name
-				cfg[dexbtc.WalletAccountNumberConfigKey] = fmt.Sprint(selectedAcct.AccountNumber)
-			} else if asset.GetAssetType() == libutils.DCRWalletAsset {
-				// TODO: Remove this config value if using latest dex pkg
-				// version(i.e > 0.6.3).
-				cfg[dexc.DexDcrWalletAccountNameConfigKey] = selectedAcct.Name
+			cfg := map[string]string{
+				dexc.WalletIDConfigKey:            fmt.Sprintf("%d", asset.GetWalletID()),
+				dexc.WalletAccountNameConfigKey:   selectedAcct.Name,
+				dexc.WalletAccountNumberConfigKey: fmt.Sprint(selectedAcct.AccountNumber),
 			}
 
 			err := pg.dexc.AddWallet(*postBond.Asset, cfg, pg.dexPass, []byte(walletPass))

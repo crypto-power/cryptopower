@@ -950,12 +950,12 @@ func (mgr *AssetsManager) PrepareDexSupportForDCRWallet() error {
 	// for use by the dex dcr ExchangeWallet.
 	customWalletConfigOpts := []*asset.ConfigOption{
 		{
-			Key:         dexc.DexWalletIDConfigKey,
+			Key:         dexc.WalletIDConfigKey,
 			DisplayName: "Wallet ID",
 			Description: "ID of existing wallet to use",
 		},
 		{
-			Key:         dexc.DexDcrWalletAccountNameConfigKey,
+			Key:         dexc.WalletAccountNameConfigKey,
 			DisplayName: "Wallet Account Name",
 			Description: "Account name of the selected wallet",
 		},
@@ -971,7 +971,7 @@ func (mgr *AssetsManager) PrepareDexSupportForDCRWallet() error {
 	// setup a dcr ExchangeWallet; it allows us to use an existing
 	// wallet instance for wallet operations instead of json-rpc.
 	var walletMaker = func(settings map[string]string, chainParams *dcrcfg.Params, logger dex.Logger) (dexDcr.Wallet, error) {
-		walletIDStr := settings[dexc.DexWalletIDConfigKey]
+		walletIDStr := settings[dexc.WalletIDConfigKey]
 		walletID, err := strconv.Atoi(walletIDStr)
 		if err != nil || walletID < 0 {
 			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
@@ -992,7 +992,7 @@ func (mgr *AssetsManager) PrepareDexSupportForDCRWallet() error {
 		}
 
 		// Ensure the accountName exists.
-		accountName := settings[dexc.DexDcrWalletAccountNameConfigKey]
+		accountName := settings[dexc.WalletAccountNameConfigKey]
 		if _, err = wallet.AccountNumber(accountName); err != nil {
 			return nil, fmt.Errorf("error checking selected DEX account: %w", err)
 		}
@@ -1020,17 +1020,17 @@ func (mgr *AssetsManager) PrepareDexSupportForBTCWallet() error {
 	// the dexbtc.ExchangeWalletSPV.
 	customWalletConfigOpts := []*asset.ConfigOption{
 		{
-			Key:         dexc.DexWalletIDConfigKey,
+			Key:         dexc.WalletIDConfigKey,
 			DisplayName: "Wallet ID",
 			Description: "ID of existing wallet to use",
 		},
 		{
-			Key:         dexbtc.WalletAccountNameConfigKey,
+			Key:         dexc.WalletAccountNameConfigKey,
 			DisplayName: "Wallet Account Name",
 			Description: "Account name of the selected wallet",
 		},
 		{
-			Key:         dexbtc.WalletAccountNumberConfigKey,
+			Key:         dexc.WalletAccountNumberConfigKey,
 			DisplayName: "Wallet Account Number",
 			Description: "Account number of the selected wallet",
 		},
@@ -1046,7 +1046,7 @@ func (mgr *AssetsManager) PrepareDexSupportForBTCWallet() error {
 	// dexbtc.BTCWallet; it allows us to use an existing wallet instance for
 	// wallet operations instead of json-rpc.
 	var btcWalletConstructor = func(settings map[string]string, chainParams *btccfg.Params) (dexbtc.BTCWallet, error) {
-		walletIDStr := settings[dexc.DexWalletIDConfigKey]
+		walletIDStr := settings[dexc.WalletIDConfigKey]
 		walletID, err := strconv.Atoi(walletIDStr)
 		if err != nil || walletID < 0 {
 			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
@@ -1066,20 +1066,29 @@ func (mgr *AssetsManager) PrepareDexSupportForBTCWallet() error {
 			return nil, fmt.Errorf("cannot use watch only wallet for DEX trade")
 		}
 
+		acct := dexbtc.XCWalletAccount{
+			AccountName: settings[dexc.WalletAccountNameConfigKey],
+		}
+
 		// Ensure the wallet account name exists.
-		accountName := settings[dexbtc.WalletAccountNameConfigKey]
-		accountNumber, err := wallet.AccountNumber(accountName)
+		accountNumber, err := wallet.AccountNumber(acct.AccountName)
 		if err != nil {
-			return nil, fmt.Errorf("error checking selected DEX account: %w", err)
+			return nil, fmt.Errorf("error checking selected DEX account name: %w", err)
 		}
 
-		configAcctNumber, accountNumberStr := settings[dexbtc.WalletAccountNumberConfigKey], fmt.Sprint(accountNumber)
-		if configAcctNumber != accountNumberStr {
+		configAcctNumber, accountNumberStr := settings[dexc.WalletAccountNumberConfigKey], fmt.Sprint(accountNumber)
+		if configAcctNumber == accountNumberStr {
+			acctNumber, err := strconv.ParseInt(configAcctNumber, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			acct.AccountNumber = uint32(acctNumber)
+		} else {
 			return nil, fmt.Errorf("config account number for wallet account(%s) does not match actual account number, expected %s got %s",
-				accountName, accountNumberStr, configAcctNumber)
+				acct.AccountName, accountNumberStr, configAcctNumber)
 		}
 
-		return btc.NewDEXWallet(wallet.(*btc.Asset)), nil
+		return btc.NewDEXWallet(acct, wallet.Internal().BTC, wallet.(*btc.Asset).NeutrinoClient()), nil
 	}
 
 	err := dexbtc.RegisterCustomSPVWallet(btcWalletConstructor, def)

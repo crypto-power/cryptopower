@@ -16,33 +16,57 @@ import (
 	dexbtc "decred.org/dcrdex/client/asset/btc"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/btcutil/gcs"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wtxmgr"
+	"github.com/lightninglabs/neutrino"
+	"github.com/lightninglabs/neutrino/headerfs"
 )
 
 // DEXWallet wraps *wallet.Wallet and implements dexbtc.BTCWallet.
 type DEXWallet struct {
-	*wallet.Wallet // Implements most of dexbtc.BTCWallet
-	asset          *Asset
+	*wallet.Wallet
+	acct       dexbtc.XCWalletAccount
+	spvService *btcChainService
 }
 
 var _ dexbtc.BTCWallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(asset *Asset) *DEXWallet {
+func NewDEXWallet(acct dexbtc.XCWalletAccount, w *wallet.Wallet, nc *chain.NeutrinoClient) *DEXWallet {
 	return &DEXWallet{
-		Wallet: asset.Internal().BTC,
-		asset:  asset,
+		Wallet: w,
+		acct:   acct,
+		spvService: &btcChainService{
+			NeutrinoClient: nc,
+		},
 	}
 }
 
 // The below methods are not implemented by *wallet.Wallet, so must be
 // implemented by the BTCWallet implementation.
+
+func (dw *DEXWallet) Start() (dexbtc.SPVService, error) {
+	return dw.spvService, nil
+}
+
+func (dw *DEXWallet) Birthday() time.Time {
+	return dw.Manager.Birthday()
+}
+
+func (dw *DEXWallet) SyncedTo() waddrmgr.BlockStamp {
+	return dw.Wallet.Manager.SyncedTo()
+}
+
+func (dw *DEXWallet) AccountInfo() dexbtc.XCWalletAccount {
+	return dw.acct
+}
 
 func (dw *DEXWallet) WalletTransaction(txHash *chainhash.Hash) (*wtxmgr.TxDetails, error) {
 	details, err := wallet.UnstableAPI(dw.Wallet).TxDetails(txHash)
@@ -54,10 +78,6 @@ func (dw *DEXWallet) WalletTransaction(txHash *chainhash.Hash) (*wtxmgr.TxDetail
 	}
 
 	return details, nil
-}
-
-func (dw *DEXWallet) SyncedTo() waddrmgr.BlockStamp {
-	return dw.Wallet.Manager.SyncedTo()
 }
 
 func (dw *DEXWallet) SignTx(tx *wire.MsgTx) error {
@@ -104,28 +124,8 @@ func (dw *DEXWallet) BlockNotifications(ctx context.Context) <-chan *dexbtc.Bloc
 	return ch
 }
 
-func (dw *DEXWallet) RescanAsync() error {
-	return dw.asset.rescanAsync()
-}
-
-func (dw *DEXWallet) ForceRescan() {
-	dw.asset.forceRescan()
-}
-
-func (dw *DEXWallet) Start() (dexbtc.SPVService, error) {
-	return dw.asset.chainClient, nil
-}
-
-func (dw *DEXWallet) Reconfigure(*asset.WalletConfig, string) (bool, error) {
-	return false, errors.New("Reconfigure not supported for Cyptopower btc wallet")
-}
-
-func (dw *DEXWallet) Birthday() time.Time {
-	return dw.Manager.Birthday()
-}
-
 func (dw *DEXWallet) Peers() ([]*asset.WalletPeer, error) {
-	peers := dw.asset.chainClient.CS.Peers()
+	peers := dw.spvService.CS.Peers()
 	var walletPeers []*asset.WalletPeer
 	for i := range peers {
 		p := peers[i]
@@ -139,13 +139,63 @@ func (dw *DEXWallet) Peers() ([]*asset.WalletPeer, error) {
 }
 
 func (dw *DEXWallet) AddPeer(address string) error {
-	dw.asset.SetSpecificPeer(address)
-	return nil
+	return errors.New("AddPeer not implemented by DEX wallet")
 }
 
 func (dw *DEXWallet) RemovePeer(address string) error {
-	dw.asset.RemoveSpecificPeer(address)
-	return nil
+	return errors.New("RemovePeer not implemented by DEX wallet")
+}
+
+func (dw *DEXWallet) RescanAsync() error {
+	return errors.New("RescanAsync not implemented for Cyptopower btc wallet")
+}
+
+func (dw *DEXWallet) ForceRescan() {}
+
+func (dw *DEXWallet) Reconfigure(*asset.WalletConfig, string) (bool, error) {
+	return false, errors.New("Reconfigure not supported for Cyptopower btc wallet")
+}
+
+// btcChainService wraps *chain.NeutrinoClient in order to translate the
+// neutrino.ServerPeer to the SPVPeer interface type as required by the dex btc
+// pkg.
+type btcChainService struct {
+	*chain.NeutrinoClient
+}
+
+var _ dexbtc.SPVService = (*btcChainService)(nil)
+
+func (s *btcChainService) Peers() []dexbtc.SPVPeer {
+	rawPeers := s.CS.Peers()
+	peers := make([]dexbtc.SPVPeer, 0, len(rawPeers))
+	for _, p := range rawPeers {
+		peers = append(peers, p)
+	}
+	return peers
+}
+
+func (s *btcChainService) AddPeer(addr string) error {
+	return s.CS.ConnectNode(addr, true)
+}
+
+func (s *btcChainService) RemovePeer(addr string) error {
+	return s.CS.RemoveNodeByAddr(addr)
+}
+
+func (s *btcChainService) BestBlock() (*headerfs.BlockStamp, error) {
+	return s.CS.BestBlock()
+}
+
+func (s *btcChainService) GetBlock(blockHash chainhash.Hash, options ...neutrino.QueryOption) (*btcutil.Block, error) {
+	return s.CS.GetBlock(blockHash, options...)
+}
+
+func (s *btcChainService) GetCFilter(blockHash chainhash.Hash, filterType wire.FilterType, options ...neutrino.QueryOption) (*gcs.Filter, error) {
+	return s.NeutrinoClient.CS.GetCFilter(blockHash, filterType, options...)
+}
+
+func (s *btcChainService) Stop() error {
+	return s.CS.Stop()
 }
 
 // secretSource is used to locate keys and redemption scripts while signing a

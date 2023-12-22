@@ -542,7 +542,7 @@ func (dw *DEXWallet) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (
 
 // Part of the Wallet interface.
 func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ dex.Network, _ string) (restart bool, err error) {
-	return false, nil
+	return false, errors.New("Reconfigure not implemented by Cryptopower DEX wallet")
 }
 
 // These methods are part of Wallet interface but required only by the
@@ -551,30 +551,30 @@ func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ 
 // PurchaseTickets purchases n tickets. vspHost and vspPubKey only
 // needed for internal wallets.
 func (dw *DEXWallet) PurchaseTickets(ctx context.Context, n int, vspHost, vspPubKey string) ([]*dexasset.Ticket, error) {
-	return nil, nil
+	return nil, errors.New("PurchaseTickets not implemented by Cryptopower DEX wallet")
 }
 
 // Tickets returns current active ticket hashes up until they are voted
 // or revoked. Includes unconfirmed tickets.
 func (dw *DEXWallet) Tickets(ctx context.Context) ([]*dexasset.Ticket, error) {
-	return nil, nil
+	return nil, errors.New("Tickets not implemented by Cryptopower DEX wallet")
 }
 
 // VotingPreferences returns current voting preferences.
 func (dw *DEXWallet) VotingPreferences(ctx context.Context) ([]*walletjson.VoteChoice, []*dexasset.TBTreasurySpend, []*walletjson.TreasuryPolicyResult, error) {
-	return []*walletjson.VoteChoice{}, []*dexasset.TBTreasurySpend{}, []*walletjson.TreasuryPolicyResult{}, nil
+	return []*walletjson.VoteChoice{}, []*dexasset.TBTreasurySpend{}, []*walletjson.TreasuryPolicyResult{}, errors.New("VotingPreferences not implemented by Cryptopower DEX wallet")
 }
 
 // SetVotingPreferences sets preferences used when a ticket is chosen to
 // be voted on.
 func (dw *DEXWallet) SetVotingPreferences(ctx context.Context, choices, tspendPolicy, treasuryPolicy map[string]string) error {
-	return nil
+	return errors.New("SetVotingPreferences not implemented by Cryptopower DEX wallet")
 }
 
 func (dw *DEXWallet) SetTxFee(ctx context.Context, feePerKB dcrutil.Amount) error {
-	return nil
+	return errors.New("SetTxFee not implemented by Cryptopower DEX wallet")
 }
 
 func (dw *DEXWallet) StakeInfo(ctx context.Context) (*dcrwallet.StakeInfoData, error) {
-	return nil, nil
+	return nil, errors.New("StakeInfo not implemented by Cryptopower DEX wallet")
 }
