@@ -343,7 +343,9 @@ func (asset *Asset) prepareChain() error {
 		return err
 	}
 
-	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
+	asset.chainClient = &btcChainService{
+		NeutrinoClient: chain.NewNeutrinoClient(asset.chainParams, chainService),
+	}
 
 	return nil
 }
@@ -510,7 +512,7 @@ func (asset *Asset) startSync() error {
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
 	// Initializes the goroutines handling chain notifications, rescan progress and handlers.
-	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+	asset.Internal().BTC.SynchronizeRPC(asset.chainClient.NeutrinoClient)
 
 	select {
 	// Wait for 5 seconds so that all goroutines initialized in SynchronizeRPC()

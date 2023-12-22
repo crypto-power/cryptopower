@@ -21,10 +21,10 @@ import (
 	walleterrors "decred.org/dcrwallet/v3/errors"
 	walletjson "decred.org/dcrwallet/v3/rpc/jsonrpc/types"
 	dcrwallet "decred.org/dcrwallet/v3/wallet"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/blockchain/stake/v5"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrutil/v4"
 	chainjson "github.com/decred/dcrd/rpc/jsonrpc/types/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
@@ -33,17 +33,19 @@ import (
 
 // DEXWallet wraps *Asset and implements dexdcr.Wallet.
 type DEXWallet struct {
-	*sharedW.Wallet
-	syncData *SyncData
+	*Asset
+	syncData           *SyncData
+	tradingAccountName string
 }
 
 var _ dexdcr.Wallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(w *sharedW.Wallet, syncData *SyncData) *DEXWallet {
+func NewDEXWallet(tradingAccountName string, w *Asset, syncData *SyncData) *DEXWallet {
 	return &DEXWallet{
-		Wallet:   w,
-		syncData: syncData,
+		Asset:              w,
+		syncData:           syncData,
+		tradingAccountName: tradingAccountName,
 	}
 }
 
@@ -62,6 +64,46 @@ func (dw *DEXWallet) Disconnect() {}
 // Part of the Wallet interface.
 func (dw *DEXWallet) SpvMode() bool {
 	return true
+}
+
+// Accounts returns the names of the accounts for use by the exchange wallet.
+func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
+	accts := dexdcr.XCWalletAccounts{
+		PrimaryAccount: dw.tradingAccountName,
+	}
+
+	if !dw.IsAccountMixerActive() {
+		return accts
+	}
+
+	unMixedAcctNum := dw.UnmixedAccountNumber()
+	mixedAcctNum := dw.MixedAccountNumber()
+	accounts, err := dw.GetAccountsRaw()
+	if err != nil {
+		log.Errorf("error loading mixer account. %s", err)
+		return accts
+	}
+
+	var mixedAccName, unMixedAcctName string
+	for _, acct := range accounts.Accounts {
+		if acct.Number == unMixedAcctNum {
+			unMixedAcctName = acct.Name
+		} else if acct.Number == mixedAcctNum {
+			mixedAccName = acct.Name
+		}
+	}
+
+	// We only care about the default account.
+	if mixedAccName == "" {
+		log.Errorf("Account name not found for mixed account number %d", mixedAcctNum)
+		return accts
+	}
+
+	return dexdcr.XCWalletAccounts{
+		PrimaryAccount: mixedAccName,
+		UnmixedAccount: unMixedAcctName,
+		TradingAccount: dw.tradingAccountName,
+	}
 }
 
 // NotifyOnTipChange is not used, in favor of the tipNotifier pattern. See:
@@ -499,6 +541,40 @@ func (dw *DEXWallet) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (
 }
 
 // Part of the Wallet interface.
-func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ dex.Network, _, _ string) (restart bool, err error) {
+func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ dex.Network, _ string) (restart bool, err error) {
 	return false, nil
+}
+
+// These methods are part of Wallet interface but required only by the
+// dexasset.TicketBuyer interface, leave unimplemented.
+
+// PurchaseTickets purchases n tickets. vspHost and vspPubKey only
+// needed for internal wallets.
+func (dw *DEXWallet) PurchaseTickets(ctx context.Context, n int, vspHost, vspPubKey string) ([]*dexasset.Ticket, error) {
+	return nil, nil
+}
+
+// Tickets returns current active ticket hashes up until they are voted
+// or revoked. Includes unconfirmed tickets.
+func (dw *DEXWallet) Tickets(ctx context.Context) ([]*dexasset.Ticket, error) {
+	return nil, nil
+}
+
+// VotingPreferences returns current voting preferences.
+func (dw *DEXWallet) VotingPreferences(ctx context.Context) ([]*walletjson.VoteChoice, []*dexasset.TBTreasurySpend, []*walletjson.TreasuryPolicyResult, error) {
+	return []*walletjson.VoteChoice{}, []*dexasset.TBTreasurySpend{}, []*walletjson.TreasuryPolicyResult{}, nil
+}
+
+// SetVotingPreferences sets preferences used when a ticket is chosen to
+// be voted on.
+func (dw *DEXWallet) SetVotingPreferences(ctx context.Context, choices, tspendPolicy, treasuryPolicy map[string]string) error {
+	return nil
+}
+
+func (dw *DEXWallet) SetTxFee(ctx context.Context, feePerKB dcrutil.Amount) error {
+	return nil
+}
+
+func (dw *DEXWallet) StakeInfo(ctx context.Context) (*dcrwallet.StakeInfoData, error) {
+	return nil, nil
 }

@@ -116,7 +116,8 @@ require (
 	github.com/decred/dcrd/txscript/v3 v3.0.0 // indirect
 	github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e // indirect
 	github.com/decred/go-socks v1.1.0 // indirect
-	github.com/decred/vspd/client/v2 v2.0.0 // indirect
+	github.com/decred/vspd/client/v2 v2.1.0 // indirect
+	github.com/decred/vspd/types v1.1.0 // indirect
 	github.com/decred/vspd/types/v2 v2.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.1-0.20210705192016-249ff6c91207 // indirect
@@ -227,3 +228,5 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // neccessary to work with dcrdex which has latest version of
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
+
+replace decred.org/dcrdex v0.6.3 => ../../decred/dcrdex

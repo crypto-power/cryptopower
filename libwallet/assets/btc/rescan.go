@@ -159,7 +159,7 @@ func (asset *Asset) rescanAsync() error {
 	}
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+	asset.Internal().BTC.SynchronizeRPC(asset.chainClient.NeutrinoClient)
 	return nil
 }
 
@@ -379,7 +379,7 @@ func (asset *Asset) getblockStamp(height int32) (*waddrmgr.BlockStamp, error) {
 		return nil, fmt.Errorf("invalid block height provided: Error: %v", err)
 	}
 
-	block, err := asset.chainClient.GetBlock(startHash)
+	block, err := asset.chainClient.NeutrinoClient.GetBlock(startHash)
 	if err != nil {
 		return nil, fmt.Errorf("invalid block hash provided: Error: %v", err)
 	}

@@ -1,6 +1,7 @@
 package dcrdex
 
 import (
+	"context"
 	"fmt"
 	"image"
 	"image/color"
@@ -16,6 +17,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	dexbtc "decred.org/dcrdex/client/asset/btc"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/dexc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -95,7 +97,9 @@ type DEXOnboarding struct {
 
 	scrollContainer *widget.List
 
-	dexc dexClient
+	ctx       context.Context
+	cancelCtx context.CancelFunc
+	dexc      dexClient
 
 	currentStep     onboardingStep
 	onBoardingSteps map[onboardingStep]dexOnboardingStep
@@ -214,6 +218,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) OnNavigatedTo() {
+	pg.ctx, pg.cancelCtx = context.WithCancel(context.Background())
 	pg.checkForPendingBondPayment()
 }
 
@@ -225,6 +230,8 @@ func (pg *DEXOnboarding) OnNavigatedTo() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) OnNavigatedFrom() {
+	pg.cancelCtx()
+
 	// Empty dex pass
 	for i := range pg.dexPass {
 		pg.dexPass[i] = 0
@@ -1032,6 +1039,7 @@ func (pg *DEXOnboarding) postBond() {
 		Cert:         pg.bondServer.cert,
 		FeeBuffer:    pg.dexc.BondsFeeBuffer(bondAsset.ID),
 		MaintainTier: &maintainTier,
+		// LockTime:     uint64(time.Now().Add(5 * time.Hour).Unix()), // TODO: For testing and early refund.
 	}
 
 	// postBondFn sends the actual request to post bond.
@@ -1039,8 +1047,17 @@ func (pg *DEXOnboarding) postBond() {
 		// Add bond wallet to core if it does not exist.
 		if !pg.dexc.HasWallet(int32(bondAsset.ID)) {
 			cfg := map[string]string{
-				dexc.DexDcrWalletIDConfigKey:          fmt.Sprintf("%d", asset.GetWalletID()),
-				dexc.DexDcrWalletAccountNameConfigKey: pg.bondSourceAccountSelector.SelectedAccount().AccountName,
+				dexc.DexWalletIDConfigKey: fmt.Sprintf("%d", asset.GetWalletID()),
+			}
+
+			selectedAcct := pg.bondSourceAccountSelector.SelectedAccount()
+			if asset.GetAssetType() == libutils.BTCWalletAsset {
+				cfg[dexbtc.WalletAccountNameConfigKey] = selectedAcct.Name
+				cfg[dexbtc.WalletAccountNumberConfigKey] = fmt.Sprint(selectedAcct.AccountNumber)
+			} else if asset.GetAssetType() == libutils.DCRWalletAsset {
+				// TODO: Remove this config value if using latest dex pkg
+				// version(i.e > 0.6.3).
+				cfg[dexc.DexDcrWalletAccountNameConfigKey] = selectedAcct.Name
 			}
 
 			err := pg.dexc.AddWallet(*postBond.Asset, cfg, pg.dexPass, []byte(walletPass))
@@ -1087,6 +1104,23 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 	pg.currentStep = onBoardingStepWaitForConfirmation
 	pg.scrollContainer.Position.Offset = 0
 
+	noteFeed := pg.dexc.NotificationFeed()
+	go func() {
+		for {
+			select {
+			case n := <-noteFeed.C:
+				if n.Topic() == core.TopicBondConfirmed {
+					noteFeed.ReturnFeed()
+					pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load))
+					return
+				}
+			case <-pg.ctx.Done():
+				noteFeed.ReturnFeed()
+				return
+			}
+		}
+	}()
+
 	// Listen for new block updates. This listener is removed in
 	// OnNavigateFrom().
 	asset := pg.bondSourceAccountSelector.SelectedWallet()
@@ -1094,11 +1128,7 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 	asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
 		OnBlockAttached: func(_ int, _ int32) {
 			pg.bondConfirmationInfo.currentBondConf++
-			if pg.bondConfirmationInfo.currentBondConf >= int32(pg.bondConfirmationInfo.requiredBondConf) {
-				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load))
-			} else {
-				pg.ParentWindow().Reload()
-			}
+			pg.ParentWindow().Reload()
 		},
 	}, DEXOnboardingPageID)
 }

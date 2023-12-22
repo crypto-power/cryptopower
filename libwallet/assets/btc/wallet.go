@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	dexbtc "decred.org/dcrdex/client/asset/btc"
 	"decred.org/dcrwallet/v3/errors"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
@@ -37,7 +38,7 @@ var _ sharedW.Asset = (*Asset)(nil)
 type Asset struct {
 	*sharedW.Wallet
 
-	chainClient    *chain.NeutrinoClient
+	chainClient    *btcChainService
 	chainParams    *chaincfg.Params
 	TxAuthoredInfo *TxAuthor
 
@@ -73,19 +74,47 @@ const (
 	defaultDBTimeout = time.Duration(100)
 )
 
-// neutrinoService is satisfied by *neutrino.ChainService.
-type neutrinoService interface {
-	GetBlockHash(int64) (*chainhash.Hash, error)
-	BestBlock() (*headerfs.BlockStamp, error)
-	Peers() []*neutrino.ServerPeer
-	GetBlockHeight(hash *chainhash.Hash) (int32, error)
-	GetBlockHeader(*chainhash.Hash) (*wire.BlockHeader, error)
-	GetCFilter(blockHash chainhash.Hash, filterType wire.FilterType, options ...neutrino.QueryOption) (*gcs.Filter, error)
-	GetBlock(blockHash chainhash.Hash, options ...neutrino.QueryOption) (*btcutil.Block, error)
-	Stop() error
+// btcChainService wraps *chain.NeutrinoClient in order to translate the
+// neutrino.ServerPeer to the SPVPeer interface type as required by the dex btc
+// pkg.
+type btcChainService struct {
+	*chain.NeutrinoClient
 }
 
-var _ neutrinoService = (*neutrino.ChainService)(nil)
+func (s *btcChainService) Peers() []dexbtc.SPVPeer {
+	rawPeers := s.CS.Peers()
+	peers := make([]dexbtc.SPVPeer, 0, len(rawPeers))
+	for _, p := range rawPeers {
+		peers = append(peers, p)
+	}
+	return peers
+}
+
+func (s *btcChainService) AddPeer(addr string) error {
+	return s.CS.ConnectNode(addr, true)
+}
+
+func (s *btcChainService) RemovePeer(addr string) error {
+	return s.CS.RemoveNodeByAddr(addr)
+}
+
+func (s *btcChainService) BestBlock() (*headerfs.BlockStamp, error) {
+	return s.NeutrinoClient.CS.BestBlock()
+}
+
+func (s *btcChainService) GetBlock(blockHash chainhash.Hash, options ...neutrino.QueryOption) (*btcutil.Block, error) {
+	return s.CS.GetBlock(blockHash, options...)
+}
+
+func (s *btcChainService) GetCFilter(blockHash chainhash.Hash, filterType wire.FilterType, options ...neutrino.QueryOption) (*gcs.Filter, error) {
+	return s.CS.GetCFilter(blockHash, filterType, options...)
+}
+
+func (s *btcChainService) Stop() error {
+	return s.CS.Stop()
+}
+
+var _ dexbtc.SPVService = (*btcChainService)(nil)
 
 // CreateNewWallet creates a new wallet for the BTC asset.
 func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -142,7 +171,7 @@ func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.Ass
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the BTC asset. It then generates the BTC loader interface
 // that is passed to be used upstream while creating the watch only wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -479,6 +508,33 @@ func (asset *Asset) SetSpecificPeer(address string) {
 	// Prevent setting same address twice
 	if !strings.Contains(address, ";") && !strings.Contains(knownAddr, address) {
 		knownAddr += ";" + address
+	}
+
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, knownAddr)
+	go func() {
+		err := asset.reloadChainService()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+}
+
+func (asset *Asset) RemoveSpecificPeer(address string) {
+	sep := ";"
+	knownAddr := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+
+	addrs1, addrs2, found := strings.Cut(knownAddr, address)
+	if !found {
+		return
+	}
+
+	addrs1 = strings.TrimSuffix(addrs1, sep)
+	addrs2 = strings.TrimPrefix(addrs2, sep)
+	addrs := addrs1
+	if addrs1 == "" {
+		addrs = addrs2
+	} else if addrs2 != "" {
+		addrs += sep + addrs2
 	}
 
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, knownAddr)

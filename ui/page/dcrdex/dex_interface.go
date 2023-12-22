@@ -15,5 +15,5 @@ type dexClient interface {
 	HasWallet(assetID int32) bool
 	AddWallet(assetID uint32, settings map[string]string, appPW, walletPW []byte) error
 	PostBond(form *core.PostBondForm) (*core.PostBondResult, error)
-	NotificationFeed() <-chan core.Notification
+	NotificationFeed() *core.NoteFeed
 }
