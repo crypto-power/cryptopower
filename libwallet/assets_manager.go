@@ -1006,7 +1006,7 @@ func (mgr *AssetsManager) PrepareDexSupportForDCRWallet() error {
 	}
 
 	err := dexDcr.RegisterCustomWallet(walletMaker, def)
-	if err != nil && !errors.Is(err, dexasset.ErrWalletTypeAlreadySupported) { // this is the only error from RegisterCustomWallet, ignore?
+	if err != nil && !errors.Is(err, dexasset.ErrWalletTypeAlreadyRegistered) { // this is the only error from RegisterCustomWallet, ignore?
 		return err
 	}
 
@@ -1092,7 +1092,7 @@ func (mgr *AssetsManager) PrepareDexSupportForBTCWallet() error {
 	}
 
 	err := dexbtc.RegisterCustomSPVWallet(btcWalletConstructor, def)
-	if err != nil && !errors.Is(err, dexasset.ErrWalletTypeAlreadySupported) { // this is the only error from RegisterCustomSPVWallet, ignore?
+	if err != nil && !errors.Is(err, dexasset.ErrWalletTypeAlreadyRegistered) { // this is the only error from RegisterCustomSPVWallet, ignore?
 		return err
 	}
 
