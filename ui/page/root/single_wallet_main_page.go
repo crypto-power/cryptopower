@@ -784,7 +784,7 @@ func (swmp *SingleWalletMasterPage) showBackupInfo() {
 		SetPositiveButtonCallback(func(_ bool, m *modal.InfoModal) bool {
 			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(load *load.Load, navigator app.WindowNavigator) {
 				swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
-				swmp.ParentNavigator().CloseCurrentPage()
+				swmp.ParentNavigator().ClosePagesAfter(MainPageID)
 			}))
 			return true
 		})
