@@ -46,7 +46,7 @@ type ManualCoinSelectionPage struct {
 	*app.GenericPageModal
 	// modalLayout is initialized if this page will be displayed as a modal
 	// rather than a full page. A modal display is used and a wallet selector is
-	// displayed if this send page is opened from the home page.
+	// displayed if this coin selection page is opened from the send page modal.
 	modalLayout *cryptomaterial.Modal
 
 	ctx       context.Context // page context
@@ -91,7 +91,6 @@ type ManualCoinSelectionPage struct {
 	strAssetType      string
 
 	sendPage *Page
-	backdrop *widget.Clickable
 }
 
 type componentProperties struct {
@@ -123,11 +122,10 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 		UTXOList:    l.Theme.NewClickableList(layout.Vertical),
 		addressCopy: make([]*cryptomaterial.Clickable, 0),
 		sendPage:    sendPage,
-		backdrop:    new(widget.Clickable),
 	}
 
 	if sendPage.modalLayout != nil {
-		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend))
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrCoinSelection))
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 	} else {
 		pg.GenericPageModal = app.NewGenericPageModal(ManualCoinSelectionPageID)
