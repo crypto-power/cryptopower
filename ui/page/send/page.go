@@ -53,9 +53,6 @@ type Page struct {
 	// retryExchange cryptomaterial.Button // TODO not included in design
 	nextButton cryptomaterial.Button
 
-	// shadowBox *cryptomaterial.Shadow
-	// backdrop  *widget.Clickable
-
 	isFetchingExchangeRate bool
 
 	exchangeRate   float64
@@ -105,9 +102,7 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		Load: l,
 
 		authoredTxData: &authoredTxData{},
-		// shadowBox:      l.Theme.Shadow(),
-		// backdrop:       new(widget.Clickable),
-		exchangeRate: -1,
+		exchangeRate:   -1,
 	}
 
 	if wallet == nil {

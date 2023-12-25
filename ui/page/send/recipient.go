@@ -269,23 +269,35 @@ func (rp *recipient) addressAndAmountlayout(gtx C) D {
 	widget := func(gtx C) D { return rp.amount.amountEditor.Layout(gtx) }
 	if rp.pageParam().exchangeRate != -1 && rp.pageParam().usdExchangeSet {
 		widget = func(gtx C) D {
-			return layout.Flex{
-				Axis:      layout.Horizontal,
-				Alignment: layout.Middle,
-			}.Layout(gtx,
-				layout.Flexed(0.45, func(gtx C) D {
-					return rp.amount.amountEditor.Layout(gtx)
-				}),
+			icon := cryptomaterial.NewIcon(rp.Theme.Icons.ActionSwapHoriz)
+			axis := layout.Horizontal
+			var flexChilds []layout.FlexChild
+			flexChilds = []layout.FlexChild{
+				layout.Flexed(0.45, rp.amount.amountEditor.Layout),
 				layout.Flexed(0.1, func(gtx C) D {
 					return layout.Center.Layout(gtx, func(gtx C) D {
-						icon := rp.Theme.Icons.CurrencySwapIcon
-						return icon.Layout12dp(gtx)
+						return icon.Layout(gtx, values.MarginPadding16)
 					})
 				}),
-				layout.Flexed(0.45, func(gtx C) D {
-					return rp.amount.usdAmountEditor.Layout(gtx)
-				}),
-			)
+				layout.Flexed(0.45, rp.amount.usdAmountEditor.Layout),
+			}
+			if rp.IsMobileView() {
+				axis = layout.Vertical
+				icon = cryptomaterial.NewIcon(rp.Theme.Icons.ActionSwapVertical)
+				flexChilds = []layout.FlexChild{
+					layout.Rigid(rp.amount.amountEditor.Layout),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding10}.Layout),
+					layout.Rigid(func(gtx C) D {
+						return icon.Layout(gtx, values.MarginPadding16)
+					}),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding10}.Layout),
+					layout.Rigid(rp.amount.usdAmountEditor.Layout),
+				}
+			}
+			return layout.Flex{
+				Axis:      axis,
+				Alignment: layout.Middle,
+			}.Layout(gtx, flexChilds...)
 		}
 
 	}

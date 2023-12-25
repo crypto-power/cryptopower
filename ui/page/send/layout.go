@@ -171,6 +171,9 @@ func (pg *Page) advanceOptionsLayout(gtx C) D {
 	if pg.modalLayout != nil {
 		margin_32 = values.MarginPaddingMinus32
 	}
+	if pg.IsMobileView() {
+		margin_32 = values.MarginPaddingMinus16
+	}
 	return layout.Inset{Top: margin_32}.Layout(gtx, func(gtx C) D {
 		return pg.sectionWrapper(gtx, func(gtx C) D {
 			collapsibleHeader := func(gtx C) D {
