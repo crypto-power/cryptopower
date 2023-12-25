@@ -44,6 +44,7 @@ var (
 	MarginPadding30       = unit.Dp(30)
 	MarginPaddingMinus30  = unit.Dp(-30)
 	MarginPadding32       = unit.Dp(32)
+	MarginPaddingMinus32  = unit.Dp(-32)
 	MarginPadding33       = unit.Dp(33)
 	MarginPadding35       = unit.Dp(35)
 	MarginPadding36       = unit.Dp(36)

@@ -44,6 +44,10 @@ type ManualCoinSelectionPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	// modalLayout is initialized if this page will be displayed as a modal
+	// rather than a full page. A modal display is used and a wallet selector is
+	// displayed if this send page is opened from the home page.
+	modalLayout *cryptomaterial.Modal
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -87,6 +91,7 @@ type ManualCoinSelectionPage struct {
 	strAssetType      string
 
 	sendPage *Page
+	backdrop *widget.Clickable
 }
 
 type componentProperties struct {
@@ -106,12 +111,9 @@ type labelCell struct {
 
 func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelectionPage {
 	pg := &ManualCoinSelectionPage{
-		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(ManualCoinSelectionPageID),
-
+		Load:         l,
 		actionButton: l.Theme.Button(values.String(values.StrDone)),
 		clearButton:  l.Theme.OutlineButton("— " + values.String(values.StrClearSelection)),
-
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -121,6 +123,14 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 		UTXOList:    l.Theme.NewClickableList(layout.Vertical),
 		addressCopy: make([]*cryptomaterial.Clickable, 0),
 		sendPage:    sendPage,
+		backdrop:    new(widget.Clickable),
+	}
+
+	if sendPage.modalLayout != nil {
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend))
+		pg.GenericPageModal = pg.modalLayout.GenericPageModal
+	} else {
+		pg.GenericPageModal = app.NewGenericPageModal(ManualCoinSelectionPageID)
 	}
 
 	pg.actionButton.Font.Weight = font.SemiBold
@@ -262,7 +272,11 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
 		pg.sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
-		pg.ParentNavigator().Display(pg.sendPage)
+		if pg.modalLayout != nil {
+			pg.modalLayout.Dismiss()
+		} else {
+			pg.ParentNavigator().Display(pg.sendPage)
+		}
 	}
 
 	if pg.fromCoinSelection.Clicked() {
@@ -360,37 +374,38 @@ func (pg *ManualCoinSelectionPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
-	return layout.Stack{Alignment: layout.S}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.WrapContent,
-							Height:      cryptomaterial.WrapContent,
-							Orientation: layout.Vertical,
-						}.Layout(gtx,
-							layout.Flexed(1, func(gtx C) D {
-								return cryptomaterial.LinearLayout{
-									Width:       cryptomaterial.WrapContent,
-									Height:      cryptomaterial.WrapContent,
-									Orientation: layout.Vertical,
-								}.Layout(gtx,
-									layout.Rigid(pg.topSection),
-									layout.Rigid(pg.summarySection),
-									layout.Rigid(pg.accountListSection),
-								)
-							}),
-							layout.Rigid(func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-									return layout.E.Layout(gtx, pg.actionButton.Layout)
-								})
-							}),
-						)
-					}, pg.IsMobileView())
-				}),
+	if pg.modalLayout == nil {
+		return pg.contentLayout(gtx)
+	}
+	var modalWidth float32 = 450
+	if pg.IsMobileView() {
+		modalWidth = 0
+	}
+	modalContent := []layout.Widget{pg.contentLayout}
+	return pg.modalLayout.Layout(gtx, modalContent, modalWidth)
+}
+func (pg *ManualCoinSelectionPage) contentLayout(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Vertical,
+	}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.WrapContent,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Vertical,
+			}.Layout(gtx,
+				layout.Rigid(pg.topSection),
+				layout.Rigid(pg.summarySection),
+				layout.Rigid(pg.accountListSection),
 			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.E.Layout(gtx, pg.actionButton.Layout)
+			})
 		}),
 	)
 }
@@ -424,7 +439,11 @@ func (pg *ManualCoinSelectionPage) topSection(gtx C) D {
 
 func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
 	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
-	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+	margin16 := values.MarginPadding16
+	if pg.modalLayout != nil {
+		margin16 = values.MarginPadding0
+	}
+	return layout.Inset{Bottom: margin16}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			topContainer := layout.UniformInset(values.MarginPadding15)
 			return topContainer.Layout(gtx, func(gtx C) D {
@@ -438,7 +457,7 @@ func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						axis := layout.Horizontal
-						if pg.IsMobileView() {
+						if pg.IsMobileView() || pg.modalLayout != nil {
 							axis = layout.Vertical
 						}
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -677,4 +696,23 @@ func sortUTXOrows(i, j, pos int, ascendingOrder bool, elems []*UTXOInfo) bool {
 	default:
 		return false
 	}
+}
+
+// Handle implements app.Modal.
+func (pg *ManualCoinSelectionPage) Handle() {
+	if pg.modalLayout.BackdropClicked(true) {
+		pg.modalLayout.Dismiss()
+	} else {
+		pg.HandleUserInteractions()
+	}
+}
+
+// OnDismiss implements app.Modal.
+func (pg *ManualCoinSelectionPage) OnDismiss() {
+	pg.OnNavigatedFrom()
+}
+
+// OnResume implements app.Modal.
+func (pg *ManualCoinSelectionPage) OnResume() {
+	pg.OnNavigatedTo()
 }

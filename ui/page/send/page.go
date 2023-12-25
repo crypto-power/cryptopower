@@ -53,8 +53,8 @@ type Page struct {
 	// retryExchange cryptomaterial.Button // TODO not included in design
 	nextButton cryptomaterial.Button
 
-	shadowBox *cryptomaterial.Shadow
-	backdrop  *widget.Clickable
+	// shadowBox *cryptomaterial.Shadow
+	// backdrop  *widget.Clickable
 
 	isFetchingExchangeRate bool
 
@@ -105,9 +105,9 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		Load: l,
 
 		authoredTxData: &authoredTxData{},
-		shadowBox:      l.Theme.Shadow(),
-		backdrop:       new(widget.Clickable),
-		exchangeRate:   -1,
+		// shadowBox:      l.Theme.Shadow(),
+		// backdrop:       new(widget.Clickable),
+		exchangeRate: -1,
 	}
 
 	if wallet == nil {
@@ -459,7 +459,11 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.toCoinSelection.Clicked() {
 		if pg.recipient.destinationAddress() != "" {
-			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+			if pg.modalLayout != nil {
+				pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
+			} else {
+				pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+			}
 		}
 	}
 

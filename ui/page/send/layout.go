@@ -144,7 +144,7 @@ func (pg *Page) recipientsLayout(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				recipient := pg.recipient.recipientLayout(1, false, pg.ParentWindow())
-				return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, recipient)
+				return recipient(gtx)
 			}),
 			// TODO: to be implemented in follow up PR.
 			// layout.Rigid(func(gtx C) D {
@@ -167,37 +167,43 @@ func (pg *Page) recipientsLayout(gtx C) D {
 }
 
 func (pg *Page) advanceOptionsLayout(gtx C) D {
-	return pg.sectionWrapper(gtx, func(gtx C) D {
-		collapsibleHeader := func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), values.String(values.StrAdvancedOptions))
-			lbl.Font.Weight = font.SemiBold
-			return lbl.Layout(gtx)
-		}
-
-		collapsibleBody := func(gtx C) D {
-			if pg.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
-				return layout.Inset{
-					Top: values.MarginPadding16,
-				}.Layout(gtx, func(gtx C) D {
-					return pg.contentWrapper(gtx, values.String(values.StrCoinSelection), true, pg.coinSelectionSection)
-				})
+	margin_32 := values.MarginPadding0
+	if pg.modalLayout != nil {
+		margin_32 = values.MarginPaddingMinus32
+	}
+	return layout.Inset{Top: margin_32}.Layout(gtx, func(gtx C) D {
+		return pg.sectionWrapper(gtx, func(gtx C) D {
+			collapsibleHeader := func(gtx C) D {
+				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), values.String(values.StrAdvancedOptions))
+				lbl.Font.Weight = font.SemiBold
+				return lbl.Layout(gtx)
 			}
 
-			if pg.modalLayout != nil {
-				// coin selection not allowed on the send modal
-				return pg.contentWrapper(gtx, "", true, pg.feeRateSelector.Layout)
-			}
+			collapsibleBody := func(gtx C) D {
+				if pg.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
+					return layout.Inset{
+						Top: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return pg.contentWrapper(gtx, values.String(values.StrCoinSelection), true, pg.coinSelectionSection)
+					})
+				}
 
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return pg.contentWrapper(gtx, "", false, pg.feeRateSelector.Layout)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return pg.contentWrapper(gtx, values.String(values.StrCoinSelection), true, pg.coinSelectionSection)
-				}),
-			)
-		}
-		return pg.advanceOptions.Layout(gtx, collapsibleHeader, collapsibleBody)
+				if pg.modalLayout != nil {
+					// coin selection not allowed on the send modal
+					return pg.contentWrapper(gtx, "", true, pg.feeRateSelector.Layout)
+				}
+
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return pg.contentWrapper(gtx, "", false, pg.feeRateSelector.Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return pg.contentWrapper(gtx, values.String(values.StrCoinSelection), true, pg.coinSelectionSection)
+					}),
+				)
+			}
+			return pg.advanceOptions.Layout(gtx, collapsibleHeader, collapsibleBody)
+		})
 	})
 }
 
