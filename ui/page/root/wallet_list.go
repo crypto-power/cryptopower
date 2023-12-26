@@ -274,7 +274,7 @@ func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalanc
 				return layout.Inset{
 					Left: values.MarginPadding8,
 				}.Layout(gtx, func(gtx C) D {
-					return components.WalletHightlighLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
+					return components.WalletHighlightLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
 				})
 			}
 			return D{}

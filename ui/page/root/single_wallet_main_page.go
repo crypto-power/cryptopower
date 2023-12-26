@@ -533,7 +533,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 													if swmp.Load.IsMobileView() {
 														textSize = values.TextSize12
 													}
-													return components.WalletHightlighLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
+													return components.WalletHighlightLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
 												})
 											}),
 										)

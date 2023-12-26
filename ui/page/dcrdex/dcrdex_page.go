@@ -86,7 +86,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 	}
 
 	if showOnBoardingPage {
-		pg.Display(NewDEXOnboarding(pg.Load))
+		pg.Display(NewDEXOnboarding(pg.Load, false))
 	} else {
 		pg.Display(NewDEXMarketPage(pg.Load))
 	}
@@ -172,7 +172,7 @@ func pendingBondConfirmation(am *libwallet.AssetsManager) (string, *core.BondAss
 	xcs := am.DexClient().Exchanges()
 	if len(xcs) == 1 { // first or only exchange
 		for _, xc := range xcs {
-			if len(xc.Auth.PendingBonds) == 1 && xc.Auth.LiveStrength == 0 {
+			if xc.Auth.EffectiveTier == 0 && len(xc.Auth.PendingBonds) > 0 {
 				for _, bond := range xc.Auth.PendingBonds {
 					bondAsset := xc.BondAssets[bond.Symbol]
 					if bond.Confs < bondAsset.Confs {

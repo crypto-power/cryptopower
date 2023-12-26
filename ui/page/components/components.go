@@ -860,43 +860,16 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 // the page is disabled and adding a background color overlay that blocks any
 // page event being triggered.
 func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt string, actionButton *cryptomaterial.Button) D {
-	return layout.Stack{Alignment: layout.N}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			if currentPage == nil {
-				return D{}
-			}
-			mgtx := gtx.Disabled()
-			return currentPage.Layout(mgtx)
-		}),
-		layout.Stacked(func(gtx C) D {
-			overlayColor := l.Theme.Color.Gray3
-			overlayColor.A = 220
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-			cryptomaterial.FillMax(gtx, overlayColor, 10)
-
-			lbl := l.Theme.Label(values.TextSize20, txt)
-			lbl.Font.Weight = font.SemiBold
-			lbl.Color = l.Theme.Color.PageNavText
-			return layout.Center.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if actionButton != nil {
-							actionButton.TextSize = values.TextSize14
-							return actionButton.Layout(gtx)
-						}
-						return D{}
-					}),
-				)
-			})
-		}),
-	)
+	txtBody := func(gtx C) D {
+		lbl := l.Theme.Label(values.TextSize20, txt)
+		lbl.Font.Weight = font.SemiBold
+		lbl.Color = l.Theme.Color.PageNavText
+		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
+	}
+	return cryptomaterial.DisableLayout(currentPage, gtx, txtBody, 220, l.Theme.Color.Gray3, actionButton)
 }
 
-func WalletHightlighLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
+func WalletHighlightLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
 	indexLabel := theme.Label(textSize, content)
 	indexLabel.Color = theme.Color.PageNavText
 	indexLabel.Font.Weight = font.Medium

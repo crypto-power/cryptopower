@@ -910,8 +910,16 @@ func (mgr *AssetsManager) DexcReady() bool {
 	return mgr.dexc != nil
 }
 
-// InitializeDEX initializes mgr.dexc.
+// InitializeDEX initializes mgr.dexc. Support for Cryptopower wallets are
+// initialized first so the DEX client can bind previously added wallets when it
+// starts.
 func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
+	if !dexWalletRegistered.Load() {
+		mgr.prepareDexSupportForDCRWallet()
+		mgr.prepareDexSupportForBTCWallet()
+		dexWalletRegistered.Store(true)
+	}
+
 	logDir := filepath.Dir(mgr.LogFile())
 	dexcl, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
 	if err != nil {
@@ -922,12 +930,6 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	mgr.dexcMtx.Lock()
 	mgr.dexc = dexcl
 	mgr.dexcMtx.Unlock()
-
-	if !dexWalletRegistered.Load() {
-		mgr.prepareDexSupportForDCRWallet()
-		mgr.prepareDexSupportForBTCWallet()
-		dexWalletRegistered.Store(true)
-	}
 
 	go func() {
 		<-mgr.dexc.WaitForShutdown()
