@@ -167,14 +167,14 @@ func (pg *Page) recipientsLayout(gtx C) D {
 }
 
 func (pg *Page) advanceOptionsLayout(gtx C) D {
-	margin_32 := values.MarginPadding0
+	marginMinus32 := values.MarginPadding0
 	if pg.modalLayout != nil {
-		margin_32 = values.MarginPaddingMinus32
+		marginMinus32 = values.MarginPaddingMinus32
 	}
 	if pg.IsMobileView() {
-		margin_32 = values.MarginPaddingMinus16
+		marginMinus32 = values.MarginPaddingMinus16
 	}
-	return layout.Inset{Top: margin_32}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Top: marginMinus32}.Layout(gtx, func(gtx C) D {
 		return pg.sectionWrapper(gtx, func(gtx C) D {
 			collapsibleHeader := func(gtx C) D {
 				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), values.String(values.StrAdvancedOptions))
