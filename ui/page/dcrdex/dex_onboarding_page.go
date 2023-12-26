@@ -132,11 +132,14 @@ type DEXOnboarding struct {
 	goBackBtn cryptomaterial.Button
 	nextBtn   cryptomaterial.Button
 
-	materialLoader material.LoaderStyle
-	isLoading      bool
+	materialLoader    material.LoaderStyle
+	isLoading         bool
+	alreadyRegistered bool
 }
 
-func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
+// NewDEXOnboarding creates a new DEX onboarding pages. Specify
+// alreadyRegistered to use the DEX onboarding flow to allow user post bonds.
+func NewDEXOnboarding(l *load.Load, alreadyRegistered bool) *DEXOnboarding {
 	th := l.Theme
 	pg := &DEXOnboarding{
 		Load:                  l,
@@ -156,6 +159,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 		nextBtn:               th.Button(values.String(values.StrNext)),
 		materialLoader:        material.Loader(th.Base),
 		dexc:                  l.AssetsManager.DexClient(),
+		alreadyRegistered:     alreadyRegistered,
 	}
 
 	pg.goBackBtn.Background = pg.Theme.Color.Gray2
@@ -965,9 +969,15 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 }
 
 func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
-	xc, err := pg.dexc.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
+	var xc *core.Exchange
+	var err error
+	if pg.alreadyRegistered { // Already registered just want to post bond.
+		xc, err = pg.dexc.Exchange(pg.bondServer.url)
+	} else { // New fish! Let's check for server info. Will error if DEX already exists.
+		xc, err = pg.dexc.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
+	}
 	if err != nil {
-		pg.notifyError(fmt.Errorf("Error discovering account: %w", err).Error())
+		pg.notifyError(fmt.Errorf("Error retrieving DEX server info: %w", err).Error())
 		return
 	}
 
@@ -1019,19 +1029,22 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 // postBond prepares the data required to post bond and starts the bond posting
 // process. C
 func (pg *DEXOnboarding) postBond() {
-	pg.isLoading = true
-	var maintainTier = false
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	postBond := &core.PostBondForm{
-		Addr:         pg.bondServer.url,
-		AppPass:      pg.dexPass,
-		Asset:        &bondAsset.ID,
-		Bond:         uint64(pg.newTier) * bondAsset.Amt,
-		Cert:         pg.bondServer.cert,
-		FeeBuffer:    pg.dexc.BondsFeeBuffer(bondAsset.ID),
-		MaintainTier: &maintainTier,
-		// LockTime:     uint64(time.Now().Add(5 * time.Hour).Unix()), // TODO: For testing and early refund.
+		Addr:      pg.bondServer.url,
+		AppPass:   pg.dexPass,
+		Asset:     &bondAsset.ID,
+		Bond:      uint64(pg.newTier) * bondAsset.Amt,
+		Cert:      pg.bondServer.cert,
+		FeeBuffer: pg.dexc.BondsFeeBuffer(bondAsset.ID),
+	}
+
+	if !pg.alreadyRegistered {
+		var maintainTier = false
+		// These fields(MaintainTier and MaxBondedAmt) can only be set for the
+		// first time. TODO: Use UpdateBondOptions when its design is ready.
+		postBond.MaintainTier = &maintainTier
 	}
 
 	// postBondFn sends the actual request to post bond.
@@ -1066,6 +1079,7 @@ func (pg *DEXOnboarding) postBond() {
 		pg.ParentWindow().Reload()
 	}
 
+	pg.isLoading = true
 	// Request for wallet password before attempting to post bond.
 	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
@@ -1244,6 +1258,6 @@ func convertAssetIDToAssetType(assetID uint32) libutils.AssetType {
 	case strings.EqualFold(assetSym, libutils.LTCWalletAsset.String()):
 		return libutils.LTCWalletAsset
 	default:
-		return ""
+		return "NoAsset"
 	}
 }

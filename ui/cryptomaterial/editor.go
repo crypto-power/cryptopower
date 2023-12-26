@@ -46,8 +46,6 @@ type Editor struct {
 	// If showEditorIcon is true, displays the editor widget Icon of choice
 	showEditorIcon     bool
 	alignEditorIconEnd bool
-	background         color.NRGBA
-	editorCard         Card
 
 	// isEditorButtonClickable passes a clickable icon button if true and regular icon if false
 	isEditorButtonClickable bool
@@ -127,7 +125,6 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 		Bordered:     true,
 
 		alignEditorIconEnd: true,
-		background:         t.Color.Surface,
 
 		errorLabel:        errorLabel,
 		requiredErrorText: "Field is required",
@@ -154,8 +151,6 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 		CustomButton: t.Button(""),
 	}
 
-	newEditor.editorCard = Card{Color: newEditor.background}
-	newEditor.editorCard.Radius = Radius(8)
 	return newEditor
 }
 
@@ -167,7 +162,7 @@ func (e Editor) Layout(gtx C) D {
 	}
 
 	e.LineColor, e.TitleLabel.Color = e.t.Color.Gray2, e.t.Color.GrayText3
-	if e.Editor.Focused() {
+	if e.Editor.Focused() && !e.Editor.ReadOnly {
 		e.TitleLabel.Text = e.Hint
 		e.TitleLabel.Color, e.LineColor = e.t.Color.Primary, e.t.Color.Primary
 		e.Hint = ""
@@ -182,8 +177,18 @@ func (e Editor) Layout(gtx C) D {
 		e.LineColor, e.TitleLabel.Color = e.t.Color.Danger, e.t.Color.Danger
 	}
 
+	overLay := func(gtx C) D { return D{} }
+	if e.Editor.ReadOnly {
+		overLay = func(gtx C) D {
+			gtxCopy := gtx
+			gtxCopy.Constraints.Max.Y = gtx.Dp(values.MarginPadding46)
+			return DisableLayout(nil, gtxCopy, nil, nil, 20, e.t.Color.Gray3, nil)
+		}
+		gtx = gtx.Disabled()
+	}
+
 	return layout.UniformInset(e.m2).Layout(gtx, func(gtx C) D {
-		return e.editorCard.Layout(gtx, func(gtx C) D {
+		return Card{Color: e.t.Color.Surface, Radius: Radius(8)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Stack{}.Layout(gtx,
@@ -213,6 +218,7 @@ func (e Editor) Layout(gtx C) D {
 							}
 							return D{}
 						}),
+						layout.Stacked(overLay),
 					)
 				}),
 			)

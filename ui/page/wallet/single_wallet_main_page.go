@@ -549,7 +549,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 													Left: values.MarginPadding10,
 												}.Layout(gtx, func(gtx C) D {
 													textSize := values.TextSizeTransform(isMobile, values.TextSize16)
-													return components.WalletHightlighLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
+													return components.WalletHighlightLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
 												})
 											}),
 										)

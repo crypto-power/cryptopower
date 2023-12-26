@@ -915,7 +915,9 @@ func (mgr *AssetsManager) DexcReady() bool {
 	return mgr.dexc != nil
 }
 
-// InitializeDEX initializes mgr.dexc.
+// InitializeDEX initializes mgr.dexc. Support for Cryptopower wallets are
+// initialized first so the DEX client can bind previously added wallets when it
+// starts.
 func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	if !dexWalletRegistered.Load() {
 		mgr.prepareDexSupportForDCRWallet()

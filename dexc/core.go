@@ -36,6 +36,7 @@ type DEXClient struct {
 	DBPath   string
 	*core.Core
 
+	loggedIn        bool
 	shutdownChan    <-chan struct{}
 	bondBufferCache sync.Map
 	log             dex.Logger
@@ -47,6 +48,19 @@ func (dc *DEXClient) InitWithPassword(pw []byte, seed []byte) error {
 
 func (dc *DEXClient) IsDEXPasswordSet() bool {
 	return dc.IsInitialized()
+}
+
+func (dc *DEXClient) IsLoggedIn() bool {
+	return dc.loggedIn
+}
+
+func (dc *DEXClient) Login(pw []byte) error {
+	err := dc.Core.Login(pw)
+	if err != nil {
+		return err
+	}
+	dc.loggedIn = true
+	return nil
 }
 
 // WaitForShutdown returns a chan that will be closed if core exits.
@@ -84,15 +98,24 @@ func (dc *DEXClient) BondsFeeBuffer(assetID uint32) uint64 {
 		return cachedFeeBuffer.val
 	}
 
-	feeBuffer, err := dc.Core.BondsFeeBuffer(assetID)
-	if err != nil {
-		dc.log.Error("Error fetching bond fee buffer: %v", err)
-		return 0
-	}
+	// BondsFeeBuffer might block if we are not yet connected to the wallet that
+	// provides the new fee rate. Run in a goroutine and return 0.
+	go func() {
+		select {
+		case <-dc.ctx.Done():
+			return
+		default:
+			feeBuffer, err := dc.Core.BondsFeeBuffer(assetID)
+			if err != nil {
+				dc.log.Error("Error fetching bond fee buffer: %v", err)
+			} else {
+				dc.log.Tracef("Obtained fresh bond fee buffer: %d", feeBuffer)
+				dc.bondBufferCache.Store(assetID, valStamp{feeBuffer, time.Now()})
+			}
+		}
+	}()
 
-	dc.log.Tracef("Obtained fresh bond fee buffer: %d", feeBuffer)
-	dc.bondBufferCache.Store(assetID, valStamp{feeBuffer, time.Now()})
-	return feeBuffer
+	return 0
 }
 
 // Start prepares and starts the DEX client.
@@ -138,6 +161,7 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 		dc.Run(dc.ctx)
 		logCloser()
 		close(shutdownChan)
+		dc.cancelFn() // don't leak context
 		dc.Core = nil // do this after all shutdownChan listeners must've stopped waiting
 	}()
 

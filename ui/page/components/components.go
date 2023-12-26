@@ -860,53 +860,32 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 // the page is disabled and adding a background color overlay that blocks any
 // page event being triggered.
 func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, title, subtitle string, actionButton *cryptomaterial.Button) D {
-	return layout.Stack{Alignment: layout.N}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			if currentPage == nil {
-				return D{}
-			}
-			mgtx := gtx.Disabled()
-			return currentPage.Layout(mgtx)
-		}),
-		layout.Stacked(func(gtx C) D {
-			overlayColor := l.Theme.Color.Gray3
-			overlayColor.A = 220
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-			cryptomaterial.FillMax(gtx, overlayColor, 10)
+	titleLayout := func(gtx C) D {
+		if title == "" {
+			return D{}
+		}
 
-			lbl := l.Theme.Label(values.TextSize20, title)
-			lbl.Font.Weight = font.SemiBold
-			lbl.Color = l.Theme.Color.PageNavText
+		lbl := l.Theme.Label(values.TextSize20, title)
+		lbl.Font.Weight = font.SemiBold
+		lbl.Color = l.Theme.Color.PageNavText
+		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
+	}
 
-			subTitle := l.Theme.Label(values.TextSize14, subtitle)
-			subTitle.Font.Weight = font.SemiBold
-			subTitle.Color = l.Theme.Color.GrayText2
-			return layout.Center.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if subTitle.Text == "" {
-							return D{}
-						}
-						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), subTitle.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if actionButton != nil {
-							actionButton.TextSize = values.TextSize14
-							return actionButton.Layout(gtx)
-						}
-						return D{}
-					}),
-				)
-			})
-		}),
-	)
+	subtitleLayout := func(gtx C) D {
+		if subtitle == "" {
+			return D{}
+		}
+
+		subTitleLbl := l.Theme.Label(values.TextSize14, subtitle)
+		subTitleLbl.Font.Weight = font.SemiBold
+		subTitleLbl.Color = l.Theme.Color.GrayText2
+		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), subTitleLbl.Layout)
+	}
+
+	return cryptomaterial.DisableLayout(currentPage, gtx, titleLayout, subtitleLayout, 220, l.Theme.Color.Gray3, actionButton)
 }
 
-func WalletHightlighLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
+func WalletHighlightLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
 	indexLabel := theme.Label(textSize, content)
 	indexLabel.Color = theme.Color.PageNavText
 	indexLabel.Font.Weight = font.Medium
