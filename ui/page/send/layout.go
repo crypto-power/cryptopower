@@ -191,11 +191,6 @@ func (pg *Page) advanceOptionsLayout(gtx C) D {
 					})
 				}
 
-				if pg.modalLayout != nil {
-					// coin selection not allowed on the send modal
-					return pg.contentWrapper(gtx, "", true, pg.feeRateSelector.Layout)
-				}
-
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return pg.contentWrapper(gtx, "", false, pg.feeRateSelector.Layout)

@@ -125,7 +125,7 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	}
 
 	if sendPage.modalLayout != nil {
-		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrCoinSelection))
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrCoinSelection), pg.IsMobileView())
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 	} else {
 		pg.GenericPageModal = app.NewGenericPageModal(ManualCoinSelectionPageID)
