@@ -168,7 +168,7 @@ type WalletSelectorModal struct {
 func newWalletSelectorModal(l *load.Load, currentSelectedWallet sharedW.Asset) *WalletSelectorModal {
 	asm := &WalletSelectorModal{
 		Load:        l,
-		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal"),
+		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal", l.IsMobileView()),
 		walletsList: l.Theme.NewClickableList(layout.Vertical),
 
 		currentSelectedWallet: currentSelectedWallet,

@@ -34,15 +34,16 @@ type Modal struct {
 	isFloatTitle  bool
 	isDisabled    bool
 	showScrollBar bool
+	isMobileView  bool
 }
 
-func (t *Theme) ModalFloatTitle(id string) *Modal {
-	mod := t.Modal(id)
+func (t *Theme) ModalFloatTitle(id string, isMobileView bool) *Modal {
+	mod := t.Modal(id, isMobileView)
 	mod.isFloatTitle = true
 	return mod
 }
 
-func (t *Theme) Modal(id string) *Modal {
+func (t *Theme) Modal(id string, isMobileView bool) *Modal {
 	overlayColor := t.Color.Black
 	overlayColor.A = 200
 
@@ -57,7 +58,8 @@ func (t *Theme) Modal(id string) *Modal {
 		button:         new(widget.Clickable),
 		overlayBlinder: new(widget.Clickable),
 		card:           t.Card(),
-		padding:        unit.Dp(24),
+		padding:        values.MarginPadding24,
+		isMobileView:   isMobileView,
 	}
 
 	m.scroll = t.List(m.list)
@@ -129,6 +131,10 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 				Top:    unit.Dp(30),
 				Bottom: unit.Dp(30),
 			}
+			uniformInset := layout.UniformInset(m.padding)
+			horizontalMargin := values.MarginPaddingTransform(m.isMobileView, values.MarginPadding24)
+			uniformInset.Left = horizontalMargin
+			uniformInset.Right = horizontalMargin
 			return inset.Layout(gtx, func(gtx C) D {
 				return layout.Stack{Alignment: layout.Center}.Layout(gtx,
 					layout.Expanded(func(gtx C) D {
@@ -141,7 +147,7 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 							Orientation: layout.Vertical,
 							Width:       WrapContent,
 							Height:      WrapContent,
-							Padding:     layout.UniformInset(m.padding),
+							Padding:     uniformInset,
 							Alignment:   layout.Middle,
 							Border: Border{
 								Radius: Radius(14),
@@ -153,7 +159,7 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 								if m.isFloatTitle && len(widgets) > 0 {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									if m.padding == unit.Dp(0) {
-										return layout.UniformInset(m.padding).Layout(gtx, title)
+										return uniformInset.Layout(gtx, title)
 									}
 
 									inset := layout.Inset{

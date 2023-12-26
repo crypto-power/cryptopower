@@ -106,7 +106,7 @@ func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked Cl
 func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *InfoModal {
 	in := &InfoModal{
 		Load:             l,
-		Modal:            l.Theme.ModalFloatTitle(key),
+		Modal:            l.Theme.ModalFloatTitle(key, l.IsMobileView()),
 		btnNegative:      l.Theme.OutlineButton(""),
 		isCancelable:     true,
 		isLoading:        false,

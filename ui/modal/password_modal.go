@@ -40,7 +40,7 @@ type PasswordModal struct {
 func NewPasswordModal(l *load.Load) *PasswordModal {
 	pm := &PasswordModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("password_modal"),
+		Modal:        l.Theme.ModalFloatTitle("password_modal", l.IsMobileView()),
 		btnPositve:   l.Theme.Button(values.String(values.StrConfirm)),
 		btnNegative:  l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable: true,

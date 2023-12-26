@@ -28,7 +28,8 @@ type Icons struct {
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, TrocadorIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
-	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon, FilterImgIcon, FilterOffImgIcon, ShareIcon, DeleteIcon *Image
+	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon, FilterImgIcon, FilterOffImgIcon, ShareIcon, DeleteIcon,
+	CircleBTC, CircleLTC, CircleDCR *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -209,6 +210,9 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.FilterOffImgIcon = NewImage(decredIcons["ic_filter_off"])
 	i.ShareIcon = NewImage(decredIcons["ic_share"])
 	i.DeleteIcon = NewImage(decredIcons["deleteIcon"])
+	i.CircleBTC = NewImage(decredIcons["circle_btc_log"])
+	i.CircleDCR = NewImage(decredIcons["circle_dcr_log"])
+	i.CircleLTC = NewImage(decredIcons["circle_ltc_log"])
 
 	return i
 }
