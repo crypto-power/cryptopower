@@ -138,11 +138,11 @@ func (dw *DEXWallet) Peers() ([]*asset.WalletPeer, error) {
 	return walletPeers, nil
 }
 
-func (dw *DEXWallet) AddPeer(address string) error {
+func (dw *DEXWallet) AddPeer(_ string) error {
 	return errors.New("AddPeer not implemented by DEX wallet")
 }
 
-func (dw *DEXWallet) RemovePeer(address string) error {
+func (dw *DEXWallet) RemovePeer(_ string) error {
 	return errors.New("RemovePeer not implemented by DEX wallet")
 }
 
