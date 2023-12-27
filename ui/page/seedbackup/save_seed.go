@@ -9,6 +9,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -42,7 +43,8 @@ type SaveSeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet sharedW.Asset
+	wallet        sharedW.Asset
+	pageContainer *widget.List
 
 	backButton   cryptomaterial.IconButton
 	actionButton cryptomaterial.Button
@@ -50,10 +52,9 @@ type SaveSeedPage struct {
 	hexLabel     cryptomaterial.Label
 	copy         cryptomaterial.Button
 
-	infoText   string
-	seed       string
-	rows       []saveSeedRow
-	mobileRows []saveSeedRow
+	infoText string
+	seed     string
+	rows     []saveSeedRow
 
 	redirectCallback Redirectfunc
 
@@ -88,7 +89,12 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 	pg.backButton.Icon = l.Theme.Icons.ContentClear
 
 	pg.actionButton.Font.Weight = font.Medium
-
+	pg.pageContainer = &widget.List{
+		List: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+	}
 	return pg
 }
 
@@ -111,9 +117,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 				m.SetError(err.Error())
 				return false
 			}
-
 			m.Dismiss()
-
 			pg.seed = seed
 
 			wordList := strings.Split(seed, " ")
@@ -124,31 +128,31 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			// for mobile
 			rowMobile1 := wordList[:17]
 			rowMobile2 := wordList[17:]
-			mobileRows := make([]saveSeedRow, 0)
-			for i := range rowMobile1 {
-				r2 := ""
-				if i < len(rowMobile2) {
-					r2 = rowMobile2[i]
-				}
-				mobileRows = append(mobileRows, saveSeedRow{
-					rowIndex: i + 1,
-					word1:    rowMobile1[i],
-					word2:    r2,
-				})
-			}
-
 			rows := make([]saveSeedRow, 0)
-			for i := range row1 {
-				rows = append(rows, saveSeedRow{
-					rowIndex: i + 1,
-					word1:    row1[i],
-					word2:    row2[i],
-					word3:    row3[i],
-				})
+
+			if pg.IsMobileView() {
+				for i := range rowMobile1 {
+					r2 := ""
+					if i < len(rowMobile2) {
+						r2 = rowMobile2[i]
+					}
+					rows = append(rows, saveSeedRow{
+						rowIndex: i + 1,
+						word1:    rowMobile1[i],
+						word2:    r2,
+					})
+				}
+			} else {
+				for i := range row1 {
+					rows = append(rows, saveSeedRow{
+						rowIndex: i + 1,
+						word1:    row1[i],
+						word2:    row2[i],
+						word3:    row3[i],
+					})
+				}
 			}
 			pg.rows = rows
-			pg.mobileRows = mobileRows
-
 			return true
 		}).
 		SetNegativeButtonCallback(func() {
@@ -182,13 +186,6 @@ func (pg *SaveSeedPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 	sp := components.SubPage{
 		Load:       pg.Load,
 		Title:      values.String(values.StrWriteDownSeed),
@@ -198,121 +195,78 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, values.String(values.StrWriteDownAll33Words))
-					label.Color = pg.Theme.Color.GrayText1
-					return label.Layout(gtx)
-				}),
-				layout.Flexed(1, func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize14, values.String(values.StrYourSeedWords))
-					label.Color = pg.Theme.Color.GrayText1
-					return cryptomaterial.LinearLayout{
-						Width:       cryptomaterial.MatchParent,
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Vertical,
-						Background:  pg.Theme.Color.Surface,
-						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
-						Margin:      layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding2},
-						Padding:     layout.Inset{Top: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding8, Left: values.MarginPadding16},
-					}.Layout(gtx,
-						layout.Rigid(label.Layout),
-						layout.Rigid(func(gtx C) D {
-							return pg.Theme.List(pg.seedList).Layout(gtx, len(pg.rows), func(gtx C, index int) D {
-								return pg.desktopSeedRow(gtx, pg.rows[index])
-							})
-						}),
-					)
-				}),
-				layout.Flexed(1, pg.hexLayout),
-			)
-		},
-	}
-
-	layout := func(gtx C) D {
-		return sp.Layout(pg.ParentWindow(), gtx)
-	}
-
-	return container(gtx, false, *pg.Theme, layout, pg.infoText, pg.actionButton, true)
-}
-
-func (pg *SaveSeedPage) layoutMobile(gtx C) D {
-	sp := components.SubPage{
-		Load:       pg.Load,
-		Title:      values.String(values.StrWriteDownSeed),
-		SubTitle:   values.String(values.StrStep1),
-		BackButton: pg.backButton,
-		Back: func() {
-			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
-		},
-		Body: func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, values.String(values.StrWriteDownAll33Words))
-					label.Color = pg.Theme.Color.GrayText1
-					return label.Layout(gtx)
-				}),
-				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize14, values.String(values.StrYourSeedWords))
-					label.Color = pg.Theme.Color.GrayText1
-
-					return cryptomaterial.LinearLayout{
-						Width:       cryptomaterial.MatchParent,
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Vertical,
-						Background:  pg.Theme.Color.Surface,
-						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
-						// bottom margin accounts for action button's height + components.UniformPadding bottom margin 24dp + 16dp
-						Margin:  layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding120},
-						Padding: layout.Inset{Top: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding8, Left: values.MarginPadding16},
-					}.Layout(gtx,
-						layout.Rigid(label.Layout),
-						layout.Rigid(func(gtx C) D {
-							return pg.Theme.List(pg.seedList).Layout(gtx, len(pg.mobileRows), func(gtx C, index int) D {
-								return pg.mobileSeedRow(gtx, pg.mobileRows[index])
-							})
-						}),
-					)
-				}),
-			)
+			return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						label := pg.Theme.Label(values.TextSize16, values.String(values.StrWriteDownAll33Words))
+						label.Color = pg.Theme.Color.GrayText1
+						return label.Layout(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						label := pg.Theme.Label(values.TextSize14, values.String(values.StrYourSeedWords))
+						label.Color = pg.Theme.Color.GrayText1
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Vertical,
+							Background:  pg.Theme.Color.Surface,
+							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
+							Margin:      layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding2},
+							Padding:     layout.Inset{Top: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding8, Left: values.MarginPadding16},
+						}.Layout(gtx,
+							layout.Rigid(label.Layout),
+							layout.Rigid(func(gtx C) D {
+								return pg.Theme.List(pg.seedList).Layout(gtx, len(pg.rows), func(gtx C, index int) D {
+									return pg.desktopSeedRow(gtx, pg.rows[index])
+								})
+							}),
+						)
+					}),
+					layout.Rigid(pg.hexLayout),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding130}.Layout),
+				)
+			})
 		},
 	}
 	layout := func(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-
-	return container(gtx, true, *pg.Theme, layout, pg.infoText, pg.actionButton, true)
+	return container(gtx, pg.IsMobileView(), *pg.Theme, layout, pg.infoText, pg.actionButton, true)
 }
 
-func (pg *SaveSeedPage) mobileSeedRow(gtx C, row saveSeedRow) D {
-	itemWidth := gtx.Constraints.Max.X / 2 // Divide total width into 2 rows for mobile
+func (pg *SaveSeedPage) desktopSeedRow(gtx C, row saveSeedRow) D {
 	topMargin := values.MarginPadding8
 	if row.rowIndex == 1 {
 		topMargin = values.MarginPadding16
+	}
+
+	var flexChils []layout.FlexChild
+	if pg.IsMobileView() {
+		itemWidth := gtx.Constraints.Max.X / 2 // Divide total width into 2 rows for mobile
+		flexChils = []layout.FlexChild{
+			seedItem(pg.Theme, itemWidth, row.rowIndex, row.word1),
+			seedItem(pg.Theme, itemWidth, row.rowIndex+17, row.word2),
+		}
+	} else {
+		itemWidth := gtx.Constraints.Max.X / 3 // Divide total width into 3 rows for deskop
+		flexChils = []layout.FlexChild{
+			seedItem(pg.Theme, itemWidth, row.rowIndex, row.word1),
+			seedItem(pg.Theme, itemWidth, row.rowIndex+11, row.word2),
+			seedItem(pg.Theme, itemWidth, row.rowIndex+22, row.word3),
+		}
 	}
 	return cryptomaterial.LinearLayout{
 		Width:  cryptomaterial.MatchParent,
 		Height: cryptomaterial.WrapContent,
 		Margin: layout.Inset{Top: topMargin},
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return seedItem(pg.Theme, gtx, itemWidth, row.rowIndex, row.word1)
-		}),
-		layout.Rigid(func(gtx C) D {
-			if row.word2 == "" {
-				return layout.Dimensions{}
-			}
-			return seedItem(pg.Theme, gtx, itemWidth, row.rowIndex+17, row.word2)
-		}),
-	)
+	}.Layout(gtx, flexChils...)
 }
 
-func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
+func (pg *SaveSeedPage) hexLayout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	card := cryptomaterial.Card{
 		Color: pg.Theme.Color.Gray4,
 	}
-
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -324,12 +278,16 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 	}.Layout(gtx,
 		layout.Rigid(pg.layoutVoteChoice()),
 		layout.Rigid(func(gtx C) D {
+			cgtx := gtx
+			macro := op.Record(cgtx.Ops)
+			copyLayout := pg.copyButtonLayout(cgtx)
+			call := macro.Stop()
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Max.X = gtx.Constraints.Max.X - copyLayout.Size.X
 					card.Radius = cryptomaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
-
 					return card.Layout(gtx, func(gtx C) D {
-						return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 							seedString := pg.seed
 							if seedString != "" {
 								switch pg.seedFormatRadioGroup.Value {
@@ -345,17 +303,25 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
-					return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D {
-						return card.Layout(gtx, pg.copy.Layout)
-					})
+					call.Add(gtx.Ops)
+					return copyLayout
 				}),
 			)
 		}),
 	)
 }
 
-func (pg *SaveSeedPage) handleCopyEvent(gtx layout.Context) {
+func (pg *SaveSeedPage) copyButtonLayout(gtx C) D {
+	card := cryptomaterial.Card{
+		Color: pg.Theme.Color.Gray4,
+	}
+	card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
+	return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D {
+		return card.Layout(gtx, pg.copy.Layout)
+	})
+}
+
+func (pg *SaveSeedPage) handleCopyEvent(gtx C) {
 	if pg.copy.Clicked() {
 		if pg.seedFormatRadioGroup.Value == seedWordFormat {
 			clipboard.WriteOp{Text: pg.seed}.Add(gtx.Ops)
@@ -373,60 +339,43 @@ func (pg *SaveSeedPage) handleCopyEvent(gtx layout.Context) {
 	}
 }
 
-func (pg *SaveSeedPage) desktopSeedRow(gtx C, row saveSeedRow) D {
-	itemWidth := gtx.Constraints.Max.X / 3 // Divide total width into 3 rows for deskop
-	topMargin := values.MarginPadding8
-	if row.rowIndex == 1 {
-		topMargin = values.MarginPadding16
-	}
-	return cryptomaterial.LinearLayout{
-		Width:  cryptomaterial.MatchParent,
-		Height: cryptomaterial.WrapContent,
-		Margin: layout.Inset{Top: topMargin},
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return seedItem(pg.Theme, gtx, itemWidth, row.rowIndex, row.word1)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return seedItem(pg.Theme, gtx, itemWidth, row.rowIndex+11, row.word2)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return seedItem(pg.Theme, gtx, itemWidth, row.rowIndex+22, row.word3)
-		}),
-	)
-}
-
-func seedItem(theme *cryptomaterial.Theme, gtx C, width, index int, word string) D {
-	return cryptomaterial.LinearLayout{
-		Width:  width,
-		Height: cryptomaterial.WrapContent,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			indexLabel := theme.Label(values.TextSize16, fmt.Sprint(index))
-			indexLabel.Color = theme.Color.GrayText1
-			indexLabel.Font.Weight = font.Medium
-			return cryptomaterial.LinearLayout{
-				Width:     gtx.Dp(values.MarginPadding30),
-				Height:    gtx.Dp(values.MarginPadding22),
-				Direction: layout.Center,
-				Margin:    layout.Inset{Right: values.MarginPadding8},
-				Border:    cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
-			}.Layout2(gtx, indexLabel.Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			seedWord := theme.Label(values.TextSize16, word)
-			seedWord.Color = theme.Color.GrayText1
-			seedWord.Font.Weight = font.Medium
-			return seedWord.Layout(gtx)
-		}),
-	)
+func seedItem(theme *cryptomaterial.Theme, width, index int, word string) layout.FlexChild {
+	return layout.Rigid(func(gtx C) D {
+		if word == "" {
+			return D{}
+		}
+		return cryptomaterial.LinearLayout{
+			Width:  width,
+			Height: cryptomaterial.WrapContent,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				indexLabel := theme.Label(values.TextSize16, fmt.Sprint(index))
+				indexLabel.Color = theme.Color.GrayText1
+				indexLabel.Font.Weight = font.Medium
+				return cryptomaterial.LinearLayout{
+					Width:     gtx.Dp(values.MarginPadding30),
+					Height:    gtx.Dp(values.MarginPadding22),
+					Direction: layout.Center,
+					Margin:    layout.Inset{Right: values.MarginPadding8},
+					Border:    cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
+				}.Layout2(gtx, indexLabel.Layout)
+			}),
+			layout.Rigid(layout.Spacer{Width: values.MarginPadding2}.Layout),
+			layout.Rigid(func(gtx C) D {
+				seedWord := theme.Label(values.TextSize16, word)
+				seedWord.Color = theme.Color.GrayText1
+				seedWord.Font.Weight = font.Medium
+				return seedWord.Layout(gtx)
+			}),
+		)
+	})
 }
 
 func (pg *SaveSeedPage) layoutVoteChoice() layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrCopySeed))
+				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), values.String(values.StrCopySeed))
 				lbl.Font.Weight = font.SemiBold
 				return lbl.Layout(gtx)
 			}),

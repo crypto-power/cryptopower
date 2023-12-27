@@ -123,14 +123,15 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 	swmp.checkBox.CheckBox.Value = false
 
 	needBackup := swmp.selectedWallet.GetEncryptedSeed() != ""
-	if needBackup && !backupLater {
-		swmp.showBackupInfo()
-	}
 
 	if swmp.CurrentPage() == nil {
 		swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet)) // TODO: Should pagestack have a start page? YES!
 	} else {
 		swmp.CurrentPage().OnNavigatedTo()
+	}
+
+	if needBackup && !backupLater {
+		swmp.showBackupInfo()
 	}
 	// set active tab value
 	swmp.activeTab[swmp.pageNavigationTab.SelectedSegment()] = swmp.CurrentPageID()
@@ -780,10 +781,10 @@ func (swmp *SingleWalletMasterPage) showBackupInfo() {
 		}).
 		PositiveButtonStyle(swmp.Load.Theme.Color.Primary, swmp.Load.Theme.Color.InvText).
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
-		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
+		SetPositiveButtonCallback(func(_ bool, m *modal.InfoModal) bool {
 			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(load *load.Load, navigator app.WindowNavigator) {
-				navigator.ClosePagesAfter(swmp.ParentWindow().CurrentPageID())
+				swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
+				swmp.ParentNavigator().ClosePagesAfter(MainPageID)
 			}))
 			return true
 		})
