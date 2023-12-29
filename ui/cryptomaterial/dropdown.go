@@ -31,6 +31,7 @@ type DropDown struct {
 	dropdownIcon   *widget.Icon
 	navigationIcon *widget.Icon
 	clickable      *Clickable
+	maxTextLeng    int
 
 	group                    uint
 	closeAllDropdown         func(group uint)
@@ -223,8 +224,15 @@ func (d *DropDown) Reversed() bool {
 	return d.revs
 }
 
+func (d *DropDown) SetMaxTextLeng(leng int) {
+	d.maxTextLeng = leng
+}
+
 func (d *DropDown) Layout(gtx C) D {
 	d.handleEvents()
+	if d.maxTextLeng == 0 {
+		d.maxTextLeng = maxDropdownItemTextLen
+	}
 
 	if d.MakeCollapsedLayoutVisibleWhenExpanded {
 		return d.collapsedAndExpandedLayout(gtx)
@@ -351,8 +359,8 @@ func (d *DropDown) itemLayout(gtx C, index int, clickable *Clickable, item *Drop
 
 			return bodyLayout.Layout2(gtx, func(gtx C) D {
 				lbl := d.theme.Body2(item.Text)
-				if !d.expanded && len(item.Text) > maxDropdownItemTextLen {
-					lbl.Text = item.Text[:maxDropdownItemTextLen-3 /* subtract space for the ellipsis */] + "..."
+				if !d.expanded && len(item.Text) > d.maxTextLeng {
+					lbl.Text = item.Text[:d.maxTextLeng-3 /* subtract space for the ellipsis */] + "..."
 				}
 				lbl.Font.Weight = d.FontWeight
 				lbl.TextSize = d.getTextSize(values.TextSize14)

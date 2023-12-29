@@ -278,7 +278,11 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	}
 
 	if pg.fromCoinSelection.Clicked() {
-		pg.ParentNavigator().Display(pg.sendPage)
+		if pg.modalLayout != nil {
+			pg.modalLayout.Dismiss()
+		} else {
+			pg.ParentNavigator().Display(pg.sendPage)
+		}
 	}
 
 	if pg.clearButton.Clicked() {

@@ -229,6 +229,7 @@ func (fs *FeeRateSelector) UpdatedFeeRate(selectedWallet sharedW.Asset) {
 	fs.fetchedRatesDropDown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
 	fs.fetchedRatesDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
 	fs.fetchedRatesDropDown.Background = &fs.Theme.Color.Gray4
+	fs.fetchedRatesDropDown.SetMaxTextLeng(30)
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.
