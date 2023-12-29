@@ -44,6 +44,10 @@ type ManualCoinSelectionPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	// modalLayout is initialized if this page will be displayed as a modal
+	// rather than a full page. A modal display is used and a wallet selector is
+	// displayed if this coin selection page is opened from the send page modal.
+	modalLayout *cryptomaterial.Modal
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -106,12 +110,9 @@ type labelCell struct {
 
 func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelectionPage {
 	pg := &ManualCoinSelectionPage{
-		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(ManualCoinSelectionPageID),
-
+		Load:         l,
 		actionButton: l.Theme.Button(values.String(values.StrDone)),
 		clearButton:  l.Theme.OutlineButton("— " + values.String(values.StrClearSelection)),
-
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -123,11 +124,19 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 		sendPage:    sendPage,
 	}
 
+	if sendPage.modalLayout != nil {
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrCoinSelection), pg.IsMobileView())
+		pg.GenericPageModal = pg.modalLayout.GenericPageModal
+	} else {
+		pg.GenericPageModal = app.NewGenericPageModal(ManualCoinSelectionPageID)
+	}
+
 	pg.actionButton.Font.Weight = font.SemiBold
 	pg.clearButton.Font.Weight = font.SemiBold
 	pg.clearButton.Color = l.Theme.Color.Danger
 	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding4)
 	pg.clearButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.Danger)
+	pg.clearButton.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 
 	pg.txSize = pg.Theme.Label(values.TextSize14, "--")
 	pg.totalAmount = pg.Theme.Label(values.TextSize14, "--")
@@ -261,11 +270,19 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
 		pg.sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
-		pg.ParentNavigator().Display(pg.sendPage)
+		if pg.modalLayout != nil {
+			pg.modalLayout.Dismiss()
+		} else {
+			pg.ParentNavigator().Display(pg.sendPage)
+		}
 	}
 
 	if pg.fromCoinSelection.Clicked() {
-		pg.ParentNavigator().Display(pg.sendPage)
+		if pg.modalLayout != nil {
+			pg.modalLayout.Dismiss()
+		} else {
+			pg.ParentNavigator().Display(pg.sendPage)
+		}
 	}
 
 	if pg.clearButton.Clicked() {
@@ -359,37 +376,38 @@ func (pg *ManualCoinSelectionPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
-	return layout.Stack{Alignment: layout.S}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.WrapContent,
-							Height:      cryptomaterial.WrapContent,
-							Orientation: layout.Vertical,
-						}.Layout(gtx,
-							layout.Flexed(1, func(gtx C) D {
-								return cryptomaterial.LinearLayout{
-									Width:       cryptomaterial.WrapContent,
-									Height:      cryptomaterial.WrapContent,
-									Orientation: layout.Vertical,
-								}.Layout(gtx,
-									layout.Rigid(pg.topSection),
-									layout.Rigid(pg.summarySection),
-									layout.Rigid(pg.accountListSection),
-								)
-							}),
-							layout.Rigid(func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-									return layout.E.Layout(gtx, pg.actionButton.Layout)
-								})
-							}),
-						)
-					})
-				}),
+	if pg.modalLayout == nil {
+		return pg.contentLayout(gtx)
+	}
+	var modalWidth float32 = 450
+	if pg.IsMobileView() {
+		modalWidth = 0
+	}
+	modalContent := []layout.Widget{pg.contentLayout}
+	return pg.modalLayout.Layout(gtx, modalContent, modalWidth)
+}
+func (pg *ManualCoinSelectionPage) contentLayout(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Vertical,
+	}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.WrapContent,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Vertical,
+			}.Layout(gtx,
+				layout.Rigid(pg.topSection),
+				layout.Rigid(pg.summarySection),
+				layout.Rigid(pg.accountListSection),
 			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.E.Layout(gtx, pg.actionButton.Layout)
+			})
 		}),
 	)
 }
@@ -401,61 +419,60 @@ func (pg *ManualCoinSelectionPage) topSection(gtx C) D {
 				Width:       cryptomaterial.WrapContent,
 				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Horizontal,
-				Alignment:   layout.Start,
+				Alignment:   layout.Middle,
 				Clickable:   pg.fromCoinSelection,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
-						Top:   values.MarginPadding8,
 						Right: values.MarginPadding6,
 					}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding8)
+						return pg.Theme.Icons.ChevronLeft.Layout24dp(gtx)
 					})
 				}),
-				layout.Rigid(pg.Theme.H6(values.String(values.StrCoinSelection)).Layout),
+				layout.Rigid(func(gtx C) D {
+					lbl := pg.Theme.H6(values.String(values.StrCoinSelection))
+					lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
+					return lbl.Layout(gtx)
+				}),
 			)
 		})
 	})
 }
 
 func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	margin16 := values.MarginPadding16
+	if pg.modalLayout != nil {
+		margin16 = values.MarginPadding0
+	}
+	return layout.Inset{Bottom: margin16}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			topContainer := layout.UniformInset(values.MarginPadding15)
 			return topContainer.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrSummary))
+							textLabel := pg.Theme.Label(textSize16, values.String(values.StrSummary))
 							textLabel.Font.Weight = font.SemiBold
 							return textLabel.Layout(gtx)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Flexed(0.22, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrSelectedUTXO)+": ").Layout),
-									layout.Flexed(1, func(gtx C) D {
-										return layout.W.Layout(gtx, pg.selectedUTXOs.Layout)
-									}),
-								)
+						axis := layout.Horizontal
+						if pg.IsMobileView() || pg.modalLayout != nil {
+							axis = layout.Vertical
+						}
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Flex{Axis: axis, Spacing: layout.SpaceBetween}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.sumaryContent(gtx, values.String(values.StrSelectedUTXO)+": ", pg.selectedUTXOs)
 							}),
-							layout.Flexed(0.38, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize14, values.StringF(values.StrTxSize, " : ")).Layout),
-									layout.Flexed(1, func(gtx C) D {
-										return layout.W.Layout(gtx, pg.txSize.Layout)
-									}),
-								)
+							layout.Rigid(func(gtx C) D {
+								return pg.sumaryContent(gtx, values.StringF(values.StrTxSize, " : "), pg.txSize)
+
 							}),
-							layout.Flexed(0.4, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrTotalAmount)+": ").Layout),
-									layout.Flexed(1, func(gtx C) D {
-										return layout.W.Layout(gtx, pg.totalAmount.Layout)
-									}),
-								)
+							layout.Rigid(func(gtx C) D {
+								return pg.sumaryContent(gtx, values.String(values.StrTotalAmount)+": ", pg.totalAmount)
 							}),
 						)
 					}),
@@ -465,14 +482,24 @@ func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
 	})
 }
 
+func (pg *ManualCoinSelectionPage) sumaryContent(gtx C, text string, valueLable cryptomaterial.Label) D {
+	textSize14 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
+	valueLable.TextSize = textSize14
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(pg.Theme.Label(textSize14, text).Layout),
+		layout.Rigid(valueLable.Layout),
+	)
+}
+
 func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
+	textSize14 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
 		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrAccountList))
+					textLabel := pg.Theme.Label(textSize16, values.String(values.StrAccountList))
 					textLabel.Font.Weight = font.SemiBold
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(textLabel.Layout),
@@ -483,7 +510,7 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					collapsibleHeader := func(gtx C) D {
-						t := pg.Theme.Label(values.TextSize16, pg.accountUTXOs.Account)
+						t := pg.Theme.Label(textSize16, pg.accountUTXOs.Account)
 						t.Font.Weight = font.SemiBold
 						return t.Layout(gtx)
 					}
@@ -492,7 +519,7 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 						if len(pg.accountUTXOs.Details) == 0 {
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
 							return layout.Center.Layout(gtx,
-								pg.Theme.Label(values.TextSize14, values.String(values.StrNoUTXOs)).Layout,
+								pg.Theme.Label(textSize14, values.String(values.StrNoUTXOs)).Layout,
 							)
 						}
 						return pg.accountListItemsSection(gtx, pg.accountUTXOs.Details)
@@ -515,7 +542,7 @@ func (pg *ManualCoinSelectionPage) generateLabel(txt interface{}, clickable *cry
 		txtStr = fmt.Sprintf("%d", n)
 	}
 
-	lb := pg.Theme.Label(values.TextSize14, txtStr)
+	lb := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize14), txtStr)
 	if len(txtStr) > MaxAddressLen {
 		// Only addresses have texts longer than 16 characters.
 		lb.Text = txtStr[:MaxAddressLen] + "..."
@@ -542,7 +569,6 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 			}),
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
 				return pg.Theme.List(pg.listContainer).Layout(gtx, len(utxos), func(gtx C, index int) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
@@ -672,4 +698,23 @@ func sortUTXOrows(i, j, pos int, ascendingOrder bool, elems []*UTXOInfo) bool {
 	default:
 		return false
 	}
+}
+
+// Handle implements app.Modal.
+func (pg *ManualCoinSelectionPage) Handle() {
+	if pg.modalLayout.BackdropClicked(true) {
+		pg.modalLayout.Dismiss()
+	} else {
+		pg.HandleUserInteractions()
+	}
+}
+
+// OnDismiss implements app.Modal.
+func (pg *ManualCoinSelectionPage) OnDismiss() {
+	pg.OnNavigatedFrom()
+}
+
+// OnResume implements app.Modal.
+func (pg *ManualCoinSelectionPage) OnResume() {
+	pg.OnNavigatedTo()
 }

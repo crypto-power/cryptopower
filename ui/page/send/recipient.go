@@ -27,22 +27,20 @@ type recipient struct {
 
 	sendDestination *destination
 	amount          *sendAmount
-
-	exchangeRate           float64
-	isFetchingExchangeRate bool
-	usdExchangeSet         bool
+	pageParam       getPageFields
 }
 
-func newRecipient(l *load.Load, selectedWallet sharedW.Asset) *recipient {
+func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields) *recipient {
 	rp := &recipient{
 		Load:           l,
 		selectedWallet: selectedWallet,
-		exchangeRate:   -1,
+		pageParam:      pageParam,
 	}
 
 	assetType := rp.selectedWallet.GetAssetType()
 
 	rp.amount = newSendAmount(l.Theme, assetType)
+	rp.amount.amountEditor.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 	rp.sendDestination = newSendDestination(l, assetType)
 
 	rp.description = rp.Theme.Editor(new(widget.Editor), values.String(values.StrNote))
@@ -51,6 +49,7 @@ func newRecipient(l *load.Load, selectedWallet sharedW.Asset) *recipient {
 	rp.description.IsTitleLabel = false
 	// Set the maximum characters the editor can accept.
 	rp.description.Editor.MaxLen = MaxTxLabelSize
+	rp.description.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 
 	return rp
 }
@@ -205,7 +204,7 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 				if !rp.sendDestination.sendToAddress {
 					layoutBody = rp.walletAccountlayout(window)
 				}
-				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody)
+				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody, rp.IsMobileView())
 			}),
 			layout.Rigid(rp.addressAndAmountlayout),
 			layout.Rigid(rp.txLabelSection),
@@ -215,7 +214,7 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 
 func (rp *recipient) topLayout(gtx C, index int) D {
 	txt := fmt.Sprintf("%s: %s %v", values.String(values.StrTo), values.String(values.StrRecipient), index)
-	titleTxt := rp.Theme.Label(values.TextSize16, txt)
+	titleTxt := rp.Theme.Label(values.TextSizeTransform(rp.IsMobileView(), values.TextSize16), txt)
 	titleTxt.Color = rp.Theme.Color.GrayText2
 
 	return layout.Flex{}.Layout(gtx,
@@ -255,7 +254,7 @@ func (rp *recipient) contentWrapper(gtx C, title string, content layout.Widget) 
 	}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				lbl := rp.Theme.Label(values.TextSize16, title)
+				lbl := rp.Theme.Label(values.TextSizeTransform(rp.IsMobileView(), values.TextSize16), title)
 				lbl.Font.Weight = font.SemiBold
 				return layout.Inset{
 					Bottom: values.MarginPadding4,
@@ -267,7 +266,42 @@ func (rp *recipient) contentWrapper(gtx C, title string, content layout.Widget) 
 }
 
 func (rp *recipient) addressAndAmountlayout(gtx C) D {
-	return rp.contentWrapper(gtx, values.String(values.StrAmount), rp.amount.amountEditor.Layout)
+	widget := func(gtx C) D { return rp.amount.amountEditor.Layout(gtx) }
+	if rp.pageParam().exchangeRate != -1 && rp.pageParam().usdExchangeSet {
+		widget = func(gtx C) D {
+			icon := cryptomaterial.NewIcon(rp.Theme.Icons.ActionSwapHoriz)
+			axis := layout.Horizontal
+			var flexChilds []layout.FlexChild
+			flexChilds = []layout.FlexChild{
+				layout.Flexed(0.45, rp.amount.amountEditor.Layout),
+				layout.Flexed(0.1, func(gtx C) D {
+					return layout.Center.Layout(gtx, func(gtx C) D {
+						return icon.Layout(gtx, values.MarginPadding16)
+					})
+				}),
+				layout.Flexed(0.45, rp.amount.usdAmountEditor.Layout),
+			}
+			if rp.IsMobileView() {
+				axis = layout.Vertical
+				icon = cryptomaterial.NewIcon(rp.Theme.Icons.ActionSwapVertical)
+				flexChilds = []layout.FlexChild{
+					layout.Rigid(rp.amount.amountEditor.Layout),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding10}.Layout),
+					layout.Rigid(func(gtx C) D {
+						return icon.Layout(gtx, values.MarginPadding16)
+					}),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding10}.Layout),
+					layout.Rigid(rp.amount.usdAmountEditor.Layout),
+				}
+			}
+			return layout.Flex{
+				Axis:      axis,
+				Alignment: layout.Middle,
+			}.Layout(gtx, flexChilds...)
+		}
+
+	}
+	return rp.contentWrapper(gtx, values.String(values.StrAmount), widget)
 }
 
 func (rp *recipient) txLabelSection(gtx C) D {

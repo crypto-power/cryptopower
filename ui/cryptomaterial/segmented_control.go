@@ -130,7 +130,6 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 	if sc.disableUniformPadding {
 		return widget(gtx)
 	}
-
 	return UniformPadding(gtx, widget, sc.isMobileView)
 }
 
@@ -147,13 +146,10 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 			return sc.slideActionTitle.DragLayout(gtx, func(gtx C) D {
 				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
 					isSelectedSegment := sc.SelectedIndex() == i
-					textSize := values.TextSize16
-					if sc.isMobileView {
-						textSize = values.TextSize12
-					}
+					textSize16 := values.TextSizeTransform(sc.isMobileView, values.TextSize16)
 					return layout.Center.Layout(gtx, func(gtx C) D {
 						bg := sc.theme.Color.SurfaceHighlight
-						txt := sc.theme.DecoratedText(textSize, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
+						txt := sc.theme.DecoratedText(textSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
 						border := Border{Radius: Radius(0)}
 						if isSelectedSegment {
 							bg = sc.theme.Color.Surface
@@ -247,12 +243,13 @@ func (sc *SegmentedControl) groupTileMaxLayout(gtx C) D {
 		Border:     Border{Radius: Radius(8)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			textSize16 := values.TextSizeTransform(sc.isMobileView, values.TextSize16)
 			return sc.slideActionTitle.DragLayout(gtx, func(gtx C) D {
 				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
 					isSelectedSegment := sc.SelectedIndex() == i
 					return layout.Center.Layout(gtx, func(gtx C) D {
 						bg := sc.theme.Color.SurfaceHighlight
-						txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
+						txt := sc.theme.DecoratedText(textSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
 						border := Border{Radius: Radius(0)}
 						if isSelectedSegment {
 							bg = sc.theme.Color.Surface
@@ -286,7 +283,7 @@ func (sc *SegmentedControl) dynamicSplitTileLayout(gtx C) D {
 			isSelectedSegment := sc.SelectedIndex() == i
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				bg := sc.theme.Color.Surface
-				txt := sc.theme.DecoratedText(values.TextSize14, sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
+				txt := sc.theme.DecoratedText(values.TextSizeTransform(sc.isMobileView, values.TextSize14), sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
 				border := Border{Radius: Radius(12), Color: sc.theme.Color.Gray10}
 				if isSelectedSegment {
 					bg = sc.theme.Color.Gray2

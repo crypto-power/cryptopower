@@ -29,8 +29,6 @@ type destination struct {
 
 	sendToAddress bool
 	accountSwitch *cryptomaterial.SegmentedControl
-
-	selectedIndex int
 }
 
 func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination {
@@ -43,6 +41,7 @@ func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination 
 	dst.accountSwitch.DisableUniform(true)
 
 	dst.destinationAddressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrDestAddr))
+	dst.destinationAddressEditor.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 	dst.destinationAddressEditor.Editor.SingleLine = true
 	dst.destinationAddressEditor.Editor.SetText("")
 	dst.destinationAddressEditor.IsTitleLabel = false

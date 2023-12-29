@@ -261,6 +261,10 @@ func (hp *HomePage) HandleUserInteractions() {
 			if strings.ToLower(item.PageID) == values.StrReceive {
 				hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
 			}
+
+			if strings.ToLower(item.PageID) == values.StrSend {
+				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, nil))
+			}
 		}
 	}
 }

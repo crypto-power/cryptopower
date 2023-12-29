@@ -22,7 +22,6 @@ const (
 	SendPageID = "Send"
 
 	// MaxTxLabelSize defines the maximum number of characters to be allowed on
-	// txLabelInputEditor component.
 	MaxTxLabelSize = 100
 )
 
@@ -54,17 +53,11 @@ type Page struct {
 	// retryExchange cryptomaterial.Button // TODO not included in design
 	nextButton cryptomaterial.Button
 
-	shadowBox *cryptomaterial.Shadow
-	backdrop  *widget.Clickable
-
 	isFetchingExchangeRate bool
 
-	exchangeRate        float64
-	usdExchangeSet      bool
-	exchangeRateMessage string
-	confirmTxModal      *sendConfirmModal
-
-	txLabelInputEditor cryptomaterial.Editor
+	exchangeRate   float64
+	usdExchangeSet bool
+	confirmTxModal *sendConfirmModal
 
 	*authoredTxData
 	selectedWallet  sharedW.Asset
@@ -74,6 +67,14 @@ type Page struct {
 	advanceOptions  *cryptomaterial.Collapsible
 
 	selectedUTXOs selectedUTXOsInfo
+}
+
+type getPageFields func() pageFields
+
+type pageFields struct {
+	exchangeRate           float64
+	usdExchangeSet         bool
+	isFetchingExchangeRate bool
 }
 
 type authoredTxData struct {
@@ -101,8 +102,6 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		Load: l,
 
 		authoredTxData: &authoredTxData{},
-		shadowBox:      l.Theme.Shadow(),
-		backdrop:       new(widget.Clickable),
 		exchangeRate:   -1,
 	}
 
@@ -123,7 +122,7 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	}
 	pg.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc).ShowSizeAndCost()
 
-	pg.recipient = newRecipient(l, pg.selectedWallet)
+	pg.recipient = newRecipient(l, pg.selectedWallet, pg.pageFields)
 	pg.recipient.onAddressChanged(func() {
 		pg.validateAndConstructTx()
 	})
@@ -133,10 +132,17 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	})
 
 	pg.initializeAccountSelectors()
-
 	pg.initLayoutWidgets()
 
 	return pg
+}
+
+func (pg *Page) pageFields() pageFields {
+	return pageFields{
+		exchangeRate:           pg.exchangeRate,
+		usdExchangeSet:         pg.usdExchangeSet,
+		isFetchingExchangeRate: pg.isFetchingExchangeRate,
+	}
 }
 
 // initWalletSelector is used for the send modal for wallet selection.
@@ -149,6 +155,8 @@ func (pg *Page) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.selectedWallet = selectedWallet
+		go load.GetAPIFeeRate(pg.selectedWallet)
+		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 		pg.recipient.setDestinationAssetType(selectedWallet.GetAssetType())
 		pg.initializeAccountSelectors()
 		pg.recipient.resetDestinationAccountSelector()
@@ -279,6 +287,7 @@ func (pg *Page) fetchExchangeRate() {
 	}
 
 	pg.exchangeRate = rate.LastTradePrice
+	pg.recipient.amount.setExchangeRate(pg.exchangeRate)
 	pg.validateAndConstructTx() // convert estimates to usd
 
 	pg.isFetchingExchangeRate = false
@@ -429,10 +438,6 @@ func (pg *Page) HandleUserInteractions() {
 
 	pg.nextButton.SetEnabled(pg.recipient.isValidated())
 
-	if pg.sourceAccountSelector.Changed() {
-		pg.recipient.validateAmount()
-	}
-
 	if pg.infoButton.Button.Clicked() {
 		textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
@@ -449,7 +454,11 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.toCoinSelection.Clicked() {
 		if pg.recipient.destinationAddress() != "" {
-			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+			if pg.modalLayout != nil {
+				pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
+			} else {
+				pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+			}
 		}
 	}
 

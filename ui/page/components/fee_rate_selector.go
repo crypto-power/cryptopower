@@ -75,7 +75,7 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 		Top: values.MarginPadding4,
 	}
 
-	fs.SaveRate.TextSize = values.TextSize16
+	fs.SaveRate.TextSize = values.TextSizeTransform(fs.IsMobileView(), values.TextSize16)
 	fs.SaveRate.Inset = layout.Inset{
 		Top:    values.MarginPadding12,
 		Right:  values.MarginPadding16,
@@ -117,6 +117,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			title := fs.Theme.Body1(values.String(values.StrFeeRates))
+			title.TextSize = values.TextSizeTransform(fs.IsMobileView(), values.TextSize16)
 			title.Font.Weight = font.SemiBold
 			return layout.Inset{Bottom: values.MarginPadding4}.Layout(gtx, title.Layout)
 		}),
@@ -137,10 +138,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 									},
 								}
 								return border.Layout(gtx, func(gtx C) D {
-									return layout.Inset{
-										Top:    values.MarginPadding4,
-										Bottom: values.MarginPadding4,
-									}.Layout(gtx, fs.ratesEditor.Layout)
+									return VerticalInset(values.MarginPadding4).Layout(gtx, fs.ratesEditor.Layout)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
@@ -157,11 +155,11 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 					}
 
 					if fs.feeRateSwitch.SelectedSegment() == values.String(values.StrFetched) {
-						fs.fetchedRatesDropDown.Width = values.MarginPadding510
+						fs.fetchedRatesDropDown.Width = gtx.Metric.PxToDp(gtx.Constraints.Max.X)
 						layoutBody = fs.fetchedRatesDropDown.Layout
 					}
 
-					return fs.feeRateSwitch.Layout(gtx, layoutBody)
+					return fs.feeRateSwitch.Layout(gtx, layoutBody, fs.IsMobileView())
 				}),
 				layout.Rigid(func(gtx C) D {
 					col := fs.Theme.Color.GrayText2
@@ -182,7 +180,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 						col = fs.Theme.Color.Danger
 					}
 
-					lbl := fs.Theme.Label(values.TextSize14, txt)
+					lbl := fs.Theme.Label(values.TextSizeTransform(fs.IsMobileView(), values.TextSize14), txt)
 					lbl.Color = col
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
 					return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
@@ -231,6 +229,7 @@ func (fs *FeeRateSelector) UpdatedFeeRate(selectedWallet sharedW.Asset) {
 	fs.fetchedRatesDropDown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
 	fs.fetchedRatesDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
 	fs.fetchedRatesDropDown.Background = &fs.Theme.Color.Gray4
+	fs.fetchedRatesDropDown.SetMaxTextLeng(30)
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.
