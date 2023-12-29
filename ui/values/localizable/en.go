@@ -888,4 +888,5 @@ const EN = `
 "myAddress" = "My Address"
 "regenerate" = "Regenerate"
 "integratedExchange" = "Integrated Exchange"
+"seedWords" = "Seed Words"
 `
