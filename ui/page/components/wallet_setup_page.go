@@ -181,52 +181,50 @@ func (pg *CreateWallet) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *CreateWallet) Layout(gtx C) D {
-	return cryptomaterial.LinearLayout{
-		Width:     cryptomaterial.MatchParent,
-		Height:    cryptomaterial.MatchParent,
-		Direction: layout.Center,
-		Padding:   layout.UniformInset(values.MarginPadding20),
-	}.Layout2(gtx, func(gtx C) D {
-		width := gtx.Dp(values.MarginPadding377)
-		if pg.IsMobileView() {
-			width = gtx.Dp(values.MarginPadding350)
-		}
+	return cryptomaterial.UniformPadding(gtx, func(gtx layout.Context) layout.Dimensions {
 		return cryptomaterial.LinearLayout{
-			Width:     width,
+			Width:     cryptomaterial.MatchParent,
 			Height:    cryptomaterial.MatchParent,
-			Alignment: layout.Middle,
-			Margin: layout.Inset{
-				Top:    values.MarginPadding44,
-				Bottom: values.MarginPadding30,
-			},
+			Direction: layout.Center,
 		}.Layout2(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(pg.backButton.Layout),
-						layout.Rigid(func(gtx C) D {
+			width := values.MarginPadding377
+			if pg.IsMobileView() {
+				width = pg.Load.CurrentAppWidth()
+			}
+			return cryptomaterial.LinearLayout{
+				Width:     gtx.Dp(width),
+				Height:    cryptomaterial.MatchParent,
+				Alignment: layout.Middle,
+			}.Layout2(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+							layout.Rigid(pg.backButton.Layout),
+							layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout),
+							layout.Rigid(func(gtx C) D {
+								lbl := pg.Theme.H6(values.String(values.StrCreateWallet))
+								lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
+								return lbl.Layout(gtx)
+							}),
+						)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 							return layout.Inset{
-								Left: values.MarginPadding10,
-							}.Layout(gtx, pg.Theme.H6(values.String(values.StrCreateWallet)).Layout)
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-						return layout.Inset{
-							Top:   values.MarginPadding26,
-							Right: values.MarginPadding20,
-						}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(pg.walletTypeSection),
-								layout.Rigid(pg.walletOptions),
-							)
+								Top:   values.MarginPadding26,
+								Right: values.MarginPadding20,
+							}.Layout(gtx, func(gtx C) D {
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(pg.walletTypeSection),
+									layout.Rigid(pg.walletOptions),
+								)
+							})
 						})
-					})
-				}),
-			)
+					}),
+				)
+			})
 		})
-	})
+	}, pg.IsMobileView())
 }
 
 func (pg *CreateWallet) walletTypeSection(gtx C) D {
@@ -241,7 +239,7 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding4, Bottom: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
 						pg.assetTypeError.Color = pg.Theme.Color.Danger
-						pg.assetTypeError.TextSize = values.TextSize14
+						pg.assetTypeError.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
 						return pg.assetTypeError.Layout(gtx)
 					})
 				}),
@@ -251,7 +249,7 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 }
 
 func (pg *CreateWallet) walletOptions(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceEnd}.Layout(gtx,
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			list := layout.List{}
 			return list.Layout(gtx, len(pg.walletActions), func(gtx C, i int) D {
@@ -259,27 +257,21 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 
 				// set selected item background color
 				col := pg.Theme.Color.Surface
-				title := pg.Theme.Label(values.TextSize16, item.title)
+				title := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), item.title)
 				title.Color = pg.Theme.Color.Gray1
 
-				radius := cryptomaterial.CornerRadius{
-					TopRight:    8,
-					BottomRight: 8,
-					TopLeft:     8,
-					BottomLeft:  8,
-				}
-				border := pg.Theme.Color.White
+				radius := cryptomaterial.Radius(8)
+				borderColor := pg.Theme.Color.White
 				if pg.AssetsManager.IsDarkModeOn() {
-					border = pg.Theme.Color.Background
+					borderColor = pg.Theme.Color.Background
 				}
 				item.border = cryptomaterial.Border{
 					Radius: radius,
-					Color:  border,
+					Color:  borderColor,
 					Width:  values.MarginPadding2,
 				}
 
 				if pg.selectedWalletAction == i {
-
 					col = pg.Theme.Color.White
 					title.Color = pg.Theme.Color.Primary
 
@@ -288,19 +280,11 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 						title.Color = pg.Theme.Color.White
 					}
 
-					item.border = cryptomaterial.Border{
-						Radius: radius,
-						Color:  pg.Theme.Color.Primary,
-						Width:  values.MarginPadding2,
-					}
+					item.border.Color = pg.Theme.Color.Primary
 				}
 
 				if item.clickable.IsHovered() {
-					item.border = cryptomaterial.Border{
-						Radius: radius,
-						Color:  pg.Theme.Color.Gray1,
-						Width:  values.MarginPadding2,
-					}
+					item.border.Color = pg.Theme.Color.Gray1
 					title.Color = pg.Theme.Color.Gray1
 				}
 
@@ -336,25 +320,14 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 }
 
 func (pg *CreateWallet) createNewWallet(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Top:    values.MarginPadding14,
-				Bottom: values.MarginPadding20,
-			}.Layout(gtx, pg.walletName.Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Top:    values.MarginPadding8,
-				Bottom: values.MarginPadding20,
-			}.Layout(gtx, pg.passwordEditor.Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Top:    values.MarginPadding8,
-				Bottom: values.MarginPadding20,
-			}.Layout(gtx, pg.confirmPasswordEditor.Layout)
-		}),
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(layout.Spacer{Height: values.MarginPadding14}.Layout),
+		layout.Rigid(pg.walletName.Layout),
+		layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+		layout.Rigid(pg.passwordEditor.Layout),
+		layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+		layout.Rigid(pg.confirmPasswordEditor.Layout),
+		layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
@@ -373,8 +346,9 @@ func (pg *CreateWallet) createNewWallet(gtx C) D {
 }
 
 func (pg *CreateWallet) restoreWallet(gtx C) D {
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrExistingWalletName)).Layout),
+		layout.Rigid(pg.Theme.Label(textSize16, values.String(values.StrExistingWalletName)).Layout),
 		layout.Rigid(pg.watchOnlyCheckBox.Layout),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
@@ -392,7 +366,7 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 								return layout.Inset{
 									Top:    values.MarginPadding10,
 									Bottom: values.MarginPadding8,
-								}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrExtendedPubKey)).Layout)
+								}.Layout(gtx, pg.Theme.Label(textSize16, values.String(values.StrExtendedPubKey)).Layout)
 							}),
 							layout.Rigid(pg.watchOnlyWalletHex.Layout),
 						)

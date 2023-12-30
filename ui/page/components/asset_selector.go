@@ -8,7 +8,6 @@ import (
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -29,7 +28,7 @@ type AssetTypeSelector struct {
 
 // assetTypeItem wraps the asset type in a clickable.
 type AssetTypeItem struct {
-	Type      utils.AssetType
+	Type      libutils.AssetType
 	Icon      *cryptomaterial.Image
 	clickable *cryptomaterial.Clickable
 }
@@ -116,7 +115,7 @@ func (ats *AssetTypeSelector) DisableBorder() *AssetTypeSelector {
 }
 
 // SelectedAssetType returns the currently selected Asset type.
-func (ats *AssetTypeSelector) SelectedAssetType() *utils.AssetType {
+func (ats *AssetTypeSelector) SelectedAssetType() *libutils.AssetType {
 	if ats.selectedAssetType == nil {
 		return nil
 	}
@@ -124,7 +123,7 @@ func (ats *AssetTypeSelector) SelectedAssetType() *utils.AssetType {
 }
 
 // SetSelectedAssetType sets assetType as the current selected asset type.
-func (ats *AssetTypeSelector) SetSelectedAssetType(assetType utils.AssetType) {
+func (ats *AssetTypeSelector) SetSelectedAssetType(assetType libutils.AssetType) {
 	asset := &AssetTypeItem{
 		Type:      assetType,
 		Icon:      ats.setAssetTypeIcon(assetType),
@@ -182,7 +181,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 			txt := ats.Theme.Label(values.TextSize14, ats.hint)
 			txt.Color = ats.Theme.Color.Gray7
 			if ats.selectedAssetType != nil {
-				txt = ats.Theme.Label(values.TextSize16, ats.selectedAssetType.Type.String())
+				txt = ats.Theme.Label(values.TextSizeTransform(ats.IsMobileView(), values.TextSize16), ats.selectedAssetType.Type.String())
 				txt.Color = ats.Theme.Color.Text
 			}
 			return txt.Layout(gtx)

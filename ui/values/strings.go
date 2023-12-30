@@ -997,4 +997,5 @@ const (
 	StrMyAddress                       = "myAddress"
 	StrRegenerate                      = "regenerate"
 	StrIntegratedExchange              = "integratedExchange"
+	StrSeedWords                       = "seedWords"
 )

@@ -1,14 +1,11 @@
 package components
 
 import (
-	"image"
 	"strings"
 
 	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -22,7 +19,10 @@ import (
 
 const CreateRestorePageID = "Restore"
 
-var tabTitles = []string{"Seed Words", "Hex"}
+var tabTitles = []string{
+	values.String(values.StrSeedWords),
+	values.String(values.StrHex),
+}
 
 type Restore struct {
 	*load.Load
@@ -34,7 +34,7 @@ type Restore struct {
 	// the ParentNavigator is the MainPage.
 	*app.GenericPageModal
 	restoreComplete   func()
-	tabList           *cryptomaterial.ClickableList
+	tabs              *cryptomaterial.SegmentedControl
 	tabIndex          int
 	backButton        cryptomaterial.IconButton
 	seedRestorePage   *SeedRestore
@@ -52,23 +52,27 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 		GenericPageModal: app.NewGenericPageModal(CreateRestorePageID),
 		seedRestorePage:  NewSeedRestorePage(l, walletName, walletType, onRestoreComplete),
 		tabIndex:         0,
-		tabList:          l.Theme.NewClickableList(layout.Horizontal),
 		restoreComplete:  onRestoreComplete,
 		walletName:       walletName,
 		walletType:       walletType,
 		toggleSeedInput:  l.Theme.Switch(),
+		tabs:             l.Theme.SegmentedControl(tabTitles, cryptomaterial.SegmentTypeGroup),
 	}
 
 	pg.backButton, _ = SubpageHeaderButtons(l)
 	pg.backButton.Icon = pg.Theme.Icons.ContentClear
+	textSize16 := values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 
 	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletSeed))
 	pg.seedInputEditor.Editor.SingleLine = false
 	pg.seedInputEditor.Editor.SetText("")
+	pg.seedInputEditor.TextSize = textSize16
 
 	pg.confirmSeedButton = l.Theme.Button("")
 	pg.confirmSeedButton.Font.Weight = font.Medium
 	pg.confirmSeedButton.SetEnabled(false)
+	pg.confirmSeedButton.TextSize = textSize16
+	pg.tabs.DisableUniform(true)
 
 	return pg
 }
@@ -87,13 +91,6 @@ func (pg *Restore) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Restore) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *Restore) layoutDesktop(gtx C) D {
 	body := func(gtx C) D {
 		sp := SubPage{
 			Load:       pg.Load,
@@ -108,176 +105,70 @@ func (pg *Restore) layoutDesktop(gtx C) D {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return cryptomaterial.UniformPadding(gtx, body)
-}
-
-func (pg *Restore) layoutMobile(gtx C) D {
-	body := func(gtx C) D {
-		sp := SubPage{
-			Load:       pg.Load,
-			Title:      values.String(values.StrRestoreWallet),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				return pg.restoreMobileLayout(gtx)
-			},
-		}
-		return sp.Layout(pg.ParentWindow(), gtx)
-	}
-	return UniformMobile(gtx, false, false, body)
+	return cryptomaterial.UniformPadding(gtx, body, pg.IsMobileView())
 }
 
 func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
-	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.tabLayout),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D {
-				if pg.tabIndex == 1 {
-					return D{}
-				}
-				return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
-						}),
-						layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrPasteSeedWords)).Layout),
-					)
-				})
-			}),
-			layout.Rigid(func(gtx C) D {
-				if pg.toggleSeedInput.IsChecked() || pg.tabIndex == 1 {
-					return pg.seedInputComponent(gtx)
-				}
-				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
-			}),
-		)
-	})
+	return pg.tabs.Layout(gtx, func(gtx C) D {
+		if pg.tabs.SelectedIndex() == 0 {
+			return pg.seedWordsLayout(gtx)
+		}
+		return pg.seedInputLayout(gtx)
+	}, pg.IsMobileView())
 }
 
-func (pg *Restore) seedInputComponent(gtx C) D {
+func (pg *Restore) seedWordsLayout(gtx C) D {
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
+					}),
+					layout.Rigid(pg.Theme.Label(textSize16, values.String(values.StrPasteSeedWords)).Layout),
+				)
+			})
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			if pg.toggleSeedInput.IsChecked() || pg.tabIndex == 1 {
+				return pg.seedInputLayout(gtx)
+			}
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
+		}),
+	)
+}
+
+func (pg *Restore) seedInputLayout(gtx C) D {
+	if pg.tabIndex == 0 {
+		pg.seedInputEditor.Hint = values.String(values.StrEnterWalletSeed)
+		pg.confirmSeedButton.Text = values.String(values.StrValidateWalSeed)
+	} else {
+		pg.seedInputEditor.Hint = values.String(values.StrEnterWalletHex)
+		pg.confirmSeedButton.Text = values.String(values.StrValidateWalHex)
+	}
 	return layout.Inset{
 		Top: values.MarginPadding16,
 	}.Layout(gtx, func(gtx C) D {
-		return cryptomaterial.LinearLayout{
-			Width:       cryptomaterial.MatchParent,
-			Height:      cryptomaterial.MatchParent,
-			Orientation: layout.Vertical,
-			Margin:      layout.Inset{Bottom: values.MarginPadding16},
-		}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx layout.Context) D {
-							return layout.Inset{
-								Left:  values.MarginPadding16,
-								Right: values.MarginPadding16,
-								Top:   values.MarginPadding30,
-							}.Layout(gtx, func(gtx C) D {
-								if pg.tabIndex == 0 {
-									pg.seedInputEditor.Hint = values.String(values.StrEnterWalletSeed)
-								} else {
-									pg.seedInputEditor.Hint = values.String(values.StrEnterWalletHex)
-								}
-								return pg.seedInputEditor.Layout(gtx)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Flex{}.Layout(gtx,
-								layout.Flexed(1, func(gtx C) D {
-									return layout.E.Layout(gtx, func(gtx C) D {
-										return layout.Inset{
-											Left:   values.MarginPadding16,
-											Right:  values.MarginPadding16,
-											Top:    values.MarginPadding16,
-											Bottom: values.MarginPadding16,
-										}.Layout(gtx, func(gtx C) D {
-											if pg.tabIndex == 0 {
-												pg.confirmSeedButton.Text = values.String(values.StrValidateWalSeed)
-											} else {
-												pg.confirmSeedButton.Text = values.String(values.StrValidateWalHex)
-											}
-											return pg.confirmSeedButton.Layout(gtx)
-										})
-									})
-								}),
-							)
-						}),
-					)
-				})
-			}),
-		)
-	})
-}
-
-func (pg *Restore) restoreMobileLayout(gtx layout.Context) layout.Dimensions {
-	return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.tabLayout),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
-			}),
-		)
+		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+			return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+					layout.Rigid(pg.seedInputEditor.Layout),
+					layout.Rigid(func(gtx C) D {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return VerticalInset(values.MarginPadding16).Layout(gtx, pg.confirmSeedButton.Layout)
+						})
+					}),
+				)
+			})
+		})
 	})
 }
 
 func (pg *Restore) indexLayout(gtx C) D {
 	return pg.seedRestorePage.Layout(gtx)
-}
-
-func (pg *Restore) switchTab(tabIndex int) {
-	if tabIndex == 0 {
-		pg.seedRestorePage.OnNavigatedTo()
-	}
-}
-
-func (pg *Restore) tabLayout(gtx C) D {
-	var dims layout.Dimensions
-	return layout.Inset{
-		Top: values.MarginPaddingMinus30,
-	}.Layout(gtx, func(gtx C) D {
-		return pg.tabList.Layout(gtx, len(tabTitles), func(gtx C, i int) D {
-			return layout.Stack{Alignment: layout.S}.Layout(gtx,
-				layout.Stacked(func(gtx C) D {
-					return layout.Inset{
-						Right:  values.MarginPadding24,
-						Bottom: values.MarginPadding8,
-					}.Layout(gtx, func(gtx C) D {
-						return layout.Center.Layout(gtx, func(gtx C) D {
-							lbl := pg.Theme.Label(values.TextSize16, tabTitles[i])
-							lbl.Color = pg.Theme.Color.GrayText1
-							if pg.tabIndex == i {
-								lbl.Color = pg.Theme.Color.Primary
-								dims = lbl.Layout(gtx)
-							}
-
-							return lbl.Layout(gtx)
-						})
-					})
-				}),
-				layout.Stacked(func(gtx C) D {
-					if pg.tabIndex != i {
-						return D{}
-					}
-
-					tabHeight := gtx.Dp(values.MarginPadding2)
-					tabRect := image.Rect(0, 0, dims.Size.X, tabHeight)
-
-					return layout.Inset{
-						Left: values.MarginPaddingMinus22,
-					}.Layout(gtx, func(gtx C) D {
-						paint.FillShape(gtx.Ops, pg.Theme.Color.Primary, clip.Rect(tabRect).Op())
-						return layout.Dimensions{
-							Size: image.Point{X: dims.Size.X, Y: tabHeight},
-						}
-					})
-				}),
-			)
-		})
-	})
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -297,11 +188,8 @@ func (pg *Restore) OnNavigatedFrom() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Restore) HandleUserInteractions() {
-	if clicked, selectedItem := pg.tabList.ItemClicked(); clicked {
-		if pg.tabIndex != selectedItem {
-			pg.tabIndex = selectedItem
-			pg.switchTab(pg.tabIndex)
-		}
+	if pg.tabs.Changed() {
+		pg.tabIndex = pg.tabs.SelectedIndex()
 	}
 
 	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed() {
