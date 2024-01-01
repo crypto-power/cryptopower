@@ -1148,7 +1148,7 @@ func (pg *CreateOrderPage) orderSchedulerLayout(gtx C) D {
 }
 
 func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, bool, error) {
-	orders := components.LoadOrders(pg.Load, offset, pageSize, true)
+	orders := components.LoadOrders(pg.Load, offset, pageSize, true, "", "")
 	return orders, len(orders), false, nil
 }
 

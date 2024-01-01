@@ -889,4 +889,5 @@ const EN = `
 "regenerate" = "Regenerate"
 "integratedExchange" = "Integrated Exchange"
 "seedWords" = "Seed Words"
+"allservers" = "All servers"
 `

@@ -998,4 +998,5 @@ const (
 	StrRegenerate                      = "regenerate"
 	StrIntegratedExchange              = "integratedExchange"
 	StrSeedWords                       = "seedWords"
+	StrAllservers                      = "allservers"
 )

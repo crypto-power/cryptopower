@@ -195,7 +195,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	go pg.loadTransactions()
 
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true, "")
-	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
+	pg.orders = components.LoadOrders(pg.Load, 0, 3, true, "", "")
 
 	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
 		go pg.AssetsManager.RateSource.Refresh(false)

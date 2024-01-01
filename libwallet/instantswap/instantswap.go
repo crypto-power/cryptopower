@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -127,17 +128,27 @@ func (instantSwap *InstantSwap) NewExchangeServer(exchangeServer ExchangeServer)
 // GetOrdersRaw fetches and returns all saved orders.
 // If status is specified, only orders with that status will be returned.
 // status is made optional to the sync functionality can update all orders.
-func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool, status ...instantswap.Status) ([]*Order, error) {
+func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool, server, txID string, status ...instantswap.Status) ([]*Order, error) {
 	var query storm.Query
-	query = instantSwap.db.Select(
-		q.True(),
-	)
+	matchers := make([]q.Matcher, 0)
 
 	if len(status) > 0 {
-		query = instantSwap.db.Select(
-			q.Eq("Status", status[0]),
-		)
+		matchers = append(matchers, q.Eq("Status", status[0]))
 	}
+
+	if server != "" {
+		matchers = append(matchers, q.Eq("Server", server))
+	}
+
+	if txID != "" {
+		matchers = append(matchers, q.Eq("TxID", strings.TrimSpace(txID)))
+	}
+
+	if len(matchers) == 0 {
+		matchers = append(matchers, q.True())
+	}
+
+	query = instantSwap.db.Select(matchers...)
 
 	if offset > 0 {
 		query = query.Skip(int(offset))
@@ -205,6 +216,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 	order := &Order{
 		UUID: res.UUID,
 
+		Server:                   params.Server,
 		ExchangeServer:           params.ExchangeServer,
 		SourceWalletID:           params.SourceWalletID,
 		SourceAccountNumber:      params.SourceAccountNumber,

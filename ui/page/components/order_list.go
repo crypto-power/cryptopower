@@ -151,10 +151,10 @@ func LayoutNoOrderHistoryWithMsg(gtx C, l *load.Load, syncing bool, msg string) 
 	})
 }
 
-func LoadOrders(l *load.Load, offset, limit int32, newestFirst bool, status ...api.Status) []*instantswap.Order {
+func LoadOrders(l *load.Load, offset, limit int32, newestFirst bool, server, searchKey string, status ...api.Status) []*instantswap.Order {
 	var orders []*instantswap.Order
 
-	orders, err := l.AssetsManager.InstantSwap.GetOrdersRaw(offset, limit, newestFirst, status...)
+	orders, err := l.AssetsManager.InstantSwap.GetOrdersRaw(offset, limit, newestFirst, server, searchKey, status...)
 	if err != nil {
 		log.Error(err)
 	}
