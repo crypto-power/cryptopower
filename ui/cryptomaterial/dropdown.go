@@ -24,7 +24,6 @@ type DropDown struct {
 	theme          *Theme
 	items          []DropDownItem
 	expanded       bool
-	backdrop       *widget.Clickable
 	GroupPosition  uint
 	revs           bool
 	selectedIndex  int
@@ -34,7 +33,6 @@ type DropDown struct {
 	maxTextLeng    int
 
 	group                    uint
-	closeAllDropdown         func(group uint)
 	isDropdownGroupCollapsed func(group uint) bool
 	Width                    unit.Dp
 	linearLayout             *LinearLayout
@@ -100,10 +98,8 @@ func (t *Theme) DropdownWithCustomPos(items []DropDownItem, group uint, groupPos
 		navigationIcon: t.navigationCheckIcon,
 		Hoverable:      true,
 		clickable:      t.NewClickable(true),
-		backdrop:       new(widget.Clickable),
 
 		group:                    group,
-		closeAllDropdown:         t.closeAllDropdownMenus,
 		isDropdownGroupCollapsed: t.isDropdownGroupCollapsed,
 		linearLayout: &LinearLayout{
 			Width:  WrapContent,
@@ -185,10 +181,6 @@ func (d *DropDown) handleEvents() {
 			d.expanded = true
 		}
 	}
-
-	for d.backdrop.Clicked() {
-		d.closeAllDropdown(d.group)
-	}
 }
 
 func (d *DropDown) Changed() bool {
@@ -205,6 +197,12 @@ func (d *DropDown) Changed() bool {
 				d.selectedIndex = index
 				return oldSelected != index
 			}
+		}
+
+		// If no dropdown item was clicked, check if there's a click on the
+		// backdrop and close all dropdowns.
+		if len(d.theme.DropdownBackdrop.Clicks()) > 0 {
+			d.theme.closeAllDropdowns()
 		}
 	}
 
@@ -242,14 +240,10 @@ func (d *DropDown) Layout(gtx C) D {
 		maxY := unit.Dp(len(d.items)) * values.MarginPadding50
 		gtx.Constraints.Max.Y = gtx.Dp(maxY)
 		if d.expanded {
-			return d.backdrop.Layout(gtx, func(gtx C) D {
-				return layout.Stack{Alignment: d.expandedViewAlignment}.Layout(gtx, layout.Stacked(d.expandedLayout))
-			})
+			return layout.Stack{Alignment: d.expandedViewAlignment}.Layout(gtx, layout.Stacked(d.expandedLayout))
 		}
 
-		return d.backdrop.Layout(gtx, func(gtx C) D {
-			return layout.Stack{Alignment: d.expandedViewAlignment}.Layout(gtx, layout.Stacked(d.collapsedLayout))
-		})
+		return layout.Stack{Alignment: d.expandedViewAlignment}.Layout(gtx, layout.Stacked(d.collapsedLayout))
 	} else if d.expanded {
 		return layout.Stack{Alignment: d.expandedViewAlignment}.Layout(gtx, layout.Stacked(d.expandedLayout))
 	}

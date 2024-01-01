@@ -47,17 +47,19 @@ type Theme struct {
 	expandIcon            *Image
 	collapseIcon          *Image
 
-	dropDownMenus []*DropDown
+	dropDownMenus    []*DropDown
+	DropdownBackdrop *widget.Clickable
 }
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
 	t := &Theme{
-		Shaper:   *text.NewShaper(fontCollection),
-		Base:     material.NewTheme(fontCollection),
-		Color:    &values.Color{},
-		Icons:    &Icons{},
-		Styles:   values.DefaultWidgetStyles(),
-		TextSize: values.TextSize16,
+		Shaper:           *text.NewShaper(fontCollection),
+		Base:             material.NewTheme(fontCollection),
+		Color:            &values.Color{},
+		Icons:            &Icons{},
+		Styles:           values.DefaultWidgetStyles(),
+		TextSize:         values.TextSize16,
+		DropdownBackdrop: new(widget.Clickable),
 	}
 	t.SwitchDarkMode(isDarkModeOn, decredIcons)
 	t.checkBoxCheckedIcon = MustIcon(widget.NewIcon(icons.ToggleCheckBox))
@@ -213,11 +215,9 @@ func mulAlpha(c color.NRGBA, alpha uint8) color.NRGBA {
 	}
 }
 
-func (t *Theme) closeAllDropdownMenus(group uint) {
+func (t *Theme) closeAllDropdowns() {
 	for _, dropDown := range t.dropDownMenus {
-		if dropDown.group == group {
-			dropDown.expanded = false
-		}
+		dropDown.expanded = false
 	}
 }
 
