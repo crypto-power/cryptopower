@@ -872,6 +872,11 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		// TODO: Fetch orders and set pg.orders?
 	}
 
+	if pg.marketSelector.Changed() {
+		// TODO: Handle this.
+		log.Info("New market selected: ", pg.marketSelector.Selected())
+	}
+
 	for pg.orderHistoryBtn.Clicked() {
 		pg.openOrdersDisplayed = false
 		// TODO: Fetch orders and set pg.orders?
