@@ -229,4 +229,4 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
-replace decred.org/dcrdex v0.6.3 => ../../decred/dcrdex
+replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20231222102705-febf6ffc3495
