@@ -2,6 +2,7 @@ package dcrdex
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"image/color"
 	"strconv"
@@ -17,6 +18,9 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/dexc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -97,10 +101,13 @@ type DEXMarketPage struct {
 	orderFeeEstimateStr string
 
 	postBondBtn            cryptomaterial.Button
-	addWalletToDEX         cryptomaterial.Button
 	createOrderBtn         cryptomaterial.Button
 	immediateOrderCheckbox cryptomaterial.CheckBoxStyle
 	immediateOrderInfoBtn  *cryptomaterial.Clickable
+
+	addWalletToDEX  cryptomaterial.Button
+	walletSelector  *components.WalletAndAccountSelector
+	accountSelector *components.WalletAndAccountSelector
 
 	seeFullOrderBookBtn     cryptomaterial.Button
 	selectedMarketOrderBook *core.MarketOrderBook
@@ -122,9 +129,7 @@ func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
 		dexc:                               l.AssetsManager.DexClient(),
 		scrollContainer:                    &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		openOrdersAndOrderHistoryContainer: &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
-		serverSelector:                     &cryptomaterial.DropDown{},
 		addServerBtn:                       th.NewClickable(false),
-		marketSelector:                     &cryptomaterial.DropDown{},
 		toggleBuyAndSellBtn:                th.SegmentedControl(buyAndSellBtnStrings, cryptomaterial.SegmentTypeGroup),
 		orderTypesDropdown:                 th.DropDown(orderTypes, values.DEXOrderTypes, true),
 		priceEditor:                        newTextEditor(l.Theme, values.String(values.StrPrice), "", false),
@@ -187,6 +192,76 @@ func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) OnNavigatedTo() {
 	pg.ctx, pg.cancelCtx = context.WithCancel(context.Background())
+
+	noteFeed := pg.dexc.NotificationFeed()
+	go func() {
+		defer func() {
+			noteFeed.ReturnFeed()
+		}()
+		for {
+			select {
+			case <-pg.ctx.Done():
+				return
+			case n := <-noteFeed.C:
+				if n == nil {
+					return
+				}
+
+				switch n.Type() {
+				case core.NoteTypeConnEvent:
+					switch n.Topic() {
+					case core.TopicDEXConnected:
+						pg.resetServerAndMarkets()
+						modal := modal.NewSuccessModal(pg.Load, n.Details(), modal.DefaultClickFunc())
+						pg.ParentWindow().ShowModal(modal)
+						pg.ParentWindow().Reload()
+					case core.TopicDEXDisconnected, core.TopicDexConnectivity:
+						pg.notifyError(n.Details())
+					}
+				case core.NoteTypeOrder, core.NoteTypeMatch:
+					pg.refreshOrders()
+					pg.ParentWindow().Reload()
+				case core.NoteTypeBalance, core.NoteTypeSpots:
+					pg.ParentWindow().Reload()
+				}
+			}
+		}
+	}()
+
+	pg.resetServerAndMarkets()
+	if pg.priceEditor.Editor.Text() == "" {
+		mkt := pg.selectedMarketInfo()
+		if price := pg.orderPrice(mkt); price > 0 {
+			pg.priceEditor.Editor.SetText(trimmedAmtString(price))
+		}
+	}
+
+	if pg.dexc.IsLoggedIn() {
+		return // All good, return early.
+	}
+
+	// Prompt user to login now.
+	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrLogin)).
+		SetDescription(values.String(values.StrLoginToTradeDEX)).
+		PasswordHint(values.String(values.StrDexPassword)).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := pg.dexc.Login([]byte(password))
+			if err == nil {
+				return true
+			}
+
+			pm.SetError(err.Error())
+			pm.SetLoading(false)
+			return false
+		}).SetCancelable(false)
+	dexPasswordModal.SetPasswordTitleVisibility(false)
+	pg.ParentWindow().ShowModal(dexPasswordModal)
+}
+
+func (pg *DEXMarketPage) resetServerAndMarkets() {
 	xcs := pg.dexc.Exchanges()
 	var servers []cryptomaterial.DropDownItem
 	for _, xc := range xcs {
@@ -206,7 +281,6 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 
 	pg.serverSelector = pg.Theme.DropDown(servers, values.DEXServerDropdownGroup, false)
 	pg.setServerMarkets()
-
 	pg.serverSelector.Width, pg.marketSelector.Width = dp300, dp300
 	pg.serverSelector.MakeCollapsedLayoutVisibleWhenExpanded, pg.marketSelector.MakeCollapsedLayoutVisibleWhenExpanded = true, true
 	inset := layout.Inset{Top: values.DP45}
@@ -214,62 +288,12 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	pg.serverSelector.BorderWidth, pg.marketSelector.BorderWidth = dp2, dp2
 	pg.serverSelector.Hoverable, pg.marketSelector.Hoverable = false, false
 	pg.serverSelector.SelectedItemIconColor, pg.marketSelector.SelectedItemIconColor = &pg.Theme.Color.Primary, &pg.Theme.Color.Primary
-
-	if pg.priceEditor.Editor.Text() == "" {
-		mkt := pg.selectedMarketInfo()
-		if price := pg.orderPrice(mkt); price > 0 {
-			pg.priceEditor.Editor.SetText(fmt.Sprintf("%f", price))
-		}
-	}
-
-	noteFeed := pg.dexc.NotificationFeed()
-	go func() {
-		defer func() {
-			noteFeed.ReturnFeed()
-		}()
-		for {
-			select {
-			case <-pg.ctx.Done():
-				return
-			case n := <-noteFeed.C:
-				if n == nil {
-					return
-				}
-
-				switch n.Type() {
-				case core.NoteTypeOrder, core.NoteTypeMatch:
-					pg.refreshOrders()
-					pg.ParentWindow().Reload()
-				case core.NoteTypeBalance, core.NoteTypeSpots:
-					pg.ParentWindow().Reload()
-				}
-			}
-		}
-	}()
-
-	if !pg.dexc.IsLoggedIn() {
-		dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-			EnableName(false).
-			EnableConfirmPassword(false).
-			Title(values.String(values.StrDexPassword)).
-			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-				err := pg.dexc.Login([]byte(password))
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return false
-				}
-				return true
-			}).SetCancelable(false)
-		dexPasswordModal.SetPasswordTitleVisibility(false)
-		pg.ParentWindow().ShowModal(dexPasswordModal)
-	}
 }
 
 func (pg *DEXMarketPage) setServerMarkets() {
 	// Set available market pairs.
 	var markets []cryptomaterial.DropDownItem
-	if pg.serverSelector.Selected() == values.String(values.StrAddServer) {
+	if pg.serverSelector.Selected() != values.String(values.StrAddServer) {
 		host := pg.serverSelector.Selected()
 		xc, err := pg.dexc.Exchange(host)
 		if err != nil {
@@ -304,17 +328,19 @@ func (pg *DEXMarketPage) setServerMarkets() {
 	}
 
 	pg.showLoader = true
-	go func() {
-		// Fetch order book and only update if we're still on the same market.
-		book, err := pg.dexc.Book(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
-		if err == nil && pg.selectedMarketOrderBook.Base == baseAssetID && pg.selectedMarketOrderBook.Quote == quoteAssetID {
-			pg.selectedMarketOrderBook.Book = book
-		} else {
-			pg.notifyError(err.Error())
-		}
-		pg.showLoader = false
-		pg.ParentWindow().Reload()
-	}()
+	if pg.marketSelector.Selected() != values.String(values.StrNoSupportedMarket) {
+		go func() {
+			// Fetch order book and only update if we're still on the same market.
+			book, err := pg.dexc.Book(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
+			if err == nil && pg.selectedMarketOrderBook.Base == baseAssetID && pg.selectedMarketOrderBook.Quote == quoteAssetID {
+				pg.selectedMarketOrderBook.Book = book
+			} else {
+				log.Errorf("dexc.Book %v", err)
+			}
+			pg.showLoader = false
+			pg.ParentWindow().Reload()
+		}()
+	}
 }
 
 func (pg *DEXMarketPage) marketDropdownListItem(baseAsset, quoteAsset libutils.AssetType) func(gtx C) D {
@@ -599,16 +625,16 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	var actionBtn *cryptomaterial.Button
 	xc := pg.exchange()
 	hasZeroEffectiveTier := pg.dexc.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
-	if pg.noSupportedMarket() {
+	if pg.dexc.IsLoggedIn() && !pg.noSupportedMarket() {
 		overlaySet = true
 		overlayMsg = values.String(values.StrNoSupportedMarketMsg)
 	} else if hasZeroEffectiveTier { // Need to post bond to trade.
 		overlaySet = true
 		overlayMsg = values.String(values.StrPostBondMsg)
 		actionBtn = &pg.postBondBtn
-	} else if missingMarketWalletSym := pg.missingMarketWallet(); missingMarketWalletSym != "" {
+	} else if missingMarketWalletType := pg.missingMarketWallet(); missingMarketWalletType != "" {
 		overlaySet = true
-		overlayMsg = values.StringF(values.StrMissingDEXWalletMsg, missingMarketWalletSym, missingMarketWalletSym)
+		overlayMsg = values.StringF(values.StrMissingDEXWalletMsg, missingMarketWalletType, missingMarketWalletType)
 		actionBtn = &pg.addWalletToDEX
 	} else {
 		if sell { // Show base asset available balance.
@@ -761,12 +787,12 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	})
 }
 
-func (pg *DEXMarketPage) missingMarketWallet() string {
+func (pg *DEXMarketPage) missingMarketWallet() libutils.AssetType {
 	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.Base)) {
-		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.Base).String()
+		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.Base)
 	}
 	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.Quote)) {
-		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.Quote).String()
+		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.Quote)
 	}
 	return ""
 }
@@ -784,8 +810,8 @@ func (pg *DEXMarketPage) estimateOrderFee() {
 		return
 	}
 
-	swapFee := pg.conventionalAmt(est.Swap.Estimate.MaxFees)
-	redeemFee := pg.conventionalAmt(est.Redeem.Estimate.RealisticBestCase)
+	swapFee := conventionalAmt(est.Swap.Estimate.MaxFees)
+	redeemFee := conventionalAmt(est.Redeem.Estimate.RealisticBestCase)
 	baseSym := convertAssetIDToAssetType(pg.selectedMarketOrderBook.Base)
 	quoteSym := convertAssetIDToAssetType(pg.selectedMarketOrderBook.Quote)
 	maxBuyOrSellAssetSym := baseSym
@@ -804,7 +830,7 @@ func (pg *DEXMarketPage) estimateOrderFee() {
 	*/
 	pg.maxBuyOrSellStr = fmt.Sprintf("%d %s, %f %s",
 		est.Swap.Estimate.Lots, values.String(values.StrLots),
-		pg.conventionalAmt(est.Swap.Estimate.Value), maxBuyOrSellAssetSym,
+		conventionalAmt(est.Swap.Estimate.Value), maxBuyOrSellAssetSym,
 	)
 }
 
@@ -830,7 +856,7 @@ func (pg *DEXMarketPage) availableWalletAccountBalanceString(forQuoteAsset bool)
 
 	walletState := pg.dexc.WalletState(assetID)
 	if walletState != nil && walletState.Balance != nil { // better safe than sorry
-		bal = pg.conventionalAmt(walletState.Balance.Available)
+		bal = conventionalAmt(walletState.Balance.Available)
 	}
 
 	return bal, assetSym
@@ -1174,7 +1200,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		go pg.refreshOrders()
 	}
 
-	if pg.serverSelector.Changed() {
+	if pg.marketSelector.Changed() {
 		pg.setServerMarkets()
 	}
 
@@ -1197,7 +1223,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		if isMktOrder {
 			pg.priceEditor.Editor.SetText(values.String(values.StrMarket))
 		} else if price := pg.orderPrice(mkt); price > 0 {
-			pg.priceEditor.Editor.SetText(fmt.Sprintf("%f", price))
+			pg.priceEditor.Editor.SetText(trimmedAmtString(price))
 		} else {
 			pg.priceEditor.Editor.SetText("")
 		}
@@ -1248,7 +1274,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		formattedPrice := price - mkt.MsgRateToConventional(mkt.ConventionalRateToMsg(price)%mkt.RateStep)
 		if formattedPrice != price {
 			start, end := pg.priceEditor.Editor.Selection()
-			pg.priceEditor.Editor.SetText(fmt.Sprintf("%f", formattedPrice))
+			pg.priceEditor.Editor.SetText(trimmedAmtString(formattedPrice))
 			pg.priceEditor.Editor.SetCaret(start, end)
 		}
 
@@ -1265,10 +1291,10 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		}
 
 		if pg.orderWithLots() {
-			total := mkt.MsgRateToConventional(mkt.LotSize) * lotsOrAmt * price
-			pg.totalEditor.Editor.SetText(fmt.Sprintf("%f", total))
+			total := msgRate(price) * mkt.LotSize * uint64(lotsOrAmt)
+			pg.totalEditor.Editor.SetText(trimmedConventionalAmtString(total))
 		} else {
-			pg.totalEditor.Editor.SetText(fmt.Sprintf("%f", lotsOrAmt*price))
+			pg.totalEditor.Editor.SetText(trimmedAmtString(lotsOrAmt * price))
 		}
 
 		reEstimateFee = true
@@ -1312,8 +1338,8 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 				pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidLot))
 			} else if price > 0 {
 				reEstimateFee = true
-				total := mkt.MsgRateToConventional(mkt.LotSize) * float64(lots) * price
-				pg.totalEditor.Editor.SetText(fmt.Sprintf("%f", total))
+				total := msgRate(price) * mkt.LotSize * uint64(lots)
+				pg.totalEditor.Editor.SetText(trimmedConventionalAmtString(total))
 			}
 		}
 
@@ -1321,7 +1347,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 			pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidAmount))
 		} else if price > 0 {
 			reEstimateFee = true
-			pg.totalEditor.Editor.SetText(fmt.Sprintf("%f", amt*price))
+			pg.totalEditor.Editor.SetText(trimmedAmtString(amt * price))
 		}
 	}
 
@@ -1338,11 +1364,13 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		pg.calculateTotalOrder(mkt)
 	}
 
-	// TODO: postBondBtn and addWalletToDEX should open separate pages when
-	// their design is ready. A temp-workaround is posting bond with the missing
-	// wallet.
-	if pg.postBondBtn.Clicked() || pg.addWalletToDEX.Clicked() {
+	// TODO: postBondBtn should open a separate page when its design is ready.
+	if pg.postBondBtn.Clicked() {
 		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, true))
+	}
+
+	for pg.addWalletToDEX.Clicked() {
+		pg.handleMissingMarketWallet()
 	}
 
 	if pg.createOrderBtn.Clicked() {
@@ -1412,6 +1440,166 @@ func (pg *DEXMarketPage) validatedOrderFormInfo() *core.TradeForm {
 	return orderForm
 }
 
+func (pg *DEXMarketPage) handleMissingMarketWallet() {
+	missingMarketWalletAssetType := pg.missingMarketWallet()
+	if missingMarketWalletAssetType == "" {
+		return // nothing to do
+	}
+
+	showWalletModal := func() bool {
+		availableWallets := pg.AssetsManager.AssetWallets(missingMarketWalletAssetType)
+		if len(availableWallets) == 0 {
+			return false
+		}
+		pg.showSelectDEXWalletModal(missingMarketWalletAssetType)
+		return true
+	}
+
+	if ok := showWalletModal(); ok {
+		return
+	}
+
+	callbackFn := func() {
+		pg.ParentNavigator().ClosePagesAfter(DEXMarketPageID)
+		showWalletModal()
+	}
+
+	// No wallet exists, create it now.
+	pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, callbackFn, missingMarketWalletAssetType))
+}
+
+func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetType) {
+	pg.walletSelector = components.NewWalletAndAccountSelector(pg.Load, missingWallet).
+		EnableWatchOnlyWallets(false).
+		AccountValidator(func(a *wallet.Account) bool {
+			return !a.IsWatchOnly
+		}).
+		WalletSelected(func(asset sharedW.Asset) {
+			if err := pg.accountSelector.SelectFirstValidAccount(asset); err != nil {
+				log.Error(err)
+			}
+		})
+
+	pg.accountSelector = components.NewWalletAndAccountSelector(pg.Load, missingWallet).
+		AccountValidator(func(a *wallet.Account) bool {
+			return !a.IsWatchOnly
+		}).EnableWatchOnlyWallets(false)
+
+	if err := pg.accountSelector.SelectFirstValidAccount(pg.walletSelector.SelectedWallet()); err != nil {
+		log.Error(err)
+	}
+
+	var dexPass string
+	// walletPasswordModal will request user's wallet password and bind the
+	// selected wallet to core.
+	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrEnterSpendingPassword)).
+		SetPositiveButtonCallback(func(_, walletPass string, pm *modal.CreatePasswordModal) bool {
+			err := pg.createMissingMarketWallet(missingWallet, dexPass, walletPass)
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+
+			return true
+		}).
+		SetCancelable(false)
+
+		// Prompt user to provide DEX password then show the wallet password
+		// modal.
+	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrDexPassword)).
+		PasswordHint(values.String(values.StrDexPassword)).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := pg.dexc.Login([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+
+			dexPass = password
+			pg.ParentWindow().ShowModal(walletPasswordModal)
+			return true
+		}).SetCancelable(false)
+	dexPasswordModal.SetPasswordTitleVisibility(false)
+
+	// Show modal to select DEX wallet and then prompt user for DEX password.
+	walletSelectModal := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrSelectWallet)).
+		SetCancelable(false).
+		UseCustomWidget(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
+						return pg.walletSelector.Layout(pg.ParentWindow(), gtx)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					label := pg.Theme.H6(values.String(values.StrSelectAcc))
+					label.Font.Weight = font.SemiBold
+					return layout.Inset{Top: dp20}.Layout(gtx, label.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
+						return pg.accountSelector.Layout(pg.ParentWindow(), gtx)
+					})
+				}),
+			)
+		}).
+		SetPositiveButtonText(values.String(values.StrAddWallet)).
+		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			pg.ParentWindow().ShowModal(dexPasswordModal)
+			return true
+		})
+	pg.ParentWindow().ShowModal(walletSelectModal)
+}
+
+func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetType, dexPass, walletPass string) error {
+	// Check selected wallet and bind to core.
+	asset := pg.walletSelector.SelectedWallet()
+	selectedAccount := pg.accountSelector.SelectedAccount()
+	if selectedAccount == nil || asset == nil {
+		fmt.Println(asset, selectedAccount)
+		return errors.New("No wallet selected")
+	}
+
+	walletAssetID, ok := bip(missingWallet.ToStringLower())
+	if !ok {
+		return fmt.Errorf("No assetID for %s", missingWallet)
+	}
+
+	if pg.dexc.HasWallet(int32(walletAssetID)) {
+		// TODO: For now return. We might need to allow users select
+		// which wallet to use at the time of trade.
+		return fmt.Errorf("%s wallet already exists in dex client", missingWallet)
+	}
+
+	// Validate wallet password.
+	err := asset.UnlockWallet(walletPass)
+	if err != nil {
+		return err
+	}
+
+	cfg := map[string]string{
+		dexc.WalletIDConfigKey:            fmt.Sprintf("%d", asset.GetWalletID()),
+		dexc.WalletAccountNameConfigKey:   selectedAccount.AccountName,
+		dexc.WalletAccountNumberConfigKey: fmt.Sprint(selectedAccount.AccountNumber),
+	}
+
+	err = pg.dexc.AddWallet(walletAssetID, cfg, []byte(dexPass), []byte(walletPass))
+	if err != nil {
+		return fmt.Errorf("Failed to add wallet to DEX client: %w", err)
+	}
+
+	return nil
+}
+
 func (pg *DEXMarketPage) refreshOrders() {
 	filter := &core.OrderFilter{
 		Statuses: []order.OrderStatus{order.OrderStatusBooked, order.OrderStatusEpoch},
@@ -1450,10 +1638,6 @@ func (pg *DEXMarketPage) totalOrderAmt() (float64, bool) {
 	return totalAmt, err == nil && totalAmt > 0
 }
 
-func (pg *DEXMarketPage) conventionalAmt(rate uint64) float64 {
-	return float64(rate) / defaultConversionFactor
-}
-
 func (pg *DEXMarketPage) orderPrice(mkt *core.Market) (price float64) {
 	limitOrdPriceStr := pg.priceEditor.Editor.Text()
 	if !pg.isMarketOrder() && limitOrdPriceStr != "" {
@@ -1482,9 +1666,10 @@ func (pg *DEXMarketPage) calculateTotalOrder(mkt *core.Market) bool {
 	}
 
 	if !pg.orderWithLots() {
-		pg.lotsOrAmountEditor.Editor.SetText(fmt.Sprintf("%f", amt))
+		pg.lotsOrAmountEditor.Editor.SetText(trimmedAmtString(amt))
 	} else if amt > 0 && mkt != nil {
-		pg.lotsOrAmountEditor.Editor.SetText(fmt.Sprint(int(amt / mkt.MsgRateToConventional(mkt.LotSize))))
+		lots := int(amt / mkt.MsgRateToConventional(mkt.LotSize))
+		pg.lotsOrAmountEditor.Editor.SetText(fmt.Sprint(lots))
 	} else {
 		pg.lotsOrAmountEditor.Editor.SetText("")
 	}
@@ -1511,6 +1696,23 @@ func (pg *DEXMarketPage) noSupportedMarket() bool {
 func (pg *DEXMarketPage) notifyError(errMsg string) {
 	errModal := modal.NewErrorModal(pg.Load, errMsg, modal.DefaultClickFunc())
 	pg.ParentWindow().ShowModal(errModal)
+}
+
+func trimmedAmtString(amt float64) string {
+	return trimmedConventionalAmtString(msgRate(amt))
+}
+
+func conventionalAmt(rate uint64) float64 {
+	return float64(rate) / defaultConversionFactor
+}
+
+func msgRate(amt float64) uint64 {
+	return uint64(amt * defaultConversionFactor)
+}
+
+func trimmedConventionalAmtString(r uint64) string {
+	s := strconv.FormatFloat(conventionalAmt(r), 'f', 8, 64)
+	return strings.TrimRight(strings.TrimRight(s, "0"), ".")
 }
 
 func isChangeEvent(evt widget.EditorEvent) bool {

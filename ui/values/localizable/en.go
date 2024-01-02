@@ -913,4 +913,6 @@ const EN = `
 "availableBalance" = "Available Balance: %s"
 "missingDEXWalletMsg" = "No %s trade wallet found. Please add %s wallet to the DEX client to trade." 
 "swapAndRedeemFee" = "swap - %s, redeem - %s"
+"loginToTradeDEX" = "Please login with your DEX password."
+"login" = "Login"
  `

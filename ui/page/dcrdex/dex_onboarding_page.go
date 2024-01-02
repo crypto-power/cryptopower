@@ -944,23 +944,24 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				return
 			}
 
-			// dexc password has been sent already.
+			// dexc password is already set.
 			dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 				EnableName(false).
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrDexPassword)).
+				PasswordHint(values.String(values.StrDexPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 					pg.dexPass = []byte(password)
 					err := pg.dexc.Login(pg.dexPass)
-					if err != nil {
-						pg.isLoading = false
-						pm.SetError(err.Error())
-						pm.SetLoading(false)
-						return false
+					if err == nil {
+						pg.postBond()
+						return true
 					}
 
-					pg.postBond()
-					return true
+					pg.isLoading = false
+					pm.SetError(err.Error())
+					pm.SetLoading(false)
+					return false
 				})
 			dexPasswordModal.SetPasswordTitleVisibility(false)
 			pg.ParentWindow().ShowModal(dexPasswordModal)
@@ -1031,20 +1032,21 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 func (pg *DEXOnboarding) postBond() {
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
+	maintainTier := true
 	postBond := &core.PostBondForm{
-		Addr:      pg.bondServer.url,
-		AppPass:   pg.dexPass,
-		Asset:     &bondAsset.ID,
-		Bond:      uint64(pg.newTier) * bondAsset.Amt,
-		Cert:      pg.bondServer.cert,
-		FeeBuffer: pg.dexc.BondsFeeBuffer(bondAsset.ID),
+		Addr:         pg.bondServer.url,
+		AppPass:      pg.dexPass,
+		Asset:        &bondAsset.ID,
+		Bond:         uint64(pg.newTier) * bondAsset.Amt,
+		Cert:         pg.bondServer.cert,
+		FeeBuffer:    pg.dexc.BondsFeeBuffer(bondAsset.ID),
+		MaintainTier: &maintainTier,
 	}
 
-	if !pg.alreadyRegistered {
-		var maintainTier = false
+	if pg.alreadyRegistered {
 		// These fields(MaintainTier and MaxBondedAmt) can only be set for the
 		// first time. TODO: Use UpdateBondOptions when its design is ready.
-		postBond.MaintainTier = &maintainTier
+		postBond.MaintainTier = nil
 	}
 
 	// postBondFn sends the actual request to post bond.

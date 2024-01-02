@@ -1022,4 +1022,6 @@ const (
 	StrAvailableBalance                = "availableBalance"
 	StrMissingDEXWalletMsg             = "missingDEXWalletMsg"
 	StrSwapAndRedeemFee                = "swapAndRedeemFee"
+	StrLoginToTradeDEX                 = "loginToTradeDEX"
+	StrLogin                           = "login"
 )
