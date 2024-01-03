@@ -34,18 +34,18 @@ import (
 // DEXWallet wraps *Asset and implements dexdcr.Wallet.
 type DEXWallet struct {
 	*Asset
-	syncData           *SyncData
-	tradingAccountName string
+	tradingAccountNumber int32
+	syncData             *SyncData
 }
 
 var _ dexdcr.Wallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(tradingAccountName string, w *Asset, syncData *SyncData) *DEXWallet {
+func NewDEXWallet(asset *Asset, tradingAccountNumber int32, syncData *SyncData) *DEXWallet {
 	return &DEXWallet{
-		Asset:              w,
-		syncData:           syncData,
-		tradingAccountName: tradingAccountName,
+		Asset:                asset,
+		tradingAccountNumber: tradingAccountNumber,
+		syncData:             syncData,
 	}
 }
 
@@ -68,8 +68,12 @@ func (dw *DEXWallet) SpvMode() bool {
 
 // Accounts returns the names of the accounts for use by the exchange wallet.
 func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
-	accts := dexdcr.XCWalletAccounts{
-		PrimaryAccount: dw.tradingAccountName,
+	var accts dexdcr.XCWalletAccounts
+	accountName, err := dw.AccountName(dw.tradingAccountNumber)
+	if err == nil {
+		accts.PrimaryAccount = accountName
+	} else {
+		log.Errorf("error checking selected DEX account name: %v", err)
 	}
 
 	if !dw.IsAccountMixerActive() {
@@ -102,7 +106,7 @@ func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 	return dexdcr.XCWalletAccounts{
 		PrimaryAccount: mixedAccName,
 		UnmixedAccount: unMixedAcctName,
-		TradingAccount: dw.tradingAccountName,
+		TradingAccount: accts.PrimaryAccount,
 	}
 }
 

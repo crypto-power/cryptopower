@@ -1048,7 +1048,6 @@ func (pg *DEXOnboarding) postBond() {
 			selectedAcct := pg.bondSourceAccountSelector.SelectedAccount()
 			cfg := map[string]string{
 				dexc.WalletIDConfigKey:            fmt.Sprintf("%d", asset.GetWalletID()),
-				dexc.WalletAccountNameConfigKey:   selectedAcct.Name,
 				dexc.WalletAccountNumberConfigKey: fmt.Sprint(selectedAcct.AccountNumber),
 			}
 

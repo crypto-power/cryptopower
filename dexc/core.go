@@ -22,10 +22,6 @@ const (
 	// settings map used to connect an existing Cryptopower wallet to the DEX
 	// client.
 	WalletIDConfigKey = "walletid"
-	// WalletAccountNameConfigKey is the key that holds the wallet account name
-	// in the settings map used to connect an existing Cryptopower wallet to the
-	// DEX client.
-	WalletAccountNameConfigKey = "account"
 	// WalletAccountNumberConfigKey is the key that holds the wallet account
 	// number in the settings map used to connect an existing Cryptopower wallet
 	// to the DEX client.

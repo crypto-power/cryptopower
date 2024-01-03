@@ -3,7 +3,7 @@
 
 package btc
 
-// Note: Most of the code here is a copy-pasta from:
+// Note: Most of the code here is a copy-paste from:
 // https://github.com/decred/dcrdex/blob/master/client/asset/btc/spv.go
 
 import (
@@ -15,8 +15,10 @@ import (
 	"decred.org/dcrdex/client/asset"
 	dexbtc "decred.org/dcrdex/client/asset/btc"
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/gcs"
+	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -31,45 +33,124 @@ import (
 
 // DEXWallet wraps *wallet.Wallet and implements dexbtc.BTCWallet.
 type DEXWallet struct {
-	*wallet.Wallet
-	acct       dexbtc.XCWalletAccount
+	w          *wallet.Wallet
+	acctNum    int32
 	spvService *btcChainService
 }
 
 var _ dexbtc.BTCWallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(acct dexbtc.XCWalletAccount, w *wallet.Wallet, nc *chain.NeutrinoClient) *DEXWallet {
+func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient) *DEXWallet {
 	return &DEXWallet{
-		Wallet: w,
-		acct:   acct,
+		w:       w,
+		acctNum: acctNum,
 		spvService: &btcChainService{
 			NeutrinoClient: nc,
 		},
 	}
 }
 
+func (dw *DEXWallet) PublishTransaction(tx *wire.MsgTx, label string) error {
+	return dw.w.PublishTransaction(tx, label)
+}
+
+func (dw *DEXWallet) CalculateAccountBalances(account uint32, confirms int32) (wallet.Balances, error) {
+	return dw.w.CalculateAccountBalances(account, confirms)
+}
+
+func (dw *DEXWallet) ListUnspent(minconf, maxconf int32, acctName string) ([]*btcjson.ListUnspentResult, error) {
+	return dw.w.ListUnspent(minconf, maxconf, acctName)
+}
+
+func (dw *DEXWallet) FetchInputInfo(prevOut *wire.OutPoint) (*wire.MsgTx, *wire.TxOut, *psbt.Bip32Derivation, int64, error) {
+	return dw.w.FetchInputInfo(prevOut)
+}
+
+func (dw *DEXWallet) ResetLockedOutpoints() {
+	dw.w.ResetLockedOutpoints()
+}
+
+func (dw *DEXWallet) LockOutpoint(op wire.OutPoint) {
+	dw.w.LockOutpoint(op)
+}
+
+func (dw *DEXWallet) UnlockOutpoint(op wire.OutPoint) {
+	dw.w.UnlockOutpoint(op)
+}
+
+func (dw *DEXWallet) LockedOutpoints() []btcjson.TransactionInput {
+	return dw.w.LockedOutpoints()
+}
+
+func (dw *DEXWallet) NewChangeAddress(account uint32, scope waddrmgr.KeyScope) (btcutil.Address, error) {
+	return dw.w.NewChangeAddress(account, scope)
+}
+
+func (dw *DEXWallet) NewAddress(account uint32, scope waddrmgr.KeyScope) (btcutil.Address, error) {
+	return dw.w.NewAddress(account, scope)
+}
+
+func (dw *DEXWallet) PrivKeyForAddress(a btcutil.Address) (*btcec.PrivateKey, error) {
+	return dw.w.PrivKeyForAddress(a)
+}
+
+func (dw *DEXWallet) Unlock(passphrase []byte, lock <-chan time.Time) error {
+	return dw.w.Unlock(passphrase, lock)
+}
+
+func (dw *DEXWallet) Lock() {
+	dw.w.Lock()
+}
+
+func (dw *DEXWallet) Locked() bool {
+	return dw.w.Locked()
+}
+
+func (dw *DEXWallet) SendOutputs(outputs []*wire.TxOut, keyScope *waddrmgr.KeyScope, account uint32, minconf int32,
+	satPerKb btcutil.Amount, coinSelectionStrategy wallet.CoinSelectionStrategy, label string) (*wire.MsgTx, error) {
+	return dw.w.SendOutputs(outputs, keyScope, account, minconf, satPerKb, coinSelectionStrategy, label)
+}
+
+func (dw *DEXWallet) HaveAddress(a btcutil.Address) (bool, error) {
+	return dw.w.HaveAddress(a)
+}
+
+func (dw *DEXWallet) WaitForShutdown() {
+	dw.w.WaitForShutdown()
+}
+
+// currently unused
+func (dw *DEXWallet) ChainSynced() bool {
+	return dw.w.ChainSynced()
+}
+
+func (dw *DEXWallet) AccountProperties(scope waddrmgr.KeyScope, acct uint32) (*waddrmgr.AccountProperties, error) {
+	return dw.w.AccountProperties(scope, acct)
+}
+
 // The below methods are not implemented by *wallet.Wallet, so must be
-// implemented by the BTCWallet implementation.
+// implemented by the dexbtc.BTCWallet implementation.
 
-func (dw *DEXWallet) Start() (dexbtc.SPVService, error) {
-	return dw.spvService, nil
-}
-
-func (dw *DEXWallet) Birthday() time.Time {
-	return dw.Manager.Birthday()
-}
-
-func (dw *DEXWallet) SyncedTo() waddrmgr.BlockStamp {
-	return dw.Wallet.Manager.SyncedTo()
-}
-
+// AccountInfo returns the account information of the wallet for use by the
+// exchange wallet.
 func (dw *DEXWallet) AccountInfo() dexbtc.XCWalletAccount {
-	return dw.acct
+	acct := dexbtc.XCWalletAccount{
+		AccountNumber: uint32(dw.acctNum),
+	}
+
+	accountName, err := dw.w.AccountName(GetScope(), acct.AccountNumber)
+	if err == nil {
+		acct.AccountName = accountName
+	} else {
+		log.Errorf("error checking selected DEX account name: %v", err)
+	}
+
+	return acct
 }
 
 func (dw *DEXWallet) WalletTransaction(txHash *chainhash.Hash) (*wtxmgr.TxDetails, error) {
-	details, err := wallet.UnstableAPI(dw.Wallet).TxDetails(txHash)
+	details, err := wallet.UnstableAPI(dw.w).TxDetails(txHash)
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +161,15 @@ func (dw *DEXWallet) WalletTransaction(txHash *chainhash.Hash) (*wtxmgr.TxDetail
 	return details, nil
 }
 
+func (dw *DEXWallet) SyncedTo() waddrmgr.BlockStamp {
+	return dw.w.Manager.SyncedTo()
+}
+
 func (dw *DEXWallet) SignTx(tx *wire.MsgTx) error {
 	var prevPkScripts [][]byte
 	var inputValues []btcutil.Amount
 	for _, txIn := range tx.TxIn {
-		_, txOut, _, _, err := dw.Wallet.FetchInputInfo(&txIn.PreviousOutPoint)
+		_, txOut, _, _, err := dw.w.FetchInputInfo(&txIn.PreviousOutPoint)
 		if err != nil {
 			return err
 		}
@@ -95,11 +180,11 @@ func (dw *DEXWallet) SignTx(tx *wire.MsgTx) error {
 		txIn.SignatureScript = nil
 		txIn.Witness = nil
 	}
-	return txauthor.AddAllInputScripts(tx, prevPkScripts, inputValues, &secretSource{dw, dw.ChainParams()})
+	return txauthor.AddAllInputScripts(tx, prevPkScripts, inputValues, &secretSource{dw, dw.w.ChainParams()})
 }
 
 func (dw *DEXWallet) BlockNotifications(ctx context.Context) <-chan *dexbtc.BlockNotification {
-	cl := dw.Wallet.NtfnServer.TransactionNotifications()
+	cl := dw.w.NtfnServer.TransactionNotifications()
 	ch := make(chan *dexbtc.BlockNotification, 1)
 	go func() {
 		defer cl.Done()
@@ -124,6 +209,23 @@ func (dw *DEXWallet) BlockNotifications(ctx context.Context) <-chan *dexbtc.Bloc
 	return ch
 }
 
+func (dw *DEXWallet) RescanAsync() error {
+	return errors.New("RescanAsync not implemented for Cyptopower btc wallet")
+}
+
+func (dw *DEXWallet) ForceRescan() {}
+func (dw *DEXWallet) Start() (dexbtc.SPVService, error) {
+	return dw.spvService, nil
+}
+func (dw *DEXWallet) Stop() {}
+
+func (dw *DEXWallet) Reconfigure(*asset.WalletConfig, string) (bool, error) {
+	return false, errors.New("Reconfigure not supported for Cyptopower btc wallet")
+}
+func (dw *DEXWallet) Birthday() time.Time {
+	return dw.w.Manager.Birthday()
+}
+
 func (dw *DEXWallet) Peers() ([]*asset.WalletPeer, error) {
 	peers := dw.spvService.CS.Peers()
 	var walletPeers []*asset.WalletPeer
@@ -146,14 +248,8 @@ func (dw *DEXWallet) RemovePeer(_ string) error {
 	return errors.New("RemovePeer not implemented by DEX wallet")
 }
 
-func (dw *DEXWallet) RescanAsync() error {
-	return errors.New("RescanAsync not implemented for Cyptopower btc wallet")
-}
-
-func (dw *DEXWallet) ForceRescan() {}
-
-func (dw *DEXWallet) Reconfigure(*asset.WalletConfig, string) (bool, error) {
-	return false, errors.New("Reconfigure not supported for Cyptopower btc wallet")
+func (dw *DEXWallet) ListSinceBlock(start, end, syncHeight int32) ([]btcjson.ListTransactionsResult, error) {
+	return dw.w.ListSinceBlock(start, end, syncHeight)
 }
 
 // btcChainService wraps *chain.NeutrinoClient in order to translate the
@@ -201,7 +297,7 @@ func (s *btcChainService) Stop() error {
 // secretSource is used to locate keys and redemption scripts while signing a
 // transaction. secretSource satisfies the txauthor.SecretsSource interface.
 type secretSource struct {
-	w           *DEXWallet
+	dexW        *DEXWallet
 	chainParams *chaincfg.Params
 }
 
@@ -212,7 +308,7 @@ func (s *secretSource) ChainParams() *chaincfg.Params {
 
 // GetKey fetches a private key for the specified address.
 func (s *secretSource) GetKey(addr btcutil.Address) (*btcec.PrivateKey, bool, error) {
-	ma, err := s.w.Wallet.AddressInfo(addr)
+	ma, err := s.dexW.w.AddressInfo(addr)
 	if err != nil {
 		return nil, false, err
 	}
@@ -233,7 +329,7 @@ func (s *secretSource) GetKey(addr btcutil.Address) (*btcec.PrivateKey, bool, er
 
 // GetScript fetches the redemption script for the specified p2sh/p2wsh address.
 func (s *secretSource) GetScript(addr btcutil.Address) ([]byte, error) {
-	ma, err := s.w.Wallet.AddressInfo(addr)
+	ma, err := s.dexW.w.AddressInfo(addr)
 	if err != nil {
 		return nil, err
 	}
