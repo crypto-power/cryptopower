@@ -129,7 +129,6 @@ func (instantSwap *InstantSwap) NewExchangeServer(exchangeServer ExchangeServer)
 // If status is specified, only orders with that status will be returned.
 // status is made optional to the sync functionality can update all orders.
 func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool, server, txID string, status ...instantswap.Status) ([]*Order, error) {
-	var query storm.Query
 	matchers := make([]q.Matcher, 0)
 
 	if len(status) > 0 {
@@ -148,6 +147,7 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 		matchers = append(matchers, q.True())
 	}
 
+	var query storm.Query
 	query = instantSwap.db.Select(matchers...)
 
 	if offset > 0 {

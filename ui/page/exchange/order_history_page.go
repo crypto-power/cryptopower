@@ -178,7 +178,6 @@ func (pg *OrderHistoryPage) initServerSelector() {
 	pg.exchangeServers = pg.AssetsManager.InstantSwap.ExchangeServers()
 
 	items := []cryptomaterial.DropDownItem{{
-		// Icon: pg.Theme.Icons.WalletIcon,
 		Text: values.String(values.StrAllservers),
 	}}
 	for _, server := range pg.exchangeServers {
