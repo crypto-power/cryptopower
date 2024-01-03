@@ -271,7 +271,9 @@ func (win *Window) handleRelevantKeyPresses(evt system.FrameEvent) {
 // system.FrameEvent.Frame(ops).
 func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 	backgroundWidget := layout.Expanded(func(gtx C) D {
-		return cryptomaterial.Fill(gtx, win.load.Theme.Color.Gray4)
+		return win.load.Theme.DropdownBackdrop.Layout(gtx, func(gtx C) D {
+			return cryptomaterial.Fill(gtx, win.load.Theme.Color.Gray4)
+		})
 	})
 
 	currentPageWidget := layout.Stacked(func(gtx C) D {
@@ -281,7 +283,9 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 		if win.navigator.CurrentPage() == nil {
 			win.navigator.Display(page.NewStartPage(win.ctx, win.load))
 		}
-		return win.navigator.CurrentPage().Layout(gtx)
+		return win.load.Theme.DropdownBackdrop.Layout(gtx, func(gtx C) D {
+			return win.navigator.CurrentPage().Layout(gtx)
+		})
 	})
 
 	topModalLayout := layout.Stacked(func(gtx C) D {

@@ -371,7 +371,7 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Vertical,
 					}.Layout(gtx,
-						layout.Rigid(hp.LayoutTopBar),
+						layout.Rigid(hp.layoutTopBar),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
 								Left: values.MarginPadding20,
@@ -388,7 +388,7 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 
 func (hp *HomePage) layoutMobile(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(hp.LayoutTopBar),
+		layout.Rigid(hp.layoutTopBar),
 		layout.Rigid(hp.Theme.Separator().Layout),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Stack{Alignment: layout.N}.Layout(gtx,
@@ -405,7 +405,7 @@ func (hp *HomePage) layoutMobile(gtx C) D {
 	)
 }
 
-func (hp *HomePage) LayoutTopBar(gtx C) D {
+func (hp *HomePage) layoutTopBar(gtx C) D {
 	padding20 := values.MarginPadding20
 	padding10 := values.MarginPadding10
 
