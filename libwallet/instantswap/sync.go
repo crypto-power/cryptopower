@@ -126,7 +126,7 @@ func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExc
 			return instantSwap.ctx.Err()
 		}
 
-		orders, err := instantSwap.GetOrdersRaw(int32(offset), int32(limit), true)
+		orders, err := instantSwap.GetOrdersRaw(int32(offset), int32(limit), true, "", "")
 		if err != nil {
 			return err
 		}

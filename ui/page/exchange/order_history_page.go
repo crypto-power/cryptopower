@@ -38,7 +38,7 @@ type OrderHistoryPage struct {
 	searchEditor cryptomaterial.Editor
 
 	exchangeServers []instantswap.ExchangeServer
-	selectedServer  instantswap.ExchangeServer
+	selectedServer  *instantswap.ExchangeServer
 
 	refreshClickable *cryptomaterial.Clickable
 	refreshIcon      *cryptomaterial.Image
@@ -138,7 +138,11 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 	}
 
 	if pg.serverDropdown != nil && pg.serverDropdown.Changed() {
-		pg.selectedServer = pg.exchangeServers[pg.serverDropdown.SelectedIndex()]
+		if pg.serverDropdown.SelectedIndex() == 0 {
+			pg.selectedServer = nil
+		} else {
+			pg.selectedServer = &pg.exchangeServers[pg.serverDropdown.SelectedIndex()-1]
+		}
 	}
 
 	if pg.serverDropdown.Changed() {
@@ -173,7 +177,9 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 func (pg *OrderHistoryPage) initServerSelector() {
 	pg.exchangeServers = pg.AssetsManager.InstantSwap.ExchangeServers()
 
-	items := []cryptomaterial.DropDownItem{}
+	items := []cryptomaterial.DropDownItem{{
+		Text: values.String(values.StrAllservers),
+	}}
 	for _, server := range pg.exchangeServers {
 		item := cryptomaterial.DropDownItem{
 			Text: server.Server.CapFirstLetter(),
@@ -391,6 +397,14 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.
 		statusFilter = api.OrderStatusUnknown
 	}
 
+	orderNewest := pg.orderDropdown.Selected() != values.String(values.StrOldest)
+	server := ""
+	if pg.selectedServer != nil {
+		server = string(pg.selectedServer.Server)
+	}
+
+	searchKey := pg.searchEditor.Editor.Text()
+
 	isReset := pg.previousStatus != statusFilter
 	if isReset {
 		// Since the status has changed we need to reset the offset.
@@ -398,7 +412,7 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.
 		pg.previousStatus = statusFilter
 	}
 
-	orders := components.LoadOrders(pg.Load, offset, pageSize, true, statusFilter)
+	orders := components.LoadOrders(pg.Load, offset, pageSize, orderNewest, server, searchKey, statusFilter)
 	return orders, len(orders), isReset, nil
 }
 
