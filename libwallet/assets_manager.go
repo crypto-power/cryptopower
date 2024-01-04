@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"decred.org/dcrdex/client/asset"
@@ -23,7 +24,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 	bolt "go.etcd.io/bbolt"
 
-	dexasset "decred.org/dcrdex/client/asset"
 	dexbtc "decred.org/dcrdex/client/asset/btc"
 	dexDcr "decred.org/dcrdex/client/asset/dcr"
 	btccfg "github.com/btcsuite/btcd/chaincfg"
@@ -37,6 +37,8 @@ import (
 // TODO: This is the main app's log filename, should probably be defined
 // elsewhere.
 const LogFilename = "cryptopower.log"
+
+var dexWalletRegistered atomic.Bool
 
 // Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
@@ -921,18 +923,10 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	mgr.dexc = dexcl
 	mgr.dexcMtx.Unlock()
 
-	// Prepare support for DCR wallet.
-	err = mgr.PrepareDexSupportForDCRWallet()
-	if err != nil {
-		log.Errorf("Error preparing dcr wallet support for dex client: %v", err)
-		return
-	}
-
-	// Prepare support for BTC wallet.
-	err = mgr.PrepareDexSupportForBTCWallet()
-	if err != nil {
-		log.Errorf("Error preparing btc wallet support for dex client: %v", err)
-		return
+	if !dexWalletRegistered.Load() {
+		mgr.prepareDexSupportForDCRWallet()
+		mgr.prepareDexSupportForBTCWallet()
+		dexWalletRegistered.Store(true)
 	}
 
 	go func() {
@@ -943,9 +937,9 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	}()
 }
 
-// PrepareDexSupportForDCRWallet sets up the DEX client to allow using a
+// prepareDexSupportForDCRWallet sets up the DEX client to allow using a
 // cyptopower dcr wallet with DEX core.
-func (mgr *AssetsManager) PrepareDexSupportForDCRWallet() error {
+func (mgr *AssetsManager) prepareDexSupportForDCRWallet() {
 	// Build a custom wallet definition with custom config options
 	// for use by the dex dcr ExchangeWallet.
 	customWalletConfigOpts := []*asset.ConfigOption{
@@ -963,7 +957,7 @@ func (mgr *AssetsManager) PrepareDexSupportForDCRWallet() error {
 
 	def := &asset.WalletDefinition{
 		Type:        dexc.CustomDexWalletType,
-		Description: "Uses an existing cryptopower Wallet instance instead of an rpc connection.",
+		Description: "Uses an existing cryptopower Wallet.",
 		ConfigOpts:  customWalletConfigOpts,
 	}
 
@@ -1011,17 +1005,12 @@ func (mgr *AssetsManager) PrepareDexSupportForDCRWallet() error {
 		return dcr.NewDEXWallet(dcrAsset, accountNumber, dcrAsset.SyncData()), nil
 	}
 
-	err := dexDcr.RegisterCustomWallet(walletMaker, def)
-	if err != nil && !errors.Is(err, dexasset.ErrWalletTypeAlreadyRegistered) { // this is the only error from RegisterCustomWallet, ignore?
-		return err
-	}
-
-	return nil
+	dexDcr.RegisterCustomWallet(walletMaker, def)
 }
 
-// PrepareDexSupportForBTCWallet sets up the DEX client to allow using a
+// prepareDexSupportForBTCWallet sets up the DEX client to allow using a
 // Cyptopower btc wallet with DEX core.
-func (mgr *AssetsManager) PrepareDexSupportForBTCWallet() error {
+func (mgr *AssetsManager) prepareDexSupportForBTCWallet() {
 	// Build a custom wallet definition with custom config options for use by
 	// the dexbtc.ExchangeWalletSPV.
 	customWalletConfigOpts := []*asset.ConfigOption{
@@ -1039,7 +1028,7 @@ func (mgr *AssetsManager) PrepareDexSupportForBTCWallet() error {
 
 	def := &asset.WalletDefinition{
 		Type:        dexc.CustomDexWalletType,
-		Description: "Uses an existing cryptopower Wallet instance instead of an rpc connection.",
+		Description: "Uses an existing cryptopower Wallet.",
 		ConfigOpts:  customWalletConfigOpts,
 	}
 
@@ -1082,10 +1071,5 @@ func (mgr *AssetsManager) PrepareDexSupportForBTCWallet() error {
 		return btc.NewDEXWallet(wallet.Internal().BTC, accountNumber, wallet.(*btc.Asset).NeutrinoClient()), nil
 	}
 
-	err := dexbtc.RegisterCustomSPVWallet(btcWalletConstructor, def)
-	if err != nil && !errors.Is(err, dexasset.ErrWalletTypeAlreadyRegistered) { // this is the only error from RegisterCustomSPVWallet, ignore?
-		return err
-	}
-
-	return nil
+	dexbtc.RegisterCustomSPVWallet(btcWalletConstructor, def)
 }

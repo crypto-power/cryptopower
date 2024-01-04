@@ -13,6 +13,7 @@ require (
 	github.com/btcsuite/btcd v0.23.4
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/btcsuite/btcd/btcutil v1.1.3
+	github.com/btcsuite/btcd/btcutil/psbt v1.1.8
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74
@@ -79,7 +80,6 @@ require (
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/btcsuite/btcd/btcutil/psbt v1.1.8 // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/golangcrypto v0.0.0-20150304025918-53f62d9b43e8 // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
@@ -229,4 +229,7 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
-replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20231222102705-febf6ffc3495
+// github.com/ukane-philemon/dcrdex v0.0.0-20240104133235-beacdac7d43d is the
+// same as https://github.com/decred/dcrdex/pull/2636 and will be changed once
+// the upstream PR has been merged.
+replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240104133235-beacdac7d43d

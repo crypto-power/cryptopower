@@ -82,29 +82,27 @@ func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 
 	unMixedAcctNum := dw.UnmixedAccountNumber()
 	mixedAcctNum := dw.MixedAccountNumber()
-	accounts, err := dw.GetAccountsRaw()
+	unMixedAcctName, err := dw.AccountName(unMixedAcctNum)
 	if err != nil {
-		log.Errorf("error loading mixer account. %s", err)
+		log.Errorf("error retrieving unmixed account name: %v", err)
 		return accts
 	}
 
-	var mixedAccName, unMixedAcctName string
-	for _, acct := range accounts.Accounts {
-		if acct.Number == unMixedAcctNum {
-			unMixedAcctName = acct.Name
-		} else if acct.Number == mixedAcctNum {
-			mixedAccName = acct.Name
-		}
+	mixedAcctName, err := dw.AccountName(mixedAcctNum)
+	if err != nil {
+		log.Errorf("error retrieving mixed account name: %v", err)
+		return accts
 	}
 
-	// We only care about the default account.
-	if mixedAccName == "" {
+	// We only care about the mixedAcctName account which doubles as the
+	// PrimaryAccount when account mixer is active.
+	if mixedAcctName == "" {
 		log.Errorf("Account name not found for mixed account number %d", mixedAcctNum)
 		return accts
 	}
 
 	return dexdcr.XCWalletAccounts{
-		PrimaryAccount: mixedAccName,
+		PrimaryAccount: mixedAcctName,
 		UnmixedAccount: unMixedAcctName,
 		TradingAccount: accts.PrimaryAccount,
 	}

@@ -116,9 +116,7 @@ func (dw *DEXWallet) HaveAddress(a btcutil.Address) (bool, error) {
 	return dw.w.HaveAddress(a)
 }
 
-func (dw *DEXWallet) WaitForShutdown() {
-	dw.w.WaitForShutdown()
-}
+func (dw *DEXWallet) WaitForShutdown() {}
 
 // currently unused
 func (dw *DEXWallet) ChainSynced() bool {
@@ -128,9 +126,6 @@ func (dw *DEXWallet) ChainSynced() bool {
 func (dw *DEXWallet) AccountProperties(scope waddrmgr.KeyScope, acct uint32) (*waddrmgr.AccountProperties, error) {
 	return dw.w.AccountProperties(scope, acct)
 }
-
-// The below methods are not implemented by *wallet.Wallet, so must be
-// implemented by the dexbtc.BTCWallet implementation.
 
 // AccountInfo returns the account information of the wallet for use by the
 // exchange wallet.
@@ -214,14 +209,17 @@ func (dw *DEXWallet) RescanAsync() error {
 }
 
 func (dw *DEXWallet) ForceRescan() {}
+
 func (dw *DEXWallet) Start() (dexbtc.SPVService, error) {
 	return dw.spvService, nil
 }
+
 func (dw *DEXWallet) Stop() {}
 
 func (dw *DEXWallet) Reconfigure(*asset.WalletConfig, string) (bool, error) {
 	return false, errors.New("Reconfigure not supported for Cyptopower btc wallet")
 }
+
 func (dw *DEXWallet) Birthday() time.Time {
 	return dw.w.Manager.Birthday()
 }
