@@ -490,7 +490,7 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 		priceChange = mkt.MsgRateToConventional(mkt.SpotPrice.High24 - mkt.SpotPrice.Low24)
 		low24 = fmt.Sprintf("%f", mkt.MsgRateToConventional(mkt.SpotPrice.Low24))
 		high24 = fmt.Sprintf("%f", mkt.MsgRateToConventional(mkt.SpotPrice.High24))
-		if mkt.SpotPrice.Vol24 > 0 && mkt.SpotPrice.Rate > 0 {
+		if mkt.SpotPrice.Rate > 0 { // should be impossible but...
 			quoteVol24 = fmt.Sprintf("%f", mkt.MsgRateToConventional(mkt.SpotPrice.Vol24/mkt.SpotPrice.Rate))
 		}
 		baseVol24 = fmt.Sprintf("%f", mkt.MsgRateToConventional(mkt.SpotPrice.Vol24))
