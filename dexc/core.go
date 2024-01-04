@@ -18,13 +18,14 @@ const (
 	// CustomDexWalletType is a keyword that identifies a custom Cryptopower
 	// wallet used by the DEX client.
 	CustomDexWalletType = "cryptopowerwallet"
-	// DexDcrWalletIDConfigKey is the key that holds the wallet ID value in the
-	// settings map used to connect an existing dcr wallet to the DEX client.
-	DexDcrWalletIDConfigKey = "walletid"
-	// DexDcrWalletAccountNameConfigKey is the key that holds the wallet account
-	// values in the settings map used to connect an existing dcr wallet to the
-	// DEX client.
-	DexDcrWalletAccountNameConfigKey = "account"
+	// WalletIDConfigKey is the key that holds the wallet ID value in the
+	// settings map used to connect an existing Cryptopower wallet to the DEX
+	// client.
+	WalletIDConfigKey = "walletid"
+	// WalletAccountNumberConfigKey is the key that holds the wallet account
+	// number in the settings map used to connect an existing Cryptopower wallet
+	// to the DEX client.
+	WalletAccountNumberConfigKey = "accountnumber"
 )
 
 // DEXClient represents the Decred DEX client and embeds *core.Core.

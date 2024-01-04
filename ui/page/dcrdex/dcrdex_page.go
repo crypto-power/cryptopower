@@ -172,8 +172,8 @@ func pendingBondConfirmation(am *libwallet.AssetsManager) (string, *core.BondAss
 	xcs := am.DexClient().Exchanges()
 	if len(xcs) == 1 { // first or only exchange
 		for _, xc := range xcs {
-			if len(xc.PendingBonds) == 1 {
-				for _, bond := range xc.PendingBonds {
+			if len(xc.Auth.PendingBonds) == 1 && xc.Auth.LiveStrength == 0 {
+				for _, bond := range xc.Auth.PendingBonds {
 					bondAsset := xc.BondAssets[bond.Symbol]
 					if bond.Confs < bondAsset.Confs {
 						return xc.Host, bondAsset, bond
