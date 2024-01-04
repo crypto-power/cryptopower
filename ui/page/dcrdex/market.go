@@ -1590,7 +1590,6 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 
 	cfg := map[string]string{
 		dexc.WalletIDConfigKey:            fmt.Sprintf("%d", asset.GetWalletID()),
-		dexc.WalletAccountNameConfigKey:   selectedAccount.AccountName,
 		dexc.WalletAccountNumberConfigKey: fmt.Sprint(selectedAccount.AccountNumber),
 	}
 
