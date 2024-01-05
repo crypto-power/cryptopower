@@ -627,7 +627,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	var actionBtn *cryptomaterial.Button
 	xc := pg.exchange()
 	hasZeroEffectiveTier := pg.dexc.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
-	if pg.dexc.IsLoggedIn() && !pg.noSupportedMarket() {
+	if pg.dexc.IsLoggedIn() && pg.noSupportedMarket() {
 		overlaySet = true
 		overlayMsg = values.String(values.StrNoSupportedMarketMsg)
 	} else if hasZeroEffectiveTier { // Need to post bond to trade.
