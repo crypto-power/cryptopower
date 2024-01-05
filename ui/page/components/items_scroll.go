@@ -128,6 +128,9 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 
 	s.isLoadingItems = true
 	itemsCountTemp := s.itemsCount
+	if s.itemsCount == -1 {
+		itemsCountTemp = 0
+	}
 	s.itemsCount = -1 // should trigger loading icon
 	offset := s.offset
 	tempSize := s.pageSize

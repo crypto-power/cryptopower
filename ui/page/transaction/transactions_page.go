@@ -326,21 +326,12 @@ func (pg *TransactionsPage) Layout(gtx C) D {
 	isDCRAssetSelected := pg.selectedWallet != nil && pg.selectedWallet.GetAssetType() == utils.DCRWalletAsset
 	if isDCRAssetSelected || (pg.dcrWalletExists && pg.selectedWallet == nil) {
 		// Only show tx category navigation txCategoryTab for DCR wallets.
-		return pg.txCategoryTab.Layout(gtx, pg.layoutBody, pg.IsMobileView())
+		return pg.txCategoryTab.Layout(gtx, pg.layoutContent, pg.IsMobileView())
 	}
 
 	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-		return pg.layoutBody(gtx)
+		return pg.layoutContent(gtx)
 	}, pg.IsMobileView())
-}
-
-func (pg *TransactionsPage) layoutBody(gtx C) D {
-	items := []layout.FlexChild{}
-	items = append(items, layout.Rigid(pg.layoutContent))
-	if pg.multiWalletLayout {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 }
 
 func (pg *TransactionsPage) walletNotReady() bool {

@@ -440,6 +440,7 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 }
 
 func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
+	isMobile := swmp.Load.IsMobileView()
 	assetType := swmp.selectedWallet.GetAssetType()
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
@@ -450,7 +451,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 			h := values.MarginPadding24
 			v := values.MarginPadding8
 			orientation := layout.Horizontal
-			if swmp.Load.IsMobileView() {
+			if isMobile {
 				orientation = layout.Vertical
 			}
 			return cryptomaterial.LinearLayout{
@@ -468,7 +469,8 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					clickable := swmp.openWalletSelector
 					return layout.Flex{
-						Axis: layout.Horizontal,
+						Axis:      layout.Horizontal,
+						Alignment: layout.Middle,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return cryptomaterial.LinearLayout{
@@ -483,7 +485,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 							return layout.Center.Layout(gtx, func(gtx C) D {
 								alignment := layout.Start
 								orientation := layout.Horizontal
-								if swmp.Load.IsMobileView() {
+								if isMobile {
 									alignment = layout.Middle
 									orientation = layout.Vertical
 									clickable = nil
@@ -505,18 +507,12 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 												if image == nil {
 													return D{}
 												}
-
-												if swmp.Load.IsMobileView() {
-													return image.Layout16dp(gtx)
-												}
-												return image.Layout24dp(gtx)
+												return image.LayoutTransform(gtx, isMobile, values.MarginPadding24)
 											}),
 											layout.Rigid(func(gtx C) D {
 												lbl := swmp.Theme.H6(swmp.selectedWallet.GetWalletName())
 												lbl.Color = swmp.Theme.Color.PageNavText
-												if swmp.Load.IsMobileView() {
-													lbl.TextSize = values.TextSize16
-												}
+												lbl.TextSize = values.TextSizeTransform(isMobile, values.TextSize20)
 												return layout.Inset{
 													Left: values.MarginPadding10,
 												}.Layout(gtx, lbl.Layout)
@@ -529,10 +525,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 												return layout.Inset{
 													Left: values.MarginPadding10,
 												}.Layout(gtx, func(gtx C) D {
-													textSize := values.TextSize16
-													if swmp.Load.IsMobileView() {
-														textSize = values.TextSize12
-													}
+													textSize := values.TextSizeTransform(isMobile, values.TextSize16)
 													return components.WalletHightlighLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
 												})
 											}),
@@ -541,7 +534,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 									layout.Rigid(func(gtx C) D {
 										gtx.Constraints.Min.X = gtx.Constraints.Max.X
 										layoutPosition := layout.E
-										if swmp.Load.IsMobileView() {
+										if isMobile {
 											layoutPosition = layout.Center
 										}
 										return layoutPosition.Layout(gtx, func(gtx C) D {

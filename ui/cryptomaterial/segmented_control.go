@@ -120,7 +120,7 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 						return body(gtx)
 					}
 					return sc.slideAction.DragLayout(gtx, func(gtx C) D {
-						return sc.slideAction.TransformLayout(gtx, body)
+						return sc.slideAction.TransformLayout(gtx, sc.layoutContent(body))
 					})
 				})
 			}),
@@ -131,6 +131,21 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 		return widget(gtx)
 	}
 	return UniformPadding(gtx, widget, sc.isMobileView)
+}
+
+func (sc *SegmentedControl) layoutContent(body layout.Widget) layout.Widget {
+	return func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				dims := body(gtx)
+				return dims
+			}),
+			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+				// 600px use to fill height for swip action
+				return layout.Spacer{Height: values.MarginPadding600}.Layout(gtx)
+			}),
+		)
+	}
 }
 
 func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
