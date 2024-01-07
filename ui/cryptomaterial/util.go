@@ -16,6 +16,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -161,4 +162,41 @@ func UniformPadding(gtx layout.Context, body layout.Widget, isMobileView ...bool
 		Bottom: bottomPadding,
 		Left:   paddingHorizontal,
 	}.Layout(gtx, body)
+}
+
+func DisableLayout(currentPage app.Page, gtx C, infoBody func(gtx C) D, transparency uint8, color color.NRGBA, actionButton *Button) D {
+	return layout.Stack{Alignment: layout.N}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			if currentPage == nil {
+				return D{}
+			}
+			mgtx := gtx.Disabled()
+			return currentPage.Layout(mgtx)
+		}),
+		layout.Stacked(func(gtx C) D {
+			overlayColor := color
+			overlayColor.A = transparency
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+			FillMax(gtx, overlayColor, 10)
+			if infoBody == nil && actionButton == nil {
+				return D{}
+			}
+
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return infoBody(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if actionButton == nil {
+							return D{}
+						}
+						actionButton.TextSize = values.TextSize14
+						return actionButton.Layout(gtx)
+					}),
+				)
+			})
+		}),
+	)
 }

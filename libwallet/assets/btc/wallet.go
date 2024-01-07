@@ -142,7 +142,7 @@ func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.Ass
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the BTC asset. It then generates the BTC loader interface
 // that is passed to be used upstream while creating the watch only wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -176,11 +176,11 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 	return btcWallet, nil
 }
 
-// RestoreWallet accepts the seed, wallet pass information and the init parameters.
-// It validates the network type passed by fetching the chain parameters
-// associated with it for the BTC asset. It then generates the BTC loader interface
-// that is passed to be used upstream while restoring the wallet in the
-// shared wallet implemenation.
+// RestoreWallet accepts the seed, wallet pass information and the init
+// parameters. It validates the network type passed by fetching the chain
+// parameters associated with it for the BTC asset. It then generates the BTC
+// loader interface that is passed to be used upstream while restoring the
+// wallet in the shared wallet implementation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
 func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -281,6 +281,10 @@ func (asset *Asset) SafelyCancelSync() {
 		loadWallet.Stop()
 		loadWallet.WaitForShutdown()
 	}
+}
+
+func (asset *Asset) NeutrinoClient() *chain.NeutrinoClient {
+	return asset.chainClient
 }
 
 // IsSynced returns true if the wallet is synced.

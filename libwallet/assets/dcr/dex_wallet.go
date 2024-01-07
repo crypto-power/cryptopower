@@ -21,10 +21,10 @@ import (
 	walleterrors "decred.org/dcrwallet/v3/errors"
 	walletjson "decred.org/dcrwallet/v3/rpc/jsonrpc/types"
 	dcrwallet "decred.org/dcrwallet/v3/wallet"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/blockchain/stake/v5"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrutil/v4"
 	chainjson "github.com/decred/dcrd/rpc/jsonrpc/types/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
@@ -33,17 +33,19 @@ import (
 
 // DEXWallet wraps *Asset and implements dexdcr.Wallet.
 type DEXWallet struct {
-	*sharedW.Wallet
-	syncData *SyncData
+	*Asset
+	tradingAccountNumber int32
+	syncData             *SyncData
 }
 
 var _ dexdcr.Wallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(w *sharedW.Wallet, syncData *SyncData) *DEXWallet {
+func NewDEXWallet(asset *Asset, tradingAccountNumber int32, syncData *SyncData) *DEXWallet {
 	return &DEXWallet{
-		Wallet:   w,
-		syncData: syncData,
+		Asset:                asset,
+		tradingAccountNumber: tradingAccountNumber,
+		syncData:             syncData,
 	}
 }
 
@@ -62,6 +64,48 @@ func (dw *DEXWallet) Disconnect() {}
 // Part of the Wallet interface.
 func (dw *DEXWallet) SpvMode() bool {
 	return true
+}
+
+// Accounts returns the names of the accounts for use by the exchange wallet.
+func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
+	var accts dexdcr.XCWalletAccounts
+	accountName, err := dw.AccountName(dw.tradingAccountNumber)
+	if err == nil {
+		accts.PrimaryAccount = accountName
+	} else {
+		log.Errorf("error checking selected DEX account name: %v", err)
+	}
+
+	if !dw.IsAccountMixerActive() {
+		return accts
+	}
+
+	unMixedAcctNum := dw.UnmixedAccountNumber()
+	mixedAcctNum := dw.MixedAccountNumber()
+	unMixedAcctName, err := dw.AccountName(unMixedAcctNum)
+	if err != nil {
+		log.Errorf("error retrieving unmixed account name: %v", err)
+		return accts
+	}
+
+	mixedAcctName, err := dw.AccountName(mixedAcctNum)
+	if err != nil {
+		log.Errorf("error retrieving mixed account name: %v", err)
+		return accts
+	}
+
+	// We only care about the mixedAcctName account which doubles as the
+	// PrimaryAccount when account mixer is active.
+	if mixedAcctName == "" {
+		log.Errorf("Account name not found for mixed account number %d", mixedAcctNum)
+		return accts
+	}
+
+	return dexdcr.XCWalletAccounts{
+		PrimaryAccount: mixedAcctName,
+		UnmixedAccount: unMixedAcctName,
+		TradingAccount: accts.PrimaryAccount,
+	}
 }
 
 // NotifyOnTipChange is not used, in favor of the tipNotifier pattern. See:
@@ -499,6 +543,40 @@ func (dw *DEXWallet) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (
 }
 
 // Part of the Wallet interface.
-func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ dex.Network, _, _ string) (restart bool, err error) {
-	return false, nil
+func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ dex.Network, _ string) (restart bool, err error) {
+	return false, errors.New("Reconfigure not implemented by Cryptopower DEX wallet")
+}
+
+// These methods are part of Wallet interface but required only by the
+// dexasset.TicketBuyer interface, leave unimplemented.
+
+// PurchaseTickets purchases n tickets. vspHost and vspPubKey only
+// needed for internal wallets.
+func (dw *DEXWallet) PurchaseTickets(_ context.Context, _ int, _, _ string) ([]*dexasset.Ticket, error) {
+	return nil, errors.New("PurchaseTickets not implemented by Cryptopower DEX wallet")
+}
+
+// Tickets returns current active ticket hashes up until they are voted
+// or revoked. Includes unconfirmed tickets.
+func (dw *DEXWallet) Tickets(_ context.Context) ([]*dexasset.Ticket, error) {
+	return nil, errors.New("Tickets not implemented by Cryptopower DEX wallet")
+}
+
+// VotingPreferences returns current voting preferences.
+func (dw *DEXWallet) VotingPreferences(_ context.Context) ([]*walletjson.VoteChoice, []*dexasset.TBTreasurySpend, []*walletjson.TreasuryPolicyResult, error) {
+	return []*walletjson.VoteChoice{}, []*dexasset.TBTreasurySpend{}, []*walletjson.TreasuryPolicyResult{}, errors.New("VotingPreferences not implemented by Cryptopower DEX wallet")
+}
+
+// SetVotingPreferences sets preferences used when a ticket is chosen to
+// be voted on.
+func (dw *DEXWallet) SetVotingPreferences(_ context.Context, _, _, _ map[string]string) error {
+	return errors.New("SetVotingPreferences not implemented by Cryptopower DEX wallet")
+}
+
+func (dw *DEXWallet) SetTxFee(_ context.Context, _ dcrutil.Amount) error {
+	return errors.New("SetTxFee not implemented by Cryptopower DEX wallet")
+}
+
+func (dw *DEXWallet) StakeInfo(_ context.Context) (*dcrwallet.StakeInfoData, error) {
+	return nil, errors.New("StakeInfo not implemented by Cryptopower DEX wallet")
 }

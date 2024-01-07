@@ -445,3 +445,7 @@ func DisplayOneDropdown(dropdowns ...*DropDown) {
 func (d *DropDown) Items() []DropDownItem {
 	return d.items
 }
+
+func (d *DropDown) ItemsLen() int {
+	return len(d.items)
+}
