@@ -725,6 +725,9 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 		rootDir := filepath.Join(mgr.params.RootDir, dirName, wType.ToStringLower())
 		files, err := os.ReadDir(rootDir)
 		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
 			log.Errorf("can't read %s root wallet type: %v", wType, err)
 			return
 		}
@@ -865,13 +868,13 @@ func (mgr *AssetsManager) CalculateTotalAssetsBalance() (map[utils.AssetType]sha
 
 func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType]sharedW.AssetAmount) (map[utils.AssetType]float64, error) {
 	if !mgr.ExchangeRateFetchingEnabled() {
-		return nil, fmt.Errorf("USD exchange rate is disabled")
+		return nil, fmt.Errorf("the USD exchange rate is disabled")
 	}
 
 	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
 		rate := mgr.RateSource.GetTicker(market)
 		if rate == nil || rate.LastTradePrice <= 0 {
-			return 0, fmt.Errorf("No rate information available")
+			return 0, fmt.Errorf("no rate information available")
 		}
 
 		return bal.MulF64(rate.LastTradePrice).ToCoin(), nil
@@ -881,7 +884,7 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 	for assetType, balance := range balances {
 		marketValue, exist := values.AssetExchangeMarketValue[assetType]
 		if !exist {
-			return nil, fmt.Errorf("Unsupported asset type: %s", assetType)
+			return nil, fmt.Errorf("unsupported asset type: %s", assetType)
 		}
 		usdBal, err := usdBalance(balance, marketValue)
 		if err != nil {

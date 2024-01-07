@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"path/filepath"
 	"time"
 
 	"gioui.org/app"
@@ -33,6 +33,8 @@ var (
 
 func main() {
 	cfg, err := loadConfig()
+	d, _ := json.Marshal(cfg)
+	fmt.Println("DEBUG: PRINT DATA ==>", string(d))
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 		return
@@ -65,8 +67,7 @@ func main() {
 		buildDate = time.Now()
 	}
 
-	logDir := filepath.Join(cfg.LogDir, string(cfg.net))
-	assetsManager, err := libwallet.NewAssetsManager(cfg.HomeDir, logDir, cfg.net)
+	assetsManager, err := libwallet.NewAssetsManager(cfg.HomeDir, cfg.LogDir, cfg.net)
 	if err != nil {
 		log.Errorf("init assetsManager error: %v", err)
 		return
