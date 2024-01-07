@@ -141,7 +141,7 @@ func (sc *SegmentedControl) layoutContent(body layout.Widget) layout.Widget {
 				return dims
 			}),
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-				// 600px use to fill height for swip action
+				// 600px use to fill height for swipe action
 				return layout.Spacer{Height: values.MarginPadding600}.Layout(gtx)
 			}),
 		)
