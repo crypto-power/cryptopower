@@ -109,6 +109,7 @@ func loadConfig() (*config, error) {
 	}
 
 	cfg := defaultConfig(defaultHomeDir)
+
 	defaultCfg := defaultConfig(defaultHomeDir)
 
 	// Pre-parse the command line options to see if an alternative config file
