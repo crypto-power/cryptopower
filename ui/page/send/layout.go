@@ -69,7 +69,7 @@ func (pg *Page) contentLayout(gtx C) D {
 		return layout.Spacer{Height: gtx.Metric.PxToDp(dims.Size.Y)}.Layout(gtx)
 	})
 
-	return layout.Stack{}.Layout(gtx,
+	return layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 				mp := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding32)
@@ -79,7 +79,7 @@ func (pg *Page) contentLayout(gtx C) D {
 				return layout.Inset{Bottom: mp}.Layout(gtx, pageContent[i])
 			})
 		}),
-		layout.Expanded(func(gtx C) D {
+		layout.Stacked(func(gtx C) D {
 			return layout.S.Layout(gtx, func(gtx C) D {
 				call.Add(gtx.Ops)
 				return dims
