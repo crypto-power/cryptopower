@@ -1255,7 +1255,7 @@ func (pg *OverviewPage) loadTransactions() {
 	transactions := make([]*multiWalletTx, 0)
 	wal := pg.AssetsManager.AllWallets()
 	for _, w := range wal {
-		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true, "")
+		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAll, true, "")
 		if err != nil {
 			log.Errorf("error loading transactions: %v", err)
 			return
