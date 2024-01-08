@@ -159,7 +159,6 @@ func (asset *Asset) bestServerPeerBlockHeight() {
 
 func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 	asset.syncData.mu.Lock()
-	defer asset.syncData.mu.Unlock()
 
 	// Update the best block synced in the connected peers if need be
 	asset.bestServerPeerBlockHeight()
@@ -171,6 +170,7 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 		asset.syncData.headersFetchProgress.StartHeaderHeight = &rawBlockHeight
 
 		if asset.syncData.bestBlockheight != rawBlockHeight {
+			asset.syncData.mu.Unlock()
 			// A rescan progress update must have been sent. Allow it
 			return
 		}
@@ -198,26 +198,30 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 	asset.syncData.headersFetchProgress.HeadersFetchProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar)
+	asset.syncData.mu.Unlock()
 
 	// publish the sync progress results to all listeners.
+	asset.syncData.mu.RLock()
 	for _, listener := range asset.syncData.syncProgressListeners {
 		if listener.OnHeadersFetchProgress != nil {
 			listener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
 		}
 	}
+	asset.syncData.mu.RUnlock()
 }
 
 func (asset *Asset) publishHeadersFetchComplete() {
 	asset.syncData.mu.Lock()
-	defer asset.syncData.mu.Unlock()
-
-	asset.handleSyncUIUpdate()
-
 	asset.syncData.synced = true
 	asset.syncData.syncing = false
+	asset.syncData.mu.Unlock()
+
+	asset.handleSyncUIUpdate()
 }
 
 func (asset *Asset) handleSyncUIUpdate() {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 	for _, listener := range asset.syncData.syncProgressListeners {
 		if listener.OnSyncCompleted != nil {
 			listener.OnSyncCompleted()
