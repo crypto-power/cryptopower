@@ -83,8 +83,6 @@ contrib.go.opencensus.io/resource v0.1.1/go.mod h1:F361eGI91LCmW1I/Saf+rX0+OFcig
 decred.org/cspp v0.3.0/go.mod h1:UygjYilC94dER3BEU65Zzyoqy9ngJfWCD2rdJqvUs2A=
 decred.org/cspp/v2 v2.1.0 h1:HeHb9+BFqrBaAPc6CsPiUpPFmC1uyBM2mJZUAbUXkRw=
 decred.org/cspp/v2 v2.1.0/go.mod h1:9nO3bfvCheOPIFZw5f6sRQ42CjBFB5RKSaJ9Iq6G4MA=
-decred.org/dcrdex v0.6.3 h1:XrqbF5O+CFhQws+eugzqQoPgvjrFKgpYSkfKGAbD3NM=
-decred.org/dcrdex v0.6.3/go.mod h1:zzHSNtu94lYxCBUwkuEmWGUL1wlO4pFzMoaPTGoqtBo=
 decred.org/dcrwallet v1.7.0 h1:U/ew00YBdUlx3rJAynt2OdKDgGzBKK4O89FijBq8iVg=
 decred.org/dcrwallet v1.7.0/go.mod h1:hNOGyvH53gWdgFB601/ubGRzCPfPtWnEVAi9Grs90y4=
 decred.org/dcrwallet/v3 v3.0.1 h1:+OLi+u/MvKc3Ubcnf19oyG/a5hJ/qp4OtezdiQZnLIs=
@@ -557,8 +555,10 @@ github.com/decred/slog v1.0.0/go.mod h1:zR98rEZHSnbZ4WHZtO0iqmSZjDLKhkXfrPTZQKtA
 github.com/decred/slog v1.1.0/go.mod h1:kVXlGnt6DHy2fV5OjSeuvCJ0OmlmTF6LFpEPMu/fOY0=
 github.com/decred/slog v1.2.0 h1:soHAxV52B54Di3WtKLfPum9OFfWqwtf/ygf9njdfnPM=
 github.com/decred/slog v1.2.0/go.mod h1:kVXlGnt6DHy2fV5OjSeuvCJ0OmlmTF6LFpEPMu/fOY0=
-github.com/decred/vspd/client/v2 v2.0.0 h1:gaSF1Bm2/EvoAiSLxNR5fgStrObAO66xmanhedidYIM=
-github.com/decred/vspd/client/v2 v2.0.0/go.mod h1:IDDviEe/6CuxxrW0PLOcg448enU3YmeElFHledYHw78=
+github.com/decred/vspd/client/v2 v2.1.0 h1:RzwmM/FCvpJDskNMeqeJ8UNnlR7kLCl3JlG8iZiLbG0=
+github.com/decred/vspd/client/v2 v2.1.0/go.mod h1:r/CtdQF7TmuoIaFuanHtUMYYlQxWgRBGapdn4b+Bouc=
+github.com/decred/vspd/types v1.1.0 h1:hTeqQwgRUN2FGIbuCIdyzBejKV+jxKrmEIcLKxpsB1g=
+github.com/decred/vspd/types v1.1.0/go.mod h1:THsO8aBSwWBq6ZsIG25cNqbkNb+EEASXzLhFvODVc0s=
 github.com/decred/vspd/types/v2 v2.0.0 h1:FaPA+W4OOMRWK+Vk4fyyYdXoVLRMMRQsxzsnSjJjOnI=
 github.com/decred/vspd/types/v2 v2.0.0/go.mod h1:2xnNqedkt9GuL+pK8uIzDxqYxFlwLRflYFJH64b76n0=
 github.com/denis-tingajkin/go-header v0.4.2/go.mod h1:eLRHAVXzE5atsKAnNRDB90WHCFFnBUn4RN0nRcs1LJA=
@@ -1578,6 +1578,8 @@ github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGr
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
+github.com/ukane-philemon/dcrdex v0.0.0-20240104133235-beacdac7d43d h1:GayvVwa8xYG+5tTFVJf6LJOOg4BjN1sU8FILDkyuFcA=
+github.com/ukane-philemon/dcrdex v0.0.0-20240104133235-beacdac7d43d/go.mod h1:2U+b4uDx4ZbAkk/pLaa2rv57G23XTyEe0Sw7Um+AdNE=
 github.com/ulikunitz/xz v0.5.6/go.mod h1:2bypXElzHzzJZwzH67Y6wb67pO62Rzfn7BSiF4ABRW8=
 github.com/ulikunitz/xz v0.5.7/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ultraware/funlen v0.0.3/go.mod h1:Dp4UiAus7Wdb9KUZsYWZEWiRzGuM2kXM1lPbfaF6xhA=

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"decred.org/dcrdex/client/asset"
@@ -24,7 +24,9 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 	bolt "go.etcd.io/bbolt"
 
+	dexbtc "decred.org/dcrdex/client/asset/btc"
 	dexDcr "decred.org/dcrdex/client/asset/dcr"
+	btccfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
@@ -35,6 +37,8 @@ import (
 // TODO: This is the main app's log filename, should probably be defined
 // elsewhere.
 const LogFilename = "cryptopower.log"
+
+var dexWalletRegistered atomic.Bool
 
 // Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
@@ -912,20 +916,20 @@ func (mgr *AssetsManager) DexcReady() bool {
 // InitializeDEX initializes mgr.dexc.
 func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	logDir := filepath.Dir(mgr.LogFile())
-	dexc, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
+	dexcl, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
 	if err != nil {
 		log.Errorf("Error starting dex client: %v", err)
 		return
 	}
 
 	mgr.dexcMtx.Lock()
-	mgr.dexc = dexc
+	mgr.dexc = dexcl
 	mgr.dexcMtx.Unlock()
 
-	err = mgr.PrepareDexSupportForDcrWallet()
-	if err != nil {
-		log.Errorf("Error preparing wallet support for dex client: %v", err)
-		return
+	if !dexWalletRegistered.Load() {
+		mgr.prepareDexSupportForDCRWallet()
+		mgr.prepareDexSupportForBTCWallet()
+		dexWalletRegistered.Store(true)
 	}
 
 	go func() {
@@ -936,27 +940,27 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	}()
 }
 
-// PrepareDexSupportForDcrWallet sets up the DEX client to allow using a
+// prepareDexSupportForDCRWallet sets up the DEX client to allow using a
 // cyptopower dcr wallet with DEX core.
-func (mgr *AssetsManager) PrepareDexSupportForDcrWallet() error {
+func (mgr *AssetsManager) prepareDexSupportForDCRWallet() {
 	// Build a custom wallet definition with custom config options
 	// for use by the dex dcr ExchangeWallet.
 	customWalletConfigOpts := []*asset.ConfigOption{
 		{
-			Key:         dexc.DexDcrWalletIDConfigKey,
+			Key:         dexc.WalletIDConfigKey,
 			DisplayName: "Wallet ID",
 			Description: "ID of existing wallet to use",
 		},
 		{
-			Key:         dexc.DexDcrWalletAccountNameConfigKey,
-			DisplayName: "Wallet Account Name",
-			Description: "Account name of the selected wallet",
+			Key:         dexc.WalletAccountNumberConfigKey,
+			DisplayName: "Wallet Account Number",
+			Description: "Account number of the selected wallet",
 		},
 	}
 
 	def := &asset.WalletDefinition{
 		Type:        dexc.CustomDexWalletType,
-		Description: "Uses an existing cryptopower Wallet instance instead of an rpc connection.",
+		Description: "Uses an existing cryptopower Wallet.",
 		ConfigOpts:  customWalletConfigOpts,
 	}
 
@@ -964,7 +968,7 @@ func (mgr *AssetsManager) PrepareDexSupportForDcrWallet() error {
 	// setup a dcr ExchangeWallet; it allows us to use an existing
 	// wallet instance for wallet operations instead of json-rpc.
 	var walletMaker = func(settings map[string]string, chainParams *dcrcfg.Params, logger dex.Logger) (dexDcr.Wallet, error) {
-		walletIDStr := settings[dexc.DexDcrWalletIDConfigKey]
+		walletIDStr := settings[dexc.WalletIDConfigKey]
 		walletID, err := strconv.Atoi(walletIDStr)
 		if err != nil || walletID < 0 {
 			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
@@ -984,9 +988,15 @@ func (mgr *AssetsManager) PrepareDexSupportForDcrWallet() error {
 			return nil, fmt.Errorf("cannot use watch only wallet for DEX trade")
 		}
 
-		// Ensure the accountName exists.
-		accountName := settings[dexc.DexDcrWalletAccountNameConfigKey]
-		if _, err = wallet.AccountNumber(accountName); err != nil {
+		// Ensure the account exists.
+		accountNumberStr := settings[dexc.WalletAccountNumberConfigKey]
+		acctNum, err := strconv.ParseInt(accountNumberStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		accountNumber := int32(acctNum)
+		if _, err = wallet.AccountName(accountNumber); err != nil {
 			return nil, fmt.Errorf("error checking selected DEX account: %w", err)
 		}
 
@@ -995,13 +1005,74 @@ func (mgr *AssetsManager) PrepareDexSupportForDcrWallet() error {
 			return nil, fmt.Errorf("DEX wallet not supported for %s", walletParams.Name)
 		}
 
-		return dcr.NewDEXWallet(dcrAsset.Wallet, dcrAsset.SyncData()), nil
+		return dcr.NewDEXWallet(dcrAsset, accountNumber, dcrAsset.SyncData()), nil
 	}
 
-	err := dexDcr.RegisterCustomWallet(walletMaker, def)
-	if err != nil && !strings.Contains(err.Error(), "already support" /* this is part of the error string returned if we've already registered a customer wallet */) {
-		return err
+	dexDcr.RegisterCustomWallet(walletMaker, def)
+}
+
+// prepareDexSupportForBTCWallet sets up the DEX client to allow using a
+// Cyptopower btc wallet with DEX core.
+func (mgr *AssetsManager) prepareDexSupportForBTCWallet() {
+	// Build a custom wallet definition with custom config options for use by
+	// the dexbtc.ExchangeWalletSPV.
+	customWalletConfigOpts := []*asset.ConfigOption{
+		{
+			Key:         dexc.WalletIDConfigKey,
+			DisplayName: "Wallet ID",
+			Description: "ID of existing wallet to use",
+		},
+		{
+			Key:         dexc.WalletAccountNumberConfigKey,
+			DisplayName: "Wallet Account Number",
+			Description: "Account number of the selected wallet",
+		},
 	}
 
-	return nil
+	def := &asset.WalletDefinition{
+		Type:        dexc.CustomDexWalletType,
+		Description: "Uses an existing cryptopower Wallet.",
+		ConfigOpts:  customWalletConfigOpts,
+	}
+
+	// This function will be invoked when the DEX client needs to setup a
+	// dexbtc.BTCWallet; it allows us to use an existing wallet instance for
+	// wallet operations instead of json-rpc.
+	var btcWalletConstructor = func(settings map[string]string, chainParams *btccfg.Params) (dexbtc.BTCWallet, error) {
+		walletIDStr := settings[dexc.WalletIDConfigKey]
+		walletID, err := strconv.Atoi(walletIDStr)
+		if err != nil || walletID < 0 {
+			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
+		}
+
+		wallet := mgr.WalletWithID(walletID)
+		if wallet == nil {
+			return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
+		}
+
+		walletParams := wallet.Internal().BTC.ChainParams()
+		if walletParams.Net != chainParams.Net {
+			return nil, fmt.Errorf("selected wallet is for %s network, expected %s", walletParams.Name, chainParams.Name)
+		}
+
+		if wallet.IsWatchingOnlyWallet() {
+			return nil, fmt.Errorf("cannot use watch only wallet for DEX trade")
+		}
+
+		// Ensure the wallet account exists.
+		accountNumberStr := settings[dexc.WalletAccountNumberConfigKey]
+		acctNum, err := strconv.ParseInt(accountNumberStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		accountNumber := int32(acctNum)
+		if _, err = wallet.AccountName(accountNumber); err != nil {
+			return nil, fmt.Errorf("error checking selected DEX account name: %w", err)
+		}
+
+		return btc.NewDEXWallet(wallet.Internal().BTC, accountNumber, wallet.(*btc.Asset).NeutrinoClient()), nil
+	}
+
+	dexbtc.RegisterCustomSPVWallet(btcWalletConstructor, def)
 }
