@@ -139,8 +139,9 @@ func (dc *DEXClient) HasWallet(assetID int32) bool {
 // AddWallet attempts to connect or create the wallet with the provided details
 // to the DEX client.
 // NOTE: Before connecting a dcr wallet, dcr ExchangeWallet must have been
-// configured to use a custom wallet instead of the default rpc wallet. See
-// libwallet.AssetManager.PrepareDexSupportForDcrWallet().
+// configured to use a custom wallet. See:
+// libwallet.AssetManager.PrepareDexSupportForDcrWallet() and
+// libwallet.AssetManager.prepareDexSupportForBTCCloneWallets.
 func (dc *DEXClient) AddWallet(assetID uint32, settings map[string]string, appPW, walletPW []byte) error {
 	assetInfo, err := asset.Info(assetID)
 	if err != nil {
