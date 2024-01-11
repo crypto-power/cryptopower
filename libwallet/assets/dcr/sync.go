@@ -246,7 +246,7 @@ func (asset *Asset) SpvSync() error {
 	peerAddresses := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	validPeerAddresses, errs := sharedW.ParseWalletPeers(peerAddresses, asset.chainParams.DefaultPort)
 	for _, err := range errs { // Log errors if any
-		log.Error(err) 
+		log.Error(err)
 	}
 
 	if len(validPeerAddresses) == 0 && len(errs) > 0 {
