@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"sort"
-	"strings"
 	"sync"
 
 	"decred.org/dcrwallet/v3/errors"
@@ -228,7 +227,8 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 }
 
 func (asset *Asset) SetSpecificPeer(address string) {
-	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, address)
+	knownAddrs := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, sharedW.AddPeer(knownAddrs, address))
 	asset.RestartSpvSync()
 }
 
@@ -243,26 +243,14 @@ func (asset *Asset) SpvSync() error {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
-	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
-	addrManager := addrmgr.New(asset.DataDir(), net.LookupIP) // TODO: be mindful of tor
-	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
-
-	var validPeerAddresses []string
 	peerAddresses := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-	if peerAddresses != "" {
-		addresses := strings.Split(peerAddresses, ";")
-		for _, address := range addresses {
-			peerAddress, err := utils.NormalizeAddress(address, asset.chainParams.DefaultPort)
-			if err != nil {
-				log.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err)
-			} else {
-				validPeerAddresses = append(validPeerAddresses, peerAddress)
-			}
-		}
+	validPeerAddresses, errs := sharedW.ParseWalletPeers(peerAddresses, asset.chainParams.DefaultPort)
+	for _, err := range errs { // Log errors if any
+		log.Error(err) 
+	}
 
-		if len(validPeerAddresses) == 0 {
-			return errors.New(utils.ErrInvalidPeers)
-		}
+	if len(validPeerAddresses) == 0 && len(errs) > 0 {
+		return errors.New(utils.ErrInvalidPeers)
 	}
 
 	// init activeSyncData to be used to hold data used
@@ -271,6 +259,10 @@ func (asset *Asset) SpvSync() error {
 
 	asset.waitingForHeaders = true
 	asset.syncing = true
+
+	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
+	addrManager := addrmgr.New(asset.DataDir(), net.LookupIP) // TODO: be mindful of tor
+	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
 
 	syncer := spv.NewSyncer(asset.Internal().DCR, lp)
 	syncer.SetNotifications(asset.spvSyncNotificationCallbacks())

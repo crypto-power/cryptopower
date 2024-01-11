@@ -124,10 +124,7 @@ func (pg *WalletSettingsPage) isPrivacyModeOn() bool {
 func (pg *WalletSettingsPage) loadPeerAddress() {
 	if !pg.isPrivacyModeOn() {
 		pg.peerAddr = pg.wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-		pg.connectToPeer.SetChecked(false)
-		if pg.peerAddr != "" {
-			pg.connectToPeer.SetChecked(true)
-		}
+		pg.connectToPeer.SetChecked(pg.peerAddr != "")
 	}
 }
 

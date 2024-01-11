@@ -2,7 +2,6 @@ package ltc
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -362,22 +361,14 @@ func (asset *Asset) prepareChain() error {
 func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err error) {
 	// Read config for persistent peers, if set parse and set neutrino's ConnectedPeers
 	// persistentPeers.
-	var persistentPeers []string
 	peerAddresses := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-	if peerAddresses != "" {
-		addresses := strings.Split(peerAddresses, ";")
-		for _, address := range addresses {
-			peerAddress, err := utils.NormalizeAddress(address, asset.chainParams.DefaultPort)
-			if err != nil {
-				log.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err)
-			} else {
-				persistentPeers = append(persistentPeers, peerAddress)
-			}
-		}
+	validPeerAddresses, errs := sharedW.ParseWalletPeers(peerAddresses, asset.chainParams.DefaultPort)
+	for _, err := range errs { // Log errors if any
+		log.Error(err)
+	}
 
-		if len(persistentPeers) == 0 {
-			return chainService, errors.New(utils.ErrInvalidPeers)
-		}
+	if len(validPeerAddresses) == 0 && len(errs) > 0 {
+		return chainService, errors.New(utils.ErrInvalidPeers)
 	}
 
 	// Add xurious DNS seed if it is TestNet4
@@ -391,7 +382,7 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 		Database:      asset.GetWalletDataDb().LTC,
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
-		ConnectPeers:  persistentPeers,
+		ConnectPeers:  validPeerAddresses,
 		AddPeers:      asset.setSeedPeers(),
 		// Dailer function helps to better control the dailer functionality.
 		Dialer: utils.DialerFunc(asset.dailerCtx),

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -478,14 +477,8 @@ func (asset *Asset) RemovePeers() {
 
 // SetSpecificPeer sets a specific peer to connect to.
 func (asset *Asset) SetSpecificPeer(address string) {
-	knownAddr := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-
-	// Prevent setting same address twice
-	if !strings.Contains(address, ";") && !strings.Contains(knownAddr, address) {
-		knownAddr += ";" + address
-	}
-
-	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, knownAddr)
+	knownAddrs := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, sharedW.AddPeer(knownAddrs, address))
 	go func() {
 		err := asset.reloadChainService()
 		if err != nil {
