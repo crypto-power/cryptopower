@@ -219,6 +219,9 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 						pg.notifyError(n.Details())
 					}
 				case core.NoteTypeOrder, core.NoteTypeMatch:
+					if n.Topic() == core.TopicAsyncOrderFailure {
+						pg.notifyError(n.Details())
+					}
 					pg.refreshOrders()
 					pg.ParentWindow().Reload()
 				case core.NoteTypeBalance, core.NoteTypeSpots:
@@ -280,14 +283,17 @@ func (pg *DEXMarketPage) resetServerAndMarkets() {
 	})
 
 	pg.serverSelector = pg.Theme.DropDown(servers, values.DEXServerDropdownGroup, false)
+	pg.setServerOrMarketDropdownStyle(pg.serverSelector)
 	pg.setServerMarkets()
-	pg.serverSelector.Width, pg.marketSelector.Width = dp300, dp300
-	pg.serverSelector.MakeCollapsedLayoutVisibleWhenExpanded, pg.marketSelector.MakeCollapsedLayoutVisibleWhenExpanded = true, true
-	inset := layout.Inset{Top: values.DP45}
-	pg.serverSelector.ExpandedLayoutInset, pg.marketSelector.ExpandedLayoutInset = inset, inset
-	pg.serverSelector.BorderWidth, pg.marketSelector.BorderWidth = dp2, dp2
-	pg.serverSelector.Hoverable, pg.marketSelector.Hoverable = false, false
-	pg.serverSelector.SelectedItemIconColor, pg.marketSelector.SelectedItemIconColor = &pg.Theme.Color.Primary, &pg.Theme.Color.Primary
+}
+
+func (pg *DEXMarketPage) setServerOrMarketDropdownStyle(d *cryptomaterial.DropDown) {
+	d.Width = dp300
+	d.MakeCollapsedLayoutVisibleWhenExpanded = true
+	d.ExpandedLayoutInset = layout.Inset{Top: values.DP45}
+	d.BorderWidth = dp2
+	d.Hoverable = false
+	d.SelectedItemIconColor = &pg.Theme.Color.Primary
 }
 
 func (pg *DEXMarketPage) setServerMarkets() {
@@ -320,27 +326,33 @@ func (pg *DEXMarketPage) setServerMarkets() {
 	}
 
 	pg.marketSelector = pg.Theme.DropDown(markets, values.DEXCurrencyPairGroup, false)
+	pg.setServerOrMarketDropdownStyle(pg.marketSelector)
+	pg.fetchOrderBook()
+}
 
+func (pg *DEXMarketPage) fetchOrderBook() {
 	baseAssetID, quoteAssetID, _ := convertMarketPairToDEXAssetIDs(pg.marketSelector.Selected())
 	pg.selectedMarketOrderBook = &core.MarketOrderBook{
 		Base:  baseAssetID,
 		Quote: quoteAssetID,
 	}
 
-	pg.showLoader = true
-	if pg.marketSelector.Selected() != values.String(values.StrNoSupportedMarket) {
-		go func() {
-			// Fetch order book and only update if we're still on the same market.
-			book, err := pg.dexc.Book(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
-			if err == nil && pg.selectedMarketOrderBook.Base == baseAssetID && pg.selectedMarketOrderBook.Quote == quoteAssetID {
-				pg.selectedMarketOrderBook.Book = book
-			} else {
-				log.Errorf("dexc.Book %v", err)
-			}
-			pg.showLoader = false
-			pg.ParentWindow().Reload()
-		}()
+	if pg.noSupportedMarket() {
+		return // nothing to do.
 	}
+
+	pg.showLoader = true
+	go func() {
+		// Fetch order book and only update if we're still on the same market.
+		book, err := pg.dexc.Book(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
+		if err == nil && pg.selectedMarketOrderBook.Base == baseAssetID && pg.selectedMarketOrderBook.Quote == quoteAssetID {
+			pg.selectedMarketOrderBook.Book = book
+		} else {
+			log.Errorf("dexc.Book %v", err)
+		}
+		pg.showLoader = false
+		pg.ParentWindow().Reload()
+	}()
 }
 
 func (pg *DEXMarketPage) marketDropdownListItem(baseAsset, quoteAsset libutils.AssetType) func(gtx C) D {
@@ -1187,8 +1199,7 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) HandleUserInteractions() {
 	if pg.serverSelector.Changed() {
-		// TODO: Update the order form with required lots.
-		log.Info("New sever selected: ", pg.serverSelector.Selected())
+		pg.setServerMarkets()
 	}
 
 	for pg.addServerBtn.Clicked() {
@@ -1203,12 +1214,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 	}
 
 	if pg.marketSelector.Changed() {
-		pg.setServerMarkets()
-	}
-
-	if pg.marketSelector.Changed() {
-		// TODO: Handle this.
-		log.Info("New market selected: ", pg.marketSelector.Selected())
+		pg.fetchOrderBook()
 	}
 
 	for pg.orderHistoryBtn.Clicked() {
@@ -1368,7 +1374,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 
 	// TODO: postBondBtn should open a separate page when its design is ready.
 	if pg.postBondBtn.Clicked() {
-		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, true))
+		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, pg.serverSelector.Selected()))
 	}
 
 	for pg.addWalletToDEX.Clicked() {
@@ -1643,9 +1649,7 @@ func (pg *DEXMarketPage) orderPrice(mkt *core.Market) (price float64) {
 	limitOrdPriceStr := pg.priceEditor.Editor.Text()
 	if !pg.isMarketOrder() && limitOrdPriceStr != "" {
 		price, _ = strconv.ParseFloat(limitOrdPriceStr, 64)
-	}
-
-	if mkt != nil && mkt.SpotPrice != nil {
+	} else if mkt != nil && mkt.SpotPrice != nil {
 		price = mkt.MsgRateToConventional(mkt.SpotPrice.Rate)
 	}
 

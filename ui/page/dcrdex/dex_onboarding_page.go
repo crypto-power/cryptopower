@@ -134,12 +134,13 @@ type DEXOnboarding struct {
 
 	materialLoader    material.LoaderStyle
 	isLoading         bool
-	alreadyRegistered bool
+	existingDEXServer string
 }
 
 // NewDEXOnboarding creates a new DEX onboarding pages. Specify
-// alreadyRegistered to use the DEX onboarding flow to allow user post bonds.
-func NewDEXOnboarding(l *load.Load, alreadyRegistered bool) *DEXOnboarding {
+// existingDEXServer to use the DEX onboarding flow to allow user post bonds for
+// a particular server.
+func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 	th := l.Theme
 	pg := &DEXOnboarding{
 		Load:                  l,
@@ -159,16 +160,8 @@ func NewDEXOnboarding(l *load.Load, alreadyRegistered bool) *DEXOnboarding {
 		nextBtn:               th.Button(values.String(values.StrNext)),
 		materialLoader:        material.Loader(th.Base),
 		dexc:                  l.AssetsManager.DexClient(),
-		alreadyRegistered:     alreadyRegistered,
+		existingDEXServer:     existingDEXServer,
 	}
-
-	pg.goBackBtn.Background = pg.Theme.Color.Gray2
-	pg.goBackBtn.Color = pg.Theme.Color.Black
-	pg.goBackBtn.HighlightColor = pg.Theme.Color.Gray7
-
-	pg.bondStrengthEditor.IsTitleLabel = false
-	pg.serverDropDown.Width = formWidth
-	pg.serverDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
 	pg.onBoardingSteps = map[onboardingStep]dexOnboardingStep{
 		onboardingSetPassword: {
@@ -192,12 +185,19 @@ func NewDEXOnboarding(l *load.Load, alreadyRegistered bool) *DEXOnboarding {
 		},
 	}
 
+	if pg.existingDEXServer != "" {
+		pg.serverDropDown = th.DropDown([]cryptomaterial.DropDownItem{{Text: pg.existingDEXServer}}, values.DEXServerDropdownGroup, false)
+	}
+
 	pg.currentStep = onboardingSetPassword
 	if pg.dexc.IsDEXPasswordSet() {
-		pg.currentStep = onboardingChooseServer
+		pg.setAddServerStep()
 	}
 
 	pg.bondStrengthEditor.IsTitleLabel = false
+	pg.serverDropDown.Width = formWidth
+	pg.serverDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
+
 	pg.goBackBtn.Background = pg.Theme.Color.Gray2
 	pg.goBackBtn.Color = pg.Theme.Color.Black
 	pg.goBackBtn.HighlightColor = pg.Theme.Color.Gray7
@@ -867,17 +867,13 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				return
 			}
 
-			pg.currentStep = onBoardingStepAddServer
-			knownServers, ok := knownDEXServers[pg.AssetsManager.NetType()]
-			if ok && len(knownServers) > 0 && !pg.wantCustomServer {
-				pg.currentStep = onboardingChooseServer
-			}
+			pg.setAddServerStep()
 		case onboardingChooseServer, onBoardingStepAddServer:
 			serverInfo := new(bondServerInfo)
 			if pg.currentStep == onboardingChooseServer {
 				serverInfo.url = pg.serverDropDown.Selected()
 				cert, ok := CertStore[serverInfo.url]
-				if !ok {
+				if !ok && pg.existingDEXServer == "" {
 					log.Errorf("Selected DEX server's (%s) cert is missing", serverInfo.url)
 					return
 				}
@@ -969,10 +965,17 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 	}
 }
 
+func (pg *DEXOnboarding) setAddServerStep() {
+	pg.currentStep = onBoardingStepAddServer
+	if pg.serverDropDown.Len() > 0 && !pg.wantCustomServer {
+		pg.currentStep = onboardingChooseServer
+	}
+}
+
 func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	var xc *core.Exchange
 	var err error
-	if pg.alreadyRegistered { // Already registered just want to post bond.
+	if pg.existingDEXServer != "" { // Already registered just want to post bond.
 		xc, err = pg.dexc.Exchange(pg.bondServer.url)
 	} else { // New fish! Let's check for server info. Will error if DEX already exists.
 		xc, err = pg.dexc.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
@@ -1043,7 +1046,7 @@ func (pg *DEXOnboarding) postBond() {
 		MaintainTier: &maintainTier,
 	}
 
-	if pg.alreadyRegistered {
+	if pg.existingDEXServer != "" {
 		// These fields(MaintainTier and MaxBondedAmt) can only be set for the
 		// first time. TODO: Use UpdateBondOptions when its design is ready.
 		postBond.MaintainTier = nil

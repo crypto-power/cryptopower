@@ -86,7 +86,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 	}
 
 	if showOnBoardingPage {
-		pg.Display(NewDEXOnboarding(pg.Load, false))
+		pg.Display(NewDEXOnboarding(pg.Load, ""))
 	} else {
 		pg.Display(NewDEXMarketPage(pg.Load))
 	}

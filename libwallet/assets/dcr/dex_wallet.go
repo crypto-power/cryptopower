@@ -325,7 +325,7 @@ func (dw *DEXWallet) GetBestBlock(ctx context.Context) (*chainhash.Hash, int64, 
 	// a goroutine.
 	w := dw.Internal().DCR
 	if w == nil {
-		return nil, 0, errors.New("dcr wallet has does not exit")
+		return nil, 0, errors.New("dcr wallet does not exit")
 	}
 	blockHash, blockHeight := w.MainChainTip(ctx)
 	return &blockHash, int64(blockHeight), nil
