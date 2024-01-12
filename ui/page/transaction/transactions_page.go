@@ -272,9 +272,8 @@ func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32, newestFirst 
 	sort.Slice(allTxs, func(i, j int) bool {
 		if newestFirst {
 			return allTxs[i].Timestamp > allTxs[j].Timestamp
-		} else {
-			return allTxs[i].Timestamp < allTxs[j].Timestamp
 		}
+		return allTxs[i].Timestamp < allTxs[j].Timestamp
 	})
 
 	// TODO: remove after PR 268  // Improve infinite scroll list functionality is merged

@@ -277,8 +277,7 @@ func SortTxs(txs []*Transaction, newestFirst bool) {
 	sort.SliceStable(txs, func(i, j int) bool {
 		if newestFirst {
 			return txs[i].Timestamp > txs[j].Timestamp
-		} else {
-			return txs[i].Timestamp < txs[j].Timestamp
 		}
+		return txs[i].Timestamp < txs[j].Timestamp
 	})
 }
