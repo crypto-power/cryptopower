@@ -137,7 +137,7 @@ func (sp *startPage) initPage() {
 		{Text: titler.String(values.StrEnglish)},
 		{Text: titler.String(values.StrFrench)},
 		{Text: titler.String(values.StrSpanish)},
-	}, values.StartPageDropdownGroup, true)
+	}, nil, values.StartPageDropdownGroup, true)
 
 	sp.languageDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
 	sp.languageDropdown.Background = &sp.Theme.Color.Surface

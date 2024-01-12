@@ -84,8 +84,9 @@ type DEXMarketPage struct {
 	scrollContainer                    *widget.List
 	openOrdersAndOrderHistoryContainer *widget.List
 
-	serverSelector *cryptomaterial.DropDown
-	addServerBtn   *cryptomaterial.Clickable
+	serverSelector        *cryptomaterial.DropDown
+	lastSelectedDEXServer string
+	addServerBtn          *cryptomaterial.Clickable
 
 	marketSelector *cryptomaterial.DropDown
 
@@ -121,7 +122,9 @@ type DEXMarketPage struct {
 	showLoader          bool
 }
 
-func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
+// NewDEXMarketPage prepares and initializes a *DEXMarketPage. Specify
+// selectServer to select the provided server.
+func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 	th := l.Theme
 	pg := &DEXMarketPage{
 		Load:                               l,
@@ -131,7 +134,7 @@ func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
 		openOrdersAndOrderHistoryContainer: &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		addServerBtn:                       th.NewClickable(false),
 		toggleBuyAndSellBtn:                th.SegmentedControl(buyAndSellBtnStrings, cryptomaterial.SegmentTypeGroup),
-		orderTypesDropdown:                 th.DropDown(orderTypes, values.DEXOrderTypes, true),
+		orderTypesDropdown:                 th.DropDown(orderTypes, nil, values.DEXOrderTypes, true),
 		priceEditor:                        newTextEditor(l.Theme, values.String(values.StrPrice), "", false),
 		switchLotsOrAmount:                 l.Theme.Switch(),
 		lotsOrAmountEditor:                 newTextEditor(l.Theme, values.String(values.StrLots), "", false),
@@ -148,6 +151,7 @@ func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
 		orderHistoryBtn:                    th.Button(values.String(values.StrTradeHistory)),
 		ordersTableHorizontalScroll:        &widget.List{List: layout.List{Axis: horizontal, Alignment: layout.Middle}},
 		openOrdersDisplayed:                true,
+		lastSelectedDEXServer:              selectServer,
 	}
 
 	btnPadding := layout.Inset{Top: dp8, Right: dp20, Left: dp20, Bottom: dp8}
@@ -160,7 +164,6 @@ func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
 	pg.orderTypesDropdown.FontWeight = font.SemiBold
 	pg.orderTypesDropdown.Hoverable = false
 	pg.orderTypesDropdown.SelectedItemIconColor = &pg.Theme.Color.Primary
-
 	pg.orderTypesDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
 	pg.orderTypesDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
@@ -211,12 +214,16 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 				case core.NoteTypeConnEvent:
 					switch n.Topic() {
 					case core.TopicDEXConnected:
-						pg.resetServerAndMarkets()
-						modal := modal.NewSuccessModal(pg.Load, n.Details(), modal.DefaultClickFunc())
-						pg.ParentWindow().ShowModal(modal)
-						pg.ParentWindow().Reload()
+						pg.setServerMarkets()
+						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
+							modal := modal.NewSuccessModal(pg.Load, n.Details(), modal.DefaultClickFunc())
+							pg.ParentWindow().ShowModal(modal)
+							pg.ParentWindow().Reload()
+						}
 					case core.TopicDEXDisconnected, core.TopicDexConnectivity:
-						pg.notifyError(n.Details())
+						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
+							pg.notifyError(n.Details())
+						}
 					}
 				case core.NoteTypeOrder, core.NoteTypeMatch:
 					if n.Topic() == core.TopicAsyncOrderFailure {
@@ -282,7 +289,10 @@ func (pg *DEXMarketPage) resetServerAndMarkets() {
 		PreventSelection: true,
 	})
 
-	pg.serverSelector = pg.Theme.DropDown(servers, values.DEXServerDropdownGroup, false)
+	lastSelectedDexServer := &cryptomaterial.DropDownItem{
+		Text: pg.lastSelectedDEXServer,
+	}
+	pg.serverSelector = pg.Theme.DropDown(servers, lastSelectedDexServer, values.DEXServerDropdownGroup, false)
 	pg.setServerOrMarketDropdownStyle(pg.serverSelector)
 	pg.setServerMarkets()
 }
@@ -325,7 +335,7 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		})
 	}
 
-	pg.marketSelector = pg.Theme.DropDown(markets, values.DEXCurrencyPairGroup, false)
+	pg.marketSelector = pg.Theme.DropDown(markets, nil, values.DEXCurrencyPairGroup, false)
 	pg.setServerOrMarketDropdownStyle(pg.marketSelector)
 	pg.fetchOrderBook()
 }
@@ -1199,7 +1209,14 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) HandleUserInteractions() {
 	if pg.serverSelector.Changed() {
-		pg.setServerMarkets()
+		selectedServer := pg.serverSelector.Selected()
+		xc, err := pg.dexc.Exchange(selectedServer)
+		if err != nil && xc.Auth.EffectiveTier == 0 /* need to post bond now */ {
+			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer))
+		} else {
+			pg.lastSelectedDEXServer = selectedServer
+			pg.setServerMarkets()
+		}
 	}
 
 	for pg.addServerBtn.Clicked() {

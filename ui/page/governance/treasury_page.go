@@ -118,7 +118,7 @@ func (pg *TreasuryPage) initWalletSelector() {
 		items = append(items, item)
 	}
 
-	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, false)
+	pg.walletDropDown = pg.Theme.DropDown(items, nil, values.WalletsDropdownGroup, false)
 	if len(pg.assetWallets) > 0 {
 		pg.selectedDCRWallet = pg.assetWallets[0].(*dcr.Asset)
 	}

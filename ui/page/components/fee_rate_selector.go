@@ -83,7 +83,7 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 		Left:   values.MarginPadding16,
 	}
 
-	fs.fetchedRatesDropDown = fs.Theme.DropDown([]cryptomaterial.DropDownItem{}, values.WalletsDropdownGroup, false)
+	fs.fetchedRatesDropDown = fs.Theme.DropDown([]cryptomaterial.DropDownItem{}, nil, values.WalletsDropdownGroup, false)
 	fs.fetchedRatesDropDown.BorderColor = &fs.Theme.Color.Gray2
 
 	fs.ratesEditor = fs.Theme.Editor(new(widget.Editor), "In "+fs.ratesUnit())
@@ -222,7 +222,7 @@ func (fs *FeeRateSelector) UpdatedFeeRate(selectedWallet sharedW.Asset) {
 		})
 	}
 
-	fs.fetchedRatesDropDown = fs.Theme.DropDown(items, values.WalletsDropdownGroup, false)
+	fs.fetchedRatesDropDown = fs.Theme.DropDown(items, nil, values.WalletsDropdownGroup, false)
 	fs.fetchedRatesDropDown.FontWeight = font.SemiBold
 	fs.fetchedRatesDropDown.Hoverable = false
 	fs.fetchedRatesDropDown.SelectedItemIconColor = &fs.Theme.Color.Primary

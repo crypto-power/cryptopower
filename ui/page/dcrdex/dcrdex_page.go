@@ -88,7 +88,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 	if showOnBoardingPage {
 		pg.Display(NewDEXOnboarding(pg.Load, ""))
 	} else {
-		pg.Display(NewDEXMarketPage(pg.Load))
+		pg.Display(NewDEXMarketPage(pg.Load, ""))
 	}
 }
 
@@ -169,16 +169,15 @@ func (pg *DEXPage) OnNavigatedFrom() {}
 // pendingBondConfirmation is a convenience function based on arbitrary
 // heuristics to determine when to show bond confirmation step.
 func pendingBondConfirmation(am *libwallet.AssetsManager) (string, *core.BondAsset, *core.PendingBondState) {
-	xcs := am.DexClient().Exchanges()
-	if len(xcs) == 1 { // first or only exchange
-		for _, xc := range xcs {
-			if xc.Auth.EffectiveTier == 0 && len(xc.Auth.PendingBonds) > 0 {
-				for _, bond := range xc.Auth.PendingBonds {
-					bondAsset := xc.BondAssets[bond.Symbol]
-					if bond.Confs < bondAsset.Confs {
-						return xc.Host, bondAsset, bond
-					}
-				}
+	for _, xc := range am.DexClient().Exchanges() {
+		if len(xc.Auth.PendingBonds) == 0 {
+			continue
+		}
+
+		for _, bond := range xc.Auth.PendingBonds {
+			bondAsset := xc.BondAssets[bond.Symbol]
+			if bond.Confs < bondAsset.Confs {
+				return xc.Host, bondAsset, bond
 			}
 		}
 	}

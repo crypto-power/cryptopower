@@ -478,15 +478,21 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 	case onboardingSetPassword:
 		addBackBtn = false
 	case onboardingChooseServer, onBoardingStepAddServer:
-		backBtnEnabled = !pg.dexc.IsDEXPasswordSet()
+		backBtnEnabled = !pg.dexc.IsDEXPasswordSet() || pg.dexServerWithEffectTier() != ""
 	case onboardingPostBond:
 		nextBtnEnabled = pg.validateBondStrength() && pg.bondAccountHasEnough() && !pg.isLoading
+	case onBoardingStepWaitForConfirmation:
+		xc, err := pg.dexc.Exchange(pg.bondServer.url)
+		nextBtnEnabled = err != nil && xc.Auth.EffectiveTier > 0
+		addBackBtn = false
 	}
 
 	pg.nextBtn.Text = values.String(values.StrNext)
 	if pg.currentStep == onBoardingStepAddServer && pg.wantCustomServer {
 		pg.nextBtn.Text = values.String(values.StrAdd)
 		addBackBtn = false
+	} else if pg.currentStep == onBoardingStepWaitForConfirmation && nextBtnEnabled {
+		pg.nextBtn.Text = values.String(values.StrSkip)
 	}
 
 	dp16 := values.MarginPadding16
@@ -531,6 +537,16 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 			return layout.Inset{Left: dp10}.Layout(gtx, pg.nextBtn.Layout)
 		}),
 	)
+}
+
+// dexServerWithEffectTier returns any dex server that has an effective tier.
+func (pg *DEXOnboarding) dexServerWithEffectTier() string {
+	for _, xc := range pg.dexc.Exchanges() {
+		if xc.Auth.EffectiveTier > 0 {
+			return xc.Host
+		}
+	}
+	return ""
 }
 
 func (pg *DEXOnboarding) stepPostBond(gtx C) D {
@@ -774,6 +790,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 				)
 			})
 		}),
+		layout.Rigid(pg.formFooterButtons),
 	)
 
 	return layoutFlex
@@ -827,7 +844,11 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				pg.currentStep = onboardingChooseServer
 			}
 		case onboardingChooseServer, onBoardingStepAddServer:
-			pg.currentStep = onboardingSetPassword
+			if host := pg.dexServerWithEffectTier(); host != "" {
+				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, host)) // Show market page with the server selected.
+			} else {
+				pg.currentStep = onboardingSetPassword
+			}
 		}
 	}
 
@@ -973,7 +994,7 @@ func (pg *DEXOnboarding) setAddServerStep() {
 		dropdownServers = []cryptomaterial.DropDownItem{{Text: pg.existingDEXServer}}
 	}
 
-	pg.serverDropDown = pg.Theme.DropDown(dropdownServers, values.DEXServerDropdownGroup, false)
+	pg.serverDropDown = pg.Theme.DropDown(dropdownServers, nil, values.DEXServerDropdownGroup, false)
 	pg.serverDropDown.Width = formWidth
 	pg.serverDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
@@ -1125,7 +1146,7 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 			case n := <-noteFeed.C:
 				if n.Topic() == core.TopicBondConfirmed {
 					noteFeed.ReturnFeed()
-					pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load))
+					pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, pg.bondServer.url))
 					return
 				}
 			case <-pg.ctx.Done():
@@ -1157,6 +1178,7 @@ func (pg *DEXOnboarding) checkForPendingBondPayment() {
 	pg.newTier = 1
 	pg.currentStep = onBoardingStepWaitForConfirmation
 	pg.bondConfirmationInfo = &bondConfirmationInfo{
+		bondCoinID:       bond.CoinID,
 		requiredBondConf: uint16(bondAsset.Confs),
 		currentBondConf:  int32(bond.Confs),
 	}
