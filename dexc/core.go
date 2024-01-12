@@ -139,6 +139,7 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 		Net:                dexNet,
 		Logger:             logger,
 		Language:           validDEXLang(lang),
+		NoAutoWalletLock:   true,
 		UnlockCoinsOnLogin: false, // TODO: Make configurable.
 	}
 

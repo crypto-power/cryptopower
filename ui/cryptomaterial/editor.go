@@ -39,6 +39,8 @@ type Editor struct {
 	HasCustomButton bool
 	CustomButton    Button
 
+	// Set ExtraText to show a custom text in the editor.
+	ExtraText string
 	// Bordered if true makes the adds a border around the editor.
 	Bordered bool
 	// isPassword if true, displays the show and hide button.
@@ -287,6 +289,12 @@ func (e Editor) editor(gtx C) D {
 					return inset.Layout(gtx, e.EditorStyle.Layout)
 				}),
 			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			if e.ExtraText == "" {
+				return D{}
+			}
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, e.t.Label(values.TextSize16, e.ExtraText).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			if e.showEditorIcon && e.alignEditorIconEnd {

@@ -473,7 +473,7 @@ func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 // formFooterButtons is a convenience function that prepares the required
 // buttons for each form page footer.
 func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
-	addBackBtn, nextBtnEnabled, backBtnEnabled := true, true, true
+	addBackBtn, nextBtnEnabled, backBtnEnabled, hideFooter := true, true, true, false
 	switch pg.currentStep {
 	case onboardingSetPassword:
 		addBackBtn = false
@@ -484,6 +484,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 	case onBoardingStepWaitForConfirmation:
 		xc, err := pg.dexc.Exchange(pg.bondServer.url)
 		nextBtnEnabled = err != nil && xc.Auth.EffectiveTier > 0
+		hideFooter = !nextBtnEnabled
 		addBackBtn = false
 	}
 
@@ -515,13 +516,17 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Flexed(goBackFlex, func(gtx C) D {
-			if !addBackBtn {
+			if !addBackBtn || hideFooter {
 				return D{}
 			}
 			pg.goBackBtn.SetEnabled(backBtnEnabled)
 			return layout.Inset{Right: dp10}.Layout(gtx, pg.goBackBtn.Layout)
 		}),
 		layout.Flexed(nextFlex, func(gtx C) D {
+			if hideFooter {
+				return D{}
+			}
+
 			if pg.isLoading {
 				return layout.Center.Layout(gtx, func(gtx C) D {
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)

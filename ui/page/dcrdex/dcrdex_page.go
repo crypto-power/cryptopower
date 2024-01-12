@@ -4,6 +4,7 @@ import (
 	"decred.org/dcrdex/client/core"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -33,6 +34,8 @@ type DEXPage struct {
 	splashPageContainer  *widget.List
 	startTradingBtn      cryptomaterial.Button
 	isDexFirstVisit      bool
+	dexIsLoading         bool
+	materialLoader       material.LoaderStyle
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
@@ -47,6 +50,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		}},
 		isDexFirstVisit:    true,
 		generalSettingsBtn: l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrExchange))),
+		materialLoader:     material.Loader(l.Theme.Base),
 	}
 
 	if dp.AssetsManager.DexcReady() && dp.AssetsManager.DexClient().IsDEXPasswordSet() {
@@ -79,24 +83,30 @@ func (pg *DEXPage) OnNavigatedTo() {
 		return
 	}
 
-	showOnBoardingPage := true
-	if len(pg.AssetsManager.DexClient().Exchanges()) != 0 { // has at least one exchange
-		_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager)
-		showOnBoardingPage = pendingBond != nil
-	}
+	pg.dexIsLoading = true
+	go func() {
+		<-pg.AssetsManager.DexClient().Ready()
+		showOnBoardingPage := true
+		if len(pg.AssetsManager.DexClient().Exchanges()) != 0 { // has at least one exchange
+			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager)
+			showOnBoardingPage = pendingBond != nil
+		}
 
-	if showOnBoardingPage {
-		pg.Display(NewDEXOnboarding(pg.Load, ""))
-	} else {
-		pg.Display(NewDEXMarketPage(pg.Load, ""))
-	}
+		if showOnBoardingPage {
+			pg.Display(NewDEXOnboarding(pg.Load, ""))
+		} else {
+			pg.Display(NewDEXMarketPage(pg.Load, ""))
+		}
+
+		pg.dexIsLoading = false
+	}()
 }
 
 // Layout draws the page UI components into the provided layout context to be
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	if pg.isDexFirstVisit {
+	if pg.isDexFirstVisit || pg.dexIsLoading {
 		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return pg.splashPage(gtx)
 		})

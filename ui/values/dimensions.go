@@ -104,6 +104,7 @@ var (
 	MarginPadding372      = unit.Dp(372)
 	MarginPadding377      = unit.Dp(377)
 	MarginPadding390      = unit.Dp(390)
+	DP400                 = unit.Dp(400)
 	MarginPadding420      = unit.Dp(420)
 	MarginPadding450      = unit.Dp(450)
 	MarginPadding500      = unit.Dp(500)
@@ -113,6 +114,8 @@ var (
 	MarginPadding600      = unit.Dp(600)
 	MarginPadding650      = unit.Dp(650)
 	MarginPadding700      = unit.Dp(700)
+	DP850                 = unit.Dp(850)
+	DP950                 = unit.Dp(950)
 
 	TextSize10   = unit.Sp(10)
 	TextSize12   = unit.Sp(12)

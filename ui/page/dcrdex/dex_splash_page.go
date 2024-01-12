@@ -49,6 +49,13 @@ func (pg *DEXPage) splashPage(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Right: values.MarginPadding15, Left: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+				if pg.dexIsLoading {
+					return layout.Center.Layout(gtx, func(gtx C) D {
+						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return pg.materialLoader.Layout(gtx)
+					})
+				}
 				return layout.Flex{}.Layout(gtx, layout.Flexed(1, pg.startTradingBtn.Layout))
 			})
 		}),

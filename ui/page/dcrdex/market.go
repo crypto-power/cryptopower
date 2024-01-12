@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"sort"
 	"strconv"
 	"strings"
 
 	"decred.org/dcrdex/client/core"
+	"decred.org/dcrdex/client/orderbook"
 	"decred.org/dcrdex/dex"
 	"decred.org/dcrdex/dex/order"
 	"gioui.org/font"
@@ -35,7 +37,7 @@ const (
 	DEXMarketPageID = "dex_market"
 	// maxOrderDisplayedInOrderBook is the maximum number of orders that can be
 	// accommodated/displayed on the order book.
-	maxOrderDisplayedInOrderBook = 9
+	maxOrderDisplayedInOrderBook = 8
 )
 
 var (
@@ -111,15 +113,29 @@ type DEXMarketPage struct {
 	accountSelector *components.WalletAndAccountSelector
 
 	seeFullOrderBookBtn     cryptomaterial.Button
-	selectedMarketOrderBook *core.MarketOrderBook
+	selectedMarketOrderBook orderbookInfo
+	closeOrderBookListener  func()
 
-	orders                      []*core.Order
+	orders                      []*clickableOrder
 	openOrdersBtn               cryptomaterial.Button
 	orderHistoryBtn             cryptomaterial.Button
 	ordersTableHorizontalScroll *widget.List
 
 	openOrdersDisplayed bool
 	showLoader          bool
+}
+
+type orderbookInfo struct {
+	quote, base             uint32
+	quoteSymbol, baseSymbol string
+	marketID                string
+	book                    *orderbook.OrderBook
+	feed                    core.BookFeed
+}
+
+type clickableOrder struct {
+	*core.Order
+	cancelBtn *cryptomaterial.Button
 }
 
 // NewDEXMarketPage prepares and initializes a *DEXMarketPage. Specify
@@ -139,7 +155,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 		switchLotsOrAmount:                 l.Theme.Switch(),
 		lotsOrAmountEditor:                 newTextEditor(l.Theme, values.String(values.StrLots), "", false),
 		totalEditor:                        newTextEditor(th, values.String(values.StrTotal), "", false),
-		maxBuyOrSellStr:                    "0",
+		maxBuyOrSellStr:                    "---",
 		orderFeeEstimateStr:                "------",
 		postBondBtn:                        th.Button(values.String(values.StrPostBond)),
 		addWalletToDEX:                     th.Button(values.String(values.StrAddWallet)),
@@ -309,6 +325,7 @@ func (pg *DEXMarketPage) setServerOrMarketDropdownStyle(d *cryptomaterial.DropDo
 func (pg *DEXMarketPage) setServerMarkets() {
 	// Set available market pairs.
 	var markets []cryptomaterial.DropDownItem
+	var lastSelectedItem *cryptomaterial.DropDownItem
 	if pg.serverSelector.Selected() != values.String(values.StrAddServer) {
 		host := pg.serverSelector.Selected()
 		xc, err := pg.dexc.Exchange(host)
@@ -320,10 +337,17 @@ func (pg *DEXMarketPage) setServerMarkets() {
 				if base == "" || quote == "" {
 					continue // market asset not supported by cryptopower. TODO: Should we support just displaying stats for unsupported markets?
 				}
-				markets = append(markets, cryptomaterial.DropDownItem{
+
+				marketItem := cryptomaterial.DropDownItem{
 					Text:      base.String() + "/" + quote.String(),
 					DisplayFn: pg.marketDropdownListItem(base, quote),
-				})
+				}
+
+				if pg.dexc.HasWallet(int32(m.BaseID)) && pg.dexc.HasWallet(int32(m.QuoteID)) {
+					lastSelectedItem = &marketItem
+				}
+
+				markets = append(markets, marketItem)
 			}
 		}
 	}
@@ -335,34 +359,86 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		})
 	}
 
-	pg.marketSelector = pg.Theme.DropDown(markets, nil, values.DEXCurrencyPairGroup, false)
+	pg.marketSelector = pg.Theme.DropDown(markets, lastSelectedItem, values.DEXCurrencyPairGroup, false)
 	pg.setServerOrMarketDropdownStyle(pg.marketSelector)
 	pg.fetchOrderBook()
 }
 
 func (pg *DEXMarketPage) fetchOrderBook() {
-	baseAssetID, quoteAssetID, _ := convertMarketPairToDEXAssetIDs(pg.marketSelector.Selected())
-	pg.selectedMarketOrderBook = &core.MarketOrderBook{
-		Base:  baseAssetID,
-		Quote: quoteAssetID,
+	base, quote, _ := strings.Cut(pg.marketSelector.Selected(), "/")
+	baseAssetID, _ := bip(strings.ToLower(base))
+	quoteAssetID, _ := bip(strings.ToLower(quote))
+	pg.selectedMarketOrderBook = orderbookInfo{
+		base:        baseAssetID,
+		quote:       quoteAssetID,
+		baseSymbol:  base,
+		quoteSymbol: quote,
 	}
+	pg.closeAndResetOrderbookListener()
 
 	if pg.noSupportedMarket() {
 		return // nothing to do.
 	}
 
+	// Update order form editors.
+	pg.priceEditor.ExtraText = pg.selectedMarketOrderBook.quoteSymbol + " - " + pg.selectedMarketOrderBook.baseSymbol
+	pg.totalEditor.ExtraText = pg.selectedMarketOrderBook.quoteSymbol
+	if !pg.orderWithLots() {
+		pg.lotsOrAmountEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
+	}
+
 	pg.showLoader = true
 	go func() {
 		// Fetch order book and only update if we're still on the same market.
-		book, err := pg.dexc.Book(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
-		if err == nil && pg.selectedMarketOrderBook.Base == baseAssetID && pg.selectedMarketOrderBook.Quote == quoteAssetID {
-			pg.selectedMarketOrderBook.Book = book
-		} else {
+		book, feed, err := pg.dexc.SyncBook(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
+		if err == nil && pg.selectedMarketOrderBook.base == baseAssetID && pg.selectedMarketOrderBook.quote == quoteAssetID {
+			pg.selectedMarketOrderBook.marketID = pg.formatSelectedMarketAsDEXMarketName()
+			pg.selectedMarketOrderBook.feed = feed
+			pg.selectedMarketOrderBook.book = book
+			pg.closeOrderBookListener = feed.Close
+			pg.showLoader = false
+			pg.ParentWindow().Reload()
+			pg.listenForOrderbookNotifications()
+		} else if err != nil {
 			log.Errorf("dexc.Book %v", err)
 		}
 		pg.showLoader = false
-		pg.ParentWindow().Reload()
 	}()
+}
+
+// listenForOrderbookNotifications listens for orderbook updates and MUST be
+// called from a goroutine.
+func (pg *DEXMarketPage) listenForOrderbookNotifications() {
+	defer func() {
+		pg.closeAndResetOrderbookListener()
+	}()
+	for {
+		select {
+		case <-pg.ctx.Done():
+			return
+		case bookUpdate, ok := <-pg.selectedMarketOrderBook.feed.Next():
+			if !ok {
+				return // closed
+			}
+
+			sameMarket := bookUpdate.MarketID == pg.selectedMarketOrderBook.marketID
+			if bookUpdate.Action == core.FreshBookAction {
+				mktBook := bookUpdate.Payload.(*core.MarketOrderBook)
+				sameMarket = pg.selectedMarketOrderBook.base == mktBook.Base && pg.selectedMarketOrderBook.quote == mktBook.Quote
+			}
+
+			if pg.serverSelector.Selected() == bookUpdate.Host && sameMarket {
+				pg.ParentWindow().Reload()
+			}
+		}
+	}
+}
+
+func (pg *DEXMarketPage) closeAndResetOrderbookListener() {
+	if pg.closeOrderBookListener != nil {
+		pg.closeOrderBookListener()
+		pg.closeOrderBookListener = nil // reset
+	}
 }
 
 func (pg *DEXMarketPage) marketDropdownListItem(baseAsset, quoteAsset libutils.AssetType) func(gtx C) D {
@@ -422,6 +498,7 @@ func assetIcon(th *cryptomaterial.Theme, assetType libutils.AssetType) *cryptoma
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) OnNavigatedFrom() {
+	pg.closeAndResetOrderbookListener()
 	pg.cancelCtx()
 }
 
@@ -546,22 +623,20 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 			}
 			return pg.priceAndVolumeColumn(gtx,
 				values.String(values.Str24HChange), change24Layout,
-				values.StringF(values.Str24hVolume, convertAssetIDToAssetType(pg.selectedMarketOrderBook.Base)), baseVol24,
+				values.StringF(values.Str24hVolume, convertAssetIDToAssetType(pg.selectedMarketOrderBook.base)), baseVol24,
 			)
 		}),
 		layout.Flexed(0.33, func(gtx C) D {
 			return pg.priceAndVolumeColumn(gtx,
 				values.String(values.Str24hHigh), pg.semiBoldLabelSize14(high24).Layout,
-				values.StringF(values.Str24hVolume, convertAssetIDToAssetType(pg.selectedMarketOrderBook.Quote)), quoteVol24,
+				values.StringF(values.Str24hVolume, convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)), quoteVol24,
 			)
 		}),
 	)
 }
 
 func (pg *DEXMarketPage) selectedMarketUSDRateTicker() *ext.Ticker {
-	selectedMarket := pg.marketSelector.Selected()
-	_, _, rateSourceMarketName := convertMarketPairToDEXAssetIDs(selectedMarket)
-	return pg.AssetsManager.RateSource.GetTicker(rateSourceMarketName)
+	return pg.AssetsManager.RateSource.GetTicker(rateSourceMarketName(pg.marketSelector.Selected()))
 }
 
 func (pg *DEXMarketPage) selectedMarketInfo() (mkt *core.Market) {
@@ -581,9 +656,7 @@ func (pg *DEXMarketPage) selectedMarketInfo() (mkt *core.Market) {
 // formatSelectedMarketAsDEXMarketName converts the currently selected market to
 // a format recognized by the DEX client.
 func (pg *DEXMarketPage) formatSelectedMarketAsDEXMarketName() string {
-	selectedMarket := pg.marketSelector.Selected()
-	baseAssetID, quoteAssetID, _ := convertMarketPairToDEXAssetIDs(selectedMarket)
-	dexMarketName, _ := dex.MarketName(baseAssetID, quoteAssetID)
+	dexMarketName, _ := dex.MarketName(pg.selectedMarketOrderBook.base, pg.selectedMarketOrderBook.quote)
 	return dexMarketName
 }
 
@@ -812,32 +885,42 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 }
 
 func (pg *DEXMarketPage) missingMarketWallet() libutils.AssetType {
-	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.Base)) {
-		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.Base)
+	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.base)) {
+		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.base)
 	}
-	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.Quote)) {
-		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.Quote)
+	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.quote)) {
+		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)
 	}
 	return ""
 }
 
 func (pg *DEXMarketPage) estimateOrderFee() {
-	pg.maxBuyOrSellStr = "0"
+	pg.maxBuyOrSellStr = "---"
 	pg.orderFeeEstimateStr = values.String(values.StrNotAvailable)
-	orderForm := pg.validatedOrderFormInfo()
-	if orderForm == nil {
+
+	mkt := pg.selectedMarketInfo()
+	price := pg.orderPrice(mkt)
+	if price <= 0 && !pg.isSellOrder() {
 		return
 	}
 
-	est, err := pg.dexc.PreOrder(orderForm)
+	host, base, quote := pg.serverSelector.Selected(), pg.selectedMarketOrderBook.base, pg.selectedMarketOrderBook.quote
+
+	var est *core.MaxOrderEstimate
+	var err error
+	if pg.isSellOrder() {
+		est, err = pg.dexc.MaxSell(host, base, quote)
+	} else {
+		est, err = pg.dexc.MaxBuy(host, base, quote, mkt.ConventionalRateToMsg(price))
+	}
 	if err != nil || est.Swap == nil || est.Redeem == nil {
 		return
 	}
 
-	swapFee := conventionalAmt(est.Swap.Estimate.MaxFees)
-	redeemFee := conventionalAmt(est.Redeem.Estimate.RealisticBestCase)
-	baseSym := convertAssetIDToAssetType(pg.selectedMarketOrderBook.Base)
-	quoteSym := convertAssetIDToAssetType(pg.selectedMarketOrderBook.Quote)
+	swapFee := conventionalAmt(est.Swap.MaxFees)
+	redeemFee := conventionalAmt(est.Redeem.RealisticBestCase)
+	baseSym := convertAssetIDToAssetType(base)
+	quoteSym := convertAssetIDToAssetType(quote)
 	maxBuyOrSellAssetSym := baseSym
 	// Swap fees are denominated in the outgoing asset's unit, while Redeem fees
 	// are denominated in the incoming asset's unit.
@@ -852,10 +935,14 @@ func (pg *DEXMarketPage) estimateOrderFee() {
 	lots/lots value is higher than trading limit, reduce max lots and lots value
 	displayed.
 	*/
-	pg.maxBuyOrSellStr = fmt.Sprintf("%d %s, %f %s",
-		est.Swap.Estimate.Lots, values.String(values.StrLots),
-		conventionalAmt(est.Swap.Estimate.Value), maxBuyOrSellAssetSym,
+	pg.maxBuyOrSellStr = fmt.Sprintf("%d %s, %s %s",
+		est.Swap.Lots, values.String(values.StrLots),
+		trimZeros(fmt.Sprintf("%f", conventionalAmt(est.Swap.Value))), maxBuyOrSellAssetSym,
 	)
+}
+
+func trimZeros(s string) string {
+	return strings.TrimSuffix(strings.TrimRight(s, "0"), ".")
 }
 
 // availableWalletAccountBalanceString returns the balance of the DEX wallet
@@ -868,9 +955,9 @@ func (pg *DEXMarketPage) availableWalletAccountBalanceString(forQuoteAsset bool)
 
 	var assetID uint32
 	if forQuoteAsset {
-		assetID = pg.selectedMarketOrderBook.Quote
+		assetID = pg.selectedMarketOrderBook.quote
 	} else {
-		assetID = pg.selectedMarketOrderBook.Base
+		assetID = pg.selectedMarketOrderBook.base
 	}
 
 	assetSym = convertAssetIDToAssetType(assetID).String()
@@ -896,40 +983,48 @@ func orderFormRow(gtx C, orientation layout.Axis, children []layout.FlexChild) D
 }
 
 func (pg *DEXMarketPage) orderbook(gtx C) D {
-	var buyOrders, sellOrders []*core.MiniOrder
-	if pg.selectedMarketOrderBook != nil && pg.selectedMarketOrderBook.Book != nil {
-		buyOrders = pg.selectedMarketOrderBook.Book.Buys
-		sellOrders = pg.selectedMarketOrderBook.Book.Sells
-	}
-
-	if len(buyOrders) < maxOrderDisplayedInOrderBook { // Pad with empty orders
-		for i := len(buyOrders); i <= maxOrderDisplayedInOrderBook; i++ {
-			buyOrders = append(buyOrders, &core.MiniOrder{})
+	var buyOrders, sellOrders []*orderbook.Order
+	var buyOrdersFilled, sellOrdersFilled bool
+	var err error
+	if pg.selectedMarketOrderBook.book != nil {
+		buyOrders, buyOrdersFilled, err = pg.selectedMarketOrderBook.book.BestNOrders(maxOrderDisplayedInOrderBook, false)
+		if err != nil {
+			log.Errorf("orderbook.OrderBook..BestNOrders for buy side error: %v", err)
 		}
-	}
-	if len(sellOrders) < maxOrderDisplayedInOrderBook { // Pad with empty orders
-		for i := len(sellOrders); i <= maxOrderDisplayedInOrderBook; i++ {
-			sellOrders = append(sellOrders, &core.MiniOrder{})
+
+		sellOrders, sellOrdersFilled, err = pg.selectedMarketOrderBook.book.BestNOrders(maxOrderDisplayedInOrderBook, true)
+		if err != nil {
+			log.Errorf("orderbook.OrderBook..BestNOrders for sell side error: %v", err)
 		}
 	}
 
-	makeOrderBookBuyOrSellFlexChildren := func(isSell bool, orders []*core.MiniOrder) []layout.FlexChild {
+	if !buyOrdersFilled { // Pad with empty orders
+		for i := maxOrderDisplayedInOrderBook - len(buyOrders); i > 0; i-- {
+			buyOrders = append(buyOrders, &orderbook.Order{})
+		}
+	}
+	if !sellOrdersFilled { // Pad with empty orders
+		nRemainingOrders := maxOrderDisplayedInOrderBook - len(sellOrders)
+		emptyOrders := make([]*orderbook.Order, nRemainingOrders)
+		for i := 0; i < nRemainingOrders; i++ {
+			emptyOrders[i] = &orderbook.Order{}
+		}
+		sellOrders = append(emptyOrders, sellOrders...) // prepend for sell orders
+	}
+
+	makeOrderBookBuyOrSellFlexChildren := func(isSell bool, orders []*orderbook.Order) []layout.FlexChild {
 		var orderBookFlexChildren []layout.FlexChild
 		for i := range orders {
-			if i+1 > maxOrderDisplayedInOrderBook {
-				break
-			}
-
 			ord := orders[i]
 			orderBookFlexChildren = append(orderBookFlexChildren, layout.Rigid(func(gtx C) D {
 				dummyOrder := true
 				qtyStr, rateStr, epochStr := "------", "------", "------"
 				if ord.Rate > 0 {
-					rateStr = fmt.Sprintf("%f", ord.Rate)
+					rateStr = fmt.Sprintf("%f", conventionalAmt(ord.Rate))
 				}
-				if ord.Qty > 0 {
+				if ord.Quantity > 0 {
 					dummyOrder = false
-					qtyStr = fmt.Sprintf("%f", ord.Qty)
+					qtyStr = fmt.Sprintf("%f", conventionalAmt(ord.Quantity))
 				}
 				if ord.Epoch > 0 || !dummyOrder {
 					epochStr = fmt.Sprintf("%d", ord.Epoch)
@@ -940,7 +1035,7 @@ func (pg *DEXMarketPage) orderbook(gtx C) D {
 		return orderBookFlexChildren
 	}
 
-	baseAsset, quoteAsset := convertAssetIDToAssetType(pg.selectedMarketOrderBook.Base), convertAssetIDToAssetType(pg.selectedMarketOrderBook.Quote)
+	baseAsset, quoteAsset := convertAssetIDToAssetType(pg.selectedMarketOrderBook.base), convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)
 	return cryptomaterial.LinearLayout{
 		Width:       gtx.Dp(orderFormAndOrderBookWidth),
 		Height:      gtx.Dp(orderFormAndOrderBookHeight),
@@ -1019,7 +1114,7 @@ func (pg *DEXMarketPage) orderBookRow(gtx C, priceColumn, amountColumn, epochCol
 	return cryptomaterial.LinearLayout{
 		Width:   cryptomaterial.MatchParent,
 		Height:  cryptomaterial.WrapContent,
-		Margin:  layout.Inset{Bottom: values.MarginPadding9},
+		Margin:  layout.Inset{Bottom: values.MarginPadding8},
 		Spacing: layout.SpaceBetween,
 	}.Layout(gtx,
 		layout.Flexed(0.33, priceColumn.Layout), // Price
@@ -1045,14 +1140,19 @@ func textBuyOrSell(th *cryptomaterial.Theme, sell bool, txt string) cryptomateri
 func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 	headers := []string{values.String(values.StrType), values.String(values.StrPair), values.String(values.StrAge), values.String(values.StrPrice), values.String(values.StrAmount), values.String(values.StrFilled), values.String(values.StrSettled), values.String(values.StrStatus)}
 
-	sectionHeight := gtx.Dp(400)
-	sectionWidth := values.AppWidth
+	sectionHeight := gtx.Dp(values.DP400)
+	sectionWidth := values.DP850
 	columnWidth := sectionWidth / unit.Dp(len(headers))
+	if pg.openOrdersDisplayed && len(pg.orders) > 0 {
+		sectionWidth = values.DP950
+		columnWidth = sectionWidth / (unit.Dp(len(headers)) + 1 /* cancel btn column */)
+		headers = append(headers, "") // cancel btn column has no header
+	}
 	sepWidth := sectionWidth - values.MarginPadding60
 
 	var headersFn []layout.FlexChild
 	for _, header := range headers {
-		headersFn = append(headersFn, pg.orderColumn(true, header, columnWidth))
+		headersFn = append(headersFn, pg.orderColumn(true, header, columnWidth, 0))
 	}
 
 	return cryptomaterial.LinearLayout{
@@ -1120,16 +1220,17 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 									return D{}
 								}),
 								layout.Rigid(func(gtx C) D {
-									orderReader := pg.orderReader(ord)
+									orderReader := pg.orderReader(ord.Order)
 									return layout.Flex{Axis: horizontal, Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
-										pg.orderColumn(false, fmt.Sprintf("%s %s", values.String(ord.Type.String()), values.String(orderReader.SideString())), columnWidth),
-										pg.orderColumn(false, ord.MarketID, columnWidth),
-										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime)), columnWidth),
-										pg.orderColumn(false, orderReader.RateString(), columnWidth),
-										pg.orderColumn(false, orderReader.BaseQtyString(), columnWidth),
-										pg.orderColumn(false, orderReader.FilledPercent(), columnWidth),
-										pg.orderColumn(false, orderReader.SettledPercent(), columnWidth),
-										pg.orderColumn(false, orderReader.StatusString(), columnWidth), // TODO: Add possible values to translation
+										pg.orderColumn(false, fmt.Sprintf("%s %s", values.String(ord.Type.String()), values.String(orderReader.SideString())), columnWidth, index),
+										pg.orderColumn(false, ord.MarketID, columnWidth, index),
+										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime)), columnWidth, index),
+										pg.orderColumn(false, orderReader.RateString(), columnWidth, index),
+										pg.orderColumn(false, orderReader.BaseQtyString(), columnWidth, index),
+										pg.orderColumn(false, orderReader.FilledPercent(), columnWidth, index),
+										pg.orderColumn(false, orderReader.SettledPercent(), columnWidth, index),
+										pg.orderColumn(false, orderReader.StatusString(), columnWidth, index), // TODO: Add possible values to translation
+										pg.orderColumn(false, "", columnWidth, index),                         // for cancel btn
 									)
 								}),
 								layout.Rigid(func(gtx C) D {
@@ -1157,18 +1258,38 @@ func semiBoldGray3Size14(th *cryptomaterial.Theme, text string) cryptomaterial.L
 	return lb
 }
 
-func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.Dp) layout.FlexChild {
+func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.Dp, orderIndex int) layout.FlexChild {
 	return layout.Rigid(func(gtx C) D {
-		return cryptomaterial.LinearLayout{
+		ll := cryptomaterial.LinearLayout{
 			Width:       gtx.Dp(columnWidth),
 			Height:      cryptomaterial.WrapContent,
 			Orientation: horizontal,
 			Alignment:   layout.Middle,
 			Padding:     layout.Inset{Top: dp16, Bottom: dp16},
 			Direction:   layout.Center,
-		}.Layout2(gtx, func(gtx C) D {
+		}
+
+		var showCancelBtn bool
+		if !header {
+			ord := pg.orders[orderIndex]
+			notInflight := ord.Stamp > 0
+			showCancelBtn = pg.openOrdersDisplayed && !ord.Cancelling && notInflight && ord.cancelBtn != nil
+			if showCancelBtn {
+				ll.Padding = layout.Inset{Top: dp8, Bottom: dp8}
+			}
+		}
+
+		return ll.Layout2(gtx, func(gtx C) D {
 			if header {
 				return semiBoldGray3Size14(pg.Theme, txt).Layout(gtx)
+			}
+
+			if txt == "" {
+				if showCancelBtn {
+					return pg.orders[orderIndex].cancelBtn.Layout(gtx)
+				} else {
+					return D{}
+				}
 			}
 
 			lb := pg.Theme.Body2(txt)
@@ -1295,6 +1416,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 			continue
 		}
 
+		reEstimateFee = true
 		formattedPrice := price - mkt.MsgRateToConventional(mkt.ConventionalRateToMsg(price)%mkt.RateStep)
 		if formattedPrice != price {
 			start, end := pg.priceEditor.Editor.Selection()
@@ -1304,7 +1426,6 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 
 		ok := pg.calculateTotalOrder(mkt)
 		if ok {
-			reEstimateFee = true
 			continue
 		}
 
@@ -1320,8 +1441,6 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		} else {
 			pg.totalEditor.Editor.SetText(trimmedAmtString(lotsOrAmt * price))
 		}
-
-		reEstimateFee = true
 	}
 
 	// Handle updates to Total Editor.
@@ -1386,6 +1505,11 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 	if pg.switchLotsOrAmount.Changed() {
 		pg.lotsOrAmountEditor.SetError("")
 		pg.calculateTotalOrder(mkt)
+		if pg.orderWithLots() {
+			pg.lotsOrAmountEditor.ExtraText = ""
+		} else {
+			pg.lotsOrAmountEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
+		}
 	}
 
 	// TODO: postBondBtn should open a separate page when its design is ready.
@@ -1395,6 +1519,17 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 
 	for pg.addWalletToDEX.Clicked() {
 		pg.handleMissingMarketWallet()
+	}
+
+	for _, ord := range pg.orders {
+		if ord.cancelBtn != nil && ord.cancelBtn.Clicked() {
+			err := pg.dexc.Cancel(ord.ID)
+			if err != nil {
+				pg.notifyError(fmt.Errorf("Error canceling order: %v", err).Error())
+			} else {
+				pg.ParentWindow().Reload()
+			}
+		}
 	}
 
 	if pg.createOrderBtn.Clicked() {
@@ -1593,6 +1728,10 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 		return errors.New("No wallet selected")
 	}
 
+	if !asset.IsSynced() { // Only fully synced wallets should connect to core.
+		return errors.New(values.String(values.StrWalletNotSynced))
+	}
+
 	walletAssetID, ok := bip(missingWallet.ToStringLower())
 	if !ok {
 		return fmt.Errorf("No assetID for %s", missingWallet)
@@ -1639,7 +1778,32 @@ func (pg *DEXMarketPage) refreshOrders() {
 		return
 	}
 
-	pg.orders = orders
+	pg.orders = nil
+	for i := range orders {
+		ord := &clickableOrder{Order: orders[i]}
+		if pg.openOrdersDisplayed && !ord.Cancelling {
+			btn := pg.Theme.DangerButton(values.String(values.StrCancel))
+			btn.Margin = layout.Inset{}
+			ord.cancelBtn = &btn
+		}
+		pg.orders = append(pg.orders, ord)
+	}
+
+	if pg.openOrdersDisplayed {
+		// Check for inflight orders and append them to the returned order
+		// slice.
+		if mkt := pg.selectedMarketInfo(); mkt != nil && len(mkt.InFlightOrders) > 0 {
+			for _, ord := range mkt.InFlightOrders {
+				pg.orders = append(pg.orders, &clickableOrder{Order: ord.Order})
+			}
+
+			// We've just appended new orders, sort to ensure newest orders are
+			// displayed first.
+			sort.SliceStable(orders, func(i, j int) bool {
+				return pg.orders[i].SubmitTime > orders[j].SubmitTime
+			})
+		}
+	}
 }
 
 func (pg *DEXMarketPage) hasValidOrderInfo() bool {
@@ -1744,21 +1908,21 @@ func isChangeEvent(evt widget.EditorEvent) bool {
 	return false
 }
 
-// convertMarketPairToDEXAssetIDs converts the provided marketPair to asset IDs
-// recognized by the DEX client.
-func convertMarketPairToDEXAssetIDs(marketPair string) (bassAssetID, quoteAssetID uint32, rateSourceMarketName string) {
+// rateSourceMarketName converts the provided marketPair to the expected market
+// name for fiat rate fetching.
+func rateSourceMarketName(marketPair string) string {
 	base, quote, _ := strings.Cut(marketPair, "/")
-	baseAssetID, baseSymOk := dex.BipSymbolID(strings.ToLower(base))
-	quoteAssetID, quoteSymOk := dex.BipSymbolID(strings.ToLower(quote))
+	_, baseSymOk := dex.BipSymbolID(strings.ToLower(base))
+	_, quoteSymOk := dex.BipSymbolID(strings.ToLower(quote))
 	if baseSymOk && quoteSymOk {
 		switch quote {
 		case libutils.DCRWalletAsset.String():
-			rateSourceMarketName = values.DCRUSDTMarket
+			return values.DCRUSDTMarket
 		case libutils.BTCWalletAsset.String():
-			rateSourceMarketName = values.BTCUSDTMarket
+			return values.BTCUSDTMarket
 		case libutils.LTCWalletAsset.String():
-			rateSourceMarketName = values.LTCUSDTMarket
+			return values.LTCUSDTMarket
 		}
 	}
-	return baseAssetID, quoteAssetID, rateSourceMarketName
+	return ""
 }

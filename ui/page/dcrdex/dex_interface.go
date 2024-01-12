@@ -2,6 +2,8 @@ package dcrdex
 
 import (
 	"decred.org/dcrdex/client/core"
+	"decred.org/dcrdex/client/orderbook"
+	"decred.org/dcrdex/dex"
 )
 
 type dexClient interface {
@@ -19,9 +21,11 @@ type dexClient interface {
 	NotificationFeed() *core.NoteFeed
 	Exchanges() map[string]*core.Exchange
 	Exchange(host string) (*core.Exchange, error)
-	Book(dex string, base, quote uint32) (*core.OrderBook, error)
+	SyncBook(dex string, base, quote uint32) (*orderbook.OrderBook, core.BookFeed, error)
 	Orders(filter *core.OrderFilter) ([]*core.Order, error)
 	TradeAsync(pw []byte, form *core.TradeForm) (*core.InFlightOrder, error)
 	WalletState(assetID uint32) *core.WalletState
-	PreOrder(*core.TradeForm) (*core.OrderEstimate, error)
+	MaxBuy(host string, base, quote uint32, rate uint64) (*core.MaxOrderEstimate, error)
+	MaxSell(host string, base, quote uint32) (*core.MaxOrderEstimate, error)
+	Cancel(oid dex.Bytes) error
 }
