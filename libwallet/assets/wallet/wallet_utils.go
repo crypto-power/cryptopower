@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 
 	"decred.org/dcrwallet/v3/errors"
@@ -268,4 +269,16 @@ func Balances(w Asset) (AssetAmount, AssetAmount, error) {
 	}
 
 	return w.ToAmount(totalSpendable), w.ToAmount(totalBalance), nil
+}
+
+// SortTxs is a shared function that sorts the provided txs slice in ascending
+// or descending order depending on newestFirst.
+func SortTxs(txs []*Transaction, newestFirst bool) {
+	sort.SliceStable(txs, func(i, j int) bool {
+		if newestFirst {
+			return txs[i].Timestamp > txs[j].Timestamp
+		} else {
+			return txs[i].Timestamp < txs[j].Timestamp
+		}
+	})
 }
