@@ -272,7 +272,6 @@ func (pg *CreateOrderPage) walletCreationSuccessFunc(isSourceWallet bool, asset 
 		pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{asset})
 	}
 	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
-	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
 	pg.ParentWindow().Reload()
 }
 
