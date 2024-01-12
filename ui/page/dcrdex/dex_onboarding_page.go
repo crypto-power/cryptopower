@@ -148,7 +148,6 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 		scrollContainer:       &widget.List{List: layout.List{Axis: layout.Vertical, Alignment: layout.Middle}},
 		passwordEditor:        newPasswordEditor(th, values.String(values.StrNewPassword)),
 		confirmPasswordEditor: newPasswordEditor(th, values.String(values.StrConfirmPassword)),
-		serverDropDown:        th.DropDown(knownDEXServers[l.AssetsManager.NetType()], values.DEXServerDropdownGroup, false),
 		addServerBtn:          th.NewClickable(false),
 		bondServer:            &bondServerInfo{},
 		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
@@ -185,18 +184,12 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 		},
 	}
 
-	if pg.existingDEXServer != "" {
-		pg.serverDropDown = th.DropDown([]cryptomaterial.DropDownItem{{Text: pg.existingDEXServer}}, values.DEXServerDropdownGroup, false)
-	}
-
 	pg.currentStep = onboardingSetPassword
 	if pg.dexc.IsDEXPasswordSet() {
 		pg.setAddServerStep()
 	}
 
 	pg.bondStrengthEditor.IsTitleLabel = false
-	pg.serverDropDown.Width = formWidth
-	pg.serverDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
 	pg.goBackBtn.Background = pg.Theme.Color.Gray2
 	pg.goBackBtn.Color = pg.Theme.Color.Black
@@ -966,6 +959,24 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 }
 
 func (pg *DEXOnboarding) setAddServerStep() {
+	var dropdownServers []cryptomaterial.DropDownItem
+	if pg.existingDEXServer == "" {
+		knownExchanges, _ := knownDEXServers[pg.AssetsManager.NetType()]
+		registeredExchanges := pg.dexc.Exchanges()
+		for _, xc := range knownExchanges {
+			if _, ok := registeredExchanges[xc.Text]; ok {
+				continue
+			}
+			dropdownServers = append(dropdownServers, xc)
+		}
+	} else {
+		dropdownServers = []cryptomaterial.DropDownItem{{Text: pg.existingDEXServer}}
+	}
+
+	pg.serverDropDown = pg.Theme.DropDown(dropdownServers, values.DEXServerDropdownGroup, false)
+	pg.serverDropDown.Width = formWidth
+	pg.serverDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
+
 	pg.currentStep = onBoardingStepAddServer
 	if pg.serverDropDown.Len() > 0 && !pg.wantCustomServer {
 		pg.currentStep = onboardingChooseServer
@@ -1031,7 +1042,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 }
 
 // postBond prepares the data required to post bond and starts the bond posting
-// process. C
+// process.
 func (pg *DEXOnboarding) postBond() {
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]

@@ -1203,8 +1203,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 	}
 
 	for pg.addServerBtn.Clicked() {
-		// TODO: Display modal to add server
-		log.Info("Add server clicked")
+		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
 	}
 
 	for pg.openOrdersBtn.Clicked() {
