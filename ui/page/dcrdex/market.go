@@ -1287,9 +1287,8 @@ func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.D
 			if txt == "" {
 				if showCancelBtn {
 					return pg.orders[orderIndex].cancelBtn.Layout(gtx)
-				} else {
-					return D{}
 				}
+				return D{}
 			}
 
 			lb := pg.Theme.Body2(txt)
