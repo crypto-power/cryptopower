@@ -982,7 +982,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 func (pg *DEXOnboarding) setAddServerStep() {
 	var dropdownServers []cryptomaterial.DropDownItem
 	if pg.existingDEXServer == "" {
-		knownExchanges, _ := knownDEXServers[pg.AssetsManager.NetType()]
+		knownExchanges := knownDEXServers[pg.AssetsManager.NetType()]
 		registeredExchanges := pg.dexc.Exchanges()
 		for _, xc := range knownExchanges {
 			if _, ok := registeredExchanges[xc.Text]; ok {
