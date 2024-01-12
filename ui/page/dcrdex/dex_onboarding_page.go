@@ -1001,7 +1001,6 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		return
 	}
 
-	pg.currentStep = onboardingPostBond
 	// TODO: pg.bondSourceWalletSelector should be an asset type
 	// selector so users can easily create missing wallets and fund
 	// it with the required bond amount.
@@ -1025,6 +1024,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		log.Error(err)
 	}
 
+	pg.currentStep = onboardingPostBond
 	pg.bondStrengthEditor.Editor.SetText(fmt.Sprintf("%d", minimumBondStrength))
 	pg.newTier = minimumBondStrength
 	pg.ParentWindow().Reload()
@@ -1175,12 +1175,12 @@ func (pg *DEXOnboarding) notifyError(errMsg string) {
 // bondAccountHasEnough checks if the selected bond account has enough to cover
 // the bond costs.
 func (pg *DEXOnboarding) bondAccountHasEnough() bool {
-	ac := pg.bondSourceAccountSelector.SelectedAccount()
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	bondsFeeBuffer := pg.dexc.BondsFeeBuffer(bondAsset.ID)
 	bondCost := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	bondAmt := asset.ToAmount(int64(bondCost))
+	ac := pg.bondSourceAccountSelector.SelectedAccount()
 	if ac.Balance.Spendable.ToInt() < bondAmt.ToInt() {
 		pg.bondSourceAccountSelector.SetError(values.StringF(values.StrInsufficientBondAmount, bondAmt.String()))
 		return false
