@@ -34,6 +34,17 @@ func (mgr *AssetsManager) setDBInterface(db sharedW.AssetsManagerDB) {
 	}
 }
 
+// ReadBoolValue reads a bool value from the wallet's config.
+func (mgr *AssetsManager) ReadBoolValue(key string, value bool) bool {
+	mgr.db.ReadWalletConfigValue(key, &value)
+	return value
+}
+
+// SaveBoolValue saves a bool value to the wallet's config.
+func (mgr *AssetsManager) SetBoolValue(key string, value bool) {
+	mgr.db.SaveWalletConfigValue(key, value)
+}
+
 // SetStartupPassphrase sets the startup passphrase for the wallet.
 func (mgr *AssetsManager) SetStartupPassphrase(passphrase string, passphraseType int32) error {
 	return mgr.ChangeStartupPassphrase("", passphrase, passphraseType)

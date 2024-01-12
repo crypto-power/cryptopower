@@ -65,7 +65,7 @@ type WalletInfo struct {
 
 type progressInfo struct {
 	remainingSyncTime    string
-	headersToFetchOrScan int32
+	HeadersToFetchOrScan int32
 	stepFetchProgress    int32
 	syncProgress         int
 }
@@ -149,7 +149,9 @@ func (pg *WalletInfo) OnNavigatedTo() {
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
-		items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
+		items := []layout.FlexChild{layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return pg.WalletInfoLayout(gtx)
+		})}
 
 		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 			items = append(items, layout.Rigid(pg.mixerLayout))
@@ -167,7 +169,10 @@ func (pg *WalletInfo) Layout(gtx C) D {
 	})
 }
 
-func (pg *WalletInfo) walletInfoLayout(gtx C) D {
+func (pg *WalletInfo) WalletInfoLayout(gtx C, wallet ...sharedW.Asset) D {
+	if len(wallet) > 0 {
+		pg.wallet = wallet[0]
+	}
 	return pg.pageContentWrapper(gtx, "", nil, func(gtx C) D {
 		items := []layout.FlexChild{
 			layout.Rigid(pg.walletNameAndBackupInfo),
@@ -376,10 +381,10 @@ func (pg *WalletInfo) listenForNotifications() {
 		// Update sync progress fields which will be displayed
 		// when the next UI invalidation occurs.
 
-		previousProgress := pg.fetchSyncProgress()
+		previousProgress := pg.FetchSyncProgress()
 		// headers to fetch cannot be less than the previously fetched.
 		// Page refresh only needed if there is new data to update the UI.
-		if progress.headersToFetchOrScan >= previousProgress.headersToFetchOrScan {
+		if progress.HeadersToFetchOrScan >= previousProgress.HeadersToFetchOrScan {
 			// set the new progress against the associated asset.
 			syncProgressInfo[pg.wallet] = progress
 
@@ -393,7 +398,7 @@ func (pg *WalletInfo) listenForNotifications() {
 		OnHeadersFetchProgress: func(t *sharedW.HeadersFetchProgressReport) {
 			progress := progressInfo{}
 			progress.stepFetchProgress = t.HeadersFetchProgress
-			progress.headersToFetchOrScan = t.TotalHeadersToFetch
+			progress.HeadersToFetchOrScan = t.TotalHeadersToFetch
 			progress.syncProgress = int(t.TotalSyncProgress)
 			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 			updateSyncProgress(progress)
@@ -407,7 +412,7 @@ func (pg *WalletInfo) listenForNotifications() {
 		},
 		OnHeadersRescanProgress: func(t *sharedW.HeadersRescanProgressReport) {
 			progress := progressInfo{}
-			progress.headersToFetchOrScan = t.TotalHeadersToScan
+			progress.HeadersToFetchOrScan = t.TotalHeadersToScan
 			progress.syncProgress = int(t.TotalSyncProgress)
 			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 			progress.stepFetchProgress = t.RescanProgress

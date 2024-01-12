@@ -892,4 +892,8 @@ const EN = `
 "allservers" = "All servers"
 "deleteDEXData" = "Delete DEX data"
 "deleteDEXDataWarning" = "This action will delete your DEX database, including information regarding pending bonds and connected DEX servers."
+"noRecentProposals" = "No recent proposals"
+"recommendedModalBody" = "This allows access to all APIs, including the Exchange Rate API, CEX API, VSP API, Fee Rate API, and Governance API."
+"advancedModalBody" = "Enabling Advanced settings enhances privacy by disabling access to all APIs, including the Exchange Rate API, CEX API, VSP API, Fee Rate API, and Governance API."
+"startSync" = "Start Sync"
 `

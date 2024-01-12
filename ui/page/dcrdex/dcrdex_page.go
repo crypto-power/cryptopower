@@ -116,7 +116,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 	}
 
 	if msg != "" {
-		return components.DisablePageWithOverlay(pg.Load, nil, gtx, msg, actionBtn)
+		return components.DisablePageWithOverlay(pg.Load, nil, gtx, msg, "", actionBtn)
 	}
 
 	return pg.CurrentPage().Layout(gtx)

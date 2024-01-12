@@ -332,6 +332,19 @@ func (pg *TransactionsPage) Layout(gtx C) D {
 		return pg.txCategoryTab.Layout(gtx, pg.layoutContent, pg.IsMobileView())
 	}
 
+	// Disable page functionality if a page is not synced or rescanning is in progress.
+	// if pg.selectedWallet.IsSyncing() {
+	// 	blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, 100, 200)
+	// 	title := values.String(values.StrFunctionUnavailable)
+	// 	subTitle := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
+	// 	return components.DisablePageWithOverlay(pg.Load, nil, gtx,
+	// 		title, subTitle, nil)
+	// }
+	// if !pg.selectedWallet.IsSynced() || pg.selectedWallet.IsRescanning() {
+	// 	return components.DisablePageWithOverlay(pg.Load, nil, gtx,
+	// 		values.String(values.StrFunctionUnavailable), "", nil)
+	// }
+
 	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return pg.layoutContent(gtx)
 	}, pg.IsMobileView())

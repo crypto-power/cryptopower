@@ -859,7 +859,7 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 // DisablePageWithOverlay disables the provided page by highlighting a message why
 // the page is disabled and adding a background color overlay that blocks any
 // page event being triggered.
-func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt string, actionButton *cryptomaterial.Button) D {
+func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, title, subtitle string, actionButton *cryptomaterial.Button) D {
 	return layout.Stack{Alignment: layout.N}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			if currentPage == nil {
@@ -875,13 +875,23 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 			cryptomaterial.FillMax(gtx, overlayColor, 10)
 
-			lbl := l.Theme.Label(values.TextSize20, txt)
+			lbl := l.Theme.Label(values.TextSize20, title)
 			lbl.Font.Weight = font.SemiBold
 			lbl.Color = l.Theme.Color.PageNavText
+
+			subTitle := l.Theme.Label(values.TextSize14, subtitle)
+			subTitle.Font.Weight = font.SemiBold
+			subTitle.Color = l.Theme.Color.GrayText2
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if subTitle.Text == "" {
+							return D{}
+						}
+						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), subTitle.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
 						if actionButton != nil {

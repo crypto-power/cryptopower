@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -33,8 +32,6 @@ var (
 
 func main() {
 	cfg, err := loadConfig()
-	d, _ := json.Marshal(cfg)
-	fmt.Println("DEBUG: PRINT DATA ==>", string(d))
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 		return
