@@ -272,7 +272,7 @@ func (dw *DEXWallet) ResetLockedOutpoints() {
 	dw.w.ResetLockedOutpoints()
 }
 
-func (dw *DEXWallet) NewChangeAddress(account uint32, scope waddrmgr.KeyScope) (btcutil.Address, error) {
+func (dw *DEXWallet) NewChangeAddress(account uint32, _ waddrmgr.KeyScope) (btcutil.Address, error) {
 	ltcAddr, err := dw.w.NewChangeAddress(account, ltcwaddrmgr.KeyScopeBIP0084)
 	if err != nil {
 		return nil, err
@@ -280,7 +280,7 @@ func (dw *DEXWallet) NewChangeAddress(account uint32, scope waddrmgr.KeyScope) (
 	return dw.addrLTC2BTC(ltcAddr)
 }
 
-func (dw *DEXWallet) NewAddress(account uint32, scope waddrmgr.KeyScope) (btcutil.Address, error) {
+func (dw *DEXWallet) NewAddress(account uint32, _ waddrmgr.KeyScope) (btcutil.Address, error) {
 	ltcAddr, err := dw.w.NewAddress(account, ltcwaddrmgr.KeyScopeBIP0084)
 	if err != nil {
 		return nil, err
@@ -315,7 +315,7 @@ func (dw *DEXWallet) Locked() bool {
 	return dw.w.Locked()
 }
 
-func (dw *DEXWallet) SendOutputs(outputs []*wire.TxOut, keyScope *waddrmgr.KeyScope, account uint32, minconf int32,
+func (dw *DEXWallet) SendOutputs(outputs []*wire.TxOut, _ *waddrmgr.KeyScope, account uint32, minconf int32,
 	satPerKb btcutil.Amount, coinSelectionStrategy btcwallet.CoinSelectionStrategy, label string) (*wire.MsgTx, error) {
 	ltcOuts := make([]*ltcwire.TxOut, len(outputs))
 	for i, op := range outputs {
@@ -350,7 +350,7 @@ func (dw *DEXWallet) HaveAddress(a btcutil.Address) (bool, error) {
 
 func (dw *DEXWallet) Stop() {}
 
-func (dw *DEXWallet) AccountProperties(scope waddrmgr.KeyScope, acct uint32) (*waddrmgr.AccountProperties, error) {
+func (dw *DEXWallet) AccountProperties(_ waddrmgr.KeyScope, acct uint32) (*waddrmgr.AccountProperties, error) {
 	props, err := dw.w.AccountProperties(ltcwaddrmgr.KeyScopeBIP0084, acct)
 	if err != nil {
 		return nil, err
@@ -590,7 +590,7 @@ func (s *ltcChainService) GetBlockHeader(h *chainhash.Hash) (*wire.BlockHeader, 
 	}, nil
 }
 
-func (s *ltcChainService) GetCFilter(blockHash chainhash.Hash, filterType wire.FilterType, _ ...btcneutrino.QueryOption) (*gcs.Filter, error) {
+func (s *ltcChainService) GetCFilter(blockHash chainhash.Hash, _ wire.FilterType, _ ...btcneutrino.QueryOption) (*gcs.Filter, error) {
 	f, err := s.CS.GetCFilter(ltcchainhash.Hash(blockHash), ltcwire.GCSFilterRegular)
 	if err != nil {
 		return nil, err
