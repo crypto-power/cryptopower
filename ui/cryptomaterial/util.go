@@ -139,7 +139,7 @@ func AnyKeyWithOptionalModifier(modifier key.Modifiers, keys ...string) key.Set 
 	return key.Set(keysWithModifier)
 }
 
-func UniformPadding(gtx layout.Context, body layout.Widget, isMobileView ...bool) layout.Dimensions {
+func UniformPaddingWithTopInset(topInset unit.Dp, gtx layout.Context, body layout.Widget, isMobileView ...bool) D {
 	_isMobileView := len(isMobileView) > 0 && isMobileView[0]
 	width := gtx.Constraints.Max.X
 	paddingHorizontal := values.MarginPadding24
@@ -156,9 +156,13 @@ func UniformPadding(gtx layout.Context, body layout.Widget, isMobileView ...bool
 	}
 
 	return layout.Inset{
-		Top:    values.MarginPadding24,
+		Top:    topInset,
 		Right:  paddingHorizontal,
 		Bottom: bottomPadding,
 		Left:   paddingHorizontal,
 	}.Layout(gtx, body)
+}
+
+func UniformPadding(gtx layout.Context, body layout.Widget, isMobileView ...bool) D {
+	return UniformPaddingWithTopInset(values.MarginPadding24, gtx, body, isMobileView...)
 }
