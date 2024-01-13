@@ -290,7 +290,7 @@ func (pg *OverviewPage) layoutDesktop(gtx C) D {
 		pg.recentProposal,
 	}
 
-	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPaddingWithTopInset(values.MarginPadding15, gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
