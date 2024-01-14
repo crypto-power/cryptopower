@@ -1047,11 +1047,13 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 			if err := pg.bondSourceAccountSelector.SelectFirstValidAccount(asset); err != nil {
 				log.Error(err)
 			}
-		})
+		}).WalletValidator(func(a sharedW.Asset) bool {
+		return !a.IsWatchingOnlyWallet() && pg.validateBondWalletOrAccount(a.GetAssetType(), dexc.WalletIDConfigKey, fmt.Sprint(a.GetWalletID()))
+	})
 	pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, supportedBondAssets...).
 		Title(values.String(values.StrSelectAcc)).
 		AccountValidator(func(a *sharedW.Account) bool {
-			return !a.IsWatchOnly
+			return !a.IsWatchOnly && pg.validateBondWalletOrAccount(pg.bondSourceWalletSelector.SelectedWallet().GetAssetType(), dexc.WalletAccountNumberConfigKey, fmt.Sprint(a.AccountNumber))
 		}).
 		AccountSelected(func(a *sharedW.Account) {
 			pg.bondAccountHasEnough()
@@ -1138,6 +1140,22 @@ func (pg *DEXOnboarding) postBond() {
 		SetCancelable(false) // user cannot close modal until postBondFn exists
 
 	pg.ParentWindow().ShowModal(walletPasswordModal)
+}
+
+// validateBondWalletOrAccount validates wallets and accounts available for bond
+// posting. If user has previously added a wallet/account to the dex client,
+// only that wallet/account should be available when re-posting bonds.
+func (pg *DEXOnboarding) validateBondWalletOrAccount(assetType libutils.AssetType, configKey, walletIDOrAccountNumber string) bool {
+	if assetID, ok := bip(assetType.ToStringLower()); ok && pg.dexc.HasWallet(int32(assetID)) {
+		if walletSettings, err := pg.dexc.WalletSettings(assetID); err != nil {
+			log.Errorf("dexc.WalletSettings error: %v", err)
+		} else {
+			// If wallet has been added to dexc already, only that wallet
+			// account is considered valid for bond posting.
+			return walletIDOrAccountNumber == walletSettings[configKey]
+		}
+	}
+	return true // wallet or account has not been added to dex
 }
 
 func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {

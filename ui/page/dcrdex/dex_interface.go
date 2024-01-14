@@ -25,6 +25,7 @@ type dexClient interface {
 	Orders(filter *core.OrderFilter) ([]*core.Order, error)
 	TradeAsync(pw []byte, form *core.TradeForm) (*core.InFlightOrder, error)
 	WalletState(assetID uint32) *core.WalletState
+	WalletSettings(assetID uint32) (map[string]string, error)
 	MaxBuy(host string, base, quote uint32, rate uint64) (*core.MaxOrderEstimate, error)
 	MaxSell(host string, base, quote uint32) (*core.MaxOrderEstimate, error)
 	Cancel(oid dex.Bytes) error
