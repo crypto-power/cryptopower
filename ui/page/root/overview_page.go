@@ -27,6 +27,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
+	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -59,6 +60,7 @@ type OverviewPage struct {
 	infoButton, forwardButton cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 	assetBalanceSlider        *cryptomaterial.Slider
 	mixerSlider               *cryptomaterial.Slider
+	infoSyncWalletsSlider     *cryptomaterial.Slider
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
 	transactions              []*multiWalletTx
@@ -81,6 +83,8 @@ type OverviewPage struct {
 	sortedMixerSlideKeys []int
 
 	showNavigationFunc showNavigationFunc
+
+	listInfoWallets []*components.WalletSyncInfo
 }
 
 type assetBalanceSliderItem struct {
@@ -153,15 +157,17 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
 		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 
-		assetBalanceSlider: l.Theme.Slider(),
-		card:               l.Theme.Card(),
-		sliderRedirectBtn:  l.Theme.NewClickable(false),
-		forceRefreshRates:  l.Theme.NewClickable(false),
-		showNavigationFunc: showNavigationFunc,
+		assetBalanceSlider:    l.Theme.Slider(),
+		mixerSlider:           l.Theme.Slider(),
+		infoSyncWalletsSlider: l.Theme.Slider(),
+		card:                  l.Theme.Card(),
+		sliderRedirectBtn:     l.Theme.NewClickable(false),
+		forceRefreshRates:     l.Theme.NewClickable(false),
+		showNavigationFunc:    showNavigationFunc,
+		listInfoWallets:       make([]*components.WalletSyncInfo, 0),
 	}
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
-	pg.mixerSlider = l.Theme.Slider()
 	pg.mixerSlider.ButtonBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.mixerSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.mixerSlider.SelectedIndicatorColor = pg.Theme.Color.DeepBlue
@@ -174,6 +180,7 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 
 	pg.stakes = make([]*multiWalletTx, 0)
 	pg.transactions = make([]*multiWalletTx, 0)
+	pg.initInfoWallets()
 
 	return pg
 }
@@ -202,6 +209,10 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	}
 
 	pg.listenForMixerNotifications() // listeners are stopped in OnNavigatedFrom().
+
+	for _, info := range pg.listInfoWallets {
+		info.Init()
+	}
 
 }
 
@@ -271,6 +282,17 @@ func (pg *OverviewPage) OnCurrencyChanged() {
 	go pg.updateAssetsUSDBalance()
 }
 
+func (pg *OverviewPage) reload() {
+	pg.ParentWindow().Reload()
+}
+
+func (pg *OverviewPage) backup(wallet sharedW.Asset) {
+	currentPage := pg.ParentWindow().CurrentPageID()
+	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(load *load.Load, navigator app.WindowNavigator) {
+		navigator.ClosePagesAfter(currentPage)
+	}))
+}
+
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
@@ -284,6 +306,7 @@ func (pg *OverviewPage) Layout(gtx C) D {
 func (pg *OverviewPage) layoutDesktop(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sliderLayout,
+		pg.infoWalletLayout,
 		pg.marketOverview,
 		pg.txStakingSection,
 		pg.recentTrades,
@@ -306,6 +329,7 @@ func (pg *OverviewPage) layoutDesktop(gtx C) D {
 func (pg *OverviewPage) layoutMobile(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sliderLayout,
+		pg.infoWalletLayout,
 		pg.mobileMarketOverview,
 		pg.txStakingSection,
 		pg.recentTrades,
@@ -319,6 +343,27 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 			})
 		})
 	})
+}
+
+func (pg *OverviewPage) initInfoWallets() {
+	wallets := pg.AssetsManager.AllWallets()
+	for _, wal := range wallets {
+		if wal.IsWatchingOnlyWallet() {
+			continue
+		}
+		pg.listInfoWallets = append(pg.listInfoWallets, components.NewWalletSyncInfo(pg.Load, wal, pg.reload, pg.backup))
+	}
+}
+
+func (pg *OverviewPage) infoWalletLayout(gtx C) D {
+	var sliderWidget []layout.Widget
+	for _, info := range pg.listInfoWallets {
+		sliderWidget = append(sliderWidget, info.WalletInfoLayout)
+	}
+	if len(sliderWidget) == 0 {
+		return D{}
+	}
+	return pg.infoSyncWalletsSlider.Layout(gtx, sliderWidget)
 }
 
 func (pg *OverviewPage) sliderLayout(gtx C) D {

@@ -2,7 +2,6 @@ package info
 
 import (
 	"image/color"
-	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -39,8 +38,6 @@ type WalletInfo struct {
 	*app.GenericPageModal
 	wallet sharedW.Asset
 
-	rescanUpdate *sharedW.HeadersRescanProgressReport
-
 	container *widget.List
 
 	transactions       []*sharedW.Transaction
@@ -49,10 +46,6 @@ type WalletInfo struct {
 	stakes       []*sharedW.Transaction
 	recentStakes *cryptomaterial.ClickableList
 
-	walletStatusIcon *cryptomaterial.Icon
-	syncSwitch       *cryptomaterial.Switch
-	toBackup         cryptomaterial.Button
-
 	mixerInfoButton,
 	mixerRedirectButton cryptomaterial.IconButton
 	unmixedBalance sharedW.AssetAmount
@@ -60,21 +53,8 @@ type WalletInfo struct {
 	viewAllTxButton,
 	viewAllStakeButton cryptomaterial.Button
 
-	isStatusConnected bool
+	walletSyncInfo *components.WalletSyncInfo
 }
-
-type progressInfo struct {
-	remainingSyncTime    string
-	headersToFetchOrScan int32
-	stepFetchProgress    int32
-	syncProgress         int
-}
-
-// SyncProgressInfo is made independent of the walletInfo struct so that once
-// set with a value, it always persists till unset. This will help address the
-// progress bar issue where, changing UI pages alters the progress on the sync
-// status progress percentage.
-var syncProgressInfo = map[sharedW.Asset]progressInfo{}
 
 func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 	pg := &WalletInfo{
@@ -87,14 +67,11 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
 		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 	}
+	pg.walletSyncInfo = components.NewWalletSyncInfo(l, wallet, pg.reload, pg.backup)
 	pg.recentTransactions.Radius = cryptomaterial.Radius(14)
 	pg.recentTransactions.IsShadowEnabled = true
 	pg.recentStakes.Radius = cryptomaterial.Radius(14)
 	pg.recentStakes.IsShadowEnabled = true
-
-	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
-	pg.toBackup.Font.Weight = font.Medium
-	pg.toBackup.TextSize = pg.ConvertTextSize(values.TextSize14)
 
 	pg.viewAllTxButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
 	pg.viewAllTxButton.Font.Weight = font.Medium
@@ -112,12 +89,6 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 	pg.mixerRedirectButton.Icon = pg.Theme.Icons.NavigationArrowForward
 	pg.mixerRedirectButton.Size = values.MarginPadding20
 
-	go func() {
-		pg.isStatusConnected = libutils.IsOnline()
-	}()
-
-	pg.initWalletStatusWidgets()
-
 	return pg
 }
 
@@ -126,10 +97,7 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) OnNavigatedTo() {
-	autoSync := pg.wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
-	pg.syncSwitch.SetChecked(autoSync)
-
-	pg.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
+	pg.walletSyncInfo.Init()
 
 	pg.loadTransactions()
 
@@ -143,13 +111,24 @@ func (pg *WalletInfo) OnNavigatedTo() {
 	}
 }
 
+func (pg *WalletInfo) reload() {
+	pg.ParentWindow().Reload()
+}
+
+func (pg *WalletInfo) backup(wallet sharedW.Asset) {
+	currentPage := pg.ParentWindow().CurrentPageID()
+	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(load *load.Load, navigator app.WindowNavigator) {
+		navigator.ClosePagesAfter(currentPage)
+	}))
+}
+
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
-		items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
+		items := []layout.FlexChild{layout.Rigid(pg.walletSyncInfo.WalletInfoLayout)}
 
 		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 			items = append(items, layout.Rigid(pg.mixerLayout))
@@ -165,54 +144,6 @@ func (pg *WalletInfo) Layout(gtx C) D {
 
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
-}
-
-func (pg *WalletInfo) walletInfoLayout(gtx C) D {
-	return pg.pageContentWrapper(gtx, "", nil, func(gtx C) D {
-		items := []layout.FlexChild{
-			layout.Rigid(pg.walletNameAndBackupInfo),
-			layout.Rigid(pg.syncStatusSection),
-		}
-
-		if len(pg.wallet.GetEncryptedSeed()) > 0 {
-			items = append(items, layout.Rigid(func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, pg.toBackup.Layout)
-					}),
-				)
-			}))
-		}
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-	})
-}
-
-func (pg *WalletInfo) walletNameAndBackupInfo(gtx C) D {
-	items := []layout.FlexChild{layout.Rigid(func(gtx C) D {
-		return layout.Inset{
-			Right: values.MarginPadding10,
-		}.Layout(gtx, func(gtx C) D {
-			txt := pg.Theme.Body1(strings.ToUpper(pg.wallet.GetWalletName()))
-			txt.Font.Weight = font.SemiBold
-			return txt.Layout(gtx)
-		})
-	})}
-
-	if len(pg.wallet.GetEncryptedSeed()) > 0 {
-		items = append(items, layout.Rigid(func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(pg.Theme.Icons.RedAlert.Layout20dp),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Left:  values.MarginPadding9,
-						Right: values.MarginPadding16,
-					}.Layout(gtx, pg.Theme.Body2(values.String(values.StrBackupWarning)).Layout)
-				}),
-			)
-		}))
-	}
-
-	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx, items...)
 }
 
 func (pg *WalletInfo) mixerLayout(gtx C) D {
@@ -314,41 +245,12 @@ func (pg *WalletInfo) walletTxWrapper(gtx C, tx *sharedW.Transaction, isHiddenSe
 // displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) HandleUserInteractions() {
-	// As long as the internet connection hasn't been established keep checking.
-	if !pg.isStatusConnected {
-		go func() {
-			pg.isStatusConnected = libutils.IsOnline()
-		}()
-	}
-
-	isSyncShutting := pg.wallet.IsSyncShuttingDown()
-	pg.syncSwitch.SetEnabled(!isSyncShutting)
-	if pg.syncSwitch.Changed() {
-		if pg.wallet.IsRescanning() {
-			pg.wallet.CancelRescan()
-		}
-
-		go func() {
-			pg.ToggleSync(pg.wallet, func(b bool) {
-				pg.syncSwitch.SetChecked(b)
-				pg.wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
-			})
-		}()
-	}
-
 	if clicked, selectedItem := pg.recentTransactions.ItemClicked(); clicked {
 		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.transactions[selectedItem]))
 	}
 
 	if clicked, selectedItem := pg.recentStakes.ItemClicked(); clicked {
 		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.stakes[selectedItem]))
-	}
-
-	if pg.toBackup.Button.Clicked() {
-		currentPage := pg.ParentWindow().CurrentPageID()
-		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(load *load.Load, navigator app.WindowNavigator) {
-			navigator.ClosePagesAfter(currentPage)
-		}))
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
@@ -363,94 +265,6 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	if pg.viewAllStakeButton.Button.Clicked() {
 		pg.ParentNavigator().Display(staking.NewStakingPage(pg.Load, pg.wallet.(*dcr.Asset)))
 	}
-}
-
-// listenForNotifications starts a goroutine to watch for sync updates and
-// update the UI accordingly. To prevent UI lags, this method does not refresh
-// the window display every time a sync update is received. During active blocks
-// sync, rescan or proposals sync, the Layout method auto refreshes the display
-// every set interval. Other sync updates that affect the UI but occur outside
-// of an active sync requires a display refresh.
-func (pg *WalletInfo) listenForNotifications() {
-	updateSyncProgress := func(progress progressInfo) {
-		// Update sync progress fields which will be displayed
-		// when the next UI invalidation occurs.
-
-		previousProgress := pg.fetchSyncProgress()
-		// headers to fetch cannot be less than the previously fetched.
-		// Page refresh only needed if there is new data to update the UI.
-		if progress.headersToFetchOrScan >= previousProgress.headersToFetchOrScan {
-			// set the new progress against the associated asset.
-			syncProgressInfo[pg.wallet] = progress
-
-			// We only care about sync state changes here, to
-			// refresh the window display.
-			pg.ParentWindow().Reload()
-		}
-	}
-
-	syncProgressListener := &sharedW.SyncProgressListener{
-		OnHeadersFetchProgress: func(t *sharedW.HeadersFetchProgressReport) {
-			progress := progressInfo{}
-			progress.stepFetchProgress = t.HeadersFetchProgress
-			progress.headersToFetchOrScan = t.TotalHeadersToFetch
-			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-			updateSyncProgress(progress)
-		},
-		OnAddressDiscoveryProgress: func(t *sharedW.AddressDiscoveryProgressReport) {
-			progress := progressInfo{}
-			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-			progress.stepFetchProgress = t.AddressDiscoveryProgress
-			updateSyncProgress(progress)
-		},
-		OnHeadersRescanProgress: func(t *sharedW.HeadersRescanProgressReport) {
-			progress := progressInfo{}
-			progress.headersToFetchOrScan = t.TotalHeadersToScan
-			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-			progress.stepFetchProgress = t.RescanProgress
-			updateSyncProgress(progress)
-		},
-		OnSyncCompleted: func() {
-			pg.ParentWindow().Reload()
-		},
-	}
-
-	err := pg.wallet.AddSyncProgressListener(syncProgressListener, InfoID)
-	if err != nil {
-		log.Errorf("Error adding sync progress listener: %v", err)
-		return
-	}
-
-	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
-			pg.ParentWindow().Reload()
-		},
-		OnBlockAttached: func(walletID int, blockHeight int32) {
-			pg.ParentWindow().Reload()
-		},
-	}
-	err = pg.wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, InfoID)
-	if err != nil {
-		log.Errorf("Error adding tx and block notification listener: %v", err)
-		return
-	}
-
-	blocksRescanProgressListener := &sharedW.BlocksRescanProgressListener{
-		OnBlocksRescanStarted: func(walletID int) {
-			pg.rescanUpdate = nil
-		},
-		OnBlocksRescanProgress: func(progress *sharedW.HeadersRescanProgressReport) {
-			pg.rescanUpdate = progress
-		},
-		OnBlocksRescanEnded: func(walletID int, err error) {
-			pg.rescanUpdate = nil
-			pg.ParentWindow().Reload()
-		},
-	}
-	pg.wallet.SetBlocksRescanProgressListener(blocksRescanProgressListener)
 }
 
 func (pg *WalletInfo) listenForMixerNotifications() {
