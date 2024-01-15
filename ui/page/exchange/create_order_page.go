@@ -176,12 +176,13 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.toAmountEditor = *components.NewSelectAssetEditor(l)
 	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
 
-	pg.fromAmountEditor.Edit.HasCustomButton = true
-	pg.fromAmountEditor.Edit.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
-	pg.fromAmountEditor.Edit.CustomButton.Text = values.String(values.StrMax)
-	pg.fromAmountEditor.Edit.CustomButton.CornerRadius = values.MarginPadding0
-	pg.fromAmountEditor.Edit.CustomButton.Background = l.Theme.Color.Gray1
-	pg.fromAmountEditor.Edit.CustomButton.Color = l.Theme.Color.Surface
+	// TODO: Enable this feature and implement.
+	// pg.fromAmountEditor.Edit.HasCustomButton = true
+	// pg.fromAmountEditor.Edit.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
+	// pg.fromAmountEditor.Edit.CustomButton.Text = values.String(values.StrMax)
+	// pg.fromAmountEditor.Edit.CustomButton.CornerRadius = values.MarginPadding0
+	// pg.fromAmountEditor.Edit.CustomButton.Background = l.Theme.Color.Gray1
+	// pg.fromAmountEditor.Edit.CustomButton.Color = l.Theme.Color.Surface
 	pg.fromAmountEditor.Edit.EditorStyle.Color = l.Theme.Color.Text
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) bool {
