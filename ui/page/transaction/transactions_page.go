@@ -255,14 +255,14 @@ func (pg *TransactionsPage) fetchTransactions(offset, pageSize int32) (txs []*mu
 	return txs, totalTxs, isReset, err
 }
 
-func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32, newestFist bool) ([]*multiWalletTx, int, error) {
+func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32, newestFirst bool) ([]*multiWalletTx, int, error) {
 	allTxs := make([]*multiWalletTx, 0)
 	for _, wal := range pg.assetWallets {
 		if !wal.IsSynced() {
 			continue // skip wallets that are not synced
 		}
 
-		txs, _, err := pg.loadTransactions(wal, offset, pageSize, newestFist)
+		txs, _, err := pg.loadTransactions(wal, offset, pageSize, newestFirst)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -270,7 +270,10 @@ func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32, newestFist b
 	}
 
 	sort.Slice(allTxs, func(i, j int) bool {
-		return allTxs[i].Timestamp > allTxs[j].Timestamp
+		if newestFirst {
+			return allTxs[i].Timestamp > allTxs[j].Timestamp
+		}
+		return allTxs[i].Timestamp < allTxs[j].Timestamp
 	})
 
 	// TODO: remove after PR 268  // Improve infinite scroll list functionality is merged
