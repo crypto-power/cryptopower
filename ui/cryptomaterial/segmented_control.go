@@ -63,7 +63,7 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		slideActionTitle:     NewSlideAction(),
 		Padding:              layout.UniformInset(values.MarginPadding8),
 		ContentPadding: layout.Inset{
-			Top: values.MarginPadding16,
+			Top: values.MarginPadding14,
 		},
 		Alignment: layout.Middle,
 	}
@@ -130,7 +130,7 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 	if sc.disableUniformPadding {
 		return widget(gtx)
 	}
-	return UniformPadding(gtx, widget, sc.isMobileView)
+	return UniformPaddingWithTopInset(values.MarginPadding15, gtx, widget, sc.isMobileView)
 }
 
 func (sc *SegmentedControl) layoutContent(body layout.Widget) layout.Widget {

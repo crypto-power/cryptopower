@@ -3,7 +3,6 @@ package dcrdex
 import (
 	"context"
 	"fmt"
-	"image"
 	"image/color"
 	"net/url"
 	"strconv"
@@ -259,27 +258,27 @@ func (pg *DEXOnboarding) Layout(gtx C) D {
 			Radius: cryptomaterial.Radius(8),
 		},
 		Alignment: layout.Middle,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			txt := pg.Theme.Body1(values.String(values.StrDCRDEXWelcomeMessage))
-			txt.Font.Weight = font.Bold
-			return pg.centerLayout(gtx, dp16, dp20, txt.Layout)
-		}),
-		layout.Rigid(pg.onBoardingStepRow),
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Min = gtx.Constraints.Max
-			return pg.Theme.Separator().Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-				gtx.Constraints.Max = image.Point{
-					X: gtx.Dp(formWidth),
-					Y: gtx.Constraints.Max.Y,
-				}
-				return pg.onBoardingSteps[pg.currentStep].stepFn(gtx)
-			})
-		}),
-	)
+	}.Layout2(gtx, func(gtx C) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return layout.Flex{Axis: vertical, Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					txt := pg.Theme.Body1(values.String(values.StrDCRDEXWelcomeMessage))
+					txt.Font.Weight = font.Bold
+					return pg.centerLayout(gtx, dp16, dp20, txt.Layout)
+				}),
+				layout.Rigid(pg.onBoardingStepRow),
+				layout.Rigid(func(gtx C) D {
+					return pg.Theme.Separator().Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Max.X = gtx.Dp(formWidth)
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					pg.serverDropDown.Width = formWidth
+					return pg.onBoardingSteps[pg.currentStep].stepFn(gtx)
+				}),
+			)
+		})
+	})
 }
 
 func (pg *DEXOnboarding) centerLayout(gtx C, top, bottom unit.Dp, content layout.Widget) D {
@@ -431,14 +430,10 @@ func (pg *DEXOnboarding) stepChooseServer(gtx C) D {
 
 // subStepAddServer returns a form to add a server.
 func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
-	width := gtx.Dp(formWidth)
-	if pg.wantCustomServer {
-		width = gtx.Dp(formWidth + values.MarginPadding100)
-	}
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
-				Width:       width,
+				Width:       cryptomaterial.MatchParent,
 				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Horizontal,
 				Margin:      layout.Inset{Top: values.MarginPadding20, Bottom: dp16},
@@ -507,7 +502,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 	}
 
 	return cryptomaterial.LinearLayout{
-		Width:     gtx.Dp(formWidth),
+		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.WrapContent,
 		Spacing:   layout.SpaceBetween,
 		Alignment: layout.Middle,
@@ -706,8 +701,6 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 
 func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 	dp12 := values.MarginPadding12
-	width := formWidth + values.MarginPadding100
-	gtx.Constraints.Max.X = gtx.Dp(width)
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return pg.centerLayout(gtx, dp20, dp12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
@@ -717,7 +710,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
-				Width:       gtx.Dp(width),
+				Width:       cryptomaterial.MatchParent,
 				Height:      cryptomaterial.WrapContent,
 				Background:  pg.Theme.Color.Gray4,
 				Orientation: layout.Vertical,
