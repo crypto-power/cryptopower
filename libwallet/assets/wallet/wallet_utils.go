@@ -283,20 +283,6 @@ func SortTxs(txs []*Transaction, newestFirst bool) {
 	})
 }
 
-// AddPeer is a convenience function that wallets across Cryptopower use to add
-// a peer address to an existing string of old peers.
-func AddPeer(oldPeers, newPeer string) string {
-	if strings.Contains(oldPeers, newPeer) {
-		return oldPeers // nothing to do
-	} else if oldPeers == "" {
-		return newPeer
-	}
-
-	// Add the new peer separated by a semi-colon.
-	oldPeers += ";" + newPeer
-	return strings.Trim(oldPeers, ";")
-}
-
 // ParseWalletPeers is a convenience function that converts the provided
 // peerAddresses string to an array of valid peer addresses.
 func ParseWalletPeers(peerAddresses string, port string) ([]string, []error) {

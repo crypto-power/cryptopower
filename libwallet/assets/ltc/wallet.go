@@ -487,9 +487,8 @@ func (asset *Asset) RemovePeers() {
 }
 
 // SetSpecificPeer sets a specific peer to connect to.
-func (asset *Asset) SetSpecificPeer(address string) {
-	knownAddrs := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, sharedW.AddPeer(knownAddrs, address))
+func (asset *Asset) SetSpecificPeer(addresses string) {
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, addresses)
 	go func() {
 		err := asset.reloadChainService()
 		if err != nil {

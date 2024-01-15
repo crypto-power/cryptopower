@@ -226,9 +226,8 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 	}
 }
 
-func (asset *Asset) SetSpecificPeer(address string) {
-	knownAddrs := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, sharedW.AddPeer(knownAddrs, address))
+func (asset *Asset) SetSpecificPeer(addresses string) {
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, addresses)
 	asset.RestartSpvSync()
 }
 
