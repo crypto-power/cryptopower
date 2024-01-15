@@ -12,6 +12,7 @@ import (
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/values/localizable"
 )
 
 const (
@@ -87,6 +88,10 @@ func (dc *DEXClient) BondsFeeBuffer(assetID uint32) uint64 {
 	return feeBuffer
 }
 
+// Start prepares and starts the DEX client.
+//
+// NOTE: "lang" will be changed to the default language (en) if the the DEX
+// client does not have support for it.
 func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.NetworkType, maxLogZips int) (*DEXClient, error) {
 	dexNet, err := parseDEXNet(net)
 	if err != nil {
@@ -103,7 +108,7 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 		DBPath:             dbPath,
 		Net:                dexNet,
 		Logger:             logger,
-		Language:           lang,
+		Language:           validDEXLang(lang),
 		UnlockCoinsOnLogin: false, // TODO: Make configurable.
 	}
 
@@ -187,4 +192,15 @@ func parseDEXNet(net libutils.NetworkType) (dex.Network, error) {
 	default:
 		return 0, fmt.Errorf("unknown network %s", net)
 	}
+}
+
+// validDEXLang checks that the provided lang is supported by the DEX client. An
+// empty string is returned for an invalid lang to allow DEX core use it's
+// default language.
+func validDEXLang(lang string) string {
+	switch lang {
+	case localizable.ENGLISH, localizable.CHINESE:
+		return lang
+	}
+	return ""
 }
