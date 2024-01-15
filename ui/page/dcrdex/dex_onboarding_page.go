@@ -270,7 +270,6 @@ func (pg *DEXOnboarding) Layout(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					gtx.Constraints.Max.X = gtx.Dp(formWidth)
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					pg.serverDropDown.Width = formWidth
 					return pg.onBoardingSteps[pg.currentStep].stepFn(gtx)
 				}),
 			)
