@@ -54,6 +54,7 @@ type SettingPage struct {
 	networkInfoButton       cryptomaterial.IconButton
 	logLevel                *cryptomaterial.Clickable
 	viewLog                 *cryptomaterial.Clickable
+	deleteDEX               *cryptomaterial.Clickable
 
 	governanceAPI *cryptomaterial.Switch
 	exchangeAPI   *cryptomaterial.Switch
@@ -89,6 +90,7 @@ func NewSettingsPage(l *load.Load) *SettingPage {
 		appearanceMode:    l.Theme.NewClickable(false),
 		logLevel:          l.Theme.NewClickable(false),
 		viewLog:           l.Theme.NewClickable(false),
+		deleteDEX:         l.Theme.NewClickable(false),
 	}
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
@@ -372,6 +374,18 @@ func (pg *SettingPage) debug() layout.Widget {
 					}
 					return pg.clickableRow(gtx, viewLogRow)
 				}),
+				layout.Rigid(func(gtx C) D {
+					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DexcReady() {
+						return D{}
+					}
+
+					deleteDEXClientRow := row{
+						title:     values.String(values.StrDeleteDEXData),
+						clickable: pg.deleteDEX,
+						label:     pg.Theme.Body2(""),
+					}
+					return pg.clickableRow(gtx, deleteDEXClientRow)
+				}),
 			)
 		})
 	}
@@ -509,6 +523,25 @@ func (pg *SettingPage) HandleUserInteractions() {
 
 	if pg.viewLog.Clicked() {
 		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.AssetsManager.LogFile(), values.String(values.StrAppLog)))
+	}
+
+	if pg.deleteDEX.Clicked() {
+		// Show warning modal.
+		deleteDEXModal := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrDeleteDEXData)).
+			Body(values.String(values.StrDeleteDEXDataWarning)).
+			SetNegativeButtonText(values.String(values.StrCancel)).
+			SetPositiveButtonText(values.String(values.StrDelete)).
+			SetPositiveButtonCallback(func(_ bool, in *modal.InfoModal) bool {
+				if pg.AssetsManager.DexcReady() {
+					if err := pg.AssetsManager.DeleteDEXData(); err != nil {
+						return false
+					}
+				}
+				return true
+			}).
+			PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger)
+		pg.ParentWindow().ShowModal(deleteDEXModal)
 	}
 
 	for pg.changeStartupPass.Clicked() {

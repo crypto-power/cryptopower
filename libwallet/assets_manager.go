@@ -940,6 +940,26 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	}()
 }
 
+func (mgr *AssetsManager) DeleteDEXData() error {
+	// Log out the user.
+	err := mgr.dexc.Logout()
+	if err != nil {
+		return err
+	}
+
+	log.Debug("Shutting down DEX client and removing dex data dir....")
+
+	dexDBFile := mgr.dexc.DBPath
+	shutdownChan := mgr.dexc.WaitForShutdown()
+
+	// Shutdown the DEX client.
+	mgr.dexc.Shutdown()
+	<-shutdownChan // wait for shutdown
+
+	// Delete dex client db.
+	return os.Remove(dexDBFile)
+}
+
 // prepareDexSupportForDCRWallet sets up the DEX client to allow using a
 // cyptopower dcr wallet with DEX core.
 func (mgr *AssetsManager) prepareDexSupportForDCRWallet() {

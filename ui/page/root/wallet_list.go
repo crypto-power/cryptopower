@@ -54,7 +54,7 @@ func (pg *WalletSelectorPage) loadBadWallets() {
 		for _, badWallet := range badWallets {
 			listItem := &badWalletListItem{
 				Wallet:    badWallet,
-				deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
+				deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDelete)),
 			}
 			listItem.deleteBtn.Color = pg.Theme.Color.Danger
 			listItem.deleteBtn.Inset = layout.Inset{}

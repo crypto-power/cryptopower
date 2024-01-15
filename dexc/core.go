@@ -31,6 +31,9 @@ const (
 
 // DEXClient represents the Decred DEX client and embeds *core.Core.
 type DEXClient struct {
+	ctx      context.Context
+	cancelFn context.CancelFunc
+	DBPath   string
 	*core.Core
 
 	shutdownChan    <-chan struct{}
@@ -49,6 +52,10 @@ func (dc *DEXClient) IsDEXPasswordSet() bool {
 // WaitForShutdown returns a chan that will be closed if core exits.
 func (dc *DEXClient) WaitForShutdown() <-chan struct{} {
 	return dc.shutdownChan
+}
+
+func (dc *DEXClient) Shutdown() {
+	dc.cancelFn()
 }
 
 type valStamp struct {
@@ -119,14 +126,16 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 
 	shutdownChan := make(chan struct{})
 	dc := &DEXClient{
+		DBPath:       dbPath,
 		Core:         clientCore,
 		shutdownChan: shutdownChan,
 		log:          logger,
 	}
 
+	dc.ctx, dc.cancelFn = context.WithCancel(ctx)
 	// Use a goroutine to start dex core as it'll block until dex core exits.
 	go func() {
-		dc.Run(ctx)
+		dc.Run(dc.ctx)
 		logCloser()
 		close(shutdownChan)
 		dc.Core = nil // do this after all shutdownChan listeners must've stopped waiting

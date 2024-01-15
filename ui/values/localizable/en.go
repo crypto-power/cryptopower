@@ -890,4 +890,6 @@ const EN = `
 "integratedExchange" = "Integrated Exchange"
 "seedWords" = "Seed Words"
 "allservers" = "All servers"
+"deleteDEXData" = "Delete DEX data"
+"deleteDEXDataWarning" = "This action will delete your DEX database, including information regarding pending bonds and connected DEX servers."
 `
