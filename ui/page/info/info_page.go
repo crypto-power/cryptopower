@@ -149,9 +149,7 @@ func (pg *WalletInfo) OnNavigatedTo() {
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
-		items := []layout.FlexChild{layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return pg.WalletInfoLayout(gtx)
-		})}
+		items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
 
 		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 			items = append(items, layout.Rigid(pg.mixerLayout))
@@ -169,10 +167,7 @@ func (pg *WalletInfo) Layout(gtx C) D {
 	})
 }
 
-func (pg *WalletInfo) WalletInfoLayout(gtx C, wallet ...sharedW.Asset) D {
-	if len(wallet) > 0 {
-		pg.wallet = wallet[0]
-	}
+func (pg *WalletInfo) walletInfoLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, "", nil, func(gtx C) D {
 		items := []layout.FlexChild{
 			layout.Rigid(pg.walletNameAndBackupInfo),

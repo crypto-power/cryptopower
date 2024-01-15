@@ -254,7 +254,7 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	for i, item := range sp.settingsOptions {
-		for item.clickable.Clicked() { // TODO: Show settings page and allow user picked settings for advanced setup.
+		for item.clickable.Clicked() { // TODO: Show settings page and allow user pick settings for advanced setup.
 			sp.selectedSettingsOptionIndex = i
 		}
 

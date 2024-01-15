@@ -362,11 +362,11 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 }
 
 func (p *Politeia) FetchProposalDescription(token string) (string, error) {
-	// Check if politeia has been shutdown and exit if true.
 	if p.ctx == nil {
 		p.ctx = context.Background()
 	}
 
+	// Check if politeia has been shutdown and exit if true.
 	if p.ctx.Err() != nil {
 		return "", p.ctx.Err()
 	}

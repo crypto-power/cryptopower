@@ -94,11 +94,6 @@ func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigatio
 	swmp.openWalletSelector = swmp.Theme.NewClickable(false)
 	swmp.refreshExchangeRateBtn = swmp.Theme.NewClickable(true)
 
-	// if swmp.selectedWallet.IsSyncing() {
-	// swmp.selectedWallet.GetBestBlockHeight()
-	// 	swmp.navigateToSyncBtn.Text = values.String(values.StrStopSync)
-	// }
-
 	swmp.initTabOptions()
 
 	return swmp
