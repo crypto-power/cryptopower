@@ -62,14 +62,6 @@ type HomePage struct {
 	totalBalanceUSD string
 }
 
-var navigationTabTitles = []string{
-	values.String(values.StrOverview),
-	values.String(values.StrTransactions),
-	values.String(values.StrWallets),
-	values.String(values.StrTrade),
-	values.String(values.StrGovernance),
-}
-
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp := &HomePage{
 		Load:        l,
@@ -81,26 +73,8 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
 	hp.appLevelSettingsButton = hp.Theme.NewClickable(false)
 	hp.appNotificationButton = hp.Theme.NewClickable(false)
-
-	hp.navigationTab = l.Theme.Tab(layout.Horizontal, false, navigationTabTitles)
-
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
-
-	hp.sendReceiveNavItems = []components.NavBarItem{
-		{
-			Clickable: hp.Theme.NewClickable(true),
-			Image:     hp.Theme.Icons.SendIcon,
-			Title:     values.String(values.StrSend),
-			PageID:    send.SendPageID,
-		},
-		{
-			Clickable: hp.Theme.NewClickable(true),
-			Image:     hp.Theme.Icons.ReceiveIcon,
-			Title:     values.String(values.StrReceive),
-			PageID:    ReceivePageID,
-		},
-	}
 
 	go func() {
 		hp.isConnected.Store(libutils.IsOnline())
@@ -124,10 +98,38 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	}
 	hp.walletSelectorPage.showNavigationFunc = hp.showNavigationFunc
 
+	return hp
+}
+
+// initPageItems initializes navbar items that require the latest translation
+// string and MUST be called from OnNavigatedTo.
+func (hp *HomePage) initPageItems() {
+	navigationTabTitles := []string{
+		values.String(values.StrOverview),
+		values.String(values.StrTransactions),
+		values.String(values.StrWallets),
+		values.String(values.StrTrade),
+		values.String(values.StrGovernance),
+	}
+	hp.navigationTab = hp.Theme.Tab(layout.Horizontal, false, navigationTabTitles)
+
+	hp.sendReceiveNavItems = []components.NavBarItem{
+		{
+			Clickable: hp.Theme.NewClickable(true),
+			Image:     hp.Theme.Icons.SendIcon,
+			Title:     values.String(values.StrSend),
+			PageID:    send.SendPageID,
+		},
+		{
+			Clickable: hp.Theme.NewClickable(true),
+			Image:     hp.Theme.Icons.ReceiveIcon,
+			Title:     values.String(values.StrReceive),
+			PageID:    ReceivePageID,
+		},
+	}
+
 	hp.initBottomNavItems()
 	hp.bottomNavigationBar.OnViewCreated()
-
-	return hp
 }
 
 // ID is a unique string that identifies the page and may be used
@@ -143,6 +145,8 @@ func (hp *HomePage) ID() string {
 // Part of the load.Page interface.
 func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
+
+	hp.initPageItems()
 
 	go hp.CalculateAssetsUSDBalance()
 	if !hp.AssetsManager.DexcReady() {
@@ -249,10 +253,10 @@ func (hp *HomePage) HandleUserInteractions() {
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
 	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
 		for item.Clickable.Clicked() {
-			hp.displaySelectedPage(item.Title)
 			if hp.ID() == hp.CurrentPageID() {
 				continue
 			}
+			hp.displaySelectedPage(item.Title)
 		}
 	}
 
