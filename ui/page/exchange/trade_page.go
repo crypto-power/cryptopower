@@ -101,18 +101,20 @@ func (pg *TradePage) HandleUserInteractions() {
 		selectedIndex++ // Adjust index for mobile view
 	}
 
-	switch selectedIndex {
-	case 0: // DCRDEX
-		if pg.CurrentPageID() != dcrdex.DCRDEXPageID {
-			pg.Display(dcrdex.NewDEXPage(pg.Load))
-		}
-	case 1: // Centralized Exchange
-		if pg.CurrentPageID() != CreateOrderPageID {
-			pg.Display(NewCreateOrderPage(pg.Load))
-		}
-	case 2: // Trade History
-		if pg.CurrentPageID() != OrderHistoryPageID {
-			pg.Display(NewOrderHistoryPage(pg.Load))
+	if pg.CurrentPage() == nil || pg.tab.Changed() {
+		switch selectedIndex {
+		case 0: // DCRDEX
+			if pg.CurrentPageID() != dcrdex.DCRDEXPageID {
+				pg.Display(dcrdex.NewDEXPage(pg.Load))
+			}
+		case 1: // Centralized Exchange
+			if pg.CurrentPageID() != CreateOrderPageID {
+				pg.Display(NewCreateOrderPage(pg.Load))
+			}
+		case 2: // Trade History
+			if pg.CurrentPageID() != OrderHistoryPageID {
+				pg.Display(NewOrderHistoryPage(pg.Load))
+			}
 		}
 	}
 
