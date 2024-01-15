@@ -282,7 +282,7 @@ const (
 	StrDebug                           = "debug"
 	StrDecentralized                   = "decentralized"
 	StrDefault                         = "default"
-	StrDeleted                         = "delete"
+	StrDelete                          = "delete"
 	StrDescriptionNote                 = "descriptionNote"
 	StrDestAddr                        = "destAddr"
 	StrDestination                     = "destination"
@@ -999,4 +999,6 @@ const (
 	StrIntegratedExchange              = "integratedExchange"
 	StrSeedWords                       = "seedWords"
 	StrAllservers                      = "allservers"
+	StrDeleteDEXData                   = "deleteDEXData"
+	StrDeleteDEXDataWarning            = "deleteDEXDataWarning"
 )
