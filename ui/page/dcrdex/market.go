@@ -1226,9 +1226,9 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 										pg.orderColumn(false, ord.MarketID, columnWidth, index),
 										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime)), columnWidth, index),
 										pg.orderColumn(false, orderReader.RateString(), columnWidth, index),
-										pg.orderColumn(false, orderReader.BaseQtyString(), columnWidth, index),
-										pg.orderColumn(false, orderReader.FilledPercent(), columnWidth, index),
-										pg.orderColumn(false, orderReader.SettledPercent(), columnWidth, index),
+										pg.orderColumn(false, fmt.Sprintf("%s%% %s", orderReader.BaseQtyString(), orderReader.BaseSymbol), columnWidth, index),
+										pg.orderColumn(false, fmt.Sprintf("%s%%", orderReader.FilledPercent()), columnWidth, index),
+										pg.orderColumn(false, fmt.Sprintf("%s%%", orderReader.SettledPercent()), columnWidth, index),
 										pg.orderColumn(false, orderReader.StatusString(), columnWidth, index), // TODO: Add possible values to translation
 										pg.orderColumn(false, "", columnWidth, index),                         // for cancel btn
 									)
@@ -1260,40 +1260,36 @@ func semiBoldGray3Size14(th *cryptomaterial.Theme, text string) cryptomaterial.L
 
 func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.Dp, orderIndex int) layout.FlexChild {
 	return layout.Rigid(func(gtx C) D {
-		ll := cryptomaterial.LinearLayout{
-			Width:       gtx.Dp(columnWidth),
-			Height:      cryptomaterial.WrapContent,
-			Orientation: horizontal,
-			Alignment:   layout.Middle,
-			Padding:     layout.Inset{Top: dp16, Bottom: dp16},
-			Direction:   layout.Center,
-		}
-
+		padding := layout.Inset{Top: dp16, Bottom: dp16}
 		var showCancelBtn bool
 		if !header {
 			ord := pg.orders[orderIndex]
 			notInflight := ord.Stamp > 0
 			showCancelBtn = pg.openOrdersDisplayed && !ord.Cancelling && notInflight && ord.cancelBtn != nil
 			if showCancelBtn {
-				ll.Padding = layout.Inset{Top: dp8, Bottom: dp8}
+				padding = layout.Inset{Top: dp8, Bottom: dp8}
 			}
 		}
 
-		return ll.Layout2(gtx, func(gtx C) D {
+		return cryptomaterial.LinearLayout{
+			Width:       gtx.Dp(columnWidth),
+			Height:      cryptomaterial.WrapContent,
+			Orientation: horizontal,
+			Alignment:   layout.Middle,
+			Padding:     padding,
+			Direction:   layout.Center,
+		}.Layout2(gtx, func(gtx C) D {
 			if header {
 				return semiBoldGray3Size14(pg.Theme, txt).Layout(gtx)
+			} else if txt != "" {
+				lb := pg.Theme.Body2(txt)
+				lb.Color = pg.Theme.Color.Text
+				return lb.Layout(gtx)
+			} else if showCancelBtn {
+				return pg.orders[orderIndex].cancelBtn.Layout(gtx)
 			}
 
-			if txt == "" {
-				if showCancelBtn {
-					return pg.orders[orderIndex].cancelBtn.Layout(gtx)
-				}
-				return D{}
-			}
-
-			lb := pg.Theme.Body2(txt)
-			lb.Color = pg.Theme.Color.Text
-			return lb.Layout(gtx)
+			return D{}
 		})
 	})
 }
