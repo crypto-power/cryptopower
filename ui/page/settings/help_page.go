@@ -132,7 +132,7 @@ func (pg *HelpPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 			layout.Rigid(pg.pageHeaderLayout),
 			layout.Rigid(func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					pg.pageContentLayout(gtx),
+					pg.pageContentLayout(),
 				)
 			}),
 		)
@@ -151,7 +151,7 @@ func (pg *HelpPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 			},
 			Body: func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
-					pg.pageContentLayout(gtx),
+					pg.pageContentLayout(),
 				)
 			},
 		}
@@ -178,7 +178,7 @@ func (pg *HelpPage) pageHeaderLayout(gtx layout.Context) layout.Dimensions {
 	)
 }
 
-func (pg *HelpPage) pageContentLayout(gtx layout.Context) layout.FlexChild {
+func (pg *HelpPage) pageContentLayout() layout.FlexChild {
 	return layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y

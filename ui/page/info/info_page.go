@@ -63,7 +63,7 @@ type WalletInfo struct {
 	isStatusConnected bool
 }
 
-type progressInfo struct {
+type ProgressInfo struct {
 	remainingSyncTime    string
 	HeadersToFetchOrScan int32
 	stepFetchProgress    int32
@@ -74,7 +74,7 @@ type progressInfo struct {
 // set with a value, it always persists till unset. This will help address the
 // progress bar issue where, changing UI pages alters the progress on the sync
 // status progress percentage.
-var syncProgressInfo = map[sharedW.Asset]progressInfo{}
+var syncProgressInfo = map[sharedW.Asset]ProgressInfo{}
 
 func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 	pg := &WalletInfo{
@@ -372,7 +372,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 // every set interval. Other sync updates that affect the UI but occur outside
 // of an active sync requires a display refresh.
 func (pg *WalletInfo) listenForNotifications() {
-	updateSyncProgress := func(progress progressInfo) {
+	updateSyncProgress := func(progress ProgressInfo) {
 		// Update sync progress fields which will be displayed
 		// when the next UI invalidation occurs.
 
@@ -391,7 +391,7 @@ func (pg *WalletInfo) listenForNotifications() {
 
 	syncProgressListener := &sharedW.SyncProgressListener{
 		OnHeadersFetchProgress: func(t *sharedW.HeadersFetchProgressReport) {
-			progress := progressInfo{}
+			progress := ProgressInfo{}
 			progress.stepFetchProgress = t.HeadersFetchProgress
 			progress.HeadersToFetchOrScan = t.TotalHeadersToFetch
 			progress.syncProgress = int(t.TotalSyncProgress)
@@ -399,14 +399,14 @@ func (pg *WalletInfo) listenForNotifications() {
 			updateSyncProgress(progress)
 		},
 		OnAddressDiscoveryProgress: func(t *sharedW.AddressDiscoveryProgressReport) {
-			progress := progressInfo{}
+			progress := ProgressInfo{}
 			progress.syncProgress = int(t.TotalSyncProgress)
 			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 			progress.stepFetchProgress = t.AddressDiscoveryProgress
 			updateSyncProgress(progress)
 		},
 		OnHeadersRescanProgress: func(t *sharedW.HeadersRescanProgressReport) {
-			progress := progressInfo{}
+			progress := ProgressInfo{}
 			progress.HeadersToFetchOrScan = t.TotalHeadersToScan
 			progress.syncProgress = int(t.TotalSyncProgress)
 			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)

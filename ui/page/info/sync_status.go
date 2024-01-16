@@ -323,10 +323,10 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 	})
 }
 
-func (pg *WalletInfo) FetchSyncProgress() progressInfo {
+func (pg *WalletInfo) FetchSyncProgress() ProgressInfo {
 	pgrss, ok := syncProgressInfo[pg.wallet]
 	if !ok {
-		pgrss = progressInfo{}
+		pgrss = ProgressInfo{}
 	}
 	// remove the unnecessary sync progress data if already synced.
 	pg.deleteSyncProgress()
