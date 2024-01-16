@@ -1,6 +1,8 @@
 package root
 
 import (
+	"net"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -124,10 +126,7 @@ func (pg *WalletSettingsPage) isPrivacyModeOn() bool {
 func (pg *WalletSettingsPage) loadPeerAddress() {
 	if !pg.isPrivacyModeOn() {
 		pg.peerAddr = pg.wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-		pg.connectToPeer.SetChecked(false)
-		if pg.peerAddr != "" {
-			pg.connectToPeer.SetChecked(true)
-		}
+		pg.connectToPeer.SetChecked(pg.peerAddr != "")
 	}
 }
 
@@ -194,7 +193,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
 					layout.Rigid(func(gtx C) D {
-						if pg.wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" && pg.isPrivacyModeOn() {
+						if !pg.connectToPeer.IsChecked() {
 							return D{}
 						}
 
@@ -492,17 +491,18 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
-			if !utils.ValidateHost(ipAddress) {
-				tim.SetError(values.StringF(values.StrValidateHostErr, ipAddress))
+			addrs, ok := validatePeerAddressStr(ipAddress)
+			if !ok {
+				tim.SetError(values.StringF(values.StrValidateHostErr, addrs))
 				tim.SetLoading(false)
 				return false
 			}
-			if ipAddress != "" {
-				pg.wallet.SetSpecificPeer(ipAddress)
-				pg.loadPeerAddress()
-			}
+			pg.wallet.SetSpecificPeer(addrs)
+			pg.loadPeerAddress()
 			return true
-		})
+		}).
+		SetText(pg.peerAddr)
+
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
 		SetPositiveButtonText(values.String(values.StrConfirm)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
@@ -511,6 +511,37 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 			pg.connectToPeer.SetChecked(pg.peerAddr != "")
 		})
 	pg.ParentWindow().ShowModal(textModal)
+}
+
+// validatePeerAddressStr validates the provided addrs string to ensure it's a
+// valid peer address or a valid list of peer addresses. Returns the validated
+// addrs string and true if there are no issues.
+func validatePeerAddressStr(addrs string) (string, bool) {
+	addresses := strings.Split(strings.Trim(addrs, " "), ";")
+	// Prevent duplicate addresses.
+	addrMap := make(map[string]*struct{})
+	for _, addr := range addresses {
+		addr = strings.Trim(addr, " ")
+		if addr == "" {
+			continue
+		}
+
+		if net.ParseIP(addr) != nil {
+			addrMap[addr] = &struct{}{}
+			continue // ok
+		}
+
+		if _, err := url.ParseRequestURI(addr); err != nil {
+			return addr, false
+		}
+		addrMap[addr] = &struct{}{}
+	}
+
+	var addrStr string
+	for addr := range addrMap {
+		addrStr += ";" + addr
+	}
+	return strings.Trim(addrStr, ";"), true
 }
 
 func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {

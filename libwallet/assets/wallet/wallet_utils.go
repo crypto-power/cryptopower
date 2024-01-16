@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"decred.org/dcrwallet/v3/errors"
 	"decred.org/dcrwallet/v3/walletseed"
@@ -280,4 +281,24 @@ func SortTxs(txs []*Transaction, newestFirst bool) {
 		}
 		return txs[i].Timestamp < txs[j].Timestamp
 	})
+}
+
+// ParseWalletPeers is a convenience function that converts the provided
+// peerAddresses string to an array of valid peer addresses.
+func ParseWalletPeers(peerAddresses string, port string) ([]string, []error) {
+	var persistentPeers []string
+	var errs []error
+	if peerAddresses != "" {
+		addresses := strings.Split(peerAddresses, ";")
+		for _, address := range addresses {
+			peerAddress, err := utils.NormalizeAddress(address, port)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err))
+			} else {
+				persistentPeers = append(persistentPeers, peerAddress)
+			}
+		}
+	}
+
+	return persistentPeers, errs
 }
