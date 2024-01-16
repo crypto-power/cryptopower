@@ -896,4 +896,8 @@ const EN = `
 "recommendedModalBody" = "This allows access to all APIs, including the Exchange Rate API, CEX API, VSP API, Fee Rate API, and Governance API."
 "advancedModalBody" = "Enabling Advanced settings enhances privacy by disabling access to all APIs, including the Exchange Rate API, CEX API, VSP API, Fee Rate API, and Governance API."
 "startSync" = "Start Sync"
+"website" = "Website"
+"twitter" = "Twitter"
+"telegram" = "Telegram"
+"matrix" = "Matrix"
 `

@@ -462,7 +462,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 	if pg.createWalletBtn.Button.Clicked() {
 		assetToCreate := pg.AssetToCreate()
-		pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func() {
+		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
 			pg.walletCreationSuccessFunc(false, assetToCreate)
 		}, assetToCreate))
 	}

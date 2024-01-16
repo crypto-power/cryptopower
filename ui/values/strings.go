@@ -1005,4 +1005,8 @@ const (
 	StrRecommendedModalBody            = "recommendedModalBody"
 	StrAdvancedModalBody               = "advancedModalBody"
 	StrStartSync                       = "startSync"
+	StrTelegram                        = "telegram"
+	StrTwitter                         = "twitter"
+	StrMatrix                          = "matrix"
+	StrWebsite                         = "website"
 )
