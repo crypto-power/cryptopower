@@ -561,11 +561,13 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 		// The "All Wallets" dropdown item is the first in the dropdown list.
 		if assetIndex == 0 {
 			pg.selectedWallet = nil
-		} else {
+		} else if len(pg.assetWallets) > 0 {
 			// Assets added as dropdown items have an index of
 			// actuallyIndex+1 due to the "All Wallets" dropdown item.
 			assetIndex--
-			pg.selectedWallet = pg.assetWallets[assetIndex]
+			if assetIndex < len(pg.assetWallets) {
+				pg.selectedWallet = pg.assetWallets[assetIndex]
+			}
 		}
 		pg.refreshAvailableTxType()
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
