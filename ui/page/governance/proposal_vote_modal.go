@@ -199,7 +199,7 @@ func (vm *voteModal) handle(gtx C) {
 		vm.sendVotes()
 	}
 
-	if vm.navigateToStakePage.Clicked() {
+	if vm.navigateToStakePage.Clicked(gtx) {
 		vm.Dismiss()
 		selectedWallet, _ := vm.walletSelector.selectedWallet.(*dcr.Asset)
 		walletCallbackFunc := func() {
