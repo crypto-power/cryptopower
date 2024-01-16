@@ -195,21 +195,16 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 	return listItems, len(listItems), isReset, nil
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *ProposalsPage) HandleUserInteractions() {
-	if pg.statusDropDown.Changed() {
+func (pg *ProposalsPage) handleUserInteractions(gtx C) {
+	if pg.statusDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.orderDropDown.Changed() {
+	if pg.orderDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 	}
 
@@ -219,7 +214,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
 	}
 
-	for pg.syncButton.Clicked() {
+	for pg.syncButton.Clicked(gtx) {
 		go pg.AssetsManager.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
@@ -232,7 +227,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.proposalsFetched = true
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrProposal)).
 			Body(values.String(values.StrOffChainVote)).
@@ -257,7 +252,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		}
 	}
 
-	for pg.filterBtn.Clicked() {
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }
@@ -306,6 +301,8 @@ func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.Drop
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 	padding := values.MarginPadding24
 	if pg.IsMobileView() {

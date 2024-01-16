@@ -33,7 +33,7 @@ func (h *Hoverable) update(gtx C) {
 			continue
 		}
 
-		switch ev.Type {
+		switch ev.Kind {
 		case pointer.Enter:
 			h.hovered = true
 			h.position = &ev.Position
@@ -50,7 +50,7 @@ func (h *Hoverable) Layout(gtx C, rect image.Rectangle) D {
 	area := clip.Rect(rect).Push(gtx.Ops)
 	pointer.InputOp{
 		Tag:   h,
-		Types: pointer.Enter | pointer.Leave,
+		Kinds: pointer.Enter | pointer.Leave,
 	}.Add(gtx.Ops)
 	area.Pop()
 

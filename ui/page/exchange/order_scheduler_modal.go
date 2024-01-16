@@ -151,19 +151,19 @@ func (osm *orderSchedulerModal) SetError(err string) {
 	osm.passwordEditor.SetError(values.TranslateErr(err))
 }
 
-func (osm *orderSchedulerModal) Handle() {
+func (osm *orderSchedulerModal) handle(gtx C) {
 	osm.startBtn.SetEnabled(osm.canStart())
 
-	for osm.startBtn.Clicked() {
+	for osm.startBtn.Clicked(gtx) {
 		osm.startOrderScheduler()
 	}
 
-	if osm.cancelBtn.Clicked() || osm.Modal.BackdropClicked(true) {
+	if osm.cancelBtn.Clicked(gtx) || osm.Modal.BackdropClicked(gtx, true) {
 		osm.onCancel()
 		osm.Dismiss()
 	}
 
-	if osm.refreshExchangeRateBtn.Button.Clicked() {
+	if osm.refreshExchangeRateBtn.Button.Clicked(gtx) {
 		go func() {
 			err := osm.getExchangeRateInfo()
 			if err != nil {
@@ -218,6 +218,8 @@ func (osm *orderSchedulerModal) canStart() bool {
 }
 
 func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
+	osm.handle(gtx)
+
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,

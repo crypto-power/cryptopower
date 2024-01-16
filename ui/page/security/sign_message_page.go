@@ -105,6 +105,8 @@ func (pg *SignMessagePage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SignMessagePage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -204,7 +206,7 @@ func (pg *SignMessagePage) drawResult() layout.Widget {
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
-													if pg.copySignature.Clicked() {
+													if pg.copySignature.Clicked(gtx) {
 														clipboard.WriteOp{Text: pg.signedMessageLabel.Text}.Add(gtx.Ops)
 														pg.Toast.Notify(values.String(values.StrSignCopied))
 													}
@@ -251,12 +253,7 @@ func (pg *SignMessagePage) updateButtonColors() {
 	pg.signButton.SetEnabled(pg.isEnabled)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *SignMessagePage) HandleUserInteractions() {
+func (pg *SignMessagePage) handleUserInteractions(gtx C) {
 	pg.updateButtonColors()
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor)
@@ -270,11 +267,11 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 		}
 	}
 
-	for pg.clearButton.Clicked() {
+	for pg.clearButton.Clicked(gtx) {
 		pg.clearForm()
 	}
 
-	if (pg.signButton.Clicked() || isSubmit) && pg.isEnabled {
+	if (pg.signButton.Clicked(gtx) || isSubmit) && pg.isEnabled {
 		if !pg.isSigningMessage && pg.validate() {
 			address := pg.addressEditor.Editor.Text()
 			message := pg.messageEditor.Editor.Text()

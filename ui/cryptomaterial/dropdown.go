@@ -163,12 +163,12 @@ func (d *DropDown) Len() int {
 	return len(d.items)
 }
 
-func (d *DropDown) handleEvents() {
+func (d *DropDown) handleEvents(gtx C) {
 	if d.expanded {
 		for i := range d.items {
 			index := i
 			item := d.items[index]
-			for item.clickable.Clicked() {
+			for item.clickable.Clicked(gtx) {
 				d.expanded = false
 				if !item.PreventSelection {
 					d.selectedIndex = index
@@ -177,18 +177,18 @@ func (d *DropDown) handleEvents() {
 			}
 		}
 	} else {
-		for d.clickable.Clicked() {
+		for d.clickable.Clicked(gtx) {
 			d.expanded = true
 		}
 	}
 }
 
-func (d *DropDown) Changed() bool {
+func (d *DropDown) Changed(gtx C) bool {
 	if d.expanded {
 		for i := range d.items {
 			index := i
 			item := d.items[index]
-			for item.clickable.Clicked() {
+			for item.clickable.Clicked(gtx) {
 				d.expanded = false
 				if item.PreventSelection {
 					return false
@@ -201,7 +201,7 @@ func (d *DropDown) Changed() bool {
 
 		// If no dropdown item was clicked, check if there's a click on the
 		// backdrop and close all dropdowns.
-		if len(d.theme.DropdownBackdrop.Clicks()) > 0 {
+		if len(d.theme.DropdownBackdrop.Update(gtx)) > 0 {
 			d.theme.closeAllDropdowns()
 		}
 	}
@@ -227,7 +227,7 @@ func (d *DropDown) SetMaxTextLeng(leng int) {
 }
 
 func (d *DropDown) Layout(gtx C) D {
-	d.handleEvents()
+	d.handleEvents(gtx)
 	if d.maxTextLeng == 0 {
 		d.maxTextLeng = maxDropdownItemTextLen
 	}
@@ -428,10 +428,10 @@ func ResliceDropdown(dropdowns []*DropDown, indexToRemove int) []*DropDown {
 }
 
 // Display one dropdown at a time
-func DisplayOneDropdown(dropdowns ...*DropDown) {
+func DisplayOneDropdown(gtx C, dropdowns ...*DropDown) {
 	var menus []*DropDown
 	for i, menu := range dropdowns {
-		if menu.clickable.Clicked() {
+		if menu.clickable.Clicked(gtx) {
 			menu.expanded = true
 			menus = ResliceDropdown(dropdowns, i)
 			for _, menusToClose := range menus {

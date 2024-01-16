@@ -140,15 +140,15 @@ func (es *ExSelector) SetSelectedExchangeName(name string) {
 	}
 }
 
-func (es *ExSelector) Handle(window app.WindowNavigator) {
-	for es.openSelectorDialog.Clicked() {
+func (es *ExSelector) handle(window app.WindowNavigator, gtx C) {
+	for es.openSelectorDialog.Clicked(gtx) {
 		es.title(es.dialogTitle)
 		window.ShowModal(es.exchangeModal)
 	}
 }
 
 func (es *ExSelector) Layout(window app.WindowNavigator, gtx C) D {
-	es.Handle(window)
+	es.handle(window, gtx)
 
 	bg := es.Theme.Color.White
 	if es.AssetsManager.IsDarkModeOn() {
@@ -226,17 +226,17 @@ func (es *ExSelector) buildExchangeItems(server ...instantswap.Server) []*exchan
 
 func (em *exchangeModal) OnResume() {}
 
-func (em *exchangeModal) Handle() {
+func (em *exchangeModal) handle(gtx C) {
 	if em.eventQueue != nil {
 		for _, exchangeItem := range em.exchangeItems {
-			for exchangeItem.clickable.Clicked() {
+			for exchangeItem.clickable.Clicked(gtx) {
 				em.onExchangeClicked(exchangeItem.item)
 				em.Dismiss()
 			}
 		}
 	}
 
-	if em.Modal.BackdropClicked(em.isCancelable) {
+	if em.Modal.BackdropClicked(gtx, em.isCancelable) {
 		em.Dismiss()
 	}
 }
@@ -252,6 +252,8 @@ func (em *exchangeModal) exchangeClicked(callback func(*Exchange)) *exchangeModa
 }
 
 func (em *exchangeModal) Layout(gtx C) D {
+	em.handle(gtx)
+
 	em.eventQueue = gtx
 	w := []layout.Widget{
 		func(gtx C) D {

@@ -60,6 +60,8 @@ func (pg *SetupPrivacyPage) OnNavigatedTo() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SetupPrivacyPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	stakeShuffleDesc := fmt.Sprintf("%s\n%s",
 		values.String(values.StrSetUpStakeShuffleIntroDesc),
 		values.String(values.StrSetUpStakeShuffleIntroSubDesc))
@@ -147,13 +149,8 @@ func (pg *SetupPrivacyPage) Layout(gtx C) D {
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *SetupPrivacyPage) HandleUserInteractions() {
-	if pg.toPrivacySetup.Clicked() {
+func (pg *SetupPrivacyPage) handleUserInteractions(gtx C) {
+	if pg.toPrivacySetup.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewSetupMixerAccountsPage(pg.Load, pg.wallet))
 	}
 }

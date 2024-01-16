@@ -221,8 +221,8 @@ func (ws *WalletAndAccountSelector) Changed() bool {
 	return changed
 }
 
-func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
-	for ws.openSelectorDialog.Clicked() {
+func (ws *WalletAndAccountSelector) handle(window app.WindowNavigator, gtx C) {
+	for ws.openSelectorDialog.Clicked(gtx) {
 		ws.title(ws.dialogTitle).accountValidator(ws.accountIsValid)
 		window.ShowModal(ws.selectorModal)
 	}
@@ -253,7 +253,7 @@ func (ws *WalletAndAccountSelector) SetBorder(isHaveBoder bool) {
 }
 
 func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D {
-	ws.Handle(window)
+	ws.handle(window, gtx)
 
 	borderColor := ws.Theme.Color.Gray2
 	if ws.errorLabel.Text != "" {
@@ -509,10 +509,10 @@ func (sm *selectorModal) accountValidator(accountIsValid func(*sharedW.Account) 
 	return sm
 }
 
-func (sm *selectorModal) Handle() {
+func (sm *selectorModal) handle(gtx C) {
 	if sm.eventQueue != nil {
 		for _, selectorItem := range sm.selectorItems {
-			for selectorItem.clickable.Clicked() {
+			for selectorItem.clickable.Clicked(gtx) {
 				switch item := selectorItem.item.(type) {
 				case *sharedW.Account:
 					if sm.onAccountClicked != nil {
@@ -527,16 +527,16 @@ func (sm *selectorModal) Handle() {
 			}
 		}
 
-		if sm.infoBackdrop.Clicked() {
+		if sm.infoBackdrop.Clicked(gtx) {
 			sm.infoModalOpen = false
 		}
 
-		if sm.infoButton.IconButtonStyle.Button.Clicked() {
+		if sm.infoButton.IconButtonStyle.Button.Clicked(gtx) {
 			sm.infoModalOpen = !sm.infoModalOpen
 		}
 	}
 
-	if sm.Modal.BackdropClicked(sm.isCancelable) {
+	if sm.Modal.BackdropClicked(gtx, sm.isCancelable) {
 		sm.Dismiss()
 	}
 }
@@ -557,6 +557,8 @@ func (sm *selectorModal) accountClicked(callback func(*sharedW.Account)) *select
 }
 
 func (sm *selectorModal) Layout(gtx C) D {
+	sm.handle(gtx)
+
 	sm.eventQueue = gtx
 	sm.infoBackdropLayout(gtx)
 

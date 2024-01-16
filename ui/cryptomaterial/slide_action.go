@@ -67,8 +67,8 @@ func (s *SlideAction) Draged(drag Dragged) {
 
 func (s *SlideAction) DragLayout(gtx C, w layout.Widget) D {
 	if gtx.Queue != nil {
-		for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
-			switch event.Type {
+		for _, event := range s.drag.Update(gtx.Metric, gtx.Queue, gesture.Horizontal) {
+			switch event.Kind {
 			case pointer.Press:
 				s.dragStarted = event.Position
 				s.dragOffset = 0

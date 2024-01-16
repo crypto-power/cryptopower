@@ -77,6 +77,8 @@ func (pg *ValidateAddressPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ValidateAddressPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -161,12 +163,7 @@ func (pg *ValidateAddressPage) pageSections(gtx C, body layout.Widget) D {
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *ValidateAddressPage) HandleUserInteractions() {
+func (pg *ValidateAddressPage) handleUserInteractions(gtx C) {
 	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor)
@@ -174,11 +171,11 @@ func (pg *ValidateAddressPage) HandleUserInteractions() {
 		pg.stateValidate = none
 	}
 
-	if pg.validateBtn.Clicked() || isSubmit {
+	if pg.validateBtn.Clicked(gtx) || isSubmit {
 		pg.validateAddress()
 	}
 
-	if pg.clearBtn.Clicked() {
+	if pg.clearBtn.Clicked(gtx) {
 		pg.clearPage()
 	}
 }

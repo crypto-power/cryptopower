@@ -80,13 +80,8 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) OnNavigatedTo() {}
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *BackupInstructionsPage) HandleUserInteractions() {
-	for pg.viewSeedBtn.Clicked() {
+func (pg *BackupInstructionsPage) handleUserInteractions(gtx C) {
+	for pg.viewSeedBtn.Clicked(gtx) {
 		if pg.verifyCheckBoxes() {
 			// TODO: Will repeat the paint cycle, just queue the next fragment to be displayed
 			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet, pg.redirectCallback))
@@ -120,6 +115,8 @@ func (pg *BackupInstructionsPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	sp := components.SubPage{
 		Load:       pg.Load,
 		Title:      values.String(values.StrKeepInMind),

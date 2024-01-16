@@ -154,12 +154,7 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 	pg.loadBadWallets()
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *WalletSelectorPage) HandleUserInteractions() {
+func (pg *WalletSelectorPage) handleUserInteractions(gtx C) {
 	pg.listLock.Lock()
 	defer pg.listLock.Unlock()
 
@@ -187,7 +182,7 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 
 	for _, walletsOfType := range pg.badWalletsList {
 		for _, badWallet := range walletsOfType {
-			if badWallet.deleteBtn.Clicked() {
+			if badWallet.deleteBtn.Clicked(gtx) {
 				pg.deleteBadWallet(badWallet.Wallet.ID)
 				pg.ParentWindow().Reload()
 			}
@@ -195,7 +190,7 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 	}
 
 	for asset, clickable := range pg.addWalClickable {
-		if clickable.Clicked() {
+		if clickable.Clicked(gtx) {
 			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
 				pg.ParentNavigator().ClosePagesAfter(WalletSelectorPageID)
 			}, asset))
@@ -218,6 +213,8 @@ func (pg *WalletSelectorPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}

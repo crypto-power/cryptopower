@@ -119,6 +119,8 @@ func (tb *ticketBuyerModal) OnResume() {
 }
 
 func (tb *ticketBuyerModal) Layout(gtx C) D {
+	tb.handle(gtx)
+
 	l := []layout.Widget{
 		func(gtx C) D {
 			t := tb.Theme.H6(values.String(values.StrAutoTicketPurchase))
@@ -201,15 +203,15 @@ func (tb *ticketBuyerModal) OnDismiss() {
 	tb.accountSelector.StopTxNtfnListener()
 }
 
-func (tb *ticketBuyerModal) Handle() {
+func (tb *ticketBuyerModal) handle(gtx C) {
 	tb.saveSettingsBtn.SetEnabled(tb.canSave())
 
-	if tb.cancel.Clicked() || tb.Modal.BackdropClicked(true) {
+	if tb.cancel.Clicked(gtx) || tb.Modal.BackdropClicked(gtx, true) {
 		tb.onCancel()
 		tb.Dismiss()
 	}
 
-	if tb.saveSettingsBtn.Clicked() {
+	if tb.saveSettingsBtn.Clicked(gtx) {
 		vspHost := tb.vspSelector.SelectedVSP().Host
 		amount, err := strconv.ParseFloat(tb.balToMaintainEditor.Editor.Text(), 64)
 		if err != nil {

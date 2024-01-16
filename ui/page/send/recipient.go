@@ -182,8 +182,9 @@ func (rp *recipient) resetDestinationAccountSelector() {
 	rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.selectedWallet)
 }
 
-func (rp *recipient) recipientLayout(index int, showIcon bool, window app.WindowNavigator) layout.Widget {
-	rp.handle()
+func (rp *recipient) recipientLayout(gtx C, index int, showIcon bool, window app.WindowNavigator) layout.Widget {
+	rp.handle(gtx)
+
 	return func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.WrapContent,
@@ -321,11 +322,11 @@ func (rp *recipient) restyleWidgets() {
 	rp.sendDestination.styleWidgets()
 }
 
-func (rp *recipient) handle() {
+func (rp *recipient) handle(gtx C) {
 	rp.sendDestination.handle()
 	rp.amount.handle()
 
-	if rp.amount.IsMaxClicked() {
+	if rp.amount.IsMaxClicked(gtx) {
 		rp.amount.setError("")
 		rp.amount.SendMax = true
 		rp.amount.amountChanged()

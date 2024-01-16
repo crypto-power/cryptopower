@@ -171,22 +171,22 @@ func (vm *voteModal) sendVotes() {
 	vm.ParentWindow().ShowModal(passwordModal)
 }
 
-func (vm *voteModal) Handle() {
-	for vm.cancelBtn.Clicked() {
+func (vm *voteModal) handle(gtx C) {
+	for vm.cancelBtn.Clicked(gtx) {
 		if vm.isVoting {
 			continue
 		}
 		vm.Dismiss()
 	}
 
-	vm.handleVoteCountButtons(vm.yesVote)
-	vm.handleVoteCountButtons(vm.noVote)
+	vm.handleVoteCountButtons(gtx, vm.yesVote)
+	vm.handleVoteCountButtons(gtx, vm.noVote)
 
 	totalVotes := vm.yesVote.voteCount() + vm.noVote.voteCount()
 	validToVote := totalVotes > 0 && totalVotes <= vm.eligibleVotes()
 	vm.voteBtn.SetEnabled(validToVote)
 
-	for vm.voteBtn.Clicked() {
+	for vm.voteBtn.Clicked(gtx) {
 		if vm.isVoting {
 			break
 		}
@@ -214,6 +214,8 @@ func (vm *voteModal) Handle() {
 // - Layout
 
 func (vm *voteModal) Layout(gtx layout.Context) D {
+	vm.handle(gtx)
+
 	vm.detailsMu.Lock()
 	voteDetails := vm.voteDetails
 	voteDetailsErr := vm.voteDetailsErr

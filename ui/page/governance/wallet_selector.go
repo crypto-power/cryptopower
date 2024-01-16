@@ -60,8 +60,8 @@ func (as *WalletSelector) WalletSelected(callback func(sharedW.Asset)) *WalletSe
 	return as
 }
 
-func (as *WalletSelector) Handle(window app.WindowNavigator) {
-	for as.openSelectorDialog.Clicked() {
+func (as *WalletSelector) handle(gtx C, window app.WindowNavigator) {
+	for as.openSelectorDialog.Clicked(gtx) {
 		walletSelectorModal := newWalletSelectorModal(as.Load, as.selectedWallet).
 			title(as.dialogTitle).
 			accountValidator(as.walletIsValid).
@@ -106,8 +106,8 @@ func (as *WalletSelector) SelectedWallet() sharedW.Asset {
 	return as.selectedWallet
 }
 
-func (as *WalletSelector) Layout(gtx layout.Context, window app.WindowNavigator) layout.Dimensions {
-	as.Handle(window)
+func (as *WalletSelector) Layout(gtx layout.Context, window app.WindowNavigator) D {
+	as.handle(gtx, window)
 
 	border := widget.Border{
 		Color:        as.Theme.Color.Gray2,
@@ -191,13 +191,13 @@ func (asm *WalletSelectorModal) OnResume() {
 	asm.filteredWallets = validWallets
 }
 
-func (asm *WalletSelectorModal) Handle() {
+func (asm *WalletSelectorModal) handle(gtx C) {
 	if clicked, index := asm.walletsList.ItemClicked(); clicked {
 		asm.callback(asm.filteredWallets[index])
 		asm.Dismiss()
 	}
 
-	if asm.Modal.BackdropClicked(asm.isCancelable) {
+	if asm.Modal.BackdropClicked(gtx, asm.isCancelable) {
 		asm.Dismiss()
 	}
 }
@@ -220,7 +220,9 @@ func (asm *WalletSelectorModal) accountSelected(callback func(sharedW.Asset)) *W
 func (asm *WalletSelectorModal) OnDismiss() {
 }
 
-func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
+func (asm *WalletSelectorModal) Layout(gtx layout.Context) D {
+	asm.handle(gtx)
+
 	w := []layout.Widget{
 		func(gtx C) D {
 			title := asm.Theme.H6(asm.dialogTitle)
@@ -244,10 +246,10 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 						}
 						return inset.Layout(gtx, func(gtx C) D {
 							// return page.walletInfoPopup(gtx)
-							return layout.Dimensions{}
+							return D{}
 						})
 					}
-					return layout.Dimensions{}
+					return D{}
 				}),
 			)
 		},
@@ -256,7 +258,7 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 	return asm.Modal.Layout(gtx, w)
 }
 
-func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet sharedW.Asset) layout.Dimensions {
+func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet sharedW.Asset) D {
 	walletSpendableBalance, walletTotalBalance, _ := sharedW.Balances(wallet)
 
 	return layout.Inset{
@@ -298,7 +300,7 @@ func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet s
 							Right: values.MarginPadding10,
 							Top:   values.MarginPadding10,
 						}
-						sections := func(gtx layout.Context) layout.Dimensions {
+						sections := func(gtx layout.Context) D {
 							return layout.E.Layout(gtx, func(gtx C) D {
 								return inset.Layout(gtx, func(gtx C) D {
 									ic := cryptomaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
@@ -310,7 +312,7 @@ func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet s
 						if wallet.GetWalletID() == asm.currentSelectedWallet.GetWalletID() {
 							return sections(gtx)
 						}
-						return layout.Dimensions{}
+						return D{}
 					}),
 				)
 			}),

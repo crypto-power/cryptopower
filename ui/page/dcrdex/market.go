@@ -261,6 +261,8 @@ func (pg *DEXMarketPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	pageContent := []func(gtx C) D{
 		pg.priceAndVolumeDetail,
 		pg.orderFormAndOrderBook,
@@ -852,37 +854,33 @@ func (pg *DEXMarketPage) setBuyOrSell() {
 	pg.createOrderBtn.HighlightColor = pg.Theme.Color.OrangeRipple
 }
 
-// HandleUserInteractions is called just before Layout() to determine if any
-// user interaction recently occurred on the page and may be used to update the
-// page's UI components shortly before they are displayed.
-// Part of the load.Page interface.
-func (pg *DEXMarketPage) HandleUserInteractions() {
-	if pg.serverSelector.Changed() {
+func (pg *DEXMarketPage) handleUserInteractions(gtx C) {
+	if pg.serverSelector.Changed(gtx) {
 		// TODO: Update the order form with required lots.
 		log.Info("New sever selected: ", pg.serverSelector.Selected())
 	}
 
-	for pg.addServerBtn.Clicked() {
+	for pg.addServerBtn.Clicked(gtx) {
 		// TODO: Display modal to add server
 		log.Info("Add server clicked")
 	}
 
-	for pg.openOrdersBtn.Clicked() {
+	for pg.openOrdersBtn.Clicked(gtx) {
 		pg.openOrdersDisplayed = true
 		// TODO: Fetch orders and set pg.orders?
 	}
 
-	if pg.marketSelector.Changed() {
+	if pg.marketSelector.Changed(gtx) {
 		// TODO: Handle this.
 		log.Info("New market selected: ", pg.marketSelector.Selected())
 	}
 
-	for pg.orderHistoryBtn.Clicked() {
+	for pg.orderHistoryBtn.Clicked(gtx) {
 		pg.openOrdersDisplayed = false
 		// TODO: Fetch orders and set pg.orders?
 	}
 
-	if pg.orderTypesDropdown.Changed() {
+	if pg.orderTypesDropdown.Changed(gtx) {
 		// TODO: handle order type change
 		log.Info("Order type has been changed")
 	}
@@ -891,12 +889,12 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		pg.setBuyOrSell()
 	}
 
-	for pg.seeFullOrderBookBtn.Clicked() {
+	for pg.seeFullOrderBookBtn.Clicked(gtx) {
 		// TODO: display full order book
 		log.Info("Display full order book")
 	}
 
-	for pg.immediateOrderInfoBtn.Clicked() {
+	for pg.immediateOrderInfoBtn.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrImmediateOrder)).
 			UseCustomWidget(func(gtx layout.Context) layout.Dimensions {

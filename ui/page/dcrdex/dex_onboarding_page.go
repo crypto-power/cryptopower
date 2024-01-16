@@ -245,6 +245,8 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.MatchParent,
@@ -800,12 +802,8 @@ func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
 	)
 }
 
-// HandleUserInteractions is called just before Layout() to determine if any
-// user interaction recently occurred on the page and may be used to update the
-// page's UI components shortly before they are displayed.
-// Part of the load.Page interface.
-func (pg *DEXOnboarding) HandleUserInteractions() {
-	if pg.addServerBtn.Clicked() {
+func (pg *DEXOnboarding) handleUserInteractions(gtx C) {
+	if pg.addServerBtn.Clicked(gtx) {
 		pg.wantCustomServer = true
 		pg.currentStep = onBoardingStepAddServer
 
@@ -814,14 +812,14 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.serverCertEditor.Editor.SetText("")
 	}
 
-	if pg.goBackToChooseServer.Clicked() {
+	if pg.goBackToChooseServer.Clicked(gtx) {
 		pg.wantCustomServer = false
 		pg.currentStep = onboardingChooseServer
 		pg.serverURLEditor.SetError("")
 		pg.serverCertEditor.SetError("")
 	}
 
-	if pg.goBackBtn.Clicked() {
+	if pg.goBackBtn.Clicked(gtx) {
 		switch pg.currentStep {
 		case onboardingPostBond:
 			if pg.wantCustomServer {
@@ -834,7 +832,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		}
 	}
 
-	if pg.bondStrengthMoreInfo.Clicked() {
+	if pg.bondStrengthMoreInfo.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrBondStrength)).
 			SetupWithTemplate(modal.BondStrengthInfoTemplate).
@@ -855,7 +853,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.bondStrengthEditor.SetError("")
 	}
 
-	if (pg.nextBtn.Clicked() || isSubmit) && !pg.isLoading {
+	if (pg.nextBtn.Clicked(gtx) || isSubmit) && !pg.isLoading {
 		switch pg.currentStep {
 		case onboardingSetPassword:
 			ok := pg.validPasswordInputs()

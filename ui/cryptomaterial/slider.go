@@ -86,7 +86,7 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 		return D{}
 	}
 
-	s.handleClickEvent()
+	s.handleClickEvent(gtx)
 	return s.slideAction.DragLayout(gtx, func(gtx C) D {
 		return layout.Stack{Alignment: layout.S}.Layout(gtx,
 			layout.Expanded(func(gtx C) D {
@@ -178,17 +178,17 @@ func (s *Slider) RefreshItems() {
 	s.isSliderItemsSet = false
 }
 
-func (s *Slider) handleClickEvent() {
-	if s.nextButton.Clicked() {
+func (s *Slider) handleClickEvent(gtx C) {
+	if s.nextButton.Clicked(gtx) {
 		s.handleActionEvent(true)
 	}
 
-	if s.prevButton.Clicked() {
+	if s.prevButton.Clicked(gtx) {
 		s.handleActionEvent(false)
 	}
 
 	for i, item := range s.slideItems {
-		if item.button.Clicked() {
+		if item.button.Clicked(gtx) {
 			if i == s.selected {
 				continue
 			}

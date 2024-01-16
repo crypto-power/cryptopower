@@ -162,13 +162,8 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *SaveSeedPage) HandleUserInteractions() {
-	for pg.actionButton.Clicked() {
+func (pg *SaveSeedPage) handleUserInteractions(gtx C) {
+	for pg.actionButton.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.wallet, pg.seed, pg.redirectCallback))
 	}
 }
@@ -186,6 +181,8 @@ func (pg *SaveSeedPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	sp := components.SubPage{
 		Load:       pg.Load,
 		Title:      values.String(values.StrWriteDownSeed),
@@ -322,7 +319,7 @@ func (pg *SaveSeedPage) copyButtonLayout(gtx C) D {
 }
 
 func (pg *SaveSeedPage) handleCopyEvent(gtx C) {
-	if pg.copy.Clicked() {
+	if pg.copy.Clicked(gtx) {
 		if pg.seedFormatRadioGroup.Value == seedWordFormat {
 			clipboard.WriteOp{Text: pg.seed}.Add(gtx.Ops)
 		} else {

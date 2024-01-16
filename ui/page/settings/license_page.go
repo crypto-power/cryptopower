@@ -57,6 +57,8 @@ func (pg *LicensePage) OnNavigatedTo() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *LicensePage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
@@ -136,13 +138,8 @@ func (pg *LicensePage) pageContentLayout(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *LicensePage) HandleUserInteractions() {
-	if pg.backButton.Button.Clicked() {
+func (pg *LicensePage) handleUserInteractions(gtx C) {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 }

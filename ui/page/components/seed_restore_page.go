@@ -142,6 +142,8 @@ func (pg *SeedRestore) setEditorFocus() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SeedRestore) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	var body D
 
 	if pg.Load.IsMobileView() {
@@ -307,11 +309,11 @@ func (pg *SeedRestore) inputsGroupMobile(gtx layout.Context, l *layout.List, len
 	)
 }
 
-func (pg *SeedRestore) onSuggestionSeedsClicked() {
+func (pg *SeedRestore) onSuggestionSeedsClicked(gtx C) {
 	index := pg.seedEditors.focusIndex
 	if index != -1 {
 		for i, b := range pg.seedMenu {
-			if pg.seedMenu[i].button.Clicked() {
+			if pg.seedMenu[i].button.Clicked(gtx) {
 				pg.seedEditors.editors[index].Edit.Editor.SetText(b.text)
 				pg.seedEditors.editors[index].Edit.Editor.MoveCaret(len(b.text), 0)
 				pg.seedClicked = true
@@ -536,12 +538,7 @@ func switchSeedEditors(editors []cryptomaterial.RestoreEditor, steps int) {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *SeedRestore) HandleUserInteractions() {
+func (pg *SeedRestore) handleUserInteractions(gtx C) {
 	focus := pg.seedEditors.focusIndex
 	if focus != -1 {
 		pg.suggestions = pg.suggestionSeeds(pg.seedEditors.editors[focus].Edit.Editor.Text())
@@ -553,7 +550,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 		}
 	}
 
-	if pg.validateSeed.Clicked() {
+	if pg.validateSeed.Clicked(gtx) {
 		if !pg.verifySeeds() {
 			return
 		}
@@ -591,13 +588,13 @@ func (pg *SeedRestore) HandleUserInteractions() {
 		pg.window.ShowModal(walletPasswordModal)
 	}
 
-	for pg.resetSeedFields.Clicked() {
+	for pg.resetSeedFields.Clicked(gtx) {
 		pg.resetSeeds()
 		pg.seedEditors.focusIndex = -1
 	}
 
 	pg.editorSeedsEventsHandler()
-	pg.onSuggestionSeedsClicked()
+	pg.onSuggestionSeedsClicked(gtx)
 	pg.suggestionSeedEffect()
 
 	if pg.seedEditorChanged() {

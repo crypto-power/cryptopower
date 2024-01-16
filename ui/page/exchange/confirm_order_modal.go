@@ -153,7 +153,7 @@ func (com *confirmOrderModal) confirmOrder() {
 	}()
 }
 
-func (com *confirmOrderModal) Handle() {
+func (com *confirmOrderModal) handle(gtx C) {
 	for _, evt := range com.passwordEditor.Editor.Events() {
 		if com.passwordEditor.Editor.Focused() {
 			switch evt.(type) {
@@ -165,11 +165,11 @@ func (com *confirmOrderModal) Handle() {
 		}
 	}
 
-	for com.confirmButton.Clicked() {
+	for com.confirmButton.Clicked(gtx) {
 		com.confirmOrder()
 	}
 
-	for com.closeConfirmationModalButton.Clicked() {
+	for com.closeConfirmationModalButton.Clicked(gtx) {
 		if !com.isCreating {
 			com.Dismiss()
 		}
@@ -177,6 +177,8 @@ func (com *confirmOrderModal) Handle() {
 }
 
 func (com *confirmOrderModal) Layout(gtx layout.Context) D {
+	com.handle(gtx)
+
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,

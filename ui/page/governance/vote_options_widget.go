@@ -60,8 +60,8 @@ func (i *inputVoteOptionsWidgets) reset() {
 	i.input.Editor.SetText("0")
 }
 
-func (vm *voteModal) handleVoteCountButtons(i *inputVoteOptionsWidgets) {
-	if i.increment.Button.Clicked() {
+func (vm *voteModal) handleVoteCountButtons(gtx C, i *inputVoteOptionsWidgets) {
+	if i.increment.Button.Clicked(gtx) {
 		value, err := strconv.Atoi(i.input.Editor.Text())
 		if err != nil {
 			return
@@ -73,7 +73,7 @@ func (vm *voteModal) handleVoteCountButtons(i *inputVoteOptionsWidgets) {
 		i.input.Editor.SetText(fmt.Sprintf("%d", value))
 	}
 
-	if i.decrement.Button.Clicked() {
+	if i.decrement.Button.Clicked(gtx) {
 		value, err := strconv.Atoi(i.input.Editor.Text())
 		if err != nil {
 			return
@@ -85,7 +85,7 @@ func (vm *voteModal) handleVoteCountButtons(i *inputVoteOptionsWidgets) {
 		i.input.Editor.SetText(fmt.Sprintf("%d", value))
 	}
 
-	if i.max.Clicked() {
+	if i.max.Clicked(gtx) {
 		max := vm.remainingVotes() + i.voteCount()
 		i.input.Editor.SetText(fmt.Sprint(max))
 	}

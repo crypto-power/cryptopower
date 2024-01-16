@@ -129,6 +129,8 @@ func (pg *Page) fetchExchangeRate() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			return components.HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
@@ -259,13 +261,8 @@ func (pg *Page) accountBalanceLayout(gtx C, spendableLayout bool, account *share
 	)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *Page) HandleUserInteractions() {
-	if pg.addAccountBtn.Clicked() {
+func (pg *Page) handleUserInteractions(gtx C) {
+	if pg.addAccountBtn.Clicked(gtx) {
 		createAccountModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrCreateNewAccount)).
 			EnableName(true).

@@ -215,10 +215,8 @@ type testGiouiWindow struct {
 // appropriate methods on the page to be displayed.
 func (tgw *testGiouiWindow) invalidate() {
 	if topModal := tgw.topModalGetter(); topModal != nil {
-		topModal.Handle()
 		topModal.Layout(layout.Context{})
 	} else if currentPage := tgw.currentPageGetter(); currentPage != nil {
-		currentPage.HandleUserInteractions()
 		currentPage.Layout(layout.Context{})
 	}
 }

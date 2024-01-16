@@ -95,7 +95,7 @@ func (cm *CreateWatchOnlyModal) WatchOnlyCreated(callback func(walletName, extPu
 	return cm
 }
 
-func (cm *CreateWatchOnlyModal) Handle() {
+func (cm *CreateWatchOnlyModal) handle(gtx C) {
 	if utils.EditorsNotEmpty(cm.walletName.Editor) ||
 		utils.EditorsNotEmpty(cm.extendedPubKey.Editor) {
 		cm.btnPositve.Background = cm.Theme.Color.Primary
@@ -113,7 +113,7 @@ func (cm *CreateWatchOnlyModal) Handle() {
 		cm.extendedPubKey.SetError("")
 	}
 
-	for (cm.btnPositve.Clicked() || isSubmit) && cm.isEnabled {
+	for (cm.btnPositve.Clicked(gtx) || isSubmit) && cm.isEnabled {
 		if cm.walletNameEnabled {
 			if !utils.EditorsNotEmpty(cm.walletName.Editor) {
 				cm.walletName.SetError(values.String(values.StrEnterWalletName))
@@ -147,13 +147,13 @@ func (cm *CreateWatchOnlyModal) Handle() {
 	}
 
 	cm.btnNegative.SetEnabled(!cm.isLoading)
-	if cm.btnNegative.Clicked() {
+	if cm.btnNegative.Clicked(gtx) {
 		if !cm.isLoading {
 			cm.Dismiss()
 		}
 	}
 
-	if cm.Modal.BackdropClicked(cm.isCancelable) {
+	if cm.Modal.BackdropClicked(gtx, cm.isCancelable) {
 		if !cm.isLoading {
 			cm.Dismiss()
 		}
@@ -181,6 +181,8 @@ func (cm *CreateWatchOnlyModal) HandleKeyPress(evt *key.Event) {
 }
 
 func (cm *CreateWatchOnlyModal) Layout(gtx layout.Context) D {
+	cm.handle(gtx)
+
 	w := []layout.Widget{
 		func(gtx C) D {
 			t := cm.Theme.H6(values.String(values.StrImportWatchingOnlyWallet))

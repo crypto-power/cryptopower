@@ -160,7 +160,7 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 }
 
 func (e Editor) Layout(gtx C) D {
-	e.handleEvents()
+	e.handleEvents(gtx)
 
 	if e.Editor.Len() > 0 {
 		e.TitleLabel.Text = e.Hint
@@ -318,8 +318,8 @@ func (e Editor) editor(gtx C) D {
 	)
 }
 
-func (e Editor) handleEvents() {
-	if e.showHidePassword.Button.Clicked() {
+func (e Editor) handleEvents(gtx C) {
+	if e.showHidePassword.Button.Clicked(gtx) {
 		if e.Editor.Mask == '*' {
 			e.Editor.Mask = 0
 		} else if e.Editor.Mask == 0 {
@@ -327,7 +327,7 @@ func (e Editor) handleEvents() {
 		}
 	}
 
-	if e.editorIconButton.Button.Clicked() {
+	if e.editorIconButton.Button.Clicked(gtx) {
 		e.EditorIconButtonEvent()
 	}
 }

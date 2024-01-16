@@ -80,16 +80,12 @@ func (pg *Page) OnNavigatedFrom() {
 	}
 }
 
-func (pg *Page) HandleUserInteractions() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
-	}
-
-	if pg.navigateToSettingsBtn.Button.Clicked() {
+func (pg *Page) handleUserInteractions(gtx C) {
+	if pg.navigateToSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
-	if pg.splashScreenInfoButton.Button.Clicked() {
+	if pg.splashScreenInfoButton.Button.Clicked(gtx) {
 		pg.showInfoModal()
 	}
 
@@ -101,11 +97,6 @@ func (pg *Page) HandleUserInteractions() {
 		} else {
 			pg.Display(NewTreasuryPage(pg.Load))
 		}
-	}
-
-	// Handle individual page user interactions.
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
 	}
 
 	if pg.tab.Changed() {
@@ -121,6 +112,8 @@ func (pg *Page) HandleUserInteractions() {
 }
 
 func (pg *Page) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if !pg.isGovernanceAPIAllowed() {
 		return cryptomaterial.UniformPadding(gtx, pg.splashScreen)
 	}

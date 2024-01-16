@@ -183,16 +183,7 @@ func (hp *HomePage) OnDarkModeChanged(isDarkModeOn bool) {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (hp *HomePage) HandleUserInteractions() {
-	if hp.CurrentPage() != nil {
-		hp.CurrentPage().HandleUserInteractions()
-	}
-
+func (hp *HomePage) handleUserInteractions(gtx C) {
 	if hp.navigationTab.Changed() {
 		hp.displaySelectedPage(hp.navigationTab.SelectedTab())
 	}
@@ -206,7 +197,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	for _, item := range hp.sendReceiveNavItems {
-		for item.Clickable.Clicked() {
+		for item.Clickable.Clicked(gtx) {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
@@ -227,7 +218,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		}
 	}
 
-	if hp.infoButton.Button.Clicked() {
+	if hp.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(hp.Load).
 			Title(values.String(values.StrTotalValue)).
 			SetupWithTemplate(modal.TotalValueInfoTemplate).
@@ -237,16 +228,16 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.ParentWindow().ShowModal(infoModal)
 	}
 
-	if hp.appNotificationButton.Clicked() {
+	if hp.appNotificationButton.Clicked(gtx) {
 		// TODO: Use real values as these are dummy so lint will pass
 		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
-	for hp.appLevelSettingsButton.Clicked() {
+	for hp.appLevelSettingsButton.Clicked(gtx) {
 		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
-	for hp.hideBalanceButton.Clicked() {
+	for hp.hideBalanceButton.Clicked(gtx) {
 		hp.isBalanceHidden = !hp.isBalanceHidden
 		hp.AssetsManager.SetTotalBalanceVisibility(hp.isBalanceHidden)
 	}
@@ -254,7 +245,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	hp.bottomNavigationBar.CurrentPage = hp.CurrentPageID()
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
 	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
-		for item.Clickable.Clicked() {
+		for item.Clickable.Clicked(gtx) {
 			if hp.ID() == hp.CurrentPageID() {
 				continue
 			}
@@ -263,7 +254,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	for _, item := range hp.floatingActionButton.FloatingActionButton {
-		for item.Clickable.Clicked() {
+		for item.Clickable.Clicked(gtx) {
 			if strings.ToLower(item.PageID) == values.StrReceive {
 				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
 			}
@@ -354,6 +345,8 @@ func (hp *HomePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (hp *HomePage) Layout(gtx C) D {
+	hp.handleUserInteractions(gtx)
+
 	if hp.Load.IsMobileView() {
 		return hp.layoutMobile(gtx)
 	}

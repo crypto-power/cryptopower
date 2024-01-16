@@ -181,6 +181,8 @@ func (pg *CreateWallet) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *CreateWallet) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	return cryptomaterial.UniformPadding(gtx, func(gtx layout.Context) layout.Dimensions {
 		return cryptomaterial.LinearLayout{
 			Width:     cryptomaterial.MatchParent,
@@ -394,20 +396,15 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 	)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *CreateWallet) HandleUserInteractions() {
+func (pg *CreateWallet) handleUserInteractions(gtx C) {
 	// back button action
-	if pg.backButton.Button.Clicked() {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
 	// decred wallet type sub action
 	for i, item := range pg.walletActions {
-		for item.clickable.Clicked() {
+		for item.clickable.Clicked(gtx) {
 			pg.selectedWalletAction = i
 		}
 	}
@@ -423,7 +420,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// create wallet action
-	if (pg.continueBtn.Clicked() || isSubmit) && pg.validCreateWalletInputs() {
+	if (pg.continueBtn.Clicked(gtx) || isSubmit) && pg.validCreateWalletInputs() {
 		go func() {
 			defer func() {
 				pg.isLoading = false
@@ -476,7 +473,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// restore wallet actions
-	if pg.restoreBtn.Clicked() && pg.validRestoreWalletInputs() {
+	if pg.restoreBtn.Clicked(gtx) && pg.validRestoreWalletInputs() {
 		afterRestore := func() {
 			// todo setup mixer for restored accounts automatically
 			pg.walletCreationSuccessCallback()
@@ -486,7 +483,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// imported wallet click action control
-	if (pg.importBtn.Clicked() || isSubmit) && pg.validRestoreWalletInputs() {
+	if (pg.importBtn.Clicked(gtx) || isSubmit) && pg.validRestoreWalletInputs() {
 		pg.showLoader = true
 		var err error
 		go func() {
