@@ -706,14 +706,14 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 						}
 						return components.LayoutNavigationBar(gtx, hp.Theme, hp.sendReceiveNavItems)
 					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Left:  values.MarginPadding10,
-							Right: values.MarginPadding10,
-						}.Layout(gtx, func(gtx C) D {
-							return hp.appNotificationButton.Layout(gtx, hp.Theme.Icons.Notification.Layout20dp)
-						})
-					}),
+					// layout.Rigid(func(gtx C) D { // TODO: Uncomment when notifications are implemented
+					// 	return layout.Inset{
+					// 		Left:  values.MarginPadding10,
+					// 		Right: values.MarginPadding10,
+					// 	}.Layout(gtx, func(gtx C) D {
+					// 		return hp.appNotificationButton.Layout(gtx, hp.Theme.Icons.Notification.Layout20dp)
+					// 	})
+					// }),
 					layout.Rigid(func(gtx C) D {
 						return hp.appLevelSettingsButton.Layout(gtx, hp.Theme.Icons.SettingsIcon.Layout20dp)
 					}),

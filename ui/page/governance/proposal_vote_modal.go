@@ -95,8 +95,6 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 			return !w.IsWatchingOnlyWallet()
 		})
 
-	vm.yesVote.input.Editor.SetText("1")
-	vm.noVote.input.Editor.SetText("1")
 	return vm
 }
 
