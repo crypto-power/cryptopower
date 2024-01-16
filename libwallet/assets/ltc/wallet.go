@@ -297,6 +297,10 @@ func (asset *Asset) SafelyCancelSync() {
 	}
 }
 
+func (asset *Asset) NeutrinoClient() *labschain.NeutrinoClient {
+	return asset.chainClient
+}
+
 // IsSynced returns true if the wallet is synced.
 func (asset *Asset) IsSynced() bool {
 	asset.syncData.mu.RLock()

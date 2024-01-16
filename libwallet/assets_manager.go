@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,6 +27,7 @@ import (
 
 	dexbtc "decred.org/dcrdex/client/asset/btc"
 	dexDcr "decred.org/dcrdex/client/asset/dcr"
+	dexltc "decred.org/dcrdex/client/asset/ltc"
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -915,6 +917,12 @@ func (mgr *AssetsManager) DexcReady() bool {
 
 // InitializeDEX initializes mgr.dexc.
 func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
+	if !dexWalletRegistered.Load() {
+		mgr.prepareDexSupportForDCRWallet()
+		mgr.prepareDexSupportForBTCCloneWallets()
+		dexWalletRegistered.Store(true)
+	}
+
 	logDir := filepath.Dir(mgr.LogFile())
 	dexcl, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
 	if err != nil {
@@ -925,12 +933,6 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	mgr.dexcMtx.Lock()
 	mgr.dexc = dexcl
 	mgr.dexcMtx.Unlock()
-
-	if !dexWalletRegistered.Load() {
-		mgr.prepareDexSupportForDCRWallet()
-		mgr.prepareDexSupportForBTCWallet()
-		dexWalletRegistered.Store(true)
-	}
 
 	go func() {
 		<-mgr.dexc.WaitForShutdown()
@@ -1031,9 +1033,9 @@ func (mgr *AssetsManager) prepareDexSupportForDCRWallet() {
 	dexDcr.RegisterCustomWallet(walletMaker, def)
 }
 
-// prepareDexSupportForBTCWallet sets up the DEX client to allow using a
-// Cyptopower btc wallet with DEX core.
-func (mgr *AssetsManager) prepareDexSupportForBTCWallet() {
+// prepareDexSupportForBTCCloneWallets sets up the DEX client to allow using a
+// Cyptopower btc or ltc wallet with DEX core.
+func (mgr *AssetsManager) prepareDexSupportForBTCCloneWallets() {
 	// Build a custom wallet definition with custom config options for use by
 	// the dexbtc.ExchangeWalletSPV.
 	customWalletConfigOpts := []*asset.ConfigOption{
@@ -1055,44 +1057,63 @@ func (mgr *AssetsManager) prepareDexSupportForBTCWallet() {
 		ConfigOpts:  customWalletConfigOpts,
 	}
 
-	// This function will be invoked when the DEX client needs to setup a
-	// dexbtc.BTCWallet; it allows us to use an existing wallet instance for
-	// wallet operations instead of json-rpc.
-	var btcWalletConstructor = func(settings map[string]string, chainParams *btccfg.Params) (dexbtc.BTCWallet, error) {
-		walletIDStr := settings[dexc.WalletIDConfigKey]
-		walletID, err := strconv.Atoi(walletIDStr)
-		if err != nil || walletID < 0 {
-			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
-		}
+	// Register wallet constructors. The constructor function will be invoked
+	// when the DEX client needs to setup a dexbtc.BTCWallet and this allows us
+	// to use an existing wallet instance for wallet operations.
 
-		wallet := mgr.WalletWithID(walletID)
-		if wallet == nil {
-			return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
-		}
+	btcWalletConstructor := func(settings map[string]string, chainParams *btccfg.Params) (dexbtc.BTCWallet, error) {
+		return mgr.btcCloneWalletConstructor(false, settings, chainParams)
+	}
+	dexbtc.RegisterCustomSPVWallet(btcWalletConstructor, def)
 
-		walletParams := wallet.Internal().BTC.ChainParams()
-		if walletParams.Net != chainParams.Net {
-			return nil, fmt.Errorf("selected wallet is for %s network, expected %s", walletParams.Name, chainParams.Name)
-		}
+	ltcWalletConstructor := func(settings map[string]string, chainParams *btccfg.Params) (dexbtc.BTCWallet, error) {
+		return mgr.btcCloneWalletConstructor(true, settings, chainParams)
+	}
+	dexltc.RegisterCustomSPVWallet(ltcWalletConstructor, def)
+}
 
-		if wallet.IsWatchingOnlyWallet() {
-			return nil, fmt.Errorf("cannot use watch only wallet for DEX trade")
-		}
-
-		// Ensure the wallet account exists.
-		accountNumberStr := settings[dexc.WalletAccountNumberConfigKey]
-		acctNum, err := strconv.ParseInt(accountNumberStr, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		accountNumber := int32(acctNum)
-		if _, err = wallet.AccountName(accountNumber); err != nil {
-			return nil, fmt.Errorf("error checking selected DEX account name: %w", err)
-		}
-
-		return btc.NewDEXWallet(wallet.Internal().BTC, accountNumber, wallet.(*btc.Asset).NeutrinoClient()), nil
+// btcCloneWalletConstructor is a shared wallet constructor used by btc and ltc
+// to create dex compatible wallets.
+func (mgr *AssetsManager) btcCloneWalletConstructor(isLtc bool, settings map[string]string, chainParams *btccfg.Params) (dexbtc.BTCWallet, error) {
+	walletIDStr := settings[dexc.WalletIDConfigKey]
+	walletID, err := strconv.Atoi(walletIDStr)
+	if err != nil || walletID < 0 {
+		return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
 	}
 
-	dexbtc.RegisterCustomSPVWallet(btcWalletConstructor, def)
+	wallet := mgr.WalletWithID(walletID)
+	if wallet == nil {
+		return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
+	}
+
+	if isLtc {
+		if walletParams := wallet.Internal().LTC.ChainParams(); !strings.EqualFold(walletParams.Name, chainParams.Name) {
+			return nil, fmt.Errorf("selected wallet is for %s network, expected %s", walletParams.Name, chainParams.Name)
+		}
+	} else {
+		if walletParams := wallet.Internal().BTC.ChainParams(); walletParams.Net != chainParams.Net {
+			return nil, fmt.Errorf("selected wallet is for %s network, expected %s", walletParams.Name, chainParams.Name)
+		}
+	}
+
+	if wallet.IsWatchingOnlyWallet() {
+		return nil, fmt.Errorf("cannot use watch only wallet for DEX trade")
+	}
+
+	// Ensure the wallet account exists.
+	accountNumberStr := settings[dexc.WalletAccountNumberConfigKey]
+	acctNum, err := strconv.ParseInt(accountNumberStr, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	accountNumber := int32(acctNum)
+	if _, err = wallet.AccountName(accountNumber); err != nil {
+		return nil, fmt.Errorf("error checking selected DEX account name: %w", err)
+	}
+
+	if isLtc {
+		return ltc.NewDEXWallet(wallet.Internal().LTC, accountNumber, wallet.(*ltc.Asset).NeutrinoClient(), chainParams), nil
+	}
+	return btc.NewDEXWallet(wallet.Internal().BTC, accountNumber, wallet.(*btc.Asset).NeutrinoClient()), nil
 }
