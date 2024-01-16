@@ -173,6 +173,10 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 	pg.mixerSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.mixerSlider.SelectedIndicatorColor = pg.Theme.Color.DeepBlue
 
+	pg.infoSyncWalletsSlider.ButtonBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
+	pg.infoSyncWalletsSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
+	pg.infoSyncWalletsSlider.SelectedIndicatorColor = pg.Theme.Color.DeepBlue
+
 	pg.forwardButton, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.forwardButton.Icon = pg.Theme.Icons.NavigationArrowForward
 	pg.forwardButton.Size = values.MarginPadding20
@@ -266,6 +270,28 @@ func (pg *OverviewPage) HandleUserInteractions() {
 		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
 		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
+
+	if pg.infoSyncWalletsSlider.Clicked() {
+		curSliderIndex := pg.infoSyncWalletsSlider.GetSelectedIndex()
+		infoSyncWallet := pg.listInfoWallets[curSliderIndex]
+
+		// pg.showNavigationFunc(true)
+		// walletCallbackFunc := func() {
+		// 	pg.showNavigationFunc(false)
+		// }
+
+		pg.showNavigationFunc(true)
+		callback := func() {
+			pg.showNavigationFunc(false)
+			pg.ParentNavigator().CloseCurrentPage()
+		}
+		swmp := wallet.NewSingleWalletMasterPage(pg.Load, infoSyncWallet.GetWallet(), callback)
+		pg.ParentNavigator().Display(swmp)
+		// swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
+		// swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
+
+		fmt.Println("----------------------------->")
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -352,7 +378,9 @@ func (pg *OverviewPage) initInfoWallets() {
 		if wal.IsWatchingOnlyWallet() {
 			continue
 		}
-		pg.listInfoWallets = append(pg.listInfoWallets, components.NewWalletSyncInfo(pg.Load, wal, pg.reload, pg.backup))
+		infoSync := components.NewWalletSyncInfo(pg.Load, wal, pg.reload, pg.backup)
+		infoSync.ShowAssetIcon = true
+		pg.listInfoWallets = append(pg.listInfoWallets, infoSync)
 	}
 }
 
@@ -364,7 +392,10 @@ func (pg *OverviewPage) infoWalletLayout(gtx C) D {
 	if len(sliderWidget) == 0 {
 		return D{}
 	}
-	return pg.infoSyncWalletsSlider.Layout(gtx, sliderWidget)
+
+	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+		return pg.infoSyncWalletsSlider.Layout(gtx, sliderWidget)
+	})
 }
 
 func (pg *OverviewPage) sliderLayout(gtx C) D {

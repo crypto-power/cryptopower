@@ -130,6 +130,8 @@ func (pg *WalletInfo) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
 		items := []layout.FlexChild{layout.Rigid(pg.walletSyncInfo.WalletInfoLayout)}
 
+		items = append(items, layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout))
+
 		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 			items = append(items, layout.Rigid(pg.mixerLayout))
 		}

@@ -28,6 +28,8 @@ type WalletSyncInfo struct {
 	isStatusConnected bool
 	reload            Reload
 	backup            func(sharedW.Asset)
+
+	ShowAssetIcon bool
 }
 
 type ProgressInfo struct {
@@ -70,6 +72,10 @@ func (wsi *WalletSyncInfo) Init() {
 	}()
 }
 
+func (wsi *WalletSyncInfo) GetWallet() sharedW.Asset {
+	return wsi.wallet
+}
+
 func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
 	wsi.handle()
 
@@ -90,44 +96,50 @@ func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
 }
 
 func (wsi *WalletSyncInfo) pageContentWrapper(gtx C, sectionTitle string, redirectBtn, body layout.Widget) D {
-	return layout.Inset{
-		Bottom: values.MarginPadding16,
-	}.Layout(gtx, func(gtx C) D {
-		return wsi.Theme.Card().Layout(gtx, func(gtx C) D {
-			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Bottom: values.MarginPadding16,
-						}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									if sectionTitle == "" {
-										return D{}
-									}
-
-									txt := wsi.Theme.Body1(sectionTitle)
-									txt.Font.Weight = font.SemiBold
-									return txt.Layout(gtx)
-								}),
-								layout.Flexed(1, func(gtx C) D {
-									if redirectBtn != nil {
-										return layout.E.Layout(gtx, redirectBtn)
-									}
+	return wsi.Theme.Card().Layout(gtx, func(gtx C) D {
+		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Bottom: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								if sectionTitle == "" {
 									return D{}
-								}),
-							)
-						})
-					}),
-					layout.Rigid(body),
-				)
-			})
+								}
+								txt := wsi.Theme.Body1(sectionTitle)
+								txt.Font.Weight = font.SemiBold
+								return txt.Layout(gtx)
+							}),
+							layout.Flexed(1, func(gtx C) D {
+								if redirectBtn != nil {
+									return layout.E.Layout(gtx, redirectBtn)
+								}
+								return D{}
+							}),
+						)
+					})
+				}),
+				layout.Rigid(body),
+			)
 		})
 	})
 }
 
 func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
-	items := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+	items := make([]layout.FlexChild, 0)
+	if wsi.ShowAssetIcon {
+		items = append(items, layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Right: values.MarginPadding10,
+			}.Layout(gtx, func(gtx C) D {
+				icon := wsi.Theme.AssetIcon(wsi.wallet.GetAssetType())
+				return icon.Layout16dp(gtx)
+			})
+		}))
+	}
+	items = append(items, layout.Rigid(func(gtx C) D {
 		return layout.Inset{
 			Right: values.MarginPadding10,
 		}.Layout(gtx, func(gtx C) D {
@@ -135,7 +147,7 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 			txt.Font.Weight = font.SemiBold
 			return txt.Layout(gtx)
 		})
-	})}
+	}))
 
 	if len(wsi.wallet.GetEncryptedSeed()) > 0 {
 		items = append(items, layout.Rigid(func(gtx C) D {
