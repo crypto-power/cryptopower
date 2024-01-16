@@ -207,7 +207,7 @@ func (pg *SettingPage) wrapSection(gtx C, title string, body layout.Widget) D {
 											return txt.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx C) D {
-											return layout.W.Layout(gtx, func(gtx C) D {
+											return layout.Center.Layout(gtx, func(gtx C) D {
 												if title == values.String(values.StrPrivacySettings) {
 													pg.networkInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
 													pg.networkInfoButton.Size = values.MarginPaddingTransform(pg.Load.IsMobileView(), values.MarginPadding20)

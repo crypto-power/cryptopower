@@ -193,7 +193,7 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
 								return D{}
 							}
-							blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, pg.fetchSyncProgress().headersToFetchOrScan)
+							blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, pg.FetchSyncProgress().HeadersToFetchOrScan)
 							return pg.labelTexSize16Layout(blockHeightFetched, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
@@ -266,7 +266,7 @@ func (pg *WalletInfo) progressBarRow(gtx C) D {
 // progressStatusRow lays out the progress status when the wallet is syncing.
 func (pg *WalletInfo) progressStatusDetails() (int, string) {
 	timeLeftLabel := ""
-	pgrss := pg.fetchSyncProgress()
+	pgrss := pg.FetchSyncProgress()
 	timeLeft := pgrss.remainingSyncTime
 	progress := pgrss.syncProgress
 
@@ -323,10 +323,10 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 	})
 }
 
-func (pg *WalletInfo) fetchSyncProgress() progressInfo {
+func (pg *WalletInfo) FetchSyncProgress() ProgressInfo {
 	pgrss, ok := syncProgressInfo[pg.wallet]
 	if !ok {
-		pgrss = progressInfo{}
+		pgrss = ProgressInfo{}
 	}
 	// remove the unnecessary sync progress data if already synced.
 	pg.deleteSyncProgress()

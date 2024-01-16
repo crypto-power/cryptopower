@@ -856,8 +856,8 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
 		if len(pg.transactions) == 0 {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
 			})
 		}
@@ -889,8 +889,8 @@ func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
 func (pg *OverviewPage) recentStakingsLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
 		if len(pg.stakes) == 0 {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return pg.Theme.Body1(values.String(values.StrNoStaking)).Layout(gtx)
 			})
 		}
@@ -957,7 +957,7 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 		if len(pg.proposalItems) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				return pg.Theme.Body1(values.String(values.StrNoProposals)).Layout(gtx)
+				return pg.Theme.Body1(values.String(values.StrNoRecentProposals)).Layout(gtx)
 			})
 		}
 

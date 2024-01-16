@@ -325,7 +325,7 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 		gtxCopy := gtx
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, "", &pg.navigateToSettingsBtn)
 		})
 		// Disable main page from receiving events
 		gtx = gtx.Disabled()

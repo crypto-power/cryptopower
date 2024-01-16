@@ -64,6 +64,7 @@ type SingleWalletMasterPage struct {
 	refreshExchangeRateBtn *cryptomaterial.Clickable
 	openWalletSelector     *cryptomaterial.Clickable
 	checkBox               cryptomaterial.CheckBoxStyle
+	navigateToSyncBtn      cryptomaterial.Button
 
 	usdExchangeRate        float64
 	usdExchangeSet         bool
@@ -84,6 +85,7 @@ func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigatio
 		MasterPage:         app.NewMasterPage(MainPageID),
 		selectedWallet:     wallet,
 		checkBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
+		navigateToSyncBtn:  l.Theme.Button(values.String(values.StrStartSync)),
 		showNavigationFunc: showNavigationFunc,
 	}
 
@@ -339,6 +341,13 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		}
 	}
 
+	if swmp.navigateToSyncBtn.Button.Clicked() {
+		swmp.ToggleSync(swmp.selectedWallet, func(b bool) {
+			swmp.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
+			swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet))
+		})
+	}
+
 	for swmp.hideBalanceButton.Clicked() {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
 		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
@@ -423,9 +432,17 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 								transaction.TransactionsPageID, privacy.AccountMixerPageID,
 								privacy.SetupPrivacyPageID:
 								// Disable page functionality if a page is not synced or rescanning is in progress.
+								if swmp.selectedWallet.IsSyncing() {
+									pg := info.NewInfoPage(swmp.Load, swmp.selectedWallet)
+									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, pg.FetchSyncProgress().HeadersToFetchOrScan)
+									title := values.String(values.StrFunctionUnavailable)
+									subTitle := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
+									return components.DisablePageWithOverlay(swmp.Load, swmp.CurrentPage(), gtx,
+										title, subTitle, nil)
+								}
 								if !swmp.selectedWallet.IsSynced() || swmp.selectedWallet.IsRescanning() {
 									return components.DisablePageWithOverlay(swmp.Load, swmp.CurrentPage(), gtx,
-										values.String(values.StrFunctionUnavailable), nil)
+										values.String(values.StrFunctionUnavailable), "", &swmp.navigateToSyncBtn)
 								}
 								fallthrough
 							default:

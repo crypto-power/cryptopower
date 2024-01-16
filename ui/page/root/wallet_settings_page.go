@@ -279,7 +279,7 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 					layout.Flexed(1, func(gtx C) D {
 						if title == values.String(values.StrSecurityTools) {
 							return layout.E.Layout(gtx, func(gtx C) D {
-								pg.infoButton.Size = values.MarginPaddingTransform(pg.Load.IsMobileView(), values.MarginPadding16)
+								pg.infoButton.Size = values.MarginPaddingTransform(pg.Load.IsMobileView(), values.MarginPadding20)
 								return pg.infoButton.Layout(gtx)
 							})
 						}

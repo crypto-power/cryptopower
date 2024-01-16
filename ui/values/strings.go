@@ -1001,4 +1001,12 @@ const (
 	StrAllservers                      = "allservers"
 	StrDeleteDEXData                   = "deleteDEXData"
 	StrDeleteDEXDataWarning            = "deleteDEXDataWarning"
+	StrNoRecentProposals               = "noRecentProposals"
+	StrRecommendedModalBody            = "recommendedModalBody"
+	StrAdvancedModalBody               = "advancedModalBody"
+	StrStartSync                       = "startSync"
+	StrTelegram                        = "telegram"
+	StrTwitter                         = "twitter"
+	StrMatrix                          = "matrix"
+	StrWebsite                         = "website"
 )
