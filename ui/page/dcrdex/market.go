@@ -1226,7 +1226,7 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 										pg.orderColumn(false, ord.MarketID, columnWidth, index),
 										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime)), columnWidth, index),
 										pg.orderColumn(false, orderReader.RateString(), columnWidth, index),
-										pg.orderColumn(false, fmt.Sprintf("%s%% %s", orderReader.BaseQtyString(), orderReader.BaseSymbol), columnWidth, index),
+										pg.orderColumn(false, fmt.Sprintf("%s %s", orderReader.BaseQtyString(), strings.ToTitle(orderReader.BaseSymbol)), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s%%", orderReader.FilledPercent()), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s%%", orderReader.SettledPercent()), columnWidth, index),
 										pg.orderColumn(false, orderReader.StatusString(), columnWidth, index), // TODO: Add possible values to translation
