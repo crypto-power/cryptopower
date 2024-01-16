@@ -43,9 +43,10 @@ type (
 )
 
 type settingsOption struct {
-	title     string
-	message   string
-	clickable *cryptomaterial.Clickable
+	title      string
+	message    string
+	infoButton cryptomaterial.IconButton
+	clickable  *cryptomaterial.Clickable
 }
 
 type onBoardingScreen struct {
@@ -174,14 +175,16 @@ func (sp *startPage) initPage() {
 
 	sp.settingsOptions = []*settingsOption{
 		{
-			title:     values.String(values.StrRecommended),
-			message:   values.String(values.StrRecommendedSettingsMsg),
-			clickable: sp.Theme.NewClickable(false),
+			title:      values.String(values.StrRecommended),
+			message:    values.String(values.StrRecommendedSettingsMsg),
+			infoButton: sp.Theme.IconButton(sp.Theme.Icons.ActionInfo),
+			clickable:  sp.Theme.NewClickable(false),
 		},
 		{
-			title:     values.String(values.StrAdvanced),
-			message:   values.String(values.StrAdvancedSettingsMsg),
-			clickable: sp.Theme.NewClickable(false),
+			title:      values.String(values.StrAdvanced),
+			message:    values.String(values.StrAdvancedSettingsMsg),
+			infoButton: sp.Theme.IconButton(sp.Theme.Icons.ActionInfo),
+			clickable:  sp.Theme.NewClickable(false),
 		},
 	}
 }
@@ -251,8 +254,22 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	for i, item := range sp.settingsOptions {
-		for item.clickable.Clicked() {
+		for item.clickable.Clicked() { // TODO: Show settings page and allow user pick settings for advanced setup.
 			sp.selectedSettingsOptionIndex = i
+		}
+
+		for item.infoButton.Button.Clicked() {
+			body := values.String(values.StrRecommendedModalBody)
+			if i == advancedSettingsOptionIndex {
+				body = values.String(values.StrAdvancedModalBody)
+			}
+			infoModal := modal.NewCustomModal(sp.Load).
+				Title(item.title+" "+values.String(values.StrSettings)).
+				Body(body).
+				SetCancelable(true).
+				SetContentAlignment(layout.Center, layout.Center, layout.Center).
+				SetPositiveButtonText(values.String(values.StrGotIt))
+			sp.ParentWindow().ShowModal(infoModal)
 		}
 	}
 
@@ -507,6 +524,7 @@ func (sp *startPage) settingsOptionsLayout(gtx C) D {
 				btnTitle.Font.Weight = font.Bold
 				content := sp.Theme.Label(values.TextSize16, item.message)
 				content.Alignment = text.Alignment(layout.Middle)
+				item.infoButton.Size = values.MarginPaddingTransform(sp.IsMobileView(), values.MarginPadding20)
 
 				borderWidth := values.MarginPadding2
 				if sp.selectedSettingsOptionIndex != i && !item.clickable.IsHovered() {
@@ -536,7 +554,17 @@ func (sp *startPage) settingsOptionsLayout(gtx C) D {
 						},
 						Margin: layout.Inset{Bottom: values.MarginPadding15},
 					}.Layout(gtx,
-						layout.Rigid(btnTitle.Layout),
+						layout.Rigid(func(gtx C) D {
+							widgets := []func(gtx C) D{
+								btnTitle.Layout,
+								item.infoButton.Layout,
+							}
+							options := components.FlexOptions{
+								Axis:      layout.Horizontal,
+								Alignment: layout.Middle,
+							}
+							return components.FlexLayout(gtx, options, widgets)
+						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, content.Layout)
 						}),

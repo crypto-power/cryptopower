@@ -362,6 +362,10 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 }
 
 func (p *Politeia) FetchProposalDescription(token string) (string, error) {
+	if p.ctx == nil {
+		p.ctx = context.Background()
+	}
+
 	// Check if politeia has been shutdown and exit if true.
 	if p.ctx.Err() != nil {
 		return "", p.ctx.Err()
@@ -410,6 +414,10 @@ func (p *Politeia) FetchProposalDescription(token string) (string, error) {
 }
 
 func (p *Politeia) ProposalVoteDetailsRaw(ctx context.Context, wallet *wallet.Wallet, token string) (*ProposalVoteDetails, error) {
+	if p.ctx == nil {
+		p.ctx = context.Background()
+	}
+
 	// Check if politeia has been shutdown and exit if true.
 	if p.ctx.Err() != nil {
 		return nil, p.ctx.Err()

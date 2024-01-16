@@ -18,9 +18,11 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/page/governance"
+	"github.com/crypto-power/cryptopower/ui/page/receive"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
+	"github.com/crypto-power/cryptopower/ui/page/wallet"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -62,14 +64,6 @@ type HomePage struct {
 	totalBalanceUSD string
 }
 
-var navigationTabTitles = []string{
-	values.String(values.StrOverview),
-	values.String(values.StrTransactions),
-	values.String(values.StrWallets),
-	values.String(values.StrTrade),
-	values.String(values.StrGovernance),
-}
-
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp := &HomePage{
 		Load:        l,
@@ -81,26 +75,8 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
 	hp.appLevelSettingsButton = hp.Theme.NewClickable(false)
 	hp.appNotificationButton = hp.Theme.NewClickable(false)
-
-	hp.navigationTab = l.Theme.Tab(layout.Horizontal, false, navigationTabTitles)
-
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
-
-	hp.sendReceiveNavItems = []components.NavBarItem{
-		{
-			Clickable: hp.Theme.NewClickable(true),
-			Image:     hp.Theme.Icons.SendIcon,
-			Title:     values.String(values.StrSend),
-			PageID:    send.SendPageID,
-		},
-		{
-			Clickable: hp.Theme.NewClickable(true),
-			Image:     hp.Theme.Icons.ReceiveIcon,
-			Title:     values.String(values.StrReceive),
-			PageID:    ReceivePageID,
-		},
-	}
 
 	go func() {
 		hp.isConnected.Store(libutils.IsOnline())
@@ -124,10 +100,38 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	}
 	hp.walletSelectorPage.showNavigationFunc = hp.showNavigationFunc
 
+	return hp
+}
+
+// initPageItems initializes navbar items that require the latest translation
+// string and MUST be called from OnNavigatedTo.
+func (hp *HomePage) initPageItems() {
+	navigationTabTitles := []string{
+		values.String(values.StrOverview),
+		values.String(values.StrTransactions),
+		values.String(values.StrWallets),
+		values.String(values.StrTrade),
+		values.String(values.StrGovernance),
+	}
+	hp.navigationTab = hp.Theme.Tab(layout.Horizontal, false, navigationTabTitles)
+
+	hp.sendReceiveNavItems = []components.NavBarItem{
+		{
+			Clickable: hp.Theme.NewClickable(true),
+			Image:     hp.Theme.Icons.SendIcon,
+			Title:     values.String(values.StrSend),
+			PageID:    send.SendPageID,
+		},
+		{
+			Clickable: hp.Theme.NewClickable(true),
+			Image:     hp.Theme.Icons.ReceiveIcon,
+			Title:     values.String(values.StrReceive),
+			PageID:    receive.ReceivePageID,
+		},
+	}
+
 	hp.initBottomNavItems()
 	hp.bottomNavigationBar.OnViewCreated()
-
-	return hp
 }
 
 // ID is a unique string that identifies the page and may be used
@@ -143,6 +147,8 @@ func (hp *HomePage) ID() string {
 // Part of the load.Page interface.
 func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
+
+	hp.initPageItems()
 
 	go hp.CalculateAssetsUSDBalance()
 	if !hp.AssetsManager.DexcReady() {
@@ -203,7 +209,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
-				hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
+				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
 			case values.StrSend:
 				allWallets := hp.AssetsManager.AllWallets()
 				isSendAvailable := false
@@ -233,11 +239,11 @@ func (hp *HomePage) HandleUserInteractions() {
 
 	if hp.appNotificationButton.Clicked() {
 		// TODO: Use real values as these are dummy so lint will pass
-		hp.ParentNavigator().Display(settings.NewSettingsPage(hp.Load))
+		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
 	for hp.appLevelSettingsButton.Clicked() {
-		hp.ParentNavigator().Display(settings.NewSettingsPage(hp.Load))
+		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
 	for hp.hideBalanceButton.Clicked() {
@@ -249,17 +255,17 @@ func (hp *HomePage) HandleUserInteractions() {
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
 	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
 		for item.Clickable.Clicked() {
-			hp.displaySelectedPage(item.Title)
 			if hp.ID() == hp.CurrentPageID() {
 				continue
 			}
+			hp.displaySelectedPage(item.Title)
 		}
 	}
 
 	for _, item := range hp.floatingActionButton.FloatingActionButton {
 		for item.Clickable.Clicked() {
 			if strings.ToLower(item.PageID) == values.StrReceive {
-				hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
+				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
 			}
 
 			if strings.ToLower(item.PageID) == values.StrSend {
@@ -412,7 +418,7 @@ func (hp *HomePage) layoutTopBar(gtx C) D {
 	topBottomPadding := padding10
 	// Remove top and bottom padding if on the SingleWalletMasterPage.
 	// This hides the gap between the top bar and the page content.
-	if hp.CurrentPageID() == MainPageID {
+	if hp.CurrentPageID() == wallet.MainPageID {
 		topBottomPadding = values.MarginPadding0
 	}
 
@@ -431,7 +437,7 @@ func (hp *HomePage) layoutTopBar(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			// Hide the total asset balance usd amount while
 			// on the SingleWalletMasterPage.
-			if hp.CurrentPageID() == MainPageID {
+			if hp.CurrentPageID() == wallet.MainPageID {
 				return D{}
 			}
 
@@ -504,7 +510,7 @@ func (hp *HomePage) initBottomNavItems() {
 				Clickable: hp.Theme.NewClickable(true),
 				Image:     hp.Theme.Icons.ReceiveIcon,
 				Title:     values.String(values.StrReceive),
-				PageID:    ReceivePageID,
+				PageID:    receive.ReceivePageID,
 			},
 		},
 	}
@@ -523,7 +529,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 				if hp.Load.IsMobileView() {
 					// Hide the total balance text, settings and notfication icons
 					// while on mobile view and on the SingleWalletMasterPage.
-					if hp.CurrentPageID() == MainPageID {
+					if hp.CurrentPageID() == wallet.MainPageID {
 						return D{}
 					}
 
@@ -542,7 +548,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 
 				// Hide the top bar send/receive buttons while on mobile view
 				// and on the SingleWalletMasterPage.
-				if hp.CurrentPageID() == MainPageID {
+				if hp.CurrentPageID() == wallet.MainPageID {
 					return D{}
 				}
 

@@ -200,7 +200,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	for _, item := range pg.consensusItems {
@@ -325,7 +325,7 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 		gtxCopy := gtx
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, "", &pg.navigateToSettingsBtn)
 		})
 		// Disable main page from receiving events
 		gtx = gtx.Disabled()
@@ -414,6 +414,9 @@ func (pg *ConsensusPage) leftDropdown(gtx C) D {
 	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.walletDropDown == nil {
+				return D{}
+			}
+			if len(pg.assetWallets) == 0 {
 				return D{}
 			}
 			return layout.W.Layout(gtx, pg.walletDropDown.Layout)

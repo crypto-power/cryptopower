@@ -29,6 +29,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
+	"github.com/crypto-power/cryptopower/ui/page/wallet"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -260,10 +261,10 @@ func (pg *OverviewPage) HandleUserInteractions() {
 		walletCallbackFunc := func() {
 			pg.showNavigationFunc(false)
 		}
-		swmp := NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
+		swmp := wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
 		pg.ParentNavigator().Display(swmp)
 		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
-		swmp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
+		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
 }
 
@@ -313,7 +314,7 @@ func (pg *OverviewPage) layoutDesktop(gtx C) D {
 		pg.recentProposal,
 	}
 
-	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPaddingWithTopInset(values.MarginPadding15, gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
@@ -657,7 +658,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 								isPositiveChange = &no
 							}
 							if change > 0 {
-								yes := false
+								yes := true
 								isPositiveChange = &yes
 							}
 							changeStr = fmt.Sprintf("%.2f", change) + "%"
@@ -901,8 +902,8 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
 		if len(pg.transactions) == 0 {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
 			})
 		}
@@ -934,8 +935,8 @@ func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
 func (pg *OverviewPage) recentStakingsLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
 		if len(pg.stakes) == 0 {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return pg.Theme.Body1(values.String(values.StrNoStaking)).Layout(gtx)
 			})
 		}
@@ -1002,7 +1003,7 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 		if len(pg.proposalItems) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				return pg.Theme.Body1(values.String(values.StrNoProposals)).Layout(gtx)
+				return pg.Theme.Body1(values.String(values.StrNoRecentProposals)).Layout(gtx)
 			})
 		}
 
@@ -1300,7 +1301,7 @@ func (pg *OverviewPage) loadTransactions() {
 	transactions := make([]*multiWalletTx, 0)
 	wal := pg.AssetsManager.AllWallets()
 	for _, w := range wal {
-		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true, "")
+		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAll, true, "")
 		if err != nil {
 			log.Errorf("error loading transactions: %v", err)
 			return

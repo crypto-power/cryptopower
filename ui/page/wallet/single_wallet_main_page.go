@@ -1,4 +1,4 @@
-package root
+package wallet
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
+	"github.com/crypto-power/cryptopower/ui/page/receive"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/staking"
@@ -35,10 +36,15 @@ const (
 	MainPageID = "Main"
 )
 
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
 var PageNavigationMap = map[string]string{
 	values.String(values.StrInfo):         info.InfoID,
 	values.String(values.StrSend):         send.SendPageID,
-	values.String(values.StrReceive):      ReceivePageID,
+	values.String(values.StrReceive):      receive.ReceivePageID,
 	values.String(values.StrTransactions): transaction.TransactionsPageID,
 	values.String(values.StrSettings):     WalletSettingsPageID,
 	values.String(values.StrStakeShuffle): privacy.AccountMixerPageID,
@@ -59,11 +65,12 @@ type SingleWalletMasterPage struct {
 	// cache.
 	walletBalance sharedW.AssetAmount
 
-	pageNavigationTab      *cryptomaterial.SegmentedControl
+	PageNavigationTab      *cryptomaterial.SegmentedControl
 	hideBalanceButton      *cryptomaterial.Clickable
 	refreshExchangeRateBtn *cryptomaterial.Clickable
 	openWalletSelector     *cryptomaterial.Clickable
 	checkBox               cryptomaterial.CheckBoxStyle
+	navigateToSyncBtn      cryptomaterial.Button
 
 	usdExchangeRate        float64
 	usdExchangeSet         bool
@@ -84,6 +91,7 @@ func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigatio
 		MasterPage:         app.NewMasterPage(MainPageID),
 		selectedWallet:     wallet,
 		checkBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
+		navigateToSyncBtn:  l.Theme.Button(values.String(values.StrStartSync)),
 		showNavigationFunc: showNavigationFunc,
 	}
 
@@ -134,7 +142,7 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 		swmp.showBackupInfo()
 	}
 	// set active tab value
-	swmp.activeTab[swmp.pageNavigationTab.SelectedSegment()] = swmp.CurrentPageID()
+	swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = swmp.CurrentPageID()
 
 	swmp.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
 
@@ -182,9 +190,9 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 		commonTabs = append(commonTabs[:insertIndex], append(dcrSpecificTabs, commonTabs[insertIndex:]...)...)
 	}
 
-	swmp.pageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
+	swmp.PageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
 	dp5 := values.MarginPadding5
-	swmp.pageNavigationTab.ContentPadding = layout.Inset{
+	swmp.PageNavigationTab.ContentPadding = layout.Inset{
 		Left:  dp5,
 		Right: dp5,
 		Top:   values.MarginPaddingTransform(swmp.IsMobileView(), values.MarginPadding32),
@@ -287,13 +295,13 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		swmp.Display(pg)
 	}
 
-	if swmp.pageNavigationTab.Changed() {
+	if swmp.PageNavigationTab.Changed() {
 		var pg app.Page
-		switch swmp.pageNavigationTab.SelectedSegment() {
+		switch swmp.PageNavigationTab.SelectedSegment() {
 		case values.String(values.StrSend):
 			pg = send.NewSendPage(swmp.Load, swmp.selectedWallet)
 		case values.String(values.StrReceive):
-			pg = NewReceivePage(swmp.Load, swmp.selectedWallet)
+			pg = receive.NewReceivePage(swmp.Load, swmp.selectedWallet)
 		case values.String(values.StrInfo):
 			pg = info.NewInfoPage(swmp.Load, swmp.selectedWallet)
 		case values.String(values.StrTransactions):
@@ -319,10 +327,10 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		case values.String(values.StrAccounts):
 			pg = accounts.NewAccountPage(swmp.Load, swmp.selectedWallet)
 		case values.String(values.StrSettings):
-			pg = NewWalletSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc)
+			pg = NewSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc)
 		}
 
-		swmp.activeTab[swmp.pageNavigationTab.SelectedSegment()] = pg.ID()
+		swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = pg.ID()
 
 		displayPage(pg)
 	}
@@ -330,13 +338,20 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 	// update active page tab. This is needed for scenarios where a page is
 	// navigated to without using the page navigation tab. An example is
 	// the redirection action from the info page to the mixer page.
-	if swmp.CurrentPageID() != swmp.activeTab[swmp.pageNavigationTab.SelectedSegment()] {
+	if swmp.CurrentPageID() != swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] {
 		for tabTitle, pageID := range PageNavigationMap {
 			if swmp.CurrentPageID() == pageID {
 				swmp.activeTab[tabTitle] = swmp.CurrentPageID()
-				swmp.pageNavigationTab.SetSelectedSegment(tabTitle)
+				swmp.PageNavigationTab.SetSelectedSegment(tabTitle)
 			}
 		}
+	}
+
+	if swmp.navigateToSyncBtn.Button.Clicked() {
+		swmp.ToggleSync(swmp.selectedWallet, func(b bool) {
+			swmp.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
+			swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet))
+		})
 	}
 
 	for swmp.hideBalanceButton.Clicked() {
@@ -414,18 +429,26 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 							// design states the entire UI dimension should be 600px
 							gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding600)
 						}
-						return swmp.pageNavigationTab.Layout(gtx, func(gtx C) D {
+						return swmp.PageNavigationTab.Layout(gtx, func(gtx C) D {
 							if swmp.CurrentPage() == nil {
 								return D{}
 							}
 							switch swmp.CurrentPage().ID() {
-							case ReceivePageID, send.SendPageID, staking.OverviewPageID,
+							case receive.ReceivePageID, send.SendPageID, staking.OverviewPageID,
 								transaction.TransactionsPageID, privacy.AccountMixerPageID,
 								privacy.SetupPrivacyPageID:
 								// Disable page functionality if a page is not synced or rescanning is in progress.
+								if swmp.selectedWallet.IsSyncing() {
+									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(a sharedW.Asset) {})
+									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
+									title := values.String(values.StrFunctionUnavailable)
+									subTitle := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
+									return components.DisablePageWithOverlay(swmp.Load, swmp.CurrentPage(), gtx,
+										title, subTitle, nil)
+								}
 								if !swmp.selectedWallet.IsSynced() || swmp.selectedWallet.IsRescanning() {
 									return components.DisablePageWithOverlay(swmp.Load, swmp.CurrentPage(), gtx,
-										values.String(values.StrFunctionUnavailable), nil)
+										values.String(values.StrFunctionUnavailable), "", &swmp.navigateToSyncBtn)
 								}
 								fallthrough
 							default:

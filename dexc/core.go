@@ -12,6 +12,7 @@ import (
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/values/localizable"
 )
 
 const (
@@ -30,6 +31,9 @@ const (
 
 // DEXClient represents the Decred DEX client and embeds *core.Core.
 type DEXClient struct {
+	ctx      context.Context
+	cancelFn context.CancelFunc
+	DBPath   string
 	*core.Core
 
 	shutdownChan    <-chan struct{}
@@ -48,6 +52,10 @@ func (dc *DEXClient) IsDEXPasswordSet() bool {
 // WaitForShutdown returns a chan that will be closed if core exits.
 func (dc *DEXClient) WaitForShutdown() <-chan struct{} {
 	return dc.shutdownChan
+}
+
+func (dc *DEXClient) Shutdown() {
+	dc.cancelFn()
 }
 
 type valStamp struct {
@@ -87,6 +95,10 @@ func (dc *DEXClient) BondsFeeBuffer(assetID uint32) uint64 {
 	return feeBuffer
 }
 
+// Start prepares and starts the DEX client.
+//
+// NOTE: "lang" will be changed to the default language (en) if the the DEX
+// client does not have support for it.
 func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.NetworkType, maxLogZips int) (*DEXClient, error) {
 	dexNet, err := parseDEXNet(net)
 	if err != nil {
@@ -103,7 +115,7 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 		DBPath:             dbPath,
 		Net:                dexNet,
 		Logger:             logger,
-		Language:           lang,
+		Language:           validDEXLang(lang),
 		UnlockCoinsOnLogin: false, // TODO: Make configurable.
 	}
 
@@ -114,14 +126,16 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 
 	shutdownChan := make(chan struct{})
 	dc := &DEXClient{
+		DBPath:       dbPath,
 		Core:         clientCore,
 		shutdownChan: shutdownChan,
 		log:          logger,
 	}
 
+	dc.ctx, dc.cancelFn = context.WithCancel(ctx)
 	// Use a goroutine to start dex core as it'll block until dex core exits.
 	go func() {
-		dc.Run(ctx)
+		dc.Run(dc.ctx)
 		logCloser()
 		close(shutdownChan)
 		dc.Core = nil // do this after all shutdownChan listeners must've stopped waiting
@@ -139,8 +153,9 @@ func (dc *DEXClient) HasWallet(assetID int32) bool {
 // AddWallet attempts to connect or create the wallet with the provided details
 // to the DEX client.
 // NOTE: Before connecting a dcr wallet, dcr ExchangeWallet must have been
-// configured to use a custom wallet instead of the default rpc wallet. See
-// libwallet.AssetManager.PrepareDexSupportForDcrWallet().
+// configured to use a custom wallet. See:
+// libwallet.AssetManager.PrepareDexSupportForDcrWallet() and
+// libwallet.AssetManager.prepareDexSupportForBTCCloneWallets.
 func (dc *DEXClient) AddWallet(assetID uint32, settings map[string]string, appPW, walletPW []byte) error {
 	assetInfo, err := asset.Info(assetID)
 	if err != nil {
@@ -187,4 +202,15 @@ func parseDEXNet(net libutils.NetworkType) (dex.Network, error) {
 	default:
 		return 0, fmt.Errorf("unknown network %s", net)
 	}
+}
+
+// validDEXLang checks that the provided lang is supported by the DEX client. An
+// empty string is returned for an invalid lang to allow DEX core use it's
+// default language.
+func validDEXLang(lang string) string {
+	switch lang {
+	case localizable.ENGLISH, localizable.CHINESE:
+		return lang
+	}
+	return ""
 }

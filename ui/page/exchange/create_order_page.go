@@ -68,6 +68,7 @@ type CreateOrderPage struct {
 	refreshIcon                              *cryptomaterial.Image
 	viewAllButton                            cryptomaterial.Button
 	navToSettingsBtn                         cryptomaterial.Button
+	createWalletBtn                          cryptomaterial.Button
 	splashPageInfoButton                     cryptomaterial.IconButton
 	splashPageContainer                      *widget.List
 	startTradingBtn                          cryptomaterial.Button
@@ -126,12 +127,13 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
 		navToSettingsBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		createWalletBtn:  l.Theme.Button(values.String(values.StrCreateANewWallet)),
 		splashPageContainer: &widget.List{List: layout.List{
 			Alignment: layout.Middle,
 			Axis:      layout.Vertical,
 		}},
 		startTradingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
-		isFirstVisit:    true,
+		isFirstVisit:    l.AssetsManager.ReadBoolValue(sharedW.IsCEXFirstVisitConfigKey, true),
 	}
 
 	// Init splash page more info widget
@@ -176,12 +178,13 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.toAmountEditor = *components.NewSelectAssetEditor(l)
 	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
 
-	pg.fromAmountEditor.Edit.HasCustomButton = true
-	pg.fromAmountEditor.Edit.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
-	pg.fromAmountEditor.Edit.CustomButton.Text = values.String(values.StrMax)
-	pg.fromAmountEditor.Edit.CustomButton.CornerRadius = values.MarginPadding0
-	pg.fromAmountEditor.Edit.CustomButton.Background = l.Theme.Color.Gray1
-	pg.fromAmountEditor.Edit.CustomButton.Color = l.Theme.Color.Surface
+	// TODO: Enable this feature and implement.
+	// pg.fromAmountEditor.Edit.HasCustomButton = true
+	// pg.fromAmountEditor.Edit.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
+	// pg.fromAmountEditor.Edit.CustomButton.Text = values.String(values.StrMax)
+	// pg.fromAmountEditor.Edit.CustomButton.CornerRadius = values.MarginPadding0
+	// pg.fromAmountEditor.Edit.CustomButton.Background = l.Theme.Color.Gray1
+	// pg.fromAmountEditor.Edit.CustomButton.Color = l.Theme.Color.Surface
 	pg.fromAmountEditor.Edit.EditorStyle.Color = l.Theme.Color.Text
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) bool {
@@ -266,12 +269,12 @@ func (pg *CreateOrderPage) displayCreateWalletModal(isSourceWallet bool, asset l
 }
 
 func (pg *CreateOrderPage) walletCreationSuccessFunc(isSourceWallet bool, asset libutils.AssetType) {
+	pg.OnNavigatedTo()
 	if isSourceWallet {
 		pg.updateWalletAndAccountSelector([]libutils.AssetType{asset}, nil)
 	} else {
 		pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{asset})
 	}
-	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
 	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
 	pg.ParentWindow().Reload()
 }
@@ -369,6 +372,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.startTradingBtn.Clicked() {
+		pg.AssetsManager.SetBoolValue(sharedW.IsCEXFirstVisitConfigKey, false)
 		pg.isFirstVisit = false
 	}
 
@@ -454,7 +458,14 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.navToSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
+	}
+
+	if pg.createWalletBtn.Button.Clicked() {
+		assetToCreate := pg.AssetToCreate()
+		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+			pg.walletCreationSuccessFunc(false, assetToCreate)
+		}, assetToCreate))
 	}
 }
 
@@ -712,6 +723,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 	case !pg.isMultipleAssetTypeWalletAvailable():
 		msg = pg.errMsg
 		overlaySet = true
+		navBtn = &pg.createWalletBtn
 	}
 
 	if !overlaySet && !pg.inited {
@@ -750,7 +762,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				if overlaySet {
 					gtxCopy := gtx
 					overlay = layout.Stacked(func(gtx C) D {
-						return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
+						return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, "", navBtn)
 					})
 					// Disable main page from receiving events.
 					gtx = gtx.Disabled()
@@ -1447,4 +1459,30 @@ func (pg *CreateOrderPage) fetchInstantExchangeCurrencies() error {
 	pg.fetchingRate = false
 	pg.rateError = err != nil
 	return err
+}
+
+// AssetToCreate check if there is any asset type that has not been created
+// and returns the first one.
+func (pg *CreateOrderPage) AssetToCreate() libutils.AssetType {
+	assetToCreate := pg.AssetsManager.AllAssetTypes()
+	wallets := pg.AssetsManager.AllWallets()
+
+	assetsNotCreated := make([]libutils.AssetType, 0)
+
+	for _, asset := range assetToCreate {
+		assetExists := false
+
+		for _, wallet := range wallets {
+			if wallet.GetAssetType() == asset {
+				assetExists = true
+				break
+			}
+		}
+
+		if !assetExists {
+			assetsNotCreated = append(assetsNotCreated, asset)
+		}
+	}
+
+	return assetsNotCreated[0]
 }

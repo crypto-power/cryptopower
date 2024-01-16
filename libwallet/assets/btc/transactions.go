@@ -3,7 +3,6 @@ package btc
 import (
 	"context"
 	"encoding/json"
-	"sort"
 	"strings"
 	"sync"
 
@@ -191,6 +190,7 @@ func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([
 	// if empty results were previously cached, check for updates.
 	if txCacheHeight == asset.GetBestBlockHeight() && len(allTxs) > 0 {
 		// if the best block hasn't changed return the preset list of txs.
+		sharedW.SortTxs(allTxs, newestFirst)
 		return allTxs, nil
 	}
 
@@ -234,15 +234,6 @@ func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([
 
 	minedTxs := asset.extractTxs(txResult.MinedTransactions)
 
-	if newestFirst {
-		sort.Slice(unminedTxs, func(i, j int) bool {
-			return unminedTxs[i].Timestamp > unminedTxs[j].Timestamp
-		})
-		sort.Slice(minedTxs, func(i, j int) bool {
-			return minedTxs[i].Timestamp > minedTxs[j].Timestamp
-		})
-	}
-
 	// Cache the recent data.
 	asset.txs.mu.Lock()
 	asset.txs.unminedTxs = unminedTxs
@@ -251,7 +242,9 @@ func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([
 	asset.txs.mu.Unlock()
 
 	// Return the summation of unmined and the mined txs.
-	return append(unminedTxs, minedTxs...), nil
+	allTxs = append(unminedTxs, minedTxs...)
+	sharedW.SortTxs(allTxs, newestFirst)
+	return allTxs, nil
 }
 
 func (asset *Asset) extractTxs(blocks []wallet.Block) []*sharedW.Transaction {

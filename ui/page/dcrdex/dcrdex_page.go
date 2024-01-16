@@ -116,7 +116,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 	}
 
 	if msg != "" {
-		return components.DisablePageWithOverlay(pg.Load, nil, gtx, msg, actionBtn)
+		return components.DisablePageWithOverlay(pg.Load, nil, gtx, msg, "", actionBtn)
 	}
 
 	return pg.CurrentPage().Layout(gtx)
@@ -143,7 +143,7 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 // Part of the load.Page interface.
 func (pg *DEXPage) HandleUserInteractions() {
 	if pg.generalSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	if pg.CurrentPage() != nil {

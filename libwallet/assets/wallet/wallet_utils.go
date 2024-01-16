@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 
 	"decred.org/dcrwallet/v3/errors"
 	"decred.org/dcrwallet/v3/walletseed"
@@ -268,4 +270,35 @@ func Balances(w Asset) (AssetAmount, AssetAmount, error) {
 	}
 
 	return w.ToAmount(totalSpendable), w.ToAmount(totalBalance), nil
+}
+
+// SortTxs is a shared function that sorts the provided txs slice in ascending
+// or descending order depending on newestFirst.
+func SortTxs(txs []*Transaction, newestFirst bool) {
+	sort.SliceStable(txs, func(i, j int) bool {
+		if newestFirst {
+			return txs[i].Timestamp > txs[j].Timestamp
+		}
+		return txs[i].Timestamp < txs[j].Timestamp
+	})
+}
+
+// ParseWalletPeers is a convenience function that converts the provided
+// peerAddresses string to an array of valid peer addresses.
+func ParseWalletPeers(peerAddresses string, port string) ([]string, []error) {
+	var persistentPeers []string
+	var errs []error
+	if peerAddresses != "" {
+		addresses := strings.Split(peerAddresses, ";")
+		for _, address := range addresses {
+			peerAddress, err := utils.NormalizeAddress(address, port)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err))
+			} else {
+				persistentPeers = append(persistentPeers, peerAddress)
+			}
+		}
+	}
+
+	return persistentPeers, errs
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/wallet"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -181,7 +182,7 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 		callback := func() {
 			pg.ParentNavigator().CloseCurrentPage()
 		}
-		pg.ParentNavigator().Display(NewSingleWalletMasterPage(pg.Load, selectedWallet, callback))
+		pg.ParentNavigator().Display(wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, callback))
 	}
 
 	for _, walletsOfType := range pg.badWalletsList {

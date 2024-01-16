@@ -86,7 +86,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	if pg.splashScreenInfoButton.Button.Clicked() {

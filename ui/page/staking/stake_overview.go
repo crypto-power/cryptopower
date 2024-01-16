@@ -181,7 +181,7 @@ func (pg *Page) Layout(gtx C) D {
 		gtxCopy := gtx
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navToSettingsBtn)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, "", &pg.navToSettingsBtn)
 		})
 		// Disable main page from receiving events
 		gtx = gtx.Disabled()
@@ -221,7 +221,7 @@ func (pg *Page) HandleUserInteractions() {
 	pg.setStakingButtonsState()
 
 	if pg.navToSettingsBtn.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	if pg.stake.Changed() {

@@ -95,23 +95,14 @@ func (l *Loader) CreateDirPath(WalletID, walletDbName string, assetType utils.As
 
 	folderPath := filepath.Join(l.DbDirPath, assetType.ToStringLower(), WalletID)
 	// Ensure that the network directory exists.
-	file, err := os.Stat(folderPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// error expected thus now attempt data directory creation
-			if err = os.MkdirAll(folderPath, utils.UserFilePerm); err != nil {
-				return "", err
-			}
-		} else {
-			// if os.IsNotExist(err) returned false means that unexpected error
-			// was returned thus exit the function with that error.
+	if file, err := os.Stat(folderPath); err != nil {
+		if !os.IsNotExist(err) {
 			return "", err
 		}
-	}
-
-	// No error was returned. Else used here to maintain the scope of
-	// file variable just with the if-else statement.
-	if !file.IsDir() {
+		if err = os.MkdirAll(folderPath, utils.UserFilePerm); err != nil {
+			return "", err
+		}
+	} else if !file.IsDir() {
 		return "", errors.Errorf("%q is not a directory", folderPath)
 	}
 

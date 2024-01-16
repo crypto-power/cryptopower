@@ -1,4 +1,4 @@
-package root
+package receive
 
 import (
 	"bytes"
@@ -26,7 +26,11 @@ import (
 
 const ReceivePageID = "Receive"
 
-type ReceivePage struct {
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+type Page struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -52,8 +56,8 @@ type ReceivePage struct {
 	selectedWallet sharedW.Asset
 }
 
-func NewReceivePage(l *load.Load, wallet sharedW.Asset) *ReceivePage {
-	pg := &ReceivePage{
+func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
+	pg := &Page{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ReceivePageID),
 		pageContainer: layout.List{
@@ -107,7 +111,7 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *ReceivePage {
 	return pg
 }
 
-func (pg *ReceivePage) initWalletSelectors() {
+func (pg *Page) initWalletSelectors() {
 	// Source wallet picker
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrSelectWallet))
@@ -145,7 +149,7 @@ func (pg *ReceivePage) initWalletSelectors() {
 // as a full page. Either OnResume or OnNavigatedTo is called to initialize
 // data and get UI elements ready to be displayed. This is called just before
 // Handle() and Layout() are called (in that order).
-func (pg *ReceivePage) OnResume() {
+func (pg *Page) OnResume() {
 	pg.OnNavigatedTo()
 }
 
@@ -153,7 +157,7 @@ func (pg *ReceivePage) OnResume() {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *ReceivePage) OnNavigatedTo() {
+func (pg *Page) OnNavigatedTo() {
 	if !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
@@ -173,7 +177,7 @@ func (pg *ReceivePage) OnNavigatedTo() {
 	}
 }
 
-func (pg *ReceivePage) generateQRForAddress() {
+func (pg *Page) generateQRForAddress() {
 	qrCode, err := qrcode.New(pg.currentAddress, qrcode.WithLogoImage(pg.getSelectedWalletLogo()))
 	if err != nil {
 		log.Error("Error generating address qrCode: " + err.Error())
@@ -196,7 +200,7 @@ func (pg *ReceivePage) generateQRForAddress() {
 	pg.qrImage = &imgdec
 }
 
-func (pg *ReceivePage) getSelectedWalletLogo() *cryptomaterial.Image {
+func (pg *Page) getSelectedWalletLogo() *cryptomaterial.Image {
 	pg.selectedWallet.GetAssetType()
 	switch pg.selectedWallet.GetAssetType() {
 	case utils.BTCWalletAsset:
@@ -213,7 +217,7 @@ func (pg *ReceivePage) getSelectedWalletLogo() *cryptomaterial.Image {
 // Layout draws the page UI components into the provided C
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *ReceivePage) Layout(gtx C) D {
+func (pg *Page) Layout(gtx C) D {
 	if pg.modalLayout == nil {
 		return pg.contentLayout(gtx)
 	}
@@ -225,7 +229,7 @@ func (pg *ReceivePage) Layout(gtx C) D {
 	return pg.modalLayout.Layout(gtx, modalContent, modalWidth)
 }
 
-func (pg *ReceivePage) contentLayout(gtx C) D {
+func (pg *Page) contentLayout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
 	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
@@ -305,7 +309,7 @@ func (pg *ReceivePage) contentLayout(gtx C) D {
 	})
 }
 
-func (pg *ReceivePage) copyAndNewAddressLayout(gtx C) D {
+func (pg *Page) copyAndNewAddressLayout(gtx C) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
@@ -320,7 +324,7 @@ func (pg *ReceivePage) copyAndNewAddressLayout(gtx C) D {
 	})
 }
 
-func (pg *ReceivePage) buttonIconLayout(gtx C, icon *cryptomaterial.Image, text string, clickable *cryptomaterial.Clickable) D {
+func (pg *Page) buttonIconLayout(gtx C, icon *cryptomaterial.Image, text string, clickable *cryptomaterial.Clickable) D {
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			dp40 := gtx.Dp(values.MarginPadding40)
@@ -346,7 +350,7 @@ func (pg *ReceivePage) buttonIconLayout(gtx C, icon *cryptomaterial.Image, text 
 
 // pageBackdropLayout layout of background overlay when the popup button generate new address is show,
 // click outside of the generate new address button to hide the button
-func (pg *ReceivePage) pageBackdropLayout(gtx C) {
+func (pg *Page) pageBackdropLayout(gtx C) {
 	if pg.isNewAddr {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
@@ -359,7 +363,7 @@ func (pg *ReceivePage) pageBackdropLayout(gtx C) {
 	}
 }
 
-func (pg *ReceivePage) headerLayout(gtx C) D {
+func (pg *Page) headerLayout(gtx C) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			lbl := pg.Theme.H6(values.String(values.StrReceive))
@@ -372,7 +376,7 @@ func (pg *ReceivePage) headerLayout(gtx C) D {
 	)
 }
 
-func (pg *ReceivePage) addressLayout(gtx C) D {
+func (pg *Page) addressLayout(gtx C) D {
 	border := widget.Border{
 		Color:        pg.Theme.Color.Gray4,
 		CornerRadius: values.MarginPadding10,
@@ -395,7 +399,7 @@ func (pg *ReceivePage) addressLayout(gtx C) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *ReceivePage) HandleUserInteractions() {
+func (pg *Page) HandleUserInteractions() {
 	if pg.backdrop.Clicked() {
 		pg.isNewAddr = false
 	}
@@ -429,7 +433,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 	}
 }
 
-func (pg *ReceivePage) generateNewAddress() (string, error) {
+func (pg *Page) generateNewAddress() (string, error) {
 	selectedAccount := pg.sourceAccountselector.SelectedAccount()
 	selectedWallet := pg.AssetsManager.WalletWithID(selectedAccount.WalletID)
 
@@ -446,7 +450,7 @@ generateAddress:
 	return newAddr, nil
 }
 
-func (pg *ReceivePage) handleCopyEvent(gtx C) {
+func (pg *Page) handleCopyEvent(gtx C) {
 	// Prevent copying again if the timer hasn't expired
 	if pg.copy.Clicked() && !pg.isCopying {
 		clipboard.WriteOp{Text: pg.currentAddress}.Add(gtx.Ops)
@@ -461,11 +465,11 @@ func (pg *ReceivePage) handleCopyEvent(gtx C) {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *ReceivePage) OnNavigatedFrom() {
+func (pg *Page) OnNavigatedFrom() {
 	pg.sourceAccountselector.StopTxNtfnListener()
 }
 
-func (pg *ReceivePage) Handle() {
+func (pg *Page) Handle() {
 	if pg.modalLayout.BackdropClicked(true) {
 		pg.modalLayout.Dismiss()
 	} else {
@@ -480,6 +484,6 @@ func (pg *ReceivePage) Handle() {
 // NOTE: The modal may be re-displayed on the app's window, in which case
 // OnResume() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnResume() method.
-func (pg *ReceivePage) OnDismiss() {
+func (pg *Page) OnDismiss() {
 	pg.OnNavigatedFrom()
 }
