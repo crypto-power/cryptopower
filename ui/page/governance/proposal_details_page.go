@@ -100,7 +100,6 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 		Right:  values.MarginPadding12,
 	}
 
-	pg.initWalletSelector()
 	return pg
 }
 
@@ -109,6 +108,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedTo() {
+	pg.initWalletSelector()
 	pg.loadProposalDescription()
 	pg.listenForSyncNotifications() // listener is stopped in OnNavigatedFrom()
 }
@@ -214,13 +214,17 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 	}
 
 	if pg.vote.Clicked() {
+		if len(pg.assetWallets) == 0 {
+			pg.displayCreateWalletModal(libutils.DCRWalletAsset)
+			return
+		}
 		pg.ParentWindow().ShowModal(newVoteModal(pg.Load, pg.proposal))
 	}
 
 	for pg.viewInPoliteiaBtn.Clicked() {
 		host := "https://proposals.decred.org/record/" + pg.proposal.Token
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
-			host = "https://test-proposals.decred.org/record/" + pg.proposal.Token
+			host = "http://45.32.108.164:3000/record/" + pg.proposal.Token
 		}
 
 		info := modal.NewCustomModal(pg.Load).
@@ -527,9 +531,18 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 					if pg.IsMobileView() {
 						marginTop = values.MarginPadding30
 					}
+					if len(pg.assetWallets) == 0 {
+						marginTop = values.MarginPaddingMinus16
+					}
 					return layout.Inset{Top: marginTop}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16})),
+							layout.Rigid(func(gtx C) D {
+								if len(pg.assetWallets) == 0 {
+									return D{}
+								}
+
+								return pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16})(gtx)
+							}),
 							layout.Rigid(pg.layoutProposalVoteBar),
 							layout.Rigid(func(gtx C) D {
 								if proposal.Category != libwallet.ProposalCategoryActive {
@@ -543,7 +556,12 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 						)
 					})
 				}),
-				layout.Expanded(pg.walletDropDown.Layout),
+				layout.Expanded(func(gtx C) D {
+					if len(pg.assetWallets) == 0 {
+						return D{}
+					}
+					return pg.walletDropDown.Layout(gtx)
+				}),
 			)
 		}),
 	)
@@ -684,4 +702,31 @@ func (pg *ProposalDetails) lineSeparator(inset layout.Inset) layout.Widget {
 	return func(gtx C) D {
 		return inset.Layout(gtx, pg.Theme.Separator().Layout)
 	}
+}
+
+func (pg *ProposalDetails) displayCreateWalletModal(asset libutils.AssetType) {
+	createWalletModal := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrCreateWallet)).
+		UseCustomWidget(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+				return layout.Center.Layout(gtx, pg.Theme.Body2(values.StringF(values.StrCreateAssetWalletToVoteMsg, asset.ToFull())).Layout)
+			})
+		}).
+		SetCancelable(true).
+		SetContentAlignment(layout.Center, layout.W, layout.Center).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+				pg.walletCreationSuccessFunc()
+			}, asset))
+			return true
+		}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrContinue))
+	pg.ParentWindow().ShowModal(createWalletModal)
+}
+
+func (pg *ProposalDetails) walletCreationSuccessFunc() {
+	pg.ParentNavigator().ClosePagesAfter(ProposalDetailsPageID)
+	pg.OnNavigatedTo()
+	pg.ParentWindow().Reload()
 }

@@ -10,11 +10,14 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/libwallet"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/staking"
+	"github.com/crypto-power/cryptopower/ui/page/wallet"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -30,12 +33,13 @@ type voteModal struct {
 	proposal *libwallet.Proposal
 	isVoting bool
 
-	walletSelector *WalletSelector
-	materialLoader material.LoaderStyle
-	yesVote        *inputVoteOptionsWidgets
-	noVote         *inputVoteOptionsWidgets
-	voteBtn        cryptomaterial.Button
-	cancelBtn      cryptomaterial.Button
+	walletSelector      *WalletSelector
+	materialLoader      material.LoaderStyle
+	yesVote             *inputVoteOptionsWidgets
+	noVote              *inputVoteOptionsWidgets
+	voteBtn             cryptomaterial.Button
+	cancelBtn           cryptomaterial.Button
+	navigateToStakePage *cryptomaterial.Clickable
 }
 
 func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
@@ -52,6 +56,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 	vm.noVote = newInputVoteOptions(vm.Load, values.String(values.StrNo))
 	vm.noVote.activeBg = l.Theme.Color.Orange2
 	vm.noVote.dotColor = l.Theme.Color.Danger
+	vm.navigateToStakePage = l.Theme.NewClickable(false)
 
 	vm.walletSelector = NewDCRWalletSelector(l).
 		Title(values.String(values.StrVotingWallet)).
@@ -89,6 +94,9 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 		WalletValidator(func(w sharedW.Asset) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
+
+	vm.yesVote.input.Editor.SetText("1")
+	vm.noVote.input.Editor.SetText("1")
 	return vm
 }
 
@@ -189,6 +197,17 @@ func (vm *voteModal) Handle() {
 
 		vm.isVoting = true
 		vm.sendVotes()
+	}
+
+	if vm.navigateToStakePage.Clicked() {
+		vm.Dismiss()
+		selectedWallet, _ := vm.walletSelector.selectedWallet.(*dcr.Asset)
+		walletCallbackFunc := func() {
+		}
+		swmp := wallet.NewSingleWalletMasterPage(vm.Load, selectedWallet, walletCallbackFunc)
+		vm.ParentNavigator().Display(swmp)
+		swmp.Display(staking.NewStakingPage(vm.Load, selectedWallet)) // Display staking page on the main page.]
+		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStaking))
 	}
 }
 
@@ -315,12 +334,27 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					if voteDetails == nil {
-						return D{}
+					options := components.FlexOptions{
+						Axis:      layout.Horizontal,
+						Alignment: layout.Alignment(layout.Center),
+					}
+					widgets := []func(gtx C) D{
+						func(gtx C) D {
+							if voteDetails == nil {
+								return D{}
+							}
+
+							text := values.StringF(values.StrNumberOfVotes, len(voteDetails.EligibleTickets))
+							return vm.Theme.Label(values.TextSize16, text+".").Layout(gtx)
+						},
+						func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+								return vm.layoutAddMoreRowSection(vm.navigateToStakePage, values.String(values.StrGetTicketsNow))(gtx)
+							})
+						},
 					}
 
-					text := values.StringF(values.StrNumberOfVotes, len(voteDetails.EligibleTickets))
-					return vm.Theme.Label(values.TextSize16, text).Layout(gtx)
+					return components.FlexLayout(gtx, options, widgets)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return vm.inputOptions(gtx, vm.yesVote)
@@ -380,7 +414,7 @@ func (vm *voteModal) inputOptions(gtx layout.Context, wdg *inputVoteOptionsWidge
 		}
 		return inset.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Flexed(.4, func(gtx C) D {
+				layout.Flexed(.35, func(gtx C) D {
 					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							card := vm.Theme.Card()
@@ -399,7 +433,7 @@ func (vm *voteModal) inputOptions(gtx layout.Context, wdg *inputVoteOptionsWidge
 						}),
 					)
 				}),
-				layout.Flexed(.6, func(gtx C) D {
+				layout.Flexed(.65, func(gtx C) D {
 					border := widget.Border{
 						Color:        vm.Theme.Color.Gray2,
 						CornerRadius: values.MarginPadding8,
@@ -419,7 +453,7 @@ func (vm *voteModal) inputOptions(gtx layout.Context, wdg *inputVoteOptionsWidge
 											return wdg.decrement.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx C) D {
-											gtx.Constraints.Min.X, gtx.Constraints.Max.X = 30, 30
+											gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(35), gtx.Dp(35)
 											return wdg.input.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx C) D {
@@ -444,4 +478,26 @@ func (vm *voteModal) inputOptions(gtx layout.Context, wdg *inputVoteOptionsWidge
 			)
 		})
 	})
+}
+
+func (vm *voteModal) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string) layout.Widget {
+	return func(gtx C) D {
+		return cryptomaterial.LinearLayout{
+			Width:      cryptomaterial.WrapContent,
+			Height:     cryptomaterial.WrapContent,
+			Background: vm.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+			Clickable:  clk,
+			Border:     cryptomaterial.Border{Radius: clk.Radius},
+			Alignment:  layout.Middle,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				txt := vm.Theme.Label(values.TextSize14, buttonText)
+				txt.Color = vm.Theme.Color.DefaultThemeColors().Primary
+				txt.Font.Weight = font.SemiBold
+				return layout.Inset{
+					Left: values.MarginPadding4,
+				}.Layout(gtx, txt.Layout)
+			}),
+		)
+	}
 }

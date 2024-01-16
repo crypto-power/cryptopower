@@ -900,4 +900,6 @@ const EN = `
 "twitter" = "Twitter"
 "telegram" = "Telegram"
 "matrix" = "Matrix"
+"createAssetWalletToVoteMsg" = "You need to create a %s wallet to vote."
+"getTicketsNow" = "Get Tickets Now"
 `

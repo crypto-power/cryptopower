@@ -200,7 +200,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	for _, item := range pg.consensusItems {
@@ -414,6 +414,9 @@ func (pg *ConsensusPage) leftDropdown(gtx C) D {
 	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.walletDropDown == nil {
+				return D{}
+			}
+			if len(pg.assetWallets) == 0 {
 				return D{}
 			}
 			return layout.W.Layout(gtx, pg.walletDropDown.Layout)

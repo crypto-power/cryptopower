@@ -1009,4 +1009,6 @@ const (
 	StrTwitter                         = "twitter"
 	StrMatrix                          = "matrix"
 	StrWebsite                         = "website"
+	StrCreateAssetWalletToVoteMsg      = "createAssetWalletToVoteMsg"
+	StrGetTicketsNow                   = "getTicketsNow"
 )

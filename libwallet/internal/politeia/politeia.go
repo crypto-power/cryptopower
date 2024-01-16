@@ -14,7 +14,7 @@ import (
 
 const (
 	PoliteiaMainnetHost = "https://proposals.decred.org/api"
-	PoliteiaTestnetHost = "https://test-proposals.decred.org/api"
+	PoliteiaTestnetHost = "http://45.32.108.164:3000/api" // self hosted politeia testnet server
 
 	configDBBkt                  = "politeia_config"
 	LastSyncedTimestampConfigKey = "politeia_last_synced_timestamp"

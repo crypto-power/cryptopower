@@ -221,7 +221,7 @@ func (pg *Page) HandleUserInteractions() {
 	pg.setStakingButtonsState()
 
 	if pg.navToSettingsBtn.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	if pg.stake.Changed() {

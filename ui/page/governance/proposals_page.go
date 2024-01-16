@@ -122,7 +122,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)
 	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
 
-	pg.initWalletSelector()
 	return pg
 }
 
@@ -132,6 +131,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 // Part of the load.Page interface.
 // Once proposals update is complete fetchProposals() is automatically called.
 func (pg *ProposalsPage) OnNavigatedTo() {
+	pg.initWalletSelector()
 	if pg.isGovernanceAPIAllowed() {
 		pg.syncAndUpdateProposals() // starts a sync listener which is stopped in OnNavigatedFrom().
 		pg.proposalsFetched = true
@@ -376,6 +376,9 @@ func (pg *ProposalsPage) leftDropdown(gtx C) D {
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.walletDropDown == nil {
+				return D{}
+			}
+			if len(pg.assetWallets) == 0 {
 				return D{}
 			}
 			return layout.W.Layout(gtx, pg.walletDropDown.Layout)

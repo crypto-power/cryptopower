@@ -1,4 +1,4 @@
-package root
+package wallet
 
 import (
 	"net"
@@ -37,7 +37,7 @@ type accountData struct {
 	clickable *cryptomaterial.Clickable
 }
 
-type WalletSettingsPage struct {
+type SettingsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -68,8 +68,8 @@ type WalletSettingsPage struct {
 	peerAddr string
 }
 
-func NewWalletSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func()) *WalletSettingsPage {
-	pg := &WalletSettingsPage{
+func NewSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func()) *SettingsPage {
+	pg := &SettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(WalletSettingsPageID),
 		wallet:              wallet,
@@ -106,7 +106,7 @@ func NewWalletSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFun
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) OnNavigatedTo() {
+func (pg *SettingsPage) OnNavigatedTo() {
 	pg.spendUnconfirmed.SetChecked(pg.readBool(sharedW.SpendUnconfirmedConfigKey))
 	pg.spendUnmixedFunds.SetChecked(pg.readBool(sharedW.SpendUnmixedFundsKey))
 
@@ -115,22 +115,22 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	pg.loadWalletAccount()
 }
 
-func (pg *WalletSettingsPage) readBool(key string) bool {
+func (pg *SettingsPage) readBool(key string) bool {
 	return pg.wallet.ReadBoolConfigValueForKey(key, false)
 }
 
-func (pg *WalletSettingsPage) isPrivacyModeOn() bool {
+func (pg *SettingsPage) isPrivacyModeOn() bool {
 	return pg.AssetsManager.IsPrivacyModeOn()
 }
 
-func (pg *WalletSettingsPage) loadPeerAddress() {
+func (pg *SettingsPage) loadPeerAddress() {
 	if !pg.isPrivacyModeOn() {
 		pg.peerAddr = pg.wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 		pg.connectToPeer.SetChecked(pg.peerAddr != "")
 	}
 }
 
-func (pg *WalletSettingsPage) loadWalletAccount() {
+func (pg *SettingsPage) loadWalletAccount() {
 	walletAccounts := make([]*accountData, 0)
 	accounts, err := pg.wallet.GetAccountsRaw()
 	if err != nil {
@@ -154,7 +154,7 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) Layout(gtx C) D {
+func (pg *SettingsPage) Layout(gtx C) D {
 	w := []func(gtx C) D{
 		pg.generalSection(),
 		pg.securityTools(),
@@ -167,7 +167,7 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 	})
 }
 
-func (pg *WalletSettingsPage) generalSection() layout.Widget {
+func (pg *SettingsPage) generalSection() layout.Widget {
 	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -214,7 +214,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 	}
 }
 
-func (pg *WalletSettingsPage) debug() layout.Widget {
+func (pg *SettingsPage) debug() layout.Widget {
 	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
@@ -233,7 +233,7 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 	}
 }
 
-func (pg *WalletSettingsPage) securityTools() layout.Widget {
+func (pg *SettingsPage) securityTools() layout.Widget {
 	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.verifyMessage, values.String(values.StrVerifyMessage))),
@@ -246,13 +246,13 @@ func (pg *WalletSettingsPage) securityTools() layout.Widget {
 	}
 }
 
-func (pg *WalletSettingsPage) dangerZone() layout.Widget {
+func (pg *SettingsPage) dangerZone() layout.Widget {
 	return func(gtx C) D {
 		return pg.pageSections(gtx, values.String(values.StrDangerZone), pg.sectionContent(pg.deleteWallet, values.String(values.StrRemoveWallet)))
 	}
 }
 
-func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widget) D {
+func (pg *SettingsPage) pageSections(gtx C, title string, body layout.Widget) D {
 	dims := func(gtx C, title string, body layout.Widget) D {
 		return cryptomaterial.LinearLayout{
 			Orientation: layout.Vertical,
@@ -306,13 +306,13 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 	})
 }
 
-func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable, title string) layout.Widget {
+func (pg *SettingsPage) sectionContent(clickable *cryptomaterial.Clickable, title string) layout.Widget {
 	return func(gtx C) D {
 		return pg.sectionDimension(gtx, clickable, title)
 	}
 }
 
-func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clickable, title string) D {
+func (pg *SettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clickable, title string) D {
 	return clickable.Layout(gtx, func(gtx C) D {
 		textLabel := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), title)
 		if title == values.String(values.StrRemoveWallet) {
@@ -333,7 +333,7 @@ func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.
 	})
 }
 
-func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget) D {
+func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
 	return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), title).Layout),
@@ -352,13 +352,13 @@ func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget
 	})
 }
 
-func (pg *WalletSettingsPage) subSectionSwitch(title string, option *cryptomaterial.Switch) layout.Widget {
+func (pg *SettingsPage) subSectionSwitch(title string, option *cryptomaterial.Switch) layout.Widget {
 	return func(gtx C) D {
 		return pg.subSection(gtx, title, option.Layout)
 	}
 }
 
-func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
+func (pg *SettingsPage) changeSpendingPasswordModal() {
 	currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		Title(values.String(values.StrConfirmSpendingPassword)).
 		PasswordHint(values.String(values.StrCurrentSpendingPassword)).
@@ -399,7 +399,7 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 	pg.ParentWindow().ShowModal(currentSpendingPasswordModal)
 }
 
-func (pg *WalletSettingsPage) deleteWalletModal() {
+func (pg *SettingsPage) deleteWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
 		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.wallet.GetWalletName()).
@@ -459,7 +459,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 	pg.ParentWindow().ShowModal(textModal)
 }
 
-func (pg *WalletSettingsPage) renameWalletModal() {
+func (pg *SettingsPage) renameWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
@@ -486,7 +486,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 	pg.ParentWindow().ShowModal(textModal)
 }
 
-func (pg *WalletSettingsPage) showSPVPeerDialog() {
+func (pg *SettingsPage) showSPVPeerDialog() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
@@ -544,7 +544,7 @@ func validatePeerAddressStr(addrs string) (string, bool) {
 	return strings.Trim(addrStr, ";"), true
 }
 
-func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
+func (pg *SettingsPage) clickableRow(gtx C, row clickableRowData) D {
 	return row.clickable.Layout(gtx, func(gtx C) D {
 		return pg.subSection(gtx, row.title, func(gtx C) D {
 			lbl := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), row.labelText)
@@ -561,7 +561,7 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 	})
 }
 
-func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
+func (pg *SettingsPage) showWarningModalDialog(title, msg string) {
 	warningModal := modal.NewCustomModal(pg.Load).
 		Title(title).
 		Body(msg).
@@ -588,7 +588,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) HandleUserInteractions() {
+func (pg *SettingsPage) HandleUserInteractions() {
 	for pg.changePass.Clicked() {
 		pg.changeSpendingPasswordModal()
 		break
@@ -745,7 +745,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 }
 
-func (pg *WalletSettingsPage) gapLimitModal() {
+func (pg *SettingsPage) gapLimitModal() {
 	walGapLim := pg.wallet.ReadStringConfigValueForKey(load.GapLimitConfigKey, "20")
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrGapLimit)).
@@ -793,4 +793,4 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) OnNavigatedFrom() {}
+func (pg *SettingsPage) OnNavigatedFrom() {}

@@ -28,6 +28,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
+	"github.com/crypto-power/cryptopower/ui/page/wallet"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -249,10 +250,10 @@ func (pg *OverviewPage) HandleUserInteractions() {
 		walletCallbackFunc := func() {
 			pg.showNavigationFunc(false)
 		}
-		swmp := NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
+		swmp := wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
 		pg.ParentNavigator().Display(swmp)
 		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
-		swmp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
+		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
 }
 
@@ -612,7 +613,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 								isPositiveChange = &no
 							}
 							if change > 0 {
-								yes := false
+								yes := true
 								isPositiveChange = &yes
 							}
 							changeStr = fmt.Sprintf("%.2f", change) + "%"

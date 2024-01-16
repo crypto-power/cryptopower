@@ -29,10 +29,12 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
+	"github.com/crypto-power/cryptopower/ui/page/receive"
 	"github.com/crypto-power/cryptopower/ui/page/root"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/staking"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
+	"github.com/crypto-power/cryptopower/ui/page/wallet"
 
 	"decred.org/dcrwallet/v3/p2p"
 	"decred.org/dcrwallet/v3/spv"
@@ -150,6 +152,8 @@ func init() {
 	instantswap.UseLogger(sharedWLog)
 	dcrdex.UseLogger(winLog)
 	account.UseLogger(winLog)
+	wallet.UseLogger(winLog)
+	receive.UseLogger(winLog)
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.

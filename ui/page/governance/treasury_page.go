@@ -52,6 +52,7 @@ type TreasuryPage struct {
 
 	isPolicyFetchInProgress bool
 	navigateToSettingsBtn   cryptomaterial.Button
+	createWalletBtn         cryptomaterial.Button
 
 	PiKey string
 }
@@ -66,6 +67,7 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 		redirectIcon:       l.Theme.Icons.RedirectIcon,
 		viewGovernanceKeys: l.Theme.NewClickable(true),
 		copyRedirectURL:    l.Theme.NewClickable(false),
+		createWalletBtn:    l.Theme.Button(values.String(values.StrCreateANewWallet)),
 	}
 
 	pg.searchEditor = l.Theme.IconEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon, true)
@@ -75,7 +77,6 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 	pg.infoButton.Size = values.MarginPadding20
 	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
-	pg.initWalletSelector()
 	return pg
 }
 
@@ -85,6 +86,7 @@ func (pg *TreasuryPage) ID() string {
 
 func (pg *TreasuryPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+	pg.initWalletSelector()
 	// Fetch (or re-fetch) treasury policies in background as this makes
 	// a network call. Refresh the window once the call completes.
 	pg.PiKey = hex.EncodeToString(pg.AssetsManager.PiKeys()[0])
@@ -139,7 +141,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -172,6 +174,12 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 		time.AfterFunc(time.Second*1, func() {
 			pg.ParentWindow().Reload()
 		})
+	}
+
+	if pg.createWalletBtn.Button.Clicked() {
+		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+			pg.walletCreationSuccessFunc()
+		}, libutils.DCRWalletAsset))
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
@@ -368,13 +376,35 @@ func (pg *TreasuryPage) decredWalletRequired(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
+		Orientation: layout.Vertical,
 		Direction:   layout.Center,
 		Alignment:   layout.Middle,
 	}.Layout2(gtx, func(gtx C) D {
-		txt := "This feature requires that you have a decred wallet."
-		lbl := pg.Theme.Label(values.TextSize16, txt)
-		lbl.Font.Weight = font.SemiBold
-		return lbl.Layout(gtx)
+		options := components.FlexOptions{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		}
+		widgets := []func(gtx C) D{
+			func(gtx C) D {
+				txt := "This feature requires that you have a decred wallet."
+				lbl := pg.Theme.Label(values.TextSize16, txt)
+				lbl.Font.Weight = font.SemiBold
+				return lbl.Layout(gtx)
+			},
+			func(gtx C) D {
+				return layout.Inset{
+					Top: values.MarginPadding20,
+				}.Layout(gtx, func(gtx C) D {
+					return pg.createWalletBtn.Layout(gtx)
+				})
+			},
+		}
+		return components.FlexLayout(gtx, options, widgets)
 	})
+}
+
+func (pg *TreasuryPage) walletCreationSuccessFunc() {
+	pg.OnNavigatedTo()
+	pg.ParentNavigator().ClosePagesAfter(TreasuryPageID)
+	pg.ParentWindow().Reload()
 }

@@ -18,9 +18,11 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/page/governance"
+	"github.com/crypto-power/cryptopower/ui/page/receive"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
+	"github.com/crypto-power/cryptopower/ui/page/wallet"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -124,7 +126,7 @@ func (hp *HomePage) initPageItems() {
 			Clickable: hp.Theme.NewClickable(true),
 			Image:     hp.Theme.Icons.ReceiveIcon,
 			Title:     values.String(values.StrReceive),
-			PageID:    ReceivePageID,
+			PageID:    receive.ReceivePageID,
 		},
 	}
 
@@ -207,7 +209,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
-				hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
+				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
 			case values.StrSend:
 				allWallets := hp.AssetsManager.AllWallets()
 				isSendAvailable := false
@@ -237,11 +239,11 @@ func (hp *HomePage) HandleUserInteractions() {
 
 	if hp.appNotificationButton.Clicked() {
 		// TODO: Use real values as these are dummy so lint will pass
-		hp.ParentNavigator().Display(settings.NewSettingsPage(hp.Load))
+		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
 	for hp.appLevelSettingsButton.Clicked() {
-		hp.ParentNavigator().Display(settings.NewSettingsPage(hp.Load))
+		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
 	for hp.hideBalanceButton.Clicked() {
@@ -263,7 +265,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	for _, item := range hp.floatingActionButton.FloatingActionButton {
 		for item.Clickable.Clicked() {
 			if strings.ToLower(item.PageID) == values.StrReceive {
-				hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
+				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
 			}
 
 			if strings.ToLower(item.PageID) == values.StrSend {
@@ -416,7 +418,7 @@ func (hp *HomePage) layoutTopBar(gtx C) D {
 	topBottomPadding := padding10
 	// Remove top and bottom padding if on the SingleWalletMasterPage.
 	// This hides the gap between the top bar and the page content.
-	if hp.CurrentPageID() == MainPageID {
+	if hp.CurrentPageID() == wallet.MainPageID {
 		topBottomPadding = values.MarginPadding0
 	}
 
@@ -435,7 +437,7 @@ func (hp *HomePage) layoutTopBar(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			// Hide the total asset balance usd amount while
 			// on the SingleWalletMasterPage.
-			if hp.CurrentPageID() == MainPageID {
+			if hp.CurrentPageID() == wallet.MainPageID {
 				return D{}
 			}
 
@@ -508,7 +510,7 @@ func (hp *HomePage) initBottomNavItems() {
 				Clickable: hp.Theme.NewClickable(true),
 				Image:     hp.Theme.Icons.ReceiveIcon,
 				Title:     values.String(values.StrReceive),
-				PageID:    ReceivePageID,
+				PageID:    receive.ReceivePageID,
 			},
 		},
 	}
@@ -527,7 +529,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 				if hp.Load.IsMobileView() {
 					// Hide the total balance text, settings and notfication icons
 					// while on mobile view and on the SingleWalletMasterPage.
-					if hp.CurrentPageID() == MainPageID {
+					if hp.CurrentPageID() == wallet.MainPageID {
 						return D{}
 					}
 
@@ -546,7 +548,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 
 				// Hide the top bar send/receive buttons while on mobile view
 				// and on the SingleWalletMasterPage.
-				if hp.CurrentPageID() == MainPageID {
+				if hp.CurrentPageID() == wallet.MainPageID {
 					return D{}
 				}
 
