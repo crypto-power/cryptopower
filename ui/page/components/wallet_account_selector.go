@@ -33,8 +33,8 @@ type WalletAndAccountSelector struct {
 	HideLogo   bool
 
 	hideBalance     bool
-	isLeftalignment bool
-	isHaveBoder     bool
+	isLeftAlignment bool
+	isHaveBorder    bool
 }
 
 type selectorModal struct {
@@ -46,6 +46,7 @@ type selectorModal struct {
 	accountCallback    func(*sharedW.Account)
 	walletCallback     func(sharedW.Asset)
 	accountIsValid     func(*sharedW.Account) bool
+	walletIsValid      func(sharedW.Asset) bool
 	accountSelector    bool
 	infoActionText     string
 	dialogTitle        string
@@ -69,8 +70,8 @@ func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *Wa
 		openSelectorDialog: l.Theme.NewClickable(true),
 		errorLabel:         l.Theme.ErrorLabel(""),
 		hideBalance:        false,
-		isLeftalignment:    false,
-		isHaveBoder:        true,
+		isLeftAlignment:    false,
+		isHaveBorder:       true,
 	}
 
 	ws.selectorModal = newSelectorModal(l, assetType...).
@@ -109,6 +110,13 @@ func (ws *WalletAndAccountSelector) EnableWatchOnlyWallets(isEnable bool) *Walle
 // AccountValidator validates an account according to the rules defined to determine a valid a account.
 func (ws *WalletAndAccountSelector) AccountValidator(accountIsValid func(*sharedW.Account) bool) *WalletAndAccountSelector {
 	ws.accountIsValid = accountIsValid
+	return ws
+}
+
+// WalletValidator validates a wallet according to the rules defined to
+// determine a valid a wallet.
+func (ws *WalletAndAccountSelector) WalletValidator(walletIsValid func(sharedW.Asset) bool) *WalletAndAccountSelector {
+	ws.walletIsValid = walletIsValid
 	return ws
 }
 
@@ -245,11 +253,11 @@ func (ws *WalletAndAccountSelector) SetHideBalance(isHide bool) {
 }
 
 func (ws *WalletAndAccountSelector) SetLeftAlignment(isLeft bool) {
-	ws.isLeftalignment = isLeft
+	ws.isLeftAlignment = isLeft
 }
 
-func (ws *WalletAndAccountSelector) SetBorder(isHaveBoder bool) {
-	ws.isHaveBoder = isHaveBoder
+func (ws *WalletAndAccountSelector) SetBorder(isHaveBorder bool) {
+	ws.isHaveBorder = isHaveBorder
 }
 
 func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D {
@@ -260,10 +268,9 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 		borderColor = ws.errorLabel.Color
 	}
 
-	boder := cryptomaterial.Border{}
-
-	if ws.isHaveBoder {
-		boder = cryptomaterial.Border{
+	border := cryptomaterial.Border{}
+	if ws.isHaveBorder {
+		border = cryptomaterial.Border{
 			Width:  values.MarginPadding2,
 			Color:  borderColor,
 			Radius: cryptomaterial.Radius(8),
@@ -279,7 +286,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 						Width:     cryptomaterial.MatchParent,
 						Height:    cryptomaterial.WrapContent,
 						Padding:   layout.UniformInset(values.MarginPadding12),
-						Border:    boder,
+						Border:    border,
 						Clickable: ws.Clickable(),
 					}.Layout(gtx,
 						layout.Rigid(ws.setWalletLogo),
@@ -326,7 +333,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 									}),
 								)
 							}
-							if ws.isLeftalignment {
+							if ws.isLeftAlignment {
 								return dim(gtx)
 							}
 							return layout.E.Layout(gtx, dim)
@@ -342,7 +349,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 							return ws.errorLabel.Layout(gtx)
 						})
 					}
-					return layout.Dimensions{}
+					return D{}
 				}),
 			)
 		}),
@@ -448,7 +455,12 @@ func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal
 	}
 
 	if len(wallets) > 0 {
-		sm.selectedWallet = wallets[0] // Set the default wallet to wallet loaded by cryptopower.
+		for _, w := range wallets {
+			if sm.walletIsValid == nil || sm.walletIsValid(w) {
+				sm.selectedWallet = w // Set the default wallet to wallet loaded by cryptopower.
+				break
+			}
+		}
 	}
 
 	sm.accountSelector = false
@@ -466,20 +478,18 @@ func (sm *selectorModal) OnResume() {
 }
 
 func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
-	selectorItems := make([]*SelectorItem, 0)
+	sm.selectorItems = make([]*SelectorItem, 0)
 
 	wallets := sm.AssetsManager.AssetWallets(assetType...)
 	for _, wal := range wallets {
-		if wal.IsWatchingOnlyWallet() && !sm.isWatchOnlyEnabled {
+		if wal.IsWatchingOnlyWallet() && !sm.isWatchOnlyEnabled || sm.walletIsValid != nil && !sm.walletIsValid(wal) {
 			continue
 		}
-		selectorItems = append(selectorItems, &SelectorItem{
+		sm.selectorItems = append(sm.selectorItems, &SelectorItem{
 			item:      wal,
 			clickable: sm.Theme.NewClickable(true),
 		})
 	}
-
-	sm.selectorItems = selectorItems
 }
 
 func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {

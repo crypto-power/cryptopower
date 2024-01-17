@@ -77,9 +77,19 @@ type DropDownItem struct {
 }
 
 // DropDown is like DropdownWithCustomPos but uses default values for
-// groupPosition, and dropdownInset parameters.
-func (t *Theme) DropDown(items []DropDownItem, group uint, reversePos bool) *DropDown {
-	return t.DropdownWithCustomPos(items, group, 0, 0, reversePos)
+// groupPosition, and dropdownInset parameters. Provide lastSelectedItem to
+// select the item that matches the lastSelectedItem parameter. It's a no-op if
+// the item is not found or if the item has PreventSelection set to true.
+func (t *Theme) DropDown(items []DropDownItem, lastSelectedItem *DropDownItem, group uint, reversePos bool) *DropDown {
+	d := t.DropdownWithCustomPos(items, group, 0, 0, reversePos)
+	if lastSelectedItem != nil {
+		for index, item := range d.items {
+			if item.Text == lastSelectedItem.Text && !item.PreventSelection {
+				d.selectedIndex = index
+			}
+		}
+	}
+	return d
 }
 
 // DropdownWithCustomPos returns a dropdown component. {groupPosition} parameter
@@ -444,4 +454,8 @@ func DisplayOneDropdown(dropdowns ...*DropDown) {
 // Items returns the items of the dropdown.
 func (d *DropDown) Items() []DropDownItem {
 	return d.items
+}
+
+func (d *DropDown) ItemsLen() int {
+	return len(d.items)
 }

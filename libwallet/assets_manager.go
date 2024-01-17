@@ -75,8 +75,9 @@ type AssetsManager struct {
 	ExternalService *ext.Service
 	RateSource      ext.RateSource
 
-	dexcMtx sync.RWMutex
-	dexc    *dexc.DEXClient
+	dexcMtx     sync.RWMutex
+	dexc        *dexc.DEXClient
+	startingDEX atomic.Bool
 }
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
@@ -915,13 +916,26 @@ func (mgr *AssetsManager) DexcReady() bool {
 	return mgr.dexc != nil
 }
 
-// InitializeDEX initializes mgr.dexc.
+// InitializeDEX initializes mgr.dexc. Support for Cryptopower wallets are
+// initialized first so the DEX client can bind previously added wallets when it
+// starts.
 func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	if !dexWalletRegistered.Load() {
 		mgr.prepareDexSupportForDCRWallet()
 		mgr.prepareDexSupportForBTCCloneWallets()
 		dexWalletRegistered.Store(true)
 	}
+
+	if mgr.DexcReady() || mgr.startingDEX.Load() {
+		log.Debug("Attempted to reinitialize a running dex client instance")
+		return
+	}
+
+	// Prevent multiple initialization.
+	mgr.startingDEX.Store(true)
+	defer func() {
+		mgr.startingDEX.Store(false)
+	}()
 
 	logDir := filepath.Dir(mgr.LogFile())
 	dexcl, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)

@@ -229,7 +229,7 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
-// github.com/ukane-philemon/dcrdex v0.0.0-20240104133235-beacdac7d43d is the
-// same as https://github.com/decred/dcrdex/pull/2636 and will be changed once
-// the upstream PR has been merged.
-replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240104133235-beacdac7d43d
+// github.com/decred/dcrdex 2201c692dc590ffa605e2561800df4df15f9f88d is the
+// commit that added btc and ltc dex custoqm wallet contructors to the dcrdex
+// project.
+replace decred.org/dcrdex v0.6.3 => github.com/decred/dcrdex v0.0.0-20240112112457-2201c692dc59

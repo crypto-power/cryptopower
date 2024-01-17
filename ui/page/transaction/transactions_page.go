@@ -174,7 +174,7 @@ func (pg *TransactionsPage) initWalletSelector() {
 			items = append(items, item)
 		}
 
-		pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, false)
+		pg.walletDropDown = pg.Theme.DropDown(items, nil, values.WalletsDropdownGroup, false)
 		settingCommonDropdown(pg.Theme, pg.walletDropDown)
 		pg.walletDropDown.Width = values.MarginPadding150
 		pg.walletDropDown.SetConvertTextSize(pg.ConvertTextSize)
