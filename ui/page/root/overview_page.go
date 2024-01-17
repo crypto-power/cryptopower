@@ -206,19 +206,14 @@ func (pg *OverviewPage) OnNavigatedTo() {
 
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *OverviewPage) HandleUserInteractions() {
-	for pg.sliderRedirectBtn.Clicked() {
+func (pg *OverviewPage) handleUserInteractions(gtx C) {
+	for pg.sliderRedirectBtn.Clicked(gtx) {
 		walPage := NewWalletSelectorPage(pg.Load)
 		walPage.showNavigationFunc = pg.showNavigationFunc
 		pg.ParentNavigator().Display(walPage)
 	}
 
-	if pg.forceRefreshRates.Clicked() {
+	if pg.forceRefreshRates.Clicked(gtx) {
 		go pg.AssetsManager.RateSource.Refresh(true)
 	}
 
@@ -241,7 +236,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
-	if pg.forwardButton.Button.Clicked() {
+	if pg.forwardButton.Button.Clicked(gtx) {
 		curSliderIndex := pg.mixerSlider.GetSelectedIndex()
 		mixerData := pg.mixerSliderData[pg.sortedMixerSlideKeys[curSliderIndex]]
 		selectedWallet := mixerData.Asset
@@ -276,6 +271,8 @@ func (pg *OverviewPage) OnCurrencyChanged() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *OverviewPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}

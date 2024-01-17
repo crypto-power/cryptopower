@@ -185,35 +185,35 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	pg.ParentWindow().ShowModal((voteModal))
 }
 
-func (pg *ConsensusPage) HandleUserInteractions() {
-	for pg.statusDropDown.Changed() {
+func (pg *ConsensusPage) handleUserInteractions(gtx C) {
+	for pg.statusDropDown.Changed(gtx) {
 		pg.FetchAgendas()
 	}
 
-	for pg.orderDropDown.Changed() {
+	for pg.orderDropDown.Changed(gtx) {
 		pg.FetchAgendas()
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()].(*dcr.Asset)
 		pg.FetchAgendas()
 	}
 
-	if pg.navigateToSettingsBtn.Button.Clicked() {
+	if pg.navigateToSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	for _, item := range pg.consensusItems {
-		if item.VoteButton.Clicked() {
+		if item.VoteButton.Clicked(gtx) {
 			pg.agendaVoteChoiceModal(item.Agenda)
 		}
 	}
 
-	for pg.syncButton.Clicked() {
+	for pg.syncButton.Clicked(gtx) {
 		pg.FetchAgendas()
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrConsensusChange)).
 			Body(values.String(values.StrOnChainVote)).
@@ -222,7 +222,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
-	for pg.viewVotingDashboard.Clicked() {
+	for pg.viewVotingDashboard.Clicked(gtx) {
 		host := "https://voting.decred.org"
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://voting.decred.org/testnet"
@@ -245,7 +245,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 										layout.Flexed(0.9, pg.Theme.Body1(host).Layout),
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
-												if pg.copyRedirectURL.Clicked() {
+												if pg.copyRedirectURL.Clicked(gtx) {
 													clipboard.WriteOp{Text: host}.Add(gtx.Ops)
 													pg.Toast.Notify(values.String(values.StrCopied))
 												}
@@ -280,7 +280,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 		})
 	}
 
-	for pg.filterBtn.Clicked() {
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }
@@ -319,6 +319,8 @@ func (pg *ConsensusPage) FetchAgendas() {
 }
 
 func (pg *ConsensusPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	// If Agendas API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isAgendaAPIAllowed() {

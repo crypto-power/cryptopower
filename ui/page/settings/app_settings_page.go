@@ -112,6 +112,8 @@ func (pg *AppSettingsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.pageHeaderLayout),
@@ -427,13 +429,8 @@ func (pg *AppSettingsPage) subSectionLabel(title string) layout.Widget {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *AppSettingsPage) HandleUserInteractions() {
-	for pg.language.Clicked() {
+func (pg *AppSettingsPage) handleUserInteractions(gtx C) {
+	for pg.language.Clicked(gtx) {
 		langSelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.LanguagePreferenceKey, values.DefaultLanguage, preference.LangOptions).
 			Title(values.StrLanguage).
@@ -444,11 +441,11 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 		break
 	}
 
-	for pg.backButton.Button.Clicked() {
+	for pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
-	for pg.currency.Clicked() {
+	for pg.currency.Clicked(gtx) {
 		currencySelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.CurrencyConversionConfigKey, values.DefaultExchangeValue,
 			preference.ExchOptions).
@@ -458,34 +455,34 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 		break
 	}
 
-	for pg.appearanceMode.Clicked() {
+	for pg.appearanceMode.Clicked(gtx) {
 		pg.isDarkModeOn = !pg.isDarkModeOn
 		pg.AssetsManager.SetDarkMode(pg.isDarkModeOn)
 		pg.RefreshTheme(pg.ParentWindow())
 	}
 
-	if pg.transactionNotification.Changed() {
+	if pg.transactionNotification.Changed(gtx) {
 		pg.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 	}
-	if pg.governanceAPI.Changed() {
+	if pg.governanceAPI.Changed(gtx) {
 		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHTTPAPI, pg.governanceAPI.IsChecked())
 	}
-	if pg.exchangeAPI.Changed() {
+	if pg.exchangeAPI.Changed(gtx) {
 		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHTTPAPI, pg.exchangeAPI.IsChecked())
 	}
-	if pg.feeRateAPI.Changed() {
+	if pg.feeRateAPI.Changed(gtx) {
 		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHTTPAPI, pg.feeRateAPI.IsChecked())
 	}
-	if pg.vspAPI.Changed() {
+	if pg.vspAPI.Changed(gtx) {
 		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, pg.vspAPI.IsChecked())
 	}
 
-	if pg.privacyActive.Changed() {
+	if pg.privacyActive.Changed(gtx) {
 		pg.AssetsManager.SetPrivacyMode(pg.privacyActive.IsChecked())
 		pg.updatePrivacySettings()
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(pg.Load).
 			SetContentAlignment(layout.Center, layout.Center, layout.Center).
 			Body(values.String(values.StrStartupPasswordInfo)).
@@ -493,7 +490,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.networkInfoButton.Button.Clicked() {
+	if pg.networkInfoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(pg.Load).
 			SetContentAlignment(layout.Center, layout.Center, layout.Center).
 			Title(values.String(values.StrPrivacyModeInfo)).
@@ -502,15 +499,15 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.help.Clicked() {
+	if pg.help.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewHelpPage(pg.Load))
 	}
 
-	if pg.about.Clicked() {
+	if pg.about.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewAboutPage(pg.Load))
 	}
 
-	for pg.logLevel.Clicked() {
+	for pg.logLevel.Clicked(gtx) {
 		logLevelSelector := preference.NewListPreference(pg.Load,
 			sharedW.LogLevelConfigKey, libutils.DefaultLogLevel, preference.LogOptions).
 			Title(values.StrLogLevel).
@@ -521,11 +518,11 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 		break
 	}
 
-	if pg.viewLog.Clicked() {
+	if pg.viewLog.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.AssetsManager.LogFile(), values.String(values.StrAppLog)))
 	}
 
-	if pg.deleteDEX.Clicked() {
+	if pg.deleteDEX.Clicked(gtx) {
 		// Show warning modal.
 		deleteDEXModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrDeleteDEXData)).
@@ -544,7 +541,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(deleteDEXModal)
 	}
 
-	for pg.changeStartupPass.Clicked() {
+	for pg.changeStartupPass.Clicked(gtx) {
 		currentPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			EnableName(false).
 			EnableConfirmPassword(false).
@@ -593,7 +590,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 		break
 	}
 
-	if pg.startupPassword.Changed() {
+	if pg.startupPassword.Changed(gtx) {
 		if pg.startupPassword.IsChecked() {
 			createPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 				Title(values.String(values.StrCreateStartupPassword)).

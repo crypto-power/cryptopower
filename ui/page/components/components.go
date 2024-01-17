@@ -831,7 +831,7 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 							layout.Flexed(0.9, l.Theme.Body1(url).Layout),
 							layout.Flexed(0.1, func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
-									if copyRedirect.Clicked() {
+									if copyRedirect.Clicked(gtx) {
 										clipboard.WriteOp{Text: url}.Add(gtx.Ops)
 										l.Toast.Notify(values.String(values.StrCopied))
 									}

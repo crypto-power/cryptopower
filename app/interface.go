@@ -20,11 +20,6 @@ type Page interface {
 	// displayed. This is called just before HandleUserInteractions() and
 	// Layout() are called (in that order).
 	OnNavigatedTo()
-	// HandleUserInteractions is called just before Layout() to determine
-	// if any user interaction recently occurred on the page and may be
-	// used to update the page's UI components shortly before they are
-	// displayed.
-	HandleUserInteractions()
 	// Layout draws the page UI components into the provided layout context
 	// to be eventually drawn on screen.
 	Layout(layout.Context) layout.Dimensions
@@ -52,12 +47,9 @@ type Modal interface {
 	// displayed. This is called just before Handle() and Layout() are called (in
 	// that order).
 	OnResume()
-	// Handle is called just before Layout() to determine if any user
-	// interaction recently occurred on the modal and may be used to update the
-	// page's UI components shortly before they are displayed.
-	Handle()
 	// Layout draws the modal's UI components into the provided layout context
-	// to be eventually drawn on screen.
+	// to be eventually drawn on screen. User interactions are handled before
+	// the new layout is displayed.
 	Layout(gtx layout.Context) layout.Dimensions
 	// OnDismiss is called after the modal is dismissed.
 	// NOTE: The modal may be re-displayed on the app's window, in which case

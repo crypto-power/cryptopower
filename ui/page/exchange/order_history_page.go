@@ -128,16 +128,16 @@ func (pg *OrderHistoryPage) OnNavigatedFrom() {
 	pg.stopSyncNtfnListener()
 }
 
-func (pg *OrderHistoryPage) HandleUserInteractions() {
-	if pg.statusDropdown.Changed() {
+func (pg *OrderHistoryPage) handleUserInteractions(gtx C) {
+	if pg.statusDropdown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.orderDropdown.Changed() {
+	if pg.orderDropdown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.serverDropdown != nil && pg.serverDropdown.Changed() {
+	if pg.serverDropdown != nil && pg.serverDropdown.Changed(gtx) {
 		if pg.serverDropdown.SelectedIndex() == 0 {
 			pg.selectedServer = nil
 		} else {
@@ -145,7 +145,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.serverDropdown.Changed() {
+	if pg.serverDropdown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
@@ -154,7 +154,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 		pg.ParentWindow().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
-	if pg.refreshClickable.Clicked() {
+	if pg.refreshClickable.Clicked(gtx) {
 		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 
@@ -167,7 +167,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 		}
 	}
 
-	for pg.filterBtn.Clicked() {
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }
@@ -195,6 +195,8 @@ func (pg *OrderHistoryPage) initServerSelector() {
 }
 
 func (pg *OrderHistoryPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
 	inset := layout.Inset{

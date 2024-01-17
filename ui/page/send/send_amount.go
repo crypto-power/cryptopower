@@ -250,11 +250,11 @@ func (sa *sendAmount) handle() {
 	}
 }
 
-func (sa *sendAmount) IsMaxClicked() bool {
+func (sa *sendAmount) IsMaxClicked(gtx C) bool {
 	switch {
-	case sa.amountEditor.CustomButton.Clicked():
+	case sa.amountEditor.CustomButton.Clicked(gtx):
 		sa.amountEditor.Editor.Focus()
-	case sa.usdAmountEditor.CustomButton.Clicked():
+	case sa.usdAmountEditor.CustomButton.Clicked(gtx):
 		sa.usdAmountEditor.Editor.Focus()
 	default:
 		return false

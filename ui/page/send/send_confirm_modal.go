@@ -98,7 +98,7 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 	}()
 }
 
-func (scm *sendConfirmModal) Handle() {
+func (scm *sendConfirmModal) handle(gtx C) {
 	for _, evt := range scm.passwordEditor.Editor.Events() {
 		if scm.passwordEditor.Editor.Focused() {
 			switch evt.(type) {
@@ -110,11 +110,11 @@ func (scm *sendConfirmModal) Handle() {
 		}
 	}
 
-	for scm.confirmButton.Clicked() {
+	for scm.confirmButton.Clicked(gtx) {
 		scm.broadcastTransaction()
 	}
 
-	for scm.closeConfirmationModalButton.Clicked() {
+	for scm.closeConfirmationModalButton.Clicked(gtx) {
 		if !scm.isSending {
 			scm.Dismiss()
 		}
@@ -122,6 +122,8 @@ func (scm *sendConfirmModal) Handle() {
 }
 
 func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
+	scm.handle(gtx)
+
 	w := []layout.Widget{
 		func(gtx C) D {
 			scm.SetPadding(unit.Dp(0))

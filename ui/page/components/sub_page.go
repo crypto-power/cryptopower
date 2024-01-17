@@ -44,6 +44,7 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 }
 
 func (sp *SubPage) Layout(window app.WindowNavigator, gtx C) D {
+
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Bottom: values.MarginPadding22}.Layout(gtx, func(gtx C) D {
@@ -78,7 +79,7 @@ func (sp *SubPage) LayoutWithHeadCard(window app.WindowNavigator, gtx C) D {
 }
 
 func (sp *SubPage) Header(window app.WindowNavigator, gtx C) D {
-	sp.EventHandler(window)
+	sp.eventHandler(window, gtx)
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -148,9 +149,9 @@ func (sp *SubPage) CombinedLayout(window app.WindowNavigator, gtx C) D {
 	})
 }
 
-func (sp *SubPage) EventHandler(window app.WindowNavigator) {
+func (sp *SubPage) eventHandler(window app.WindowNavigator, gtx C) {
 	if sp.InfoTemplate != "" {
-		if sp.InfoButton.Button.Clicked() {
+		if sp.InfoButton.Button.Clicked(gtx) {
 			infoModal := modal.NewCustomModal(sp.Load).
 				Title(sp.Title).
 				SetupWithTemplate(sp.InfoTemplate).
@@ -161,11 +162,11 @@ func (sp *SubPage) EventHandler(window app.WindowNavigator) {
 		}
 	}
 
-	if sp.BackButton.Button.Clicked() {
+	if sp.BackButton.Button.Clicked(gtx) {
 		sp.Back()
 	}
 
-	if sp.ExtraItem != nil && sp.ExtraItem.Clicked() {
+	if sp.ExtraItem != nil && sp.ExtraItem.Clicked(gtx) {
 		sp.HandleExtra()
 	}
 }

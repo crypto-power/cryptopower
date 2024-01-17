@@ -116,13 +116,13 @@ func (pm *PasswordModal) SetError(err string) {
 	}
 }
 
-func (pm *PasswordModal) Handle() {
+func (pm *PasswordModal) handle(gtx C) {
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pm.password.Editor)
 	if isChanged {
 		pm.password.SetError("")
 	}
 
-	if pm.btnPositve.Button.Clicked() || isSubmit {
+	if pm.btnPositve.Button.Clicked(gtx) || isSubmit {
 
 		if !utils.EditorsNotEmpty(pm.password.Editor) {
 			pm.password.SetError(values.String(values.StrEnterSpendingPassword))
@@ -141,14 +141,14 @@ func (pm *PasswordModal) Handle() {
 	}
 
 	pm.btnNegative.SetEnabled(!pm.isLoading)
-	for pm.btnNegative.Clicked() {
+	for pm.btnNegative.Clicked(gtx) {
 		if !pm.isLoading {
 			pm.Dismiss()
 			pm.negativeButtonClicked()
 		}
 	}
 
-	if pm.Modal.BackdropClicked(pm.isCancelable) {
+	if pm.Modal.BackdropClicked(gtx, pm.isCancelable) {
 		if !pm.isLoading {
 			pm.Dismiss()
 			pm.negativeButtonClicked()
@@ -157,6 +157,8 @@ func (pm *PasswordModal) Handle() {
 }
 
 func (pm *PasswordModal) Layout(gtx layout.Context) D {
+	pm.handle(gtx)
+
 	title := func(gtx C) D {
 		t := pm.Theme.H6(pm.dialogTitle)
 		t.Font.Weight = font.SemiBold

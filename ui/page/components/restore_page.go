@@ -91,6 +91,8 @@ func (pg *Restore) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Restore) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	body := func(gtx C) D {
 		sp := SubPage{
 			Load:       pg.Load,
@@ -182,29 +184,24 @@ func (pg *Restore) OnNavigatedFrom() {
 	pg.seedRestorePage.OnNavigatedFrom()
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *Restore) HandleUserInteractions() {
+func (pg *Restore) handleUserInteractions(gtx C) {
 	if pg.tabs.Changed() {
 		pg.tabIndex = pg.tabs.SelectedIndex()
 	}
 
-	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed() {
+	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed(gtx) {
 		pg.seedRestorePage.setEditorFocus()
 	}
 
 	if pg.tabIndex == 0 {
-		pg.seedRestorePage.HandleUserInteractions()
+		pg.seedRestorePage.handleUserInteractions(gtx)
 	}
 
 	if len(strings.TrimSpace(pg.seedInputEditor.Editor.Text())) != 0 {
 		pg.confirmSeedButton.SetEnabled(true)
 	}
 
-	if pg.confirmSeedButton.Clicked() {
+	if pg.confirmSeedButton.Clicked(gtx) {
 		if !pg.restoreInProgress {
 			go pg.restoreFromSeedEditor()
 		}

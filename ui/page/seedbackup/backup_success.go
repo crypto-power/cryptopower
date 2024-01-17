@@ -42,13 +42,8 @@ func NewBackupSuccessPage(l *load.Load, redirect Redirectfunc) *BackupSuccessPag
 // Part of the load.Page interface.
 func (pg *BackupSuccessPage) OnNavigatedTo() {}
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *BackupSuccessPage) HandleUserInteractions() {
-	for pg.actionButton.Clicked() {
+func (pg *BackupSuccessPage) handleUserInteractions(gtx C) {
+	for pg.actionButton.Clicked(gtx) {
 		pg.redirectCallback(pg.Load, pg.ParentWindow())
 	}
 }
@@ -66,6 +61,8 @@ func (pg *BackupSuccessPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BackupSuccessPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,

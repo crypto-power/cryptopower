@@ -307,10 +307,10 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 	pg.stopNtfnListeners()
 }
 
-func (pg *CreateOrderPage) HandleUserInteractions() {
+func (pg *CreateOrderPage) handleUserInteractions(gtx C) {
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
-	if pg.horizontalSwapButton.Button.Clicked() || pg.verticalSwapButton.Button.Clicked() {
+	if pg.horizontalSwapButton.Button.Clicked(gtx) || pg.verticalSwapButton.Button.Clicked(gtx) {
 		pg.swapCurrency()
 		if pg.exchange != nil {
 			go func() {
@@ -327,7 +327,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		pg.ParentWindow().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
-	if pg.refreshExchangeRateBtn.Button.Clicked() {
+	if pg.refreshExchangeRateBtn.Button.Clicked(gtx) {
 		go func() {
 			err := pg.getExchangeRateInfo()
 			if err != nil {
@@ -336,11 +336,11 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		}()
 	}
 
-	if pg.createOrderBtn.Clicked() {
+	if pg.createOrderBtn.Clicked(gtx) {
 		pg.showConfirmOrderModal()
 	}
 
-	if pg.settingsButton.Button.Clicked() {
+	if pg.settingsButton.Button.Clicked(gtx) {
 		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
 			OnSettingsSaved(func(params *callbackParams) {
 				pg.orderData.sourceAccountSelector = params.sourceAccountSelector
@@ -355,11 +355,11 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
 
-	if pg.viewAllButton.Clicked() {
+	if pg.viewAllButton.Clicked(gtx) {
 		pg.ParentWindow().Display(NewOrderHistoryPage(pg.Load))
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(pg.Load).
 			SetContentAlignment(layout.Center, layout.Center, layout.Center).
 			Body(values.String(values.StrCreateOrderPageInfo)).
@@ -367,16 +367,15 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.splashPageInfoButton.Button.Clicked() {
+	if pg.splashPageInfoButton.Button.Clicked(gtx) {
 		pg.showInfoModal()
 	}
 
-	if pg.startTradingBtn.Clicked() {
+	if pg.startTradingBtn.Clicked(gtx) {
 		pg.AssetsManager.SetBoolValue(sharedW.IsCEXFirstVisitConfigKey, false)
-		pg.isFirstVisit = false
 	}
 
-	if pg.fromAmountEditor.Edit.CustomButton.Button.Clicked() {
+	if pg.fromAmountEditor.Edit.CustomButton.Button.Clicked(gtx) {
 		pg.fromAmountEditor.Edit.Editor.Focused()
 	}
 
@@ -419,11 +418,11 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.refreshClickable.Clicked() {
+	if pg.refreshClickable.Clicked(gtx) {
 		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 
-	if pg.scheduler.Changed() {
+	if pg.scheduler.Changed(gtx) {
 		if pg.scheduler.IsChecked() {
 
 			orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
@@ -457,11 +456,11 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.navToSettingsBtn.Button.Clicked() {
+	if pg.navToSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
-	if pg.createWalletBtn.Button.Clicked() {
+	if pg.createWalletBtn.Button.Clicked(gtx) {
 		assetToCreate := pg.AssetToCreate()
 		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
 			pg.walletCreationSuccessFunc(false, assetToCreate)
@@ -699,6 +698,8 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.isFirstVisit {
 		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return pg.splashPage(gtx)

@@ -28,7 +28,6 @@ type (
 )
 
 type Theme struct {
-	Shaper text.Shaper
 	Base   *material.Theme
 	Color  *values.Color
 	Styles *values.WidgetStyles
@@ -53,14 +52,14 @@ type Theme struct {
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
 	t := &Theme{
-		Shaper:           *text.NewShaper(fontCollection),
-		Base:             material.NewTheme(fontCollection),
+		Base:             material.NewTheme(),
 		Color:            &values.Color{},
 		Icons:            &Icons{},
 		Styles:           values.DefaultWidgetStyles(),
 		TextSize:         values.TextSize16,
 		DropdownBackdrop: new(widget.Clickable),
 	}
+	t.Base.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(fontCollection))
 	t.SwitchDarkMode(isDarkModeOn, decredIcons)
 	t.checkBoxCheckedIcon = MustIcon(widget.NewIcon(icons.ToggleCheckBox))
 	t.checkBoxUncheckedIcon = MustIcon(widget.NewIcon(icons.ToggleCheckBoxOutlineBlank))

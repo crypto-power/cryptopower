@@ -148,6 +148,8 @@ func (pg *WalletInfo) OnNavigatedTo() {
 // Part of the load.Page interface.
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
 		items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
 
@@ -308,12 +310,7 @@ func (pg *WalletInfo) walletTxWrapper(gtx C, tx *sharedW.Transaction, isHiddenSe
 	return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, true)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *WalletInfo) HandleUserInteractions() {
+func (pg *WalletInfo) handleUserInteractions(gtx C) {
 	// As long as the internet connection hasn't been established keep checking.
 	if !pg.isStatusConnected {
 		go func() {
@@ -323,7 +320,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 
 	isSyncShutting := pg.wallet.IsSyncShuttingDown()
 	pg.syncSwitch.SetEnabled(!isSyncShutting)
-	if pg.syncSwitch.Changed() {
+	if pg.syncSwitch.Changed(gtx) {
 		if pg.wallet.IsRescanning() {
 			pg.wallet.CancelRescan()
 		}
@@ -344,7 +341,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.stakes[selectedItem]))
 	}
 
-	if pg.toBackup.Button.Clicked() {
+	if pg.toBackup.Button.Clicked(gtx) {
 		currentPage := pg.ParentWindow().CurrentPageID()
 		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(load *load.Load, navigator app.WindowNavigator) {
 			navigator.ClosePagesAfter(currentPage)
@@ -352,15 +349,15 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
-	if pg.mixerRedirectButton.Button.Clicked() {
+	if pg.mixerRedirectButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().Display(privacy.NewAccountMixerPage(pg.Load, pg.wallet.(*dcr.Asset)))
 	}
 
-	if pg.viewAllTxButton.Button.Clicked() {
+	if pg.viewAllTxButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().Display(transaction.NewTransactionsPage(pg.Load, pg.wallet))
 	}
 
-	if pg.viewAllStakeButton.Button.Clicked() {
+	if pg.viewAllStakeButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().Display(staking.NewStakingPage(pg.Load, pg.wallet.(*dcr.Asset)))
 	}
 }

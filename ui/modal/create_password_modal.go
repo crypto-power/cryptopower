@@ -204,7 +204,7 @@ func (cm *CreatePasswordModal) SetParent(parent app.Page) *CreatePasswordModal {
 	return cm
 }
 
-func (cm *CreatePasswordModal) Handle() {
+func (cm *CreatePasswordModal) handle(gtx C) {
 	cm.btnPositive.SetEnabled(cm.validToCreate())
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor, cm.walletName.Editor)
@@ -216,7 +216,7 @@ func (cm *CreatePasswordModal) Handle() {
 		cm.confirmPasswordEditor.SetError("")
 	}
 
-	if cm.btnPositive.Clicked() || isSubmit {
+	if cm.btnPositive.Clicked(gtx) || isSubmit {
 		if cm.walletNameEnabled {
 			if !utils.EditorsNotEmpty(cm.walletName.Editor) {
 				cm.walletName.SetError(values.String(values.StrEnterWalletName))
@@ -244,7 +244,7 @@ func (cm *CreatePasswordModal) Handle() {
 	}
 
 	cm.btnNegative.SetEnabled(!cm.isLoading)
-	if cm.btnNegative.Clicked() {
+	if cm.btnNegative.Clicked(gtx) {
 		if !cm.isLoading {
 			if cm.parent != nil {
 				cm.parent.OnNavigatedTo()
@@ -254,7 +254,7 @@ func (cm *CreatePasswordModal) Handle() {
 		}
 	}
 
-	if cm.Modal.BackdropClicked(cm.isCancelable) {
+	if cm.Modal.BackdropClicked(gtx, cm.isCancelable) {
 		if !cm.isLoading {
 			cm.Dismiss()
 		}
@@ -317,6 +317,7 @@ func (cm *CreatePasswordModal) titleLayout() layout.Widget {
 }
 
 func (cm *CreatePasswordModal) Layout(gtx C) D {
+	cm.handle(gtx)
 	return cm.Modal.Layout(gtx, cm.LayoutComponents())
 }
 

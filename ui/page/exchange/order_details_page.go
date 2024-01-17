@@ -105,8 +105,8 @@ func (pg *OrderDetailsPage) OnNavigatedFrom() {
 	}
 }
 
-func (pg *OrderDetailsPage) HandleUserInteractions() {
-	if pg.refreshBtn.Clicked() {
+func (pg *OrderDetailsPage) handleUserInteractions(gtx C) {
+	if pg.refreshBtn.Clicked(gtx) {
 		go func() {
 			pg.isRefreshing = true
 			pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
@@ -116,12 +116,14 @@ func (pg *OrderDetailsPage) HandleUserInteractions() {
 		}()
 	}
 
-	if pg.createOrderBtn.Clicked() {
+	if pg.createOrderBtn.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 }
 
 func (pg *OrderDetailsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,

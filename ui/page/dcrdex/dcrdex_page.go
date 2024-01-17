@@ -96,6 +96,8 @@ func (pg *DEXPage) OnNavigatedTo() {
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.isDexFirstVisit {
 		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return pg.splashPage(gtx)
@@ -137,22 +139,15 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 	return false
 }
 
-// HandleUserInteractions is called just before Layout() to determine if any
-// user interaction recently occurred on the page and may be used to update the
-// page's UI components shortly before they are displayed.
-// Part of the load.Page interface.
-func (pg *DEXPage) HandleUserInteractions() {
-	if pg.generalSettingsBtn.Button.Clicked() {
+func (pg *DEXPage) handleUserInteractions(gtx C) {
+	if pg.generalSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
-	if pg.CurrentPage() != nil {
-		pg.CurrentPage().HandleUserInteractions()
-	}
-	if pg.splashPageInfoButton.Button.Clicked() {
+	if pg.splashPageInfoButton.Button.Clicked(gtx) {
 		pg.showInfoModal()
 	}
-	if pg.startTradingBtn.Button.Clicked() {
+	if pg.startTradingBtn.Button.Clicked(gtx) {
 		pg.isDexFirstVisit = false
 	}
 }

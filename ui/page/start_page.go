@@ -228,13 +228,8 @@ func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 	return nil
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (sp *startPage) HandleUserInteractions() {
-	if sp.addWalletButton.Clicked() {
+func (sp *startPage) handleUserInteractions(gtx C) {
+	if sp.addWalletButton.Clicked(gtx) {
 		createWalletPage := components.NewCreateWallet(sp.Load, func() {
 			sp.setLanguagePref(false)
 			sp.updateSettings()
@@ -243,7 +238,7 @@ func (sp *startPage) HandleUserInteractions() {
 		sp.ParentNavigator().Display(createWalletPage)
 	}
 
-	for sp.nextButton.Clicked() {
+	for sp.nextButton.Clicked(gtx) {
 		// TODO: Handle Selected settings option (language and advanced or
 		// recommended settings). Might requires refactor of settings page.
 		if sp.currentPageIndex == len(sp.onBoardingScreens)-1 { // index starts at 0
@@ -254,11 +249,11 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	for i, item := range sp.settingsOptions {
-		for item.clickable.Clicked() { // TODO: Show settings page and allow user pick settings for advanced setup.
+		for item.clickable.Clicked(gtx) { // TODO: Show settings page and allow user pick settings for advanced setup.
 			sp.selectedSettingsOptionIndex = i
 		}
 
-		for item.infoButton.Button.Clicked() {
+		for item.infoButton.Button.Clicked(gtx) {
 			body := values.String(values.StrRecommendedModalBody)
 			if i == advancedSettingsOptionIndex {
 				body = values.String(values.StrAdvancedModalBody)
@@ -273,19 +268,19 @@ func (sp *startPage) HandleUserInteractions() {
 		}
 	}
 
-	if sp.languageDropdown.Changed() {
+	if sp.languageDropdown.Changed(gtx) {
 		// Refresh the user language now.
 		values.SetUserLanguage(sp.selectedLanguageKey())
 		sp.RefreshTheme(sp.ParentWindow())
 	}
 
-	for sp.backButton.Clicked() {
+	for sp.backButton.Clicked(gtx) {
 		sp.currentPageIndex--
 	}
 
 	for i, onBoardingScreen := range sp.onBoardingScreens {
 		if i < startupSettingsPageIndex {
-			if onBoardingScreen.indicatorBtn.Clicked() {
+			if onBoardingScreen.indicatorBtn.Clicked(gtx) {
 				sp.currentPageIndex = i
 			}
 		}
@@ -312,6 +307,8 @@ func (sp *startPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (sp *startPage) Layout(gtx C) D {
+	sp.handleUserInteractions(gtx)
+
 	gtx.Constraints.Min = gtx.Constraints.Max // use maximum height & width
 	if sp.currentPageIndex < 0 || sp.isQuitting {
 		return sp.loadingSection(gtx)

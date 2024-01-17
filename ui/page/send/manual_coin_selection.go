@@ -262,13 +262,8 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 	return nil
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
-	if pg.actionButton.Clicked() {
+func (pg *ManualCoinSelectionPage) handleUserInteractions(gtx C) {
+	if pg.actionButton.Clicked(gtx) {
 		pg.sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
 		if pg.modalLayout != nil {
 			pg.modalLayout.Dismiss()
@@ -277,7 +272,7 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.fromCoinSelection.Clicked() {
+	if pg.fromCoinSelection.Clicked(gtx) {
 		if pg.modalLayout != nil {
 			pg.modalLayout.Dismiss()
 		} else {
@@ -285,7 +280,7 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.clearButton.Clicked() {
+	if pg.clearButton.Clicked(gtx) {
 		for i := 0; i < len(pg.accountUTXOs.Details); i++ {
 			pg.accountUTXOs.Details[i].checkbox.CheckBox = &widget.Bool{Value: false}
 		}
@@ -294,7 +289,7 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 
 	if pg.accountCollapsible.IsExpanded() {
 		for pos, component := range pg.clickables {
-			if component == nil || !component.Clicked() {
+			if component == nil || !component.Clicked(gtx) {
 				continue
 			}
 
@@ -323,7 +318,7 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	// Update Summary information as the last section when handling events.
 	for i := 0; i < len(pg.accountUTXOs.Details); i++ {
 		record := pg.accountUTXOs.Details[i]
-		if record.checkbox.CheckBox.Changed() {
+		if record.checkbox.CheckBox.Update(gtx) {
 			if record.checkbox.CheckBox.Value {
 				pg.selectedUTXOrows = append(pg.selectedUTXOrows, record.UnspentOutput)
 				pg.selectedAmount += record.Amount.ToCoin()
@@ -340,6 +335,10 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 
 			pg.updateSummaryInfo()
 		}
+	}
+
+	if pg.modalLayout != nil && pg.modalLayout.BackdropClicked(gtx, true) {
+		pg.modalLayout.Dismiss()
 	}
 }
 
@@ -376,6 +375,8 @@ func (pg *ManualCoinSelectionPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.modalLayout == nil {
 		return pg.contentLayout(gtx)
 	}
@@ -580,7 +581,7 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 							dateLabel := pg.generateLabel(libutils.FormatUTCShortTime(v.ReceiveTime.Unix()), nil) // Component 5
 
 							// copy destination Address
-							if v.addressCopy.Clicked() {
+							if v.addressCopy.Clicked(gtx) {
 								clipboard.WriteOp{Text: v.Address}.Add(gtx.Ops)
 								pg.Toast.Notify(values.String(values.StrAddressCopied))
 							}
@@ -697,15 +698,6 @@ func sortUTXOrows(i, j, pos int, ascendingOrder bool, elems []*UTXOInfo) bool {
 
 	default:
 		return false
-	}
-}
-
-// Handle implements app.Modal.
-func (pg *ManualCoinSelectionPage) Handle() {
-	if pg.modalLayout.BackdropClicked(true) {
-		pg.modalLayout.Dismiss()
-	} else {
-		pg.HandleUserInteractions()
 	}
 }
 

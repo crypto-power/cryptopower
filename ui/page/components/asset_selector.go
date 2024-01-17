@@ -144,15 +144,15 @@ func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetTypeItem) bo
 	return ats
 }
 
-func (ats *AssetTypeSelector) Handle(window app.WindowNavigator) {
-	for ats.openSelectorDialog.Clicked() {
+func (ats *AssetTypeSelector) handle(window app.WindowNavigator, gtx C) {
+	for ats.openSelectorDialog.Clicked(gtx) {
 		ats.title(ats.dialogTitle)
 		window.ShowModal(ats.assetTypeModal)
 	}
 }
 
 func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
-	ats.Handle(window)
+	ats.handle(window, gtx)
 
 	linearLayout := cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
@@ -224,17 +224,17 @@ func (ats *AssetTypeSelector) buildExchangeItems() []*AssetTypeItem {
 
 func (atm *assetTypeModal) OnResume() {}
 
-func (atm *assetTypeModal) Handle() {
+func (atm *assetTypeModal) handle(gtx C) {
 	if atm.eventQueue != nil {
 		for _, assetTypeItem := range atm.assetTypeItems {
-			for assetTypeItem.clickable.Clicked() {
+			for assetTypeItem.clickable.Clicked(gtx) {
 				atm.onAssetTypeClicked(assetTypeItem)
 				atm.Dismiss()
 			}
 		}
 	}
 
-	if atm.Modal.BackdropClicked(atm.isCancelable) {
+	if atm.Modal.BackdropClicked(gtx, atm.isCancelable) {
 		atm.Dismiss()
 	}
 }
@@ -250,6 +250,8 @@ func (atm *assetTypeModal) assetTypeClicked(callback func(*AssetTypeItem)) *asse
 }
 
 func (atm *assetTypeModal) Layout(gtx C) D {
+	atm.handle(gtx)
+
 	atm.eventQueue = gtx
 	w := []layout.Widget{
 		func(gtx C) D {

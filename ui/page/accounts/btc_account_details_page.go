@@ -92,6 +92,8 @@ func (pg *BTCAcctDetailsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BTCAcctDetailsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	m := values.MarginPadding10
 	widgets := []func(gtx C) D{
 		func(gtx C) D {
@@ -151,7 +153,7 @@ func (pg *BTCAcctDetailsPage) extendedPubkey(gtx C) D {
 									lbl := pg.Theme.Label(values.TextSize14, "********")
 									lbl.Color = pg.Theme.Color.GrayText1
 									if !pg.isHiddenExtendedxPubkey {
-										if pg.extendedKeyClickable.Clicked() {
+										if pg.extendedKeyClickable.Clicked(gtx) {
 											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}
@@ -355,13 +357,8 @@ func (pg *BTCAcctDetailsPage) pageSections(gtx C, body layout.Widget) D {
 	return layout.Inset{Left: m, Right: m, Top: mtb, Bottom: mtb}.Layout(gtx, body)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *BTCAcctDetailsPage) HandleUserInteractions() {
-	if pg.renameAccount.Clicked() {
+func (pg *BTCAcctDetailsPage) handleUserInteractions(gtx C) {
+	if pg.renameAccount.Clicked(gtx) {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrAcctName)).
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
@@ -383,7 +380,7 @@ func (pg *BTCAcctDetailsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(textModal)
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrExtendedKey)).
 			Body(values.String(values.StrExtendedInfo)).
@@ -391,7 +388,7 @@ func (pg *BTCAcctDetailsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	for pg.showExtendedKeyButton.Clicked() {
+	for pg.showExtendedKeyButton.Clicked(gtx) {
 		if pg.extendedKey != "" {
 			pg.isHiddenExtendedxPubkey = !pg.isHiddenExtendedxPubkey
 		}

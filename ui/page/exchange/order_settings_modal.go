@@ -147,10 +147,10 @@ func (osm *orderSettingsModal) OnDismiss() {
 	osm.ctxCancel()
 }
 
-func (osm *orderSettingsModal) Handle() {
+func (osm *orderSettingsModal) handle(gtx C) {
 	osm.saveBtn.SetEnabled(osm.canSave())
 
-	if osm.saveBtn.Clicked() {
+	if osm.saveBtn.Clicked(gtx) {
 		params := &callbackParams{
 			sourceAccountSelector: osm.sourceAccountSelector,
 			sourceWalletSelector:  osm.sourceWalletSelector,
@@ -173,12 +173,12 @@ func (osm *orderSettingsModal) Handle() {
 		osm.Dismiss()
 	}
 
-	if osm.cancelBtn.Clicked() || osm.Modal.BackdropClicked(true) {
+	if osm.cancelBtn.Clicked(gtx) || osm.Modal.BackdropClicked(gtx, true) {
 		osm.onCancel()
 		osm.Dismiss()
 	}
 
-	if osm.sourceInfoButton.Button.Clicked() {
+	if osm.sourceInfoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(osm.Load).
 			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
@@ -187,7 +187,7 @@ func (osm *orderSettingsModal) Handle() {
 		osm.ParentWindow().ShowModal(info)
 	}
 
-	if osm.destinationInfoButton.Button.Clicked() {
+	if osm.destinationInfoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(osm.Load).
 			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
@@ -196,7 +196,7 @@ func (osm *orderSettingsModal) Handle() {
 		osm.ParentWindow().ShowModal(info)
 	}
 
-	if osm.feeRateSelector.SaveRate.Clicked() {
+	if osm.feeRateSelector.SaveRate.Clicked(gtx) {
 		osm.feeRateSelector.OnEditRateClicked(osm.sourceWalletSelector.SelectedWallet())
 	}
 }
@@ -237,6 +237,8 @@ func (osm *orderSettingsModal) canSave() bool {
 }
 
 func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
+	osm.handle(gtx)
+
 	osm.handleCopyEvent(gtx)
 	w := []layout.Widget{
 		func(gtx C) D {
@@ -370,7 +372,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																								if osm.addressEditor.Editor.Text() == "" {
 																									mGtx = gtx.Disabled()
 																								}
-																								if osm.copyRedirect.Clicked() {
+																								if osm.copyRedirect.Clicked(gtx) {
 																									clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(mGtx.Ops)
 																									osm.Load.Toast.Notify(values.String(values.StrCopied))
 																								}

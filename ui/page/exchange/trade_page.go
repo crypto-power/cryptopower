@@ -92,12 +92,7 @@ func (pg *TradePage) OnNavigatedTo() {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *TradePage) HandleUserInteractions() {
+func (pg *TradePage) handleUserInteractions() {
 	selectedIndex := pg.tab.SelectedIndex()
 	if pg.IsMobileView() {
 		selectedIndex++ // Adjust index for mobile view
@@ -119,8 +114,6 @@ func (pg *TradePage) HandleUserInteractions() {
 			}
 		}
 	}
-
-	pg.CurrentPage().HandleUserInteractions()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -140,5 +133,6 @@ func (pg *TradePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TradePage) Layout(gtx C) D {
+	pg.handleUserInteractions()
 	return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
 }

@@ -326,6 +326,8 @@ func settingCommonDropdown(t *cryptomaterial.Theme, dropdown *cryptomaterial.Dro
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TransactionsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	isDCRAssetSelected := pg.selectedWallet != nil && pg.selectedWallet.GetAssetType() == utils.DCRWalletAsset
 	if isDCRAssetSelected || (pg.dcrWalletExists && pg.selectedWallet == nil) {
 		// Only show tx category navigation txCategoryTab for DCR wallets.
@@ -546,26 +548,23 @@ func (pg *TransactionsPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transactio
 	return mtx.Transaction, pg.AssetsManager.WalletWithID(mtx.walletID)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *TransactionsPage) HandleUserInteractions() {
-	if pg.statusDropDown.Changed() {
+func (pg *TransactionsPage) handleUserInteractions(gtx C) {
+	if pg.statusDropDown.Changed(gtx) {
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		assetIndex := pg.walletDropDown.SelectedIndex()
 		// The "All Wallets" dropdown item is the first in the dropdown list.
 		if assetIndex == 0 {
 			pg.selectedWallet = nil
-		} else {
+		} else if len(pg.assetWallets) > 0 {
 			// Assets added as dropdown items have an index of
 			// actuallyIndex+1 due to the "All Wallets" dropdown item.
 			assetIndex--
-			pg.selectedWallet = pg.assetWallets[assetIndex]
+			if assetIndex < len(pg.assetWallets) {
+				pg.selectedWallet = pg.assetWallets[assetIndex]
+			}
 		}
 		pg.refreshAvailableTxType()
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
@@ -581,7 +580,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if pg.walletDropDown != nil {
 		dropDownList = append(dropDownList, pg.walletDropDown)
 	}
-	cryptomaterial.DisplayOneDropdown(dropDownList...)
+	cryptomaterial.DisplayOneDropdown(gtx, dropDownList...)
 
 	if pg.txCategoryTab.Changed() {
 		pg.selectedTxCategoryTab = pg.txCategoryTab.SelectedIndex()
@@ -597,15 +596,15 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	for pg.filterBtn.Clicked() {
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 
-	for pg.exportBtn.Clicked() {
+	for pg.exportBtn.Clicked(gtx) {
 		// TODO: implement logic when export clicked
 	}
 
-	if pg.orderDropDown.Changed() {
+	if pg.orderDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 

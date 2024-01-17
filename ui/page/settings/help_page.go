@@ -120,6 +120,8 @@ func (pg *HelpPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *HelpPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
@@ -235,14 +237,9 @@ func (pg *HelpPage) pageSections(gtx C, icon *cryptomaterial.Image, action *cryp
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *HelpPage) HandleUserInteractions() {
+func (pg *HelpPage) handleUserInteractions(gtx C) {
 	for _, cardItem := range pg.helpPageCard {
-		if cardItem.Clickable.Clicked() {
+		if cardItem.Clickable.Clicked(gtx) {
 			decredURL := cardItem.Link
 			info := modal.NewCustomModal(pg.Load).
 				Title("View " + cardItem.Title).
@@ -262,7 +259,7 @@ func (pg *HelpPage) HandleUserInteractions() {
 											layout.Flexed(0.1, func(gtx C) D {
 												return layout.E.Layout(gtx, func(gtx C) D {
 													return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
-														if pg.copyRedirectURL.Clicked() {
+														if pg.copyRedirectURL.Clicked(gtx) {
 															clipboard.WriteOp{Text: decredURL}.Add(gtx.Ops)
 															pg.Toast.Notify(values.String(values.StrCopied))
 														}
@@ -292,7 +289,7 @@ func (pg *HelpPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.backButton.Button.Clicked() {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 }

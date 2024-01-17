@@ -266,6 +266,8 @@ func (pg *TxDetailsPage) getMoreItem() []moreItem {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -594,7 +596,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 
 					lbl.Color = pg.Theme.Color.Primary
 					// copy destination Address
-					if pg.destAddressClickable.Clicked() {
+					if pg.destAddressClickable.Clicked(gtx) {
 						clipboard.WriteOp{Text: pg.txDestinationAddress}.Add(gtx.Ops)
 						pg.Toast.Notify(values.String(values.StrTxHashCopied))
 					}
@@ -756,7 +758,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				lbl.Color = pg.Theme.Color.Primary
 
 				// copy transaction hash
-				if pg.hashClickable.Clicked() {
+				if pg.hashClickable.Clicked(gtx) {
 					clipboard.WriteOp{Text: pg.transaction.Hash}.Add(gtx.Ops)
 					pg.Toast.Notify(values.String(values.StrTxHashCopied))
 				}
@@ -849,7 +851,7 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 					}),
 					layout.Rigid(func(gtx C) D {
 						// copy address
-						if pg.txnWidgets.copyTextButtons[i].Clicked() {
+						if pg.txnWidgets.copyTextButtons[i].Clicked(gtx) {
 							clipboard.WriteOp{Text: address}.Add(gtx.Ops)
 							pg.Toast.Notify(values.String(values.StrCopied))
 						}
@@ -898,7 +900,7 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 						layout.Rigid(func(gtx C) D {
 							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									if pg.moreItems[i].button.Clicked() {
+									if pg.moreItems[i].button.Clicked(gtx) {
 										switch pg.moreItems[i].id {
 										case viewBlockID: // redirect to browser
 											pg.showbrowserURLModal(pg.moreItems[i].button)
@@ -928,17 +930,12 @@ func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
 	}.Layout(gtx, body)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *TxDetailsPage) HandleUserInteractions() {
-	if pg.moreOption.Clicked() {
+func (pg *TxDetailsPage) handleUserInteractions(gtx C) {
+	if pg.moreOption.Clicked(gtx) {
 		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
 
-	if pg.associatedTicketClickable.Clicked() {
+	if pg.associatedTicketClickable.Clicked(gtx) {
 		if pg.ticketSpent != nil {
 			pg.txBackStack = pg.transaction
 			pg.transaction = pg.ticketSpent
@@ -948,7 +945,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.rebroadcastClickable.Clicked() {
+	if pg.rebroadcastClickable.Clicked(gtx) {
 		go func() {
 			pg.rebroadcastClickable.SetEnabled(false, nil)
 			if !pg.wallet.IsConnectedToNetwork() {

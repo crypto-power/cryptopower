@@ -206,21 +206,16 @@ func (pg *VerifySeedPage) verifySeed() {
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *VerifySeedPage) HandleUserInteractions() {
+func (pg *VerifySeedPage) handleUserInteractions(gtx C) {
 	for i, multiSeed := range pg.multiSeedList {
 		for j, clickable := range multiSeed.clickables {
-			for clickable.Clicked() {
+			for clickable.Clicked(gtx) {
 				pg.multiSeedList[i].selectedIndex = j
 			}
 		}
 	}
 
-	for pg.actionButton.Clicked() {
+	for pg.actionButton.Clicked(gtx) {
 		if pg.allSeedsSelected() {
 			pg.verifySeed()
 		}
@@ -230,7 +225,7 @@ func (pg *VerifySeedPage) HandleUserInteractions() {
 		pg.verifySeedButton.SetEnabled(true)
 	}
 
-	if pg.verifySeedButton.Clicked() {
+	if pg.verifySeedButton.Clicked(gtx) {
 		pg.verifySeed()
 	}
 }
@@ -248,6 +243,8 @@ func (pg *VerifySeedPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 	margin16 := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)
 	sp := components.SubPage{

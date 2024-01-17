@@ -114,6 +114,8 @@ func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	pg.toPrivacySetup.TextSize = values.TextSize16
 	if pg.IsMobileView() {
 		pg.toPrivacySetup.TextSize = values.TextSize14
@@ -290,17 +292,12 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *ManualMixerSetupPage) HandleUserInteractions() {
-	if pg.backClickable.Clicked() {
+func (pg *ManualMixerSetupPage) handleUserInteractions(gtx C) {
+	if pg.backClickable.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
-	if pg.toPrivacySetup.Clicked() {
+	if pg.toPrivacySetup.Clicked(gtx) {
 		go pg.showModalSetupMixerAcct()
 	}
 

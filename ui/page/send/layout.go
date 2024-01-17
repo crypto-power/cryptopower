@@ -43,6 +43,8 @@ func (pg *Page) initLayoutWidgets() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.modalLayout == nil {
 		return pg.contentLayout(gtx)
 	}
@@ -143,7 +145,7 @@ func (pg *Page) recipientsLayout(gtx C) D {
 	return pg.sectionWrapper(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				recipient := pg.recipient.recipientLayout(1, false, pg.ParentWindow())
+				recipient := pg.recipient.recipientLayout(gtx, 1, false, pg.ParentWindow())
 				return recipient(gtx)
 			}),
 			// TODO: to be implemented in follow up PR.

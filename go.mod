@@ -5,7 +5,7 @@ go 1.19
 require (
 	decred.org/dcrdex v0.6.3
 	decred.org/dcrwallet/v3 v3.0.1
-	gioui.org v0.1.0
+	gioui.org v0.4.2
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/ararog/timeago v0.0.0-20160328174124-e9969cf18b8d
@@ -71,7 +71,7 @@ require (
 	decred.org/cspp/v2 v2.1.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
-	gioui.org/shader v1.0.6 // indirect
+	gioui.org/shader v1.0.8 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
@@ -137,7 +137,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
-	github.com/go-text/typesetting v0.0.0-20230602202114-9797aefac433 // indirect
+	github.com/go-text/typesetting v0.0.0-20230803102845-24e03d8b5372 // indirect
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect

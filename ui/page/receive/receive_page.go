@@ -218,6 +218,8 @@ func (pg *Page) getSelectedWalletLogo() *cryptomaterial.Image {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	if pg.modalLayout == nil {
 		return pg.contentLayout(gtx)
 	}
@@ -394,24 +396,19 @@ func (pg *Page) addressLayout(gtx C) D {
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *Page) HandleUserInteractions() {
-	if pg.backdrop.Clicked() {
+func (pg *Page) handleUserInteractions(gtx C) {
+	if pg.backdrop.Clicked(gtx) {
 		pg.isNewAddr = false
 	}
 
-	if pg.more.Button.Clicked() {
+	if pg.more.Button.Clicked(gtx) {
 		pg.isNewAddr = !pg.isNewAddr
 		if pg.isInfo {
 			pg.isInfo = false
 		}
 	}
 
-	if pg.newAddr.Clicked() {
+	if pg.newAddr.Clicked(gtx) {
 		newAddr, err := pg.generateNewAddress()
 		if err != nil {
 			log.Debug("Error generating new address" + err.Error())
@@ -423,13 +420,17 @@ func (pg *Page) HandleUserInteractions() {
 		pg.isNewAddr = false
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		textWithUnit := values.String(values.StrReceive) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
 			Title(textWithUnit).
 			Body(values.String(values.StrReceiveInfo)).
 			SetContentAlignment(layout.NW, layout.W, layout.Center)
 		pg.ParentWindow().ShowModal(info)
+	}
+
+	if pg.modalLayout != nil && pg.modalLayout.BackdropClicked(gtx, true) {
+		pg.modalLayout.Dismiss()
 	}
 }
 
@@ -452,7 +453,7 @@ generateAddress:
 
 func (pg *Page) handleCopyEvent(gtx C) {
 	// Prevent copying again if the timer hasn't expired
-	if pg.copy.Clicked() && !pg.isCopying {
+	if pg.copy.Clicked(gtx) && !pg.isCopying {
 		clipboard.WriteOp{Text: pg.currentAddress}.Add(gtx.Ops)
 		pg.Toast.Notify(values.String(values.StrCopied))
 	}
@@ -467,14 +468,6 @@ func (pg *Page) handleCopyEvent(gtx C) {
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
 	pg.sourceAccountselector.StopTxNtfnListener()
-}
-
-func (pg *Page) Handle() {
-	if pg.modalLayout.BackdropClicked(true) {
-		pg.modalLayout.Dismiss()
-	} else {
-		pg.HandleUserInteractions()
-	}
 }
 
 // OnDismiss is like OnNavigatedFrom but OnDismiss is called if this page is

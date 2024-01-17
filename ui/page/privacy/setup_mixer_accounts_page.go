@@ -65,6 +65,8 @@ func (pg *SetupMixerAccountsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SetupMixerAccountsPage) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		inset := layout.UniformInset(24)
 		var headingTextSize, normalTextSize unit.Sp = 20, 16
@@ -179,13 +181,8 @@ func (pg *SetupMixerAccountsPage) layoutHeadingDescAndNextIcon(gtx C, heading, d
 	)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *SetupMixerAccountsPage) HandleUserInteractions() {
-	if pg.autoSetupClickable.Clicked() {
+func (pg *SetupMixerAccountsPage) handleUserInteractions(gtx C) {
+	if pg.autoSetupClickable.Clicked(gtx) {
 		showModalSetupMixerInfo(&sharedModalConfig{
 			Load:          pg.Load,
 			window:        pg.ParentWindow(),
@@ -194,7 +191,7 @@ func (pg *SetupMixerAccountsPage) HandleUserInteractions() {
 		}, pg.dcrWallet)
 	}
 
-	if pg.manualSetupClickable.Clicked() {
+	if pg.manualSetupClickable.Clicked(gtx) {
 		if !pg.manualEnabled {
 			notEnoughAccounts := values.String(values.StrNotEnoughAccounts)
 			info := modal.NewErrorModal(pg.Load, notEnoughAccounts, modal.DefaultClickFunc())

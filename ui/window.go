@@ -181,28 +181,33 @@ func (win *Window) HandleEvents() {
 		win.Quit <- struct{}{}
 	}
 
+	// Watch app shutdown
+	go func() {
+		for {
+			select {
+			case <-done:
+				displayShutdownPage()
+			case <-win.IsShutdown:
+				// backend processes shutdown is complete, exit UI process too.
+				return
+			}
+		}
+	}()
+
 	for {
 		// Select either the os interrupt or the window event, whichever becomes
 		// ready first.
-		select {
-		case <-done:
+		switch evt := win.NextEvent().(type) {
+		case system.DestroyEvent:
 			displayShutdownPage()
-		case <-win.IsShutdown:
-			// backend processes shutdown is complete, exit UI process too.
 			return
-		case e := <-win.Events():
-			switch evt := e.(type) {
 
-			case system.DestroyEvent:
-				displayShutdownPage()
+		case system.FrameEvent:
+			ops := win.handleFrameEvent(evt)
+			evt.Frame(ops)
 
-			case system.FrameEvent:
-				ops := win.handleFrameEvent(evt)
-				evt.Frame(ops)
-
-			default:
-				log.Tracef("Unhandled window event %v\n", e)
-			}
+		default:
+			log.Tracef("Unhandled window event %v\n", evt)
 		}
 	}
 }
@@ -221,15 +226,11 @@ func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
 
 	default:
 		// The app window may have received some user interaction such as key
-		// presses, a button click, etc which triggered this FrameEvent. Handle
-		// such interactions before re-displaying the UI components. This
-		// ensures that the proper interface is displayed to the user based on
-		// the action(s) they just performed.
+		// presses etc which triggered this FrameEvent. Handle such interactions
+		// before re-displaying the UI components. This ensures that the proper
+		// interface is displayed to the user based on the action(s) they just
+		// performed.
 		win.handleRelevantKeyPresses(evt)
-		win.navigator.CurrentPage().HandleUserInteractions()
-		if modal := win.navigator.TopModal(); modal != nil {
-			modal.Handle()
-		}
 	}
 
 	// Generate an operations list with instructions for drawing the window's UI

@@ -426,19 +426,14 @@ func (pg *Page) clearEstimates() {
 	pg.feeRateSelector.SetFeerate(0)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *Page) HandleUserInteractions() {
-	if pg.feeRateSelector.SaveRate.Clicked() {
+func (pg *Page) handleUserInteractions(gtx C) {
+	if pg.feeRateSelector.SaveRate.Clicked(gtx) {
 		pg.feeRateSelector.OnEditRateClicked(pg.selectedWallet)
 	}
 
 	pg.nextButton.SetEnabled(pg.recipient.isValidated())
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
 			Title(textWithUnit).
@@ -452,7 +447,7 @@ func (pg *Page) HandleUserInteractions() {
 	// 	go pg.fetchExchangeRate()
 	// }
 
-	if pg.toCoinSelection.Clicked() {
+	if pg.toCoinSelection.Clicked(gtx) {
 		if pg.recipient.destinationAddress() != "" {
 			if pg.modalLayout != nil {
 				pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
@@ -462,7 +457,7 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 
-	if pg.nextButton.Clicked() {
+	if pg.nextButton.Clicked(gtx) {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
@@ -484,19 +479,9 @@ func (pg *Page) HandleUserInteractions() {
 		pg.recipient.validateAmount()
 		pg.validateAndConstructTxAmountOnly()
 	}
-}
 
-// Handle is like HandleUserInteractions but Handle is called if this page is
-// displayed as a modal while HandleUserInteractions is called if this page
-// is displayed as a full page. Either Handle or HandleUserInteractions will
-// be called just before Layout() is called to determine if any user interaction
-// recently occurred on the modal or page and may be used to update any affected
-// UI components shortly before they are displayed by the Layout() method.
-func (pg *Page) Handle() {
-	if pg.modalLayout.BackdropClicked(true) {
+	if pg.modalLayout != nil && pg.modalLayout.BackdropClicked(gtx, true) {
 		pg.modalLayout.Dismiss()
-	} else {
-		pg.HandleUserInteractions()
 	}
 }
 

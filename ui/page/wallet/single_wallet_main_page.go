@@ -276,16 +276,12 @@ func (swmp *SingleWalletMasterPage) OnCurrencyChanged() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
-	if swmp.CurrentPage() != nil {
-		swmp.CurrentPage().HandleUserInteractions()
-	}
-
-	if swmp.refreshExchangeRateBtn.Clicked() {
+func (swmp *SingleWalletMasterPage) handleUserInteractions(gtx C) {
+	if swmp.refreshExchangeRateBtn.Clicked(gtx) {
 		go swmp.fetchExchangeRate()
 	}
 
-	for swmp.openWalletSelector.Clicked() {
+	for swmp.openWalletSelector.Clicked(gtx) {
 		swmp.showNavigationFunc()
 	}
 
@@ -347,14 +343,14 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		}
 	}
 
-	if swmp.navigateToSyncBtn.Button.Clicked() {
+	if swmp.navigateToSyncBtn.Button.Clicked(gtx) {
 		swmp.ToggleSync(swmp.selectedWallet, func(b bool) {
 			swmp.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
 			swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet))
 		})
 	}
 
-	for swmp.hideBalanceButton.Clicked() {
+	for swmp.hideBalanceButton.Clicked(gtx) {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
 		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
 	}
@@ -411,6 +407,8 @@ func (swmp *SingleWalletMasterPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
+	swmp.handleUserInteractions(gtx)
+
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return cryptomaterial.LinearLayout{

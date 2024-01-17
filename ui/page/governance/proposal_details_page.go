@@ -161,6 +161,8 @@ func (pg *ProposalDetails) loadProposalDescription() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) Layout(gtx C) D {
+	pg.handleUserInteractions(gtx)
+
 	proposal := pg.proposal
 	page := components.SubPage{
 		Load:       pg.Load,
@@ -202,18 +204,13 @@ func (pg *ProposalDetails) getProposalItemWidgets() *proposalItemWidgets {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *ProposalDetails) HandleUserInteractions() {
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+func (pg *ProposalDetails) handleUserInteractions(gtx C) {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 		//TODO: implement when selected wallet
 	}
 
-	if pg.vote.Clicked() {
+	if pg.vote.Clicked(gtx) {
 		if len(pg.assetWallets) == 0 {
 			pg.displayCreateWalletModal(libutils.DCRWalletAsset)
 			return
@@ -221,7 +218,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(newVoteModal(pg.Load, pg.proposal))
 	}
 
-	for pg.viewInPoliteiaBtn.Clicked() {
+	for pg.viewInPoliteiaBtn.Clicked(gtx) {
 		host := "https://proposals.decred.org/record/" + pg.proposal.Token
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "http://45.32.108.164:3000/record/" + pg.proposal.Token
@@ -245,7 +242,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
-													if pg.copyRedirectURL.Clicked() {
+													if pg.copyRedirectURL.Clicked(gtx) {
 														clipboard.WriteOp{Text: host}.Add(gtx.Ops)
 														pg.Toast.Notify(values.String(values.StrCopied))
 													}

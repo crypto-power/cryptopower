@@ -288,8 +288,8 @@ func (in *InfoModal) HandleKeyPress(_ *key.Event) {
 	in.ParentWindow().Reload()
 }
 
-func (in *InfoModal) Handle() {
-	for in.btnPositive.Clicked() {
+func (in *InfoModal) handle(gtx C) {
+	for in.btnPositive.Clicked(gtx) {
 		if in.isLoading {
 			return
 		}
@@ -303,14 +303,14 @@ func (in *InfoModal) Handle() {
 		}
 	}
 
-	for in.btnNegative.Clicked() {
+	for in.btnNegative.Clicked(gtx) {
 		if !in.isLoading {
 			in.Dismiss()
 			in.negativeButtonClicked()
 		}
 	}
 
-	if in.Modal.BackdropClicked(in.isCancelable) {
+	if in.Modal.BackdropClicked(gtx, in.isCancelable) {
 		if !in.isLoading {
 			in.Dismiss()
 			in.negativeButtonClicked()
@@ -325,6 +325,8 @@ func (in *InfoModal) Handle() {
 }
 
 func (in *InfoModal) Layout(gtx layout.Context) D {
+	in.handle(gtx)
+
 	icon := func(gtx C) D {
 		if in.dialogIcon == nil {
 			return D{}

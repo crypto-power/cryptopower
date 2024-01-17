@@ -71,15 +71,15 @@ func (fs *FrequencySelector) setSelectedFrequency(fi *frequencyItem) {
 	fs.selectedFrequency = fi
 }
 
-func (fs *FrequencySelector) handle(window app.WindowNavigator) {
-	for fs.openSelectorDialog.Clicked() {
+func (fs *FrequencySelector) handle(window app.WindowNavigator, gtx C) {
+	for fs.openSelectorDialog.Clicked(gtx) {
 		fs.title(fs.dialogTitle)
 		window.ShowModal(fs.frequencyModal)
 	}
 }
 
 func (fs *FrequencySelector) Layout(window app.WindowNavigator, gtx C) D {
-	fs.handle(window)
+	fs.handle(window, gtx)
 
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
@@ -162,17 +162,17 @@ func (fs *FrequencySelector) buildFrequencyItems() []*frequencyItem {
 
 func (fm *frequencyModal) OnResume() {}
 
-func (fm *frequencyModal) Handle() {
+func (fm *frequencyModal) handle(gtx C) {
 	if fm.eventQueue != nil {
 		for _, frequencyItem := range fm.frequencyItems {
-			if frequencyItem.clickable.Clicked() {
+			if frequencyItem.clickable.Clicked(gtx) {
 				fm.onFrequencyClicked(frequencyItem)
 				fm.Dismiss()
 			}
 		}
 	}
 
-	if fm.Modal.BackdropClicked(fm.isCancelable) {
+	if fm.Modal.BackdropClicked(gtx, fm.isCancelable) {
 		fm.Dismiss()
 	}
 }
@@ -188,6 +188,8 @@ func (fm *frequencyModal) frequencyClicked(callback func(*frequencyItem)) *frequ
 }
 
 func (fm *frequencyModal) Layout(gtx C) D {
+	fm.handle(gtx)
+
 	fm.eventQueue = gtx
 	w := []layout.Widget{
 		func(gtx C) D {
