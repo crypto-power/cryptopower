@@ -28,8 +28,9 @@ type WalletSyncInfo struct {
 	isStatusConnected bool
 	reload            Reload
 	backup            func(sharedW.Asset)
+	ForwardButton     cryptomaterial.IconButton
 
-	ShowAssetIcon bool
+	IsSlider bool
 }
 
 type ProgressInfo struct {
@@ -60,6 +61,10 @@ func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload Reload, backup
 	wsi.toBackup = l.Theme.Button(values.String(values.StrBackupNow))
 	wsi.toBackup.Font.Weight = font.Medium
 	wsi.toBackup.TextSize = l.ConvertTextSize(values.TextSize14)
+
+	wsi.ForwardButton, _ = SubpageHeaderButtons(l)
+	wsi.ForwardButton.Icon = wsi.Theme.Icons.NavigationArrowForward
+	wsi.ForwardButton.Size = values.MarginPadding20
 	return wsi
 }
 
@@ -90,6 +95,9 @@ func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.E.Layout(gtx, wsi.toBackup.Layout)
 			}))
+			if wsi.IsSlider {
+				items = append(items, layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout))
+			}
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
@@ -129,7 +137,7 @@ func (wsi *WalletSyncInfo) pageContentWrapper(gtx C, sectionTitle string, redire
 
 func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 	items := make([]layout.FlexChild, 0)
-	if wsi.ShowAssetIcon {
+	if wsi.IsSlider {
 		items = append(items, layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Right: values.MarginPadding10,
@@ -160,6 +168,12 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 					}.Layout(gtx, wsi.Theme.Body2(values.String(values.StrBackupWarning)).Layout)
 				}),
 			)
+		}))
+	}
+
+	if wsi.IsSlider {
+		items = append(items, layout.Flexed(1, func(gtx C) D {
+			return layout.E.Layout(gtx, wsi.ForwardButton.Layout)
 		}))
 	}
 

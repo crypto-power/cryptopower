@@ -271,26 +271,16 @@ func (pg *OverviewPage) HandleUserInteractions() {
 		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
 
-	if pg.infoSyncWalletsSlider.Clicked() {
-		curSliderIndex := pg.infoSyncWalletsSlider.GetSelectedIndex()
-		infoSyncWallet := pg.listInfoWallets[curSliderIndex]
-
-		// pg.showNavigationFunc(true)
-		// walletCallbackFunc := func() {
-		// 	pg.showNavigationFunc(false)
-		// }
-
-		pg.showNavigationFunc(true)
-		callback := func() {
-			pg.showNavigationFunc(false)
-			pg.ParentNavigator().CloseCurrentPage()
+	for _, info := range pg.listInfoWallets {
+		if info.ForwardButton.Button.Clicked() {
+			pg.showNavigationFunc(true)
+			callback := func() {
+				pg.showNavigationFunc(false)
+				pg.ParentNavigator().CloseCurrentPage()
+			}
+			swmp := wallet.NewSingleWalletMasterPage(pg.Load, info.GetWallet(), callback)
+			pg.ParentNavigator().Display(swmp)
 		}
-		swmp := wallet.NewSingleWalletMasterPage(pg.Load, infoSyncWallet.GetWallet(), callback)
-		pg.ParentNavigator().Display(swmp)
-		// swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
-		// swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
-
-		fmt.Println("----------------------------->")
 	}
 }
 
@@ -379,7 +369,7 @@ func (pg *OverviewPage) initInfoWallets() {
 			continue
 		}
 		infoSync := components.NewWalletSyncInfo(pg.Load, wal, pg.reload, pg.backup)
-		infoSync.ShowAssetIcon = true
+		infoSync.IsSlider = true
 		pg.listInfoWallets = append(pg.listInfoWallets, infoSync)
 	}
 }
