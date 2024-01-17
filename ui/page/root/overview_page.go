@@ -217,8 +217,8 @@ func (pg *OverviewPage) OnNavigatedTo() {
 
 	for _, info := range pg.listInfoWallets {
 		info.Init()
+		info.ListenForNotifications() // stopped in OnNavigatedFrom()
 	}
-
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -293,6 +293,9 @@ func (pg *OverviewPage) HandleUserInteractions() {
 // Part of the load.Page interface.
 func (pg *OverviewPage) OnNavigatedFrom() {
 	pg.stopNtfnListeners()
+	for _, info := range pg.listInfoWallets {
+		info.StopListeningForNotifications()
+	}
 }
 
 func (pg *OverviewPage) OnCurrencyChanged() {

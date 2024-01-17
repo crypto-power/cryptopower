@@ -98,6 +98,7 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 // Part of the load.Page interface.
 func (pg *WalletInfo) OnNavigatedTo() {
 	pg.walletSyncInfo.Init()
+	pg.walletSyncInfo.ListenForNotifications() // stopped in OnNavigatedFrom()
 
 	pg.loadTransactions()
 
@@ -355,9 +356,7 @@ func (pg *WalletInfo) loadStakes() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *WalletInfo) OnNavigatedFrom() {
-	pg.wallet.RemoveSyncProgressListener(InfoID)
-	pg.wallet.RemoveTxAndBlockNotificationListener(InfoID)
-	pg.wallet.SetBlocksRescanProgressListener(nil)
+	pg.walletSyncInfo.StopListeningForNotifications()
 	if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
 		pg.wallet.(*dcr.Asset).RemoveAccountMixerNotificationListener(InfoID)
 	}

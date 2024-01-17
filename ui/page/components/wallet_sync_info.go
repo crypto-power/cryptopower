@@ -71,7 +71,6 @@ func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload Reload, backup
 func (wsi *WalletSyncInfo) Init() {
 	autoSync := wsi.wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	wsi.syncSwitch.SetChecked(autoSync)
-	wsi.listenForNotifications()
 	go func() {
 		wsi.isStatusConnected = libutils.IsOnline()
 	}()
@@ -501,13 +500,15 @@ func (wsi *WalletSyncInfo) syncStatusIcon(gtx C) D {
 	})
 }
 
-// listenForNotifications starts a goroutine to watch for sync updates and
+// ListenForNotifications starts a goroutine to watch for sync updates and
 // update the UI accordingly. To prevent UI lags, this method does not refresh
 // the window display every time a sync update is received. During active blocks
 // sync, rescan or proposals sync, the Layout method auto refreshes the display
 // every set interval. Other sync updates that affect the UI but occur outside
-// of an active sync requires a display refresh.
-func (wsi *WalletSyncInfo) listenForNotifications() {
+// of an active sync requires a display refresh. The caller of this method must
+// ensure that the StopListeningForNotifications() method is called whenever the
+// the page or modal using these notifications is closed.
+func (wsi *WalletSyncInfo) ListenForNotifications() {
 	updateSyncProgress := func(progress ProgressInfo) {
 		// Update sync progress fields which will be displayed
 		// when the next UI invalidation occurs.
@@ -587,6 +588,14 @@ func (wsi *WalletSyncInfo) listenForNotifications() {
 		},
 	}
 	wsi.wallet.SetBlocksRescanProgressListener(blocksRescanProgressListener)
+}
+
+// StopListeningForNotifications stops listening for sync progress, tx and block
+// notifications.
+func (wsi *WalletSyncInfo) StopListeningForNotifications() {
+	wsi.wallet.RemoveSyncProgressListener(WalletSyncInfoID)
+	wsi.wallet.RemoveTxAndBlockNotificationListener(WalletSyncInfoID)
+	wsi.wallet.SetBlocksRescanProgressListener(nil)
 }
 
 func (wsi *WalletSyncInfo) handle() {
