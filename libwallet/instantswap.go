@@ -126,7 +126,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 		market := fromCur + "-" + toCur
 		source := mgr.RateSource.Name()
-		ticker := mgr.RateSource.GetTicker(market) // TODO: (@ukane-philemon) Can we proceed if there is no rate information from rate source? I think we should.
+		ticker := mgr.RateSource.GetTicker(market, false) // TODO: (@ukane-philemon) Can we proceed if there is no rate information from rate source? I think we should.
 		if ticker == nil {
 			return errors.E(op, fmt.Errorf("unable to get market rate from %s", source))
 		}

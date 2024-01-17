@@ -879,7 +879,7 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 	}
 
 	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
-		rate := mgr.RateSource.GetTicker(market)
+		rate := mgr.RateSource.GetTicker(market, true)
 		if rate == nil || rate.LastTradePrice <= 0 {
 			return 0, fmt.Errorf("no rate information available")
 		}

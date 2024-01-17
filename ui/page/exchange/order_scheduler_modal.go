@@ -292,7 +292,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							ticker := osm.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
+																							ticker := osm.AssetsManager.RateSource.GetTicker(fromCur+ext.MktSep+toCur, true)
 																							if ticker == nil || ticker.LastTradePrice <= 0 {
 																								return D{}
 																							}

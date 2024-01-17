@@ -802,7 +802,7 @@ func (pg *OverviewPage) marketRates() map[string]*ext.Ticker {
 
 	for i := range pg.mktValues {
 		asset := pg.mktValues[i]
-		rate := pg.AssetsManager.RateSource.GetTicker(asset.market)
+		rate := pg.AssetsManager.RateSource.GetTicker(asset.market, true)
 		if rate == nil || rate.LastTradePrice <= 0 {
 			continue
 		}

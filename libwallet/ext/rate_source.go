@@ -110,7 +110,7 @@ type RateSource interface {
 	Refresh(force bool)
 	Refreshing() bool
 	LastUpdate() time.Time
-	GetTicker(market string) *Ticker
+	GetTicker(market string, cacheOnly bool) *Ticker
 	ToggleStatus(disable bool)
 	ToggleSource(newSource string) error
 	AddRateListener(listener *RateListener, uniqueID string) error
@@ -592,9 +592,12 @@ func (cs *CommonRateSource) fetchRate(market string) *Ticker {
 	return &t
 }
 
-// GetTicker retrieves ticker information for th provided market. Data will be
-// retrieved from cache if its available and still valid.
-func (cs *CommonRateSource) GetTicker(market string) *Ticker {
+// GetTicker retrieves ticker information for the provided market. Data will be
+// retrieved from cache if its available and still valid. Returns nil if valid,
+// cached isn't available and cacheOnly is true. If cacheOnly is false and no
+// valid, cached data is available, a network call will be made to fetch the
+// latest ticker information and update the cache.
+func (cs *CommonRateSource) GetTicker(market string, cacheOnly bool) *Ticker {
 	marketName, ok := isSupportedMarket(market, cs.source)
 	if !ok {
 		return nil
@@ -604,11 +607,14 @@ func (cs *CommonRateSource) GetTicker(market string) *Ticker {
 	ticker, ok := cs.tickers[marketName]
 	cs.mtx.RUnlock()
 	if !ok {
+		if cacheOnly {
+			return nil
+		}
 		return cs.fetchRate(marketName)
 	}
-	t := *ticker
 
-	if time.Since(t.lastUpdate) > rateExpiry {
+	t := *ticker
+	if !cacheOnly && time.Since(t.lastUpdate) > rateExpiry {
 		if ticker := cs.fetchRate(marketName); ticker != nil {
 			return ticker
 		}
