@@ -40,7 +40,6 @@ type AcctDetailsPage struct {
 	showExtendedKeyButton    *cryptomaterial.Clickable
 	infoButton               cryptomaterial.IconButton
 
-	nonSpendableBal  int64
 	lockedBalance    string
 	totalBalance     string
 	spendableBalance string
@@ -84,12 +83,6 @@ func NewDCRAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.
 func (pg *AcctDetailsPage) OnNavigatedTo() {
 
 	bal := pg.account.Balance
-	pg.nonSpendableBal = bal.ImmatureReward.ToInt() +
-		bal.LockedByTickets.ToInt() +
-		bal.VotingAuthority.ToInt() +
-		bal.ImmatureStakeGeneration.ToInt() +
-		bal.Locked.ToInt()
-
 	pg.lockedBalance = pg.wallet.ToAmount(bal.Locked.ToInt() + bal.LockedByTickets.ToInt()).String()
 	pg.totalBalance = bal.Total.String()
 	pg.spendableBalance = bal.Spendable.String()
@@ -235,10 +228,6 @@ func (pg *AcctDetailsPage) accountBalanceLayout(gtx C) D {
 				return pg.acctBalLayout(gtx, values.String(values.StrLabelSpendable), pg.spendableBalance, false)
 			}),
 			layout.Rigid(func(gtx C) D {
-				if pg.nonSpendableBal == 0 {
-					return D{}
-				}
-
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return pg.acctBalLayout(gtx, values.String(values.StrLocked), pg.lockedBalance, false)

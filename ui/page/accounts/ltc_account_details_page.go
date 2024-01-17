@@ -38,6 +38,8 @@ type LTCAcctDetailsPage struct {
 	renameAccount            *cryptomaterial.Clickable
 
 	totalBalance            string
+	spendableBalance        string
+	lockedBalance           string
 	hdPath                  string
 	keys                    string
 	extendedKey             string
@@ -77,6 +79,8 @@ func NewLTCAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.
 // Part of the load.Page interface.
 func (pg *LTCAcctDetailsPage) OnNavigatedTo() {
 	pg.totalBalance = pg.account.Balance.Total.String()
+	pg.spendableBalance = pg.account.Balance.Spendable.String()
+	pg.lockedBalance = pg.account.Balance.Locked.String()
 
 	pg.hdPath = pg.AssetsManager.LTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
 
@@ -266,6 +270,12 @@ func (pg *LTCAcctDetailsPage) accountBalanceLayout(gtx C) D {
 					}),
 				)
 			}),
+			layout.Rigid(func(gtx C) D {
+				return pg.acctBalLayout(gtx, values.String(values.StrLabelSpendable), pg.spendableBalance, false)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return pg.acctBalLayout(gtx, values.String(values.StrLocked), pg.lockedBalance, false)
+			}),
 		)
 	})
 }
@@ -287,10 +297,10 @@ func (pg *LTCAcctDetailsPage) acctBalLayout(gtx C, balType string, balance strin
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				if isTotalBalance {
-					return pg.Theme.Label(values.TextSize34, balance).Layout(gtx)
+					return components.LayoutBalanceSize(gtx, pg.Load, balance, values.TextSize34)
 				}
 
-				return pg.Theme.Label(values.TextSize34, balance).Layout(gtx)
+				return components.LayoutBalanceWithUnit(gtx, pg.Load, balance)
 			}),
 			layout.Rigid(func(gtx C) D {
 				txt := pg.theme.Body2(balType)
