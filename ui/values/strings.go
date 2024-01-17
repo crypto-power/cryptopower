@@ -1011,4 +1011,9 @@ const (
 	StrWebsite                         = "website"
 	StrCreateAssetWalletToVoteMsg      = "createAssetWalletToVoteMsg"
 	StrGetTicketsNow                   = "getTicketsNow"
+	StrExportTransaction               = "exportTransaction"
+	StrExportTransactionsMsg           = "exportTransactionsMsg"
+	StrTime                            = "time"
+	StrDirection                       = "direction"
+	StrExportTransactionSuccessMsg     = "exportTransactionSuccessMsg"
 )

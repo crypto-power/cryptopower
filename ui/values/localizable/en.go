@@ -902,4 +902,9 @@ const EN = `
 "matrix" = "Matrix"
 "createAssetWalletToVoteMsg" = "You need to create a %s wallet to vote."
 "getTicketsNow" = "Get Tickets Now"
+"exportTransaction" = "Export Transaction"
+"exportTransactionsMsg" = "Export the transactions recorded in your wallet(s). Your transactions will be processed in the background and you'll be notified when it's ready."
+"time" = "Time"
+"direction" = "Direction"
+"exportTransactionSuccessMsg" = "Your transactions have been exported successfully and saved to %s."
 `

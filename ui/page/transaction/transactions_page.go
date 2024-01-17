@@ -1,9 +1,15 @@
 package transaction
 
 import (
+	"encoding/csv"
 	"fmt"
+	"math"
+	"os"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -12,9 +18,11 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -403,6 +411,10 @@ func (pg *TransactionsPage) leftDropdown(gtx C) D {
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
+						// TODO: Enable on mobile
+						if pg.IsMobileView() {
+							return D{}
+						}
 						return pg.buttonWrap(gtx, pg.exportBtn, pg.Theme.Icons.ShareIcon, values.String(values.StrExport))
 					}),
 				)
@@ -602,7 +614,31 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	}
 
 	for pg.exportBtn.Clicked() {
-		// TODO: implement logic when export clicked
+		exportModal := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrExportTransaction)).
+			Body(values.String(values.StrExportTransactionsMsg)).
+			SetNegativeButtonText(values.String(values.StrCancel)).
+			SetPositiveButtonText(values.String(values.StrExport)).
+			SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
+				assets := []sharedW.Asset{pg.selectedWallet}
+				if pg.selectedWallet == nil {
+					assets = pg.assetWallets
+				}
+				go func() {
+					fileName := filepath.Join(pg.AssetsManager.RootDir(), "exports", fmt.Sprintf("transaction_export_%d.csv", time.Now().Unix()))
+					err := exportTxs(assets, fileName)
+					if err != nil {
+						errModal := modal.NewErrorModal(pg.Load, fmt.Errorf("Error exporting your wallet(s) transactions: %v", err).Error(), modal.DefaultClickFunc())
+						pg.ParentWindow().ShowModal(errModal)
+						return
+					}
+
+					infoModal := modal.NewSuccessModal(pg.Load, values.StringF(values.StrExportTransactionSuccessMsg, fileName), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(infoModal)
+				}()
+				return true
+			})
+		pg.ParentWindow().ShowModal(exportModal)
 	}
 
 	if pg.orderDropDown.Changed() {
@@ -617,6 +653,64 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 			}
 		}
 	}
+}
+
+func exportTxs(assets []sharedW.Asset, fileName string) error {
+	if err := os.MkdirAll(filepath.Dir(fileName), utils.UserFilePerm); err != nil {
+		return fmt.Errorf("os.MkdirAll error: %w", err)
+	}
+
+	var success bool
+	defer func() {
+		if !success {
+			os.Remove(fileName)
+		}
+	}()
+
+	f, err := os.Create(fileName)
+	if err != nil {
+		return fmt.Errorf("os.Create error: %w", err)
+	}
+	defer f.Close()
+
+	headers := []string{values.String(values.StrTime), values.String(values.StrHash), values.String(values.StrType), values.String(values.StrDirection), values.String(values.StrFee), values.String(values.StrAmount)}
+
+	writer := csv.NewWriter(f)
+	writer.UseCRLF = runtime.GOOS == "windows"
+	err = writer.Write(headers)
+	if err != nil {
+		return fmt.Errorf("csv.Writer.Write error: %w", err)
+	}
+
+	for _, a := range assets {
+		txs, err := a.GetTransactionsRaw(0, math.MaxInt32, utils.TxFilterAll, true, "")
+		if err != nil {
+			return fmt.Errorf("wallet.GetTransactionsRaw error: %w", err)
+		}
+
+		// Write txs to file.
+		for _, tx := range txs {
+			err := writer.Write([]string{
+				time.Unix(tx.Timestamp, 0).String(),
+				tx.Hash,
+				tx.Type,
+				txhelper.TxDirectionString(tx.Direction),
+				a.ToAmount(tx.Fee).String(),
+				a.ToAmount(tx.Amount).String(),
+			})
+			if err != nil {
+				return fmt.Errorf("csv.Writer.Write error: %v", err)
+			}
+
+			writer.Flush()
+			if err = writer.Error(); err != nil {
+				return fmt.Errorf("csv.Writer error: %w", err)
+			}
+		}
+	}
+
+	success = true
+	return nil
 }
 
 func (pg *TransactionsPage) listenForTxNotifications() {

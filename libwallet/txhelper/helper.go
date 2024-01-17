@@ -1,9 +1,11 @@
 package txhelper
 
 import (
+	"fmt"
 	"math"
 
 	"decred.org/dcrwallet/v3/wallet"
+	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
 	"github.com/decred/dcrdata/v8/txhelpers"
@@ -52,5 +54,18 @@ func FormatTransactionType(txType wallet.TransactionType) string {
 		return TxTypeRevocation
 	default:
 		return TxTypeRegular
+	}
+}
+
+func TxDirectionString(direction int32) string {
+	switch direction {
+	case TxDirectionReceived:
+		return values.String(values.StrReceived)
+	case TxDirectionSent:
+		return values.String(values.StrSent)
+	case TxDirectionTransferred:
+		return values.String(values.StrTransferred)
+	default:
+		return fmt.Sprintf("%d", direction)
 	}
 }
