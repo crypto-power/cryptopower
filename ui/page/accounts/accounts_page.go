@@ -212,14 +212,18 @@ func (pg *Page) accountItemLayout(gtx C, account *sharedW.Account) D {
 			if bal.LockedByTickets != nil {
 				locked = pg.wallet.ToAmount(locked.ToInt() + bal.LockedByTickets.ToInt())
 			}
-			immature := bal.ImmatureReward
-			if bal.ImmatureStakeGeneration != nil {
-				immature = pg.wallet.ToAmount(immature.ToInt() + bal.ImmatureStakeGeneration.ToInt())
-			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.accountBalanceLayout(values.String(values.StrLabelSpendable), bal.Spendable, layout.Horizontal)),
 				layout.Rigid(pg.accountBalanceLayout(values.String(values.StrLocked), locked, layout.Horizontal)),
-				layout.Rigid(pg.accountBalanceLayout(values.String(values.StrImmature), immature, layout.Horizontal)),
+				layout.Rigid(func(gtx C) D {
+					if pg.wallet.GetAssetType() != libutils.DCRWalletAsset {
+						return D{}
+					}
+
+					// Display immature for only DCR.
+					immature := pg.wallet.ToAmount(bal.ImmatureReward.ToInt() + bal.ImmatureStakeGeneration.ToInt())
+					return pg.accountBalanceLayout(values.String(values.StrImmature), immature, layout.Horizontal)(gtx)
+				}),
 			)
 		}),
 	)
