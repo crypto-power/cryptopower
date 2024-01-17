@@ -109,11 +109,33 @@ func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, er
 		return nil, err
 	}
 
+	// Account for locked amount.
+	lockedAmount, err := asset.lockedAmount()
+	if err != nil {
+		return nil, err
+	}
+
 	return &sharedW.Balance{
 		Total:          Amount(balance.Total),
-		Spendable:      Amount(balance.Spendable),
+		Spendable:      Amount(balance.Spendable - lockedAmount),
 		ImmatureReward: Amount(balance.ImmatureReward),
+		Locked:         Amount(lockedAmount),
 	}, nil
+}
+
+// lockedAmount is the total value of locked outputs, as locked with
+// LockUnspent.
+func (asset *Asset) lockedAmount() (btcutil.Amount, error) {
+	lockedOutpoints := asset.Internal().BTC.LockedOutpoints()
+	var sum int64
+	for _, op := range lockedOutpoints {
+		tx, err := asset.GetTransactionRaw(op.Txid)
+		if err != nil {
+			return 0, err
+		}
+		sum += tx.Amount
+	}
+	return btcutil.Amount(sum), nil
 }
 
 // SpendableForAccount returns the spendable balance for the provided account
@@ -126,7 +148,14 @@ func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
 	if err != nil {
 		return 0, utils.TranslateError(err)
 	}
-	return int64(bals.Spendable), nil
+
+	// Account for locked amount.
+	lockedAmount, err := asset.lockedAmount()
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(bals.Spendable - lockedAmount), nil
 }
 
 // UnspentOutputs returns all the unspent outputs available for the provided

@@ -1,6 +1,7 @@
 package dcr
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
+	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 func (asset *Asset) GetAccounts() (string, error) {
@@ -116,15 +118,42 @@ func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, er
 		return nil, err
 	}
 
+	lockedAmt, err := asset.lockedAmount(ctx, accountNumber)
+	if err != nil {
+		return nil, err
+	}
+
 	return &sharedW.Balance{
 		Total:                   Amount(balance.Total),
-		Spendable:               Amount(balance.Spendable),
+		Spendable:               Amount(balance.Spendable - lockedAmt),
 		ImmatureReward:          Amount(balance.ImmatureCoinbaseRewards),
 		ImmatureStakeGeneration: Amount(balance.ImmatureStakeGeneration),
 		LockedByTickets:         Amount(balance.LockedByTickets),
 		VotingAuthority:         Amount(balance.VotingAuthority),
 		UnConfirmed:             Amount(balance.Unconfirmed),
+		Locked:                  Amount(lockedAmt),
 	}, nil
+}
+
+// lockedAmount is the total value of locked outputs, as locked with
+// LockUnspent.
+func (asset *Asset) lockedAmount(ctx context.Context, acctNumber int32) (dcrutil.Amount, error) {
+	accountName, err := asset.AccountName(acctNumber)
+	if err != nil {
+		return dcrutil.Amount(0), err
+	}
+
+	lockedOutpoints, err := asset.Internal().DCR.LockedOutpoints(ctx, accountName)
+	if err != nil {
+		return 0, err
+	}
+
+	var sum float64
+	for _, op := range lockedOutpoints {
+		sum += op.Amount
+	}
+
+	return dcrutil.NewAmount(sum)
 }
 
 func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
@@ -138,9 +167,18 @@ func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
 		log.Error(err)
 		return 0, utils.TranslateError(err)
 	}
-	return int64(bals.Spendable), nil
+
+	lockedAmt, err := asset.lockedAmount(ctx, account)
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(bals.Spendable - lockedAmt), nil
 }
 
+// UnspentOutputs returns unspent outputs that can be used for transactions.
+// Unspent outputs that are locked by the wallet are not returned as valid
+// unspent utxos.
 func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
@@ -159,6 +197,11 @@ func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, err
 
 	unspentOutputs := make([]*sharedW.UnspentOutput, 0, len(unspents))
 	for _, utxo := range unspents {
+		hash := utxo.OutPoint.Hash
+		if asset.Internal().DCR.LockedOutpoint(&hash, utxo.OutPoint.Index) {
+			continue // utxo is locked.
+		}
+
 		addresses := addresshelper.PkScriptAddresses(asset.chainParams, utxo.Output.PkScript)
 
 		var confirmations int32

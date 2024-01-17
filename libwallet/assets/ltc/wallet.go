@@ -551,16 +551,18 @@ func (asset *Asset) GetWalletBalance() (*sharedW.Balance, error) {
 		return nil, err
 	}
 
-	var totalBalance, totalSpendable, totalImmatureReward int64
+	var totalBalance, totalSpendable, totalImmatureReward, totalLocked int64
 	for _, acc := range accountsResult.Accounts {
 		totalBalance += acc.Balance.Total.ToInt()
 		totalSpendable += acc.Balance.Spendable.ToInt()
 		totalImmatureReward += acc.Balance.ImmatureReward.ToInt()
+		totalLocked += acc.Balance.Locked.ToInt()
 	}
 
 	return &sharedW.Balance{
 		Total:          Amount(totalBalance),
 		Spendable:      Amount(totalSpendable),
 		ImmatureReward: Amount(totalImmatureReward),
+		Locked:         Amount(totalLocked),
 	}, nil
 }

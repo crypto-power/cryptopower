@@ -191,6 +191,7 @@ func (pg *Page) addAccountBtnLayout(gtx C) D {
 
 func (pg *Page) accountItemLayout(gtx C, account *sharedW.Account) D {
 	dp10 := values.MarginPadding10
+	bal := account.Balance
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -202,61 +203,55 @@ func (pg *Page) accountItemLayout(gtx C, account *sharedW.Account) D {
 			Radius: cryptomaterial.Radius(8),
 		},
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return pg.accountBalanceLayout(gtx, false, account)
-		}),
+		layout.Rigid(pg.accountBalanceLayout(account.AccountName, account.Balance.Total, layout.Vertical)),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: dp10, Bottom: dp10}.Layout(gtx, pg.Theme.Separator().Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.accountBalanceLayout(gtx, true, account)
+			locked := bal.Locked
+			if bal.LockedByTickets != nil {
+				locked = pg.wallet.ToAmount(locked.ToInt() + bal.LockedByTickets.ToInt())
+			}
+			immature := bal.ImmatureReward
+			if bal.ImmatureStakeGeneration != nil {
+				immature = pg.wallet.ToAmount(immature.ToInt() + bal.ImmatureStakeGeneration.ToInt())
+			}
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(pg.accountBalanceLayout(values.String(values.StrLabelSpendable), bal.Spendable, layout.Horizontal)),
+				layout.Rigid(pg.accountBalanceLayout(values.String(values.StrLocked), locked, layout.Horizontal)),
+				layout.Rigid(pg.accountBalanceLayout(values.String(values.StrImmature), immature, layout.Horizontal)),
+			)
 		}),
 	)
 }
 
-func (pg *Page) accountBalanceLayout(gtx C, spendableLayout bool, account *sharedW.Account) D {
-	var label, balanceTxt cryptomaterial.Label
-	var balanceAmt float64
-	if !spendableLayout {
-		label = pg.Theme.Label(pg.ConvertTextSize(values.TextSize18), account.AccountName)
-		label.Font.Weight = font.SemiBold
-		balanceTxt = pg.Theme.Label(pg.ConvertTextSize(values.TextSize18), account.Balance.Total.String())
-		balanceTxt.Font.Weight = font.SemiBold
-		balanceAmt = pg.wallet.ToAmount(account.Balance.Total.ToInt()).ToCoin()
-	} else {
-		label = pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), values.String(values.StrAmountSpendable))
-		label.Font.Weight = font.SemiBold
-		label.Color = pg.Theme.Color.GrayText3
-		balanceTxt = pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), account.Balance.Spendable.String())
-		balanceTxt.Font.Weight = font.SemiBold
-		balanceTxt.Color = pg.Theme.Color.GrayText3
-		balanceAmt = pg.wallet.ToAmount(account.Balance.Spendable.ToInt()).ToCoin()
-	}
+func (pg *Page) accountBalanceLayout(title string, bal sharedW.AssetAmount, balAxis layout.Axis) func(gtx C) D {
+	label := pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), title)
+	label.Font.Weight = font.SemiBold
+	balanceTxt := pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), bal.String())
+	balanceTxt.Font.Weight = font.SemiBold
+	return func(gtx C) D {
+		return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+			layout.Rigid(label.Layout), // Title
+			layout.Flexed(1, func(gtx C) D { // Balances
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: balAxis, Alignment: layout.End}.Layout(gtx,
+						layout.Rigid(balanceTxt.Layout),
+						layout.Rigid(func(gtx C) D {
+							if !pg.usdExchangeSet || pg.exchangeRate <= 0 || bal.ToCoin() == 0 {
+								return D{}
+							}
 
-	balanceUSD := "($ 0.00)"
-	if pg.exchangeRate != -1 && pg.usdExchangeSet {
-		balanceUSD = fmt.Sprintf("(%v)", utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAmt)))
+							balanceUSD := fmt.Sprintf(" (%v)", utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, bal.ToCoin())))
+							usdAmtLabel := pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), balanceUSD)
+							usdAmtLabel.Font.Weight = font.SemiBold
+							return usdAmtLabel.Layout(gtx)
+						}),
+					)
+				})
+			}),
+		)
 	}
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Rigid(label.Layout), // Title
-		layout.Flexed(1, func(gtx C) D { // Balances
-			var usdAmtLabel cryptomaterial.Label
-			if spendableLayout {
-				usdAmtLabel = pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), balanceUSD)
-				usdAmtLabel.Font.Weight = font.SemiBold
-				usdAmtLabel.Color = pg.Theme.Color.GrayText3
-			} else {
-				usdAmtLabel = pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), balanceUSD)
-				usdAmtLabel.Font.Weight = font.SemiBold
-			}
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
-					layout.Rigid(balanceTxt.Layout),
-					layout.Rigid(usdAmtLabel.Layout),
-				)
-			})
-		}),
-	)
 }
 
 // HandleUserInteractions is called just before Layout() to determine

@@ -836,7 +836,6 @@ const EN = `
 "rfp" = "RFP"
 "proposedFor" = "Proposed for "
 "accounts" = "Accounts"
-"amountSpendable" = "Amount Spendable"
 "stakingInfo" = "Staking Info"
 "timeLeft" = "Time Left"
 "totalReward" = "Total Reward"
