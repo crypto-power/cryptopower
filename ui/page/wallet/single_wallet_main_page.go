@@ -439,8 +439,8 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 								privacy.SetupPrivacyPageID:
 								// Disable page functionality if a page is not synced or rescanning is in progress.
 								if swmp.selectedWallet.IsSyncing() {
-									pg := info.NewInfoPage(swmp.Load, swmp.selectedWallet)
-									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, pg.FetchSyncProgress().HeadersToFetchOrScan)
+									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(a sharedW.Asset) {})
+									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 									title := values.String(values.StrFunctionUnavailable)
 									subTitle := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
 									return components.DisablePageWithOverlay(swmp.Load, swmp.CurrentPage(), gtx,

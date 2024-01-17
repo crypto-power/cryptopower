@@ -3,9 +3,13 @@
 package cryptomaterial
 
 import (
+	"image"
 	"image/color"
 
+	"gioui.org/gesture"
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
 
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -30,6 +34,8 @@ type Slider struct {
 	IndicatorBackgroundColor color.NRGBA
 	SelectedIndicatorColor   color.NRGBA // this is a full color no opacity
 	slideAction              *SlideAction
+	clicker                  gesture.Click
+	clicked                  bool
 }
 
 var m4 = values.MarginPadding4
@@ -86,33 +92,46 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 		return D{}
 	}
 
-	s.handleClickEvent()
-	return s.slideAction.DragLayout(gtx, func(gtx C) D {
-		return layout.Stack{Alignment: layout.S}.Layout(gtx,
-			layout.Expanded(func(gtx C) D {
-				return s.slideAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
-			}),
-			layout.Stacked(func(gtx C) D {
-				if len(s.slideItems) == 1 {
-					return D{}
-				}
-				return layout.Inset{
-					Right:  values.MarginPadding16,
-					Left:   values.MarginPadding16,
-					Bottom: values.MarginPadding16,
-				}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{
-						Axis: layout.Horizontal,
-					}.Layout(gtx,
-						layout.Rigid(s.selectedItemIndicatorLayout),
-						layout.Flexed(1, func(gtx C) D {
-							return layout.E.Layout(gtx, s.buttonLayout)
-						}),
-					)
-				})
-			}),
-		)
-	})
+	s.handleClickEvent(gtx)
+	var dims layout.Dimensions
+	var call op.CallOp
+	{
+		m := op.Record(gtx.Ops)
+		dims = s.slideAction.DragLayout(gtx, func(gtx C) D {
+			return layout.Stack{Alignment: layout.S}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					return s.slideAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
+				}),
+				layout.Stacked(func(gtx C) D {
+					if len(s.slideItems) == 1 {
+						return D{}
+					}
+					return layout.Inset{
+						Right:  values.MarginPadding16,
+						Left:   values.MarginPadding16,
+						Bottom: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{
+							Axis: layout.Horizontal,
+						}.Layout(gtx,
+							layout.Rigid(s.selectedItemIndicatorLayout),
+							layout.Flexed(1, func(gtx C) D {
+								return layout.E.Layout(gtx, s.buttonLayout)
+							}),
+						)
+					})
+				}),
+			)
+		})
+		call = m.Stop()
+	}
+
+	area := clip.Rect(image.Rect(0, 0, dims.Size.X, dims.Size.Y)).Push(gtx.Ops)
+	s.clicker.Add(gtx.Ops)
+	defer area.Pop()
+
+	call.Add(gtx.Ops)
+	return dims
 }
 
 func (s *Slider) buttonLayout(gtx C) D {
@@ -178,7 +197,13 @@ func (s *Slider) RefreshItems() {
 	s.isSliderItemsSet = false
 }
 
-func (s *Slider) handleClickEvent() {
+func (s *Slider) Clicked() bool {
+	clicked := s.clicked
+	s.clicked = false
+	return clicked
+}
+
+func (s *Slider) handleClickEvent(gtx C) {
 	if s.nextButton.Clicked() {
 		s.handleActionEvent(true)
 	}
@@ -200,6 +225,15 @@ func (s *Slider) handleClickEvent() {
 				s.slideAction.PushRight()
 			}
 			break
+		}
+	}
+
+	for _, events := range s.clicker.Events(gtx) {
+		switch events.Type {
+		case gesture.TypeClick:
+			if !s.clicked {
+				s.clicked = true
+			}
 		}
 	}
 }
