@@ -225,17 +225,27 @@ func (dw *DEXWallet) Birthday() time.Time {
 }
 
 func (dw *DEXWallet) Peers() ([]*asset.WalletPeer, error) {
-	peers := dw.spvService.CS.Peers()
-	var walletPeers []*asset.WalletPeer
-	for i := range peers {
-		p := peers[i]
-		walletPeers = append(walletPeers, &asset.WalletPeer{
-			Addr:      p.Addr(),
-			Connected: p.Connected(),
-			Source:    asset.WalletDefault,
-		})
+	peerChan := make(chan []*asset.WalletPeer)
+	go func() {
+		peers := dw.spvService.CS.Peers()
+		var walletPeers []*asset.WalletPeer
+		for i := range peers {
+			p := peers[i]
+			walletPeers = append(walletPeers, &asset.WalletPeer{
+				Addr:      p.Addr(),
+				Connected: p.Connected(),
+				Source:    asset.WalletDefault,
+			})
+		}
+		peerChan <- walletPeers
+	}()
+
+	select {
+	case <-time.After(1 * time.Second):
+		return nil, nil // okay.
+	case peers := <-peerChan:
+		return peers, nil
 	}
-	return walletPeers, nil
 }
 
 func (dw *DEXWallet) AddPeer(_ string) error {
