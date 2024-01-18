@@ -1023,4 +1023,5 @@ const (
 	StrSwapAndRedeemFee                = "swapAndRedeemFee"
 	StrLoginToTradeDEX                 = "loginToTradeDEX"
 	StrLogin                           = "login"
+	StrDestinationWallet               = "destinationWallet"
 )

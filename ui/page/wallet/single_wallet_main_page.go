@@ -425,10 +425,6 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 						Top:    values.MarginPadding24,
 						Bottom: values.MarginPadding16,
 					}.Layout(gtx, func(gtx C) D {
-						if !swmp.IsMobileView() {
-							// design states the entire UI dimension should be 600px
-							gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding600)
-						}
 						return swmp.PageNavigationTab.Layout(gtx, func(gtx C) D {
 							if swmp.CurrentPage() == nil {
 								return D{}
@@ -436,7 +432,7 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 							switch swmp.CurrentPage().ID() {
 							case receive.ReceivePageID, send.SendPageID, staking.OverviewPageID,
 								transaction.TransactionsPageID, privacy.AccountMixerPageID,
-								privacy.SetupPrivacyPageID:
+								privacy.SetupPrivacyPageID, accounts.AccountsPageID:
 								// Disable page functionality if a page is not synced or rescanning is in progress.
 								if swmp.selectedWallet.IsSyncing() {
 									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(a sharedW.Asset) {})

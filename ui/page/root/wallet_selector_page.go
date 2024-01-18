@@ -195,9 +195,21 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 	}
 
 	for asset, clickable := range pg.addWalClickable {
+		// Create a local copy of asset for each iteration
+		asset := asset
 		if clickable.Clicked() {
 			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
 				pg.ParentNavigator().ClosePagesAfter(WalletSelectorPageID)
+				// enable sync for the newly created wallet
+				wallets, wExists := pg.walletsList[asset]
+				var mostRecentWallet *walletWithBalance
+				if wExists && len(wallets) > 0 {
+					// Getting the most recent wallet in the list
+					mostRecentWallet = wallets[len(wallets)-1]
+					pg.ToggleSync(mostRecentWallet.wallet, func(b bool) {
+						mostRecentWallet.wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
+					})
+				}
 			}, asset))
 		}
 	}

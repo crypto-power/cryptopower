@@ -768,8 +768,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 					gtx = gtx.Disabled()
 				}
 				if pg.IsMobileView() {
-					return pg.layoutMobile(gtx)
-
+					return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layoutMobile), overlay)
 				}
 				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layoutDesktop), overlay)
 

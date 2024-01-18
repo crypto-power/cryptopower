@@ -204,6 +204,7 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 				if !rp.sendDestination.sendToAddress {
 					layoutBody = rp.walletAccountlayout(window)
 				}
+
 				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody, rp.IsMobileView())
 			}),
 			layout.Rigid(rp.addressAndAmountlayout),

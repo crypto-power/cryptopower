@@ -97,6 +97,8 @@ func (pg *LicensePage) layoutMobile(gtx layout.Context) layout.Dimensions {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
+	gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+
 	return components.UniformMobile(gtx, false, false, d)
 }
 

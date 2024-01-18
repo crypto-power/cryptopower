@@ -914,4 +914,5 @@ const EN = `
 "swapAndRedeemFee" = "swap - %s, redeem - %s"
 "loginToTradeDEX" = "Please login with your DEX password."
 "login" = "Login"
- `
+"destinationWallet" = "Destination Wallet"
+`
