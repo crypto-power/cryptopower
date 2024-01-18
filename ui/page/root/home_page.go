@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -175,10 +176,9 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
 }
 
-type dexWalletLoginInfo struct {
+type dexWalletUnlockInfo struct {
 	passEditor cryptomaterial.Editor
-	walletName string
-	walletID   int
+	wallet     sharedW.Asset
 }
 
 // initDEX initializes a new dex client if dex is not ready.
@@ -200,10 +200,10 @@ func (hp *HomePage) initDEX() {
 		<-dexc.Ready()
 
 		loginDEXNow := dexc.Active()
-		walletsToUnlock := make(map[string]*dexWalletLoginInfo)
+		walletsToUnlock := make(map[string]*dexWalletUnlockInfo)
 		for _, xc := range dexc.Exchanges() {
 			for _, bond := range xc.Auth.PendingBonds {
-				loginInfo, err := hp.fetchDEXWalletLoginInfo(bond.AssetID)
+				loginInfo, err := hp.dexWalletUnlockInfo(bond.AssetID)
 				if err != nil {
 					log.Error(err)
 					continue
@@ -212,7 +212,7 @@ func (hp *HomePage) initDEX() {
 			}
 
 			// Always unlock current bond asset.
-			loginInfo, err := hp.fetchDEXWalletLoginInfo(xc.Auth.BondAssetID)
+			loginInfo, err := hp.dexWalletUnlockInfo(xc.Auth.BondAssetID)
 			if err != nil {
 				log.Error(err)
 				continue
@@ -237,7 +237,7 @@ func (hp *HomePage) initDEX() {
 			UseCustomWidget(func(gtx C) D {
 				extra := ""
 				if len(walletsToUnlock) > 0 {
-					extra = values.StringF(values.StrLoginDEXForBondWallet, len(walletsToUnlock))
+					extra = values.StringF(values.StrUnlockBondWalletMsg, len(walletsToUnlock))
 				}
 
 				msg := extra
@@ -284,7 +284,7 @@ func (hp *HomePage) initDEX() {
 				for _, w := range walletsToUnlock {
 					w.passEditor.SetError("")
 
-					err := hp.AssetsManager.WalletWithID(w.walletID).UnlockWallet(w.passEditor.Editor.Text())
+					err := w.wallet.UnlockWallet(w.passEditor.Editor.Text())
 					if err != nil {
 						w.passEditor.SetError(err.Error())
 						return false
@@ -295,10 +295,48 @@ func (hp *HomePage) initDEX() {
 			}).
 			SetCancelable(false)
 		hp.ParentWindow().ShowModal(loginModal)
+
+		noteFeeder := dexc.NotificationFeed()
+		for {
+			select {
+			case <-hp.dexCtx.Done():
+				noteFeeder.ReturnFeed()
+				return
+			case n := <-noteFeeder.C:
+				if n.Topic() != core.TopicBondExpired {
+					continue // we only care about expired bond atm.
+				}
+
+				bondNote := n.(*core.BondPostNote)
+				w, err := hp.dexWalletUnlockInfo(bondNote.Auth.BondAssetID)
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+
+				if !w.wallet.IsLocked() {
+					continue // nothing to do
+				}
+
+				// Unlock wallet now.
+				passModal := modal.NewPasswordModal(hp.Load).
+					Title(values.String(values.StrUnlockWithPassword)).
+					Description(values.StringF(values.StrUnlockBondWalletMsg, 1))
+				passModal.PositiveButton(values.String(values.StrUnlock), func(password string, m *modal.PasswordModal) bool {
+					err := w.wallet.UnlockWallet(password)
+					if err != nil {
+						m.SetError(err.Error())
+						m.SetLoading(false)
+						return false
+					}
+					return true
+				})
+			}
+		}
 	}()
 }
 
-func (hp *HomePage) fetchDEXWalletLoginInfo(assetID uint32) (*dexWalletLoginInfo, error) {
+func (hp *HomePage) dexWalletUnlockInfo(assetID uint32) (*dexWalletUnlockInfo, error) {
 	dexClient := hp.AssetsManager.DexClient()
 	settings, err := dexClient.WalletSettings(assetID)
 	if err != nil {
@@ -316,12 +354,11 @@ func (hp *HomePage) fetchDEXWalletLoginInfo(assetID uint32) (*dexWalletLoginInfo
 		return nil, fmt.Errorf("dex wallet with ID %d is missing", walletID)
 	}
 
-	wl := &dexWalletLoginInfo{
-		walletID:   walletID,
-		walletName: wallet.GetWalletName(),
+	wl := &dexWalletUnlockInfo{
+		wallet: wallet,
 	}
 
-	wl.passEditor = hp.Theme.EditorPassword(new(widget.Editor), values.StringF(values.StrSpendingPasswordFor, wl.walletName))
+	wl.passEditor = hp.Theme.EditorPassword(new(widget.Editor), values.StringF(values.StrSpendingPasswordFor, wallet.GetWalletName()))
 	wl.passEditor.Editor.SingleLine, wl.passEditor.IsRequired = true, true
 	return wl, nil
 }

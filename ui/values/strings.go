@@ -1028,6 +1028,6 @@ const (
 	StrDexMainnetNotReady              = "dexMainnetNotReady"
 	StrUpdateDEXWalletPasswordReason   = "updateDEXWalletPasswordReason"
 	StrLoginDEXForActiveOrders         = "loginDEXForActiveOrders"
-	StrLoginDEXForBondWallet           = "loginDEXForBondWallet"
+	StrUnlockBondWalletMsg             = "unlockBondWalletMsg"
 	StrSpendingPasswordFor             = "spendingPasswordFor"
 )
