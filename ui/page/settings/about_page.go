@@ -76,9 +76,9 @@ func (pg *AboutPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AboutPage) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
+	// if pg.Load.IsMobileView() {
+	// 	return pg.layoutMobile(gtx)
+	// }
 	return pg.layoutDesktop(gtx)
 }
 
@@ -119,6 +119,9 @@ func (pg *AboutPage) pageContentLayout(gtx layout.Context) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding550)
+		if pg.Load.IsMobileView() {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		}
 		gtx.Constraints.Max.X = gtx.Constraints.Min.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return pg.card.Layout(gtx, pg.layoutRows)

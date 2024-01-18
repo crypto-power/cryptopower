@@ -66,7 +66,8 @@ type Page struct {
 	toCoinSelection *cryptomaterial.Clickable
 	advanceOptions  *cryptomaterial.Collapsible
 
-	selectedUTXOs selectedUTXOsInfo
+	selectedUTXOs     selectedUTXOsInfo
+	navigateToSyncBtn cryptomaterial.Button
 }
 
 type getPageFields func() pageFields
@@ -101,8 +102,9 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	pg := &Page{
 		Load: l,
 
-		authoredTxData: &authoredTxData{},
-		exchangeRate:   -1,
+		authoredTxData:    &authoredTxData{},
+		exchangeRate:      -1,
+		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
 	}
 
 	if wallet == nil {
@@ -483,6 +485,12 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.sourceAccountSelector.Changed() {
 		pg.recipient.validateAmount()
 		pg.validateAndConstructTxAmountOnly()
+	}
+
+	if pg.navigateToSyncBtn.Button.Clicked() {
+		pg.ToggleSync(pg.selectedWallet, func(b bool) {
+			pg.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
+		})
 	}
 }
 

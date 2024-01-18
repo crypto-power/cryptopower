@@ -8,6 +8,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -55,10 +56,17 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) contentLayout(gtx C) D {
-	pageContent := []func(gtx C) D{
-		pg.sendLayout,
-		pg.recipientsLayout,
-		pg.advanceOptionsLayout,
+	var pageContent []func(gtx C) D
+	// Always include the sendLayout
+	pageContent = append(pageContent, pg.sendLayout)
+
+	if pg.selectedWallet.IsSynced() {
+		// Include these layouts only if the wallet is synced
+		pageContent = append(pageContent, pg.recipientsLayout)
+		pageContent = append(pageContent, pg.advanceOptionsLayout)
+	} else {
+		// Include the notSyncedLayout if the wallet is not synced
+		pageContent = append(pageContent, pg.notSyncedLayout)
 	}
 
 	cgtx := gtx
@@ -113,15 +121,6 @@ func (pg *Page) sendLayout(gtx C) D {
 					return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
 				})
 			}),
-			layout.Rigid(func(gtx C) D {
-				if pg.selectedWallet.IsSynced() {
-					return D{}
-				}
-				txt := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize14), values.String(values.StrFunctionUnavailable))
-				txt.Font.Weight = font.SemiBold
-				txt.Color = pg.Theme.Color.Danger
-				return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, txt.Layout)
-			}),
 		)
 	})
 }
@@ -163,6 +162,38 @@ func (pg *Page) recipientsLayout(gtx C) D {
 			// 	)
 			// }),
 		)
+	})
+}
+
+func (pg *Page) notSyncedLayout(gtx C) D {
+	// If wallet is not synced, display a message and don't display the sections
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	return layout.Center.Layout(gtx, func(gtx C) D {
+		widgets := []func(gtx C) D{
+			func(gtx C) D {
+				warning := pg.Theme.Label(textSize16, values.String(values.StrFunctionUnavailable))
+				warning.Color = pg.Theme.Color.Danger
+				return warning.Layout(gtx)
+
+			},
+			func(gtx C) D {
+				if pg.selectedWallet.IsSyncing() {
+					syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(a sharedW.Asset) {})
+					blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
+					text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
+					blockInfo := pg.Theme.Label(textSize16, text)
+					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, blockInfo.Layout)
+				}
+
+				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.navigateToSyncBtn.Layout)
+			},
+		}
+		options := components.FlexOptions{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		}
+		return components.FlexLayout(gtx, options, widgets)
 	})
 }
 
