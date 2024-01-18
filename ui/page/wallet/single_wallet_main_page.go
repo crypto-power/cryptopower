@@ -230,7 +230,7 @@ func (swmp *SingleWalletMasterPage) fetchExchangeRate() {
 		return
 	}
 
-	rate := swmp.AssetsManager.RateSource.GetTicker(market)
+	rate := swmp.AssetsManager.RateSource.GetTicker(market, false) // okay to fetch latest rate, this is a goroutine
 	if rate == nil || rate.LastTradePrice <= 0 {
 		swmp.isFetchingExchangeRate = false
 		return

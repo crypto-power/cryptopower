@@ -636,7 +636,7 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 }
 
 func (pg *DEXMarketPage) selectedMarketUSDRateTicker() *ext.Ticker {
-	return pg.AssetsManager.RateSource.GetTicker(rateSourceMarketName(pg.marketSelector.Selected()))
+	return pg.AssetsManager.RateSource.GetTicker(rateSourceMarketName(pg.marketSelector.Selected()), true)
 }
 
 func (pg *DEXMarketPage) selectedMarketInfo() (mkt *core.Market) {

@@ -116,7 +116,7 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 
-	rate := pg.AssetsManager.RateSource.GetTicker(market)
+	rate := pg.AssetsManager.RateSource.GetTicker(market, false) // okay to fetch latest rate, this is a goroutine
 	if rate == nil || rate.LastTradePrice <= 0 {
 		return
 	}

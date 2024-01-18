@@ -967,7 +967,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 									return txt.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
-									ticker := pg.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
+									ticker := pg.AssetsManager.RateSource.GetTicker(fromCur+ext.MktSep+toCur, true)
 									if ticker == nil || ticker.LastTradePrice <= 0 {
 										return D{}
 									}
