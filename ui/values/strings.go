@@ -946,7 +946,6 @@ const (
 	StrRFP                             = "rfp"
 	StrProposedFor                     = "proposedFor"
 	StrAccounts                        = "accounts"
-	StrAmountSpendable                 = "amountSpendable"
 	StrStakingInfo                     = "stakingInfo"
 	StrTimeLeft                        = "timeLeft"
 	StrTotalReward                     = "totalReward"

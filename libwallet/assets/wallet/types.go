@@ -60,7 +60,7 @@ type BlockInfo struct {
 
 // FeeEstimate defines the fee estimate returned by the API.
 type FeeEstimate struct {
-	// Number of confrmed blocks that show the average fee rate represented below.
+	// Number of confirmed blocks that show the average fee rate represented below.
 	ConfirmedBlocks int32
 	// Feerate shows estimate fee rate in Sat/kvB or Lit/kvB.
 	Feerate AssetAmount
@@ -95,10 +95,11 @@ type UnsignedTransaction struct {
 }
 
 type Balance struct {
-	// fields common to both DCR and BTC
+	// Fields common to all assets.
 	Total          AssetAmount
 	Spendable      AssetAmount
 	ImmatureReward AssetAmount
+	Locked         AssetAmount
 
 	// DCR only fields
 	ImmatureStakeGeneration AssetAmount

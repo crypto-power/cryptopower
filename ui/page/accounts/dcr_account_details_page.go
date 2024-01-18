@@ -40,13 +40,11 @@ type AcctDetailsPage struct {
 	showExtendedKeyButton    *cryptomaterial.Clickable
 	infoButton               cryptomaterial.IconButton
 
-	stakingBalance   int64
+	lockedBalance    string
 	totalBalance     string
-	spendable        string
-	immatureRewards  string
-	lockedByTickets  string
+	spendableBalance string
+	immatureBalance  string
 	votingAuthority  string
-	immatureStakeGen string
 	hdPath           string
 	keys             string
 	extendedKey      string
@@ -84,19 +82,12 @@ func NewDCRAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.
 // Part of the load.Page interface.
 func (pg *AcctDetailsPage) OnNavigatedTo() {
 
-	balance := pg.account.Balance
-
-	pg.stakingBalance = balance.ImmatureReward.ToInt() +
-		balance.LockedByTickets.ToInt() +
-		balance.VotingAuthority.ToInt() +
-		balance.ImmatureStakeGeneration.ToInt()
-
-	pg.totalBalance = balance.Total.String()
-	pg.spendable = balance.Spendable.String()
-	pg.immatureRewards = balance.ImmatureReward.String()
-	pg.lockedByTickets = balance.LockedByTickets.String()
-	pg.votingAuthority = balance.VotingAuthority.String()
-	pg.immatureStakeGen = balance.ImmatureStakeGeneration.String()
+	bal := pg.account.Balance
+	pg.lockedBalance = pg.wallet.ToAmount(bal.Locked.ToInt() + bal.LockedByTickets.ToInt()).String()
+	pg.totalBalance = bal.Total.String()
+	pg.spendableBalance = bal.Spendable.String()
+	pg.immatureBalance = pg.wallet.ToAmount(bal.ImmatureReward.ToInt() + bal.ImmatureStakeGeneration.ToInt()).String()
+	pg.votingAuthority = bal.VotingAuthority.String()
 
 	pg.hdPath = pg.AssetsManager.DCRHDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
 
@@ -234,25 +225,18 @@ func (pg *AcctDetailsPage) accountBalanceLayout(gtx C) D {
 				)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return pg.acctBalLayout(gtx, values.String(values.StrLabelSpendable), pg.spendable, false)
+				return pg.acctBalLayout(gtx, values.String(values.StrLabelSpendable), pg.spendableBalance, false)
 			}),
 			layout.Rigid(func(gtx C) D {
-				if pg.stakingBalance == 0 {
-					return D{}
-				}
-
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return pg.acctBalLayout(gtx, values.String(values.StrImmatureRewards), pg.immatureRewards, false)
+						return pg.acctBalLayout(gtx, values.String(values.StrLocked), pg.lockedBalance, false)
 					}),
 					layout.Rigid(func(gtx C) D {
-						return pg.acctBalLayout(gtx, values.String(values.StrLockedByTickets), pg.lockedByTickets, false)
+						return pg.acctBalLayout(gtx, values.String(values.StrImmature), pg.immatureBalance, false)
 					}),
 					layout.Rigid(func(gtx C) D {
 						return pg.acctBalLayout(gtx, values.String(values.StrVotingAuthority), pg.votingAuthority, false)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return pg.acctBalLayout(gtx, values.String(values.StrImmatureStakeGen), pg.immatureStakeGen, false)
 					}),
 				)
 			}),
