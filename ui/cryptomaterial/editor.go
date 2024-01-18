@@ -62,6 +62,8 @@ type Editor struct {
 
 	m2 unit.Dp
 	m5 unit.Dp
+
+	clickable *widget.Clickable
 }
 
 func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
@@ -151,9 +153,15 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 			t.Styles.IconButtonColorStyle,
 		},
 		CustomButton: t.Button(""),
+		clickable:    new(widget.Clickable),
 	}
+	t.allEditors = append(t.allEditors, &newEditor)
 
 	return newEditor
+}
+
+func (e Editor) Pressed() bool {
+	return e.clickable.Pressed()
 }
 
 func (e Editor) Layout(gtx C) D {
@@ -191,39 +199,41 @@ func (e Editor) Layout(gtx C) D {
 
 	return layout.UniformInset(e.m2).Layout(gtx, func(gtx C) D {
 		return Card{Color: e.t.Color.Surface, Radius: Radius(8)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Stack{}.Layout(gtx,
-						layout.Stacked(func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(e.editorLayout),
-								layout.Rigid(func(gtx C) D {
-									if e.errorLabel.Text != "" {
-										inset := layout.Inset{
-											Top:  e.m2,
-											Left: e.m5,
+			return e.clickable.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Stack{}.Layout(gtx,
+							layout.Stacked(func(gtx C) D {
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(e.editorLayout),
+									layout.Rigid(func(gtx C) D {
+										if e.errorLabel.Text != "" {
+											inset := layout.Inset{
+												Top:  e.m2,
+												Left: e.m5,
+											}
+											return inset.Layout(gtx, e.errorLabel.Layout)
 										}
-										return inset.Layout(gtx, e.errorLabel.Layout)
-									}
-									return D{}
-								}),
-							)
-						}),
-						layout.Stacked(func(gtx C) D {
-							if e.IsTitleLabel {
-								return layout.Inset{
-									Top:  values.MarginPaddingMinus10,
-									Left: values.MarginPadding10,
-								}.Layout(gtx, func(gtx C) D {
-									return Card{Color: e.t.Color.Surface}.Layout(gtx, e.TitleLabel.Layout)
-								})
-							}
-							return D{}
-						}),
-						layout.Stacked(overLay),
-					)
-				}),
-			)
+										return D{}
+									}),
+								)
+							}),
+							layout.Stacked(func(gtx C) D {
+								if e.IsTitleLabel {
+									return layout.Inset{
+										Top:  values.MarginPaddingMinus10,
+										Left: values.MarginPadding10,
+									}.Layout(gtx, func(gtx C) D {
+										return Card{Color: e.t.Color.Surface}.Layout(gtx, e.TitleLabel.Layout)
+									})
+								}
+								return D{}
+							}),
+							layout.Stacked(overLay),
+						)
+					}),
+				)
+			})
 		})
 	})
 }

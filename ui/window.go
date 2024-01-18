@@ -10,7 +10,9 @@ import (
 	"time"
 
 	giouiApp "gioui.org/app"
+	"gioui.org/gesture"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -46,6 +48,9 @@ type Window struct {
 	// IsShutdown channel is used to report that background processes have
 	// completed shutting down, therefore the UI processes can finally stop.
 	IsShutdown chan struct{}
+
+	// clicker used to create click events for application
+	clicker gesture.Click
 }
 
 type (
@@ -300,6 +305,9 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 	// list via a graphical context that is linked to the ops.
 	ops := &op.Ops{}
 	gtx := layout.NewContext(ops, evt)
+	if win.load.IsMobileView() {
+		win.clicker.Add(ops)
+	}
 	layout.Stack{Alignment: layout.N}.Layout(
 		gtx,
 		backgroundWidget,
@@ -307,6 +315,7 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 		topModalLayout,
 		layout.Stacked(win.load.Toast.Layout),
 	)
+	win.handleUserClick(gtx)
 
 	return ops
 }
@@ -340,6 +349,15 @@ func (win *Window) addKeyEventRequestsToOps(ops *op.Ops) {
 	} else {
 		if handler, ok := win.navigator.CurrentPage().(load.KeyEventHandler); ok {
 			requestKeyEvents(win.navigator.CurrentPageID(), handler.KeysToHandle())
+		}
+	}
+}
+
+// handleUserClick listen touch action of user for mobile.
+func (win *Window) handleUserClick(gtx C) {
+	for _, evt := range win.clicker.Events(gtx) {
+		if evt.Type == gesture.TypePress && evt.Source == pointer.Touch {
+			win.load.Theme.AutoHideSoftKeyBoard(gtx)
 		}
 	}
 }

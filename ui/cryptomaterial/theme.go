@@ -49,6 +49,8 @@ type Theme struct {
 
 	dropDownMenus    []*DropDown
 	DropdownBackdrop *widget.Clickable
+
+	allEditors []*Editor
 }
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
@@ -322,6 +324,16 @@ func (t *Theme) AssetIcon(asset utils.AssetType) *Image {
 		icon = nil
 	}
 	return icon
+}
+
+func (t *Theme) AutoHideSoftKeyBoard(gtx C) {
+	isHide := true
+	for _, e := range t.allEditors {
+		isHide = isHide && !e.Pressed()
+	}
+	if isHide {
+		key.SoftKeyboardOp{Show: false}.Add(gtx.Ops)
+	}
 }
 
 func CentralizeWidget(gtx C, widget layout.Widget) D {
