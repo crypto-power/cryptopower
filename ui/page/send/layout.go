@@ -334,9 +334,6 @@ func (pg *Page) sectionWrapper(gtx C, body layout.Widget) D {
 }
 
 func (pg *Page) contentWrapper(gtx C, title string, zeroBottomPadding bool, content layout.Widget) D {
-	if pg.modalLayout != nil && !pg.selectedWallet.IsSynced() {
-		gtx = gtx.Disabled()
-	}
 	padding := values.MarginPadding16
 	if zeroBottomPadding {
 		padding = values.MarginPadding0
