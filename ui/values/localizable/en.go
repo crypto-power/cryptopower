@@ -915,4 +915,6 @@ const EN = `
 "loginToTradeDEX" = "Please login with your DEX password."
 "login" = "Login"
 "destinationWallet" = "Destination Wallet"
+"swtichToTestnet" = "Switch to Testnet"
+"dexMainnetNotReady" = "DCRDEX is currently in beta testing and has been disabled on mainnet to prevent loss of funds. Please switch to testnet to try it out."
 `
