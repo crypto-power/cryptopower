@@ -205,12 +205,6 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 					layoutBody = rp.walletAccountlayout(window)
 				}
 
-				// Hide the address and wallet segmented control if there is only one wallet of an asset
-				// type or one account for the selected destination wallet.
-				if rp.sendDestination.destinationWalletSelector.Count() < 2 || rp.sendDestination.destinationAccountSelector.Count() < 2 {
-					return layoutBody(gtx)
-				}
-
 				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody, rp.IsMobileView())
 			}),
 			layout.Rigid(rp.addressAndAmountlayout),
