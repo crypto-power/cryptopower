@@ -362,7 +362,7 @@ const EN = `
 "moveFundsFrmDefaultToUnmixed" = "Automatically move funds from default to unmixed account"
 "moveToUnmixed" = "Move funds to unmixed account"
 "multipleMixerAccNeeded" = "Set up mixer by creating two needed accounts"
-"multiWalletSubtext" = "Send, Receive and Exchange Decred, Bitcoin and Litecoin."
+"multiWalletSubtext" = "Send, receive and exchange Decred, Bitcoin and Litecoin."
 "multiWalletSupport" = "Multi-wallet support"
 "myAcct" = "My account"
 "nConfirmations" = "%d Confirmations"
@@ -916,5 +916,5 @@ const EN = `
 "login" = "Login"
 "destinationWallet" = "Destination Wallet"
 "swtichToTestnet" = "Switch to Testnet"
-"dexMainnetNotReady" = "DCRDEX is currently in beta testing and has been disabled on mainnet to prevent loss of funds. Please switch to testnet to try it out."
+"dexMainnetNotReady" = "DCRDEX is currently in beta testing and has been disabled on mainnet to prevent potential loss of funds. Please switch to testnet to try it out."
 `
