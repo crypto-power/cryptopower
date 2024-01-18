@@ -66,7 +66,9 @@ func (pg *Page) contentLayout(gtx C) D {
 		pageContent = append(pageContent, pg.advanceOptionsLayout)
 	} else {
 		// Include the notSyncedLayout if the wallet is not synced
-		pageContent = append(pageContent, pg.notSyncedLayout)
+		if pg.modalLayout != nil {
+			pageContent = append(pageContent, pg.notSyncedLayout)
+		}
 	}
 
 	cgtx := gtx

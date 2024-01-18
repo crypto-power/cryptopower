@@ -745,4 +745,9 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 	)
 }
 
+// return the count of wallets and accounts
+func (sm *selectorModal) Count() int {
+	return len(sm.selectorItems)
+}
+
 func (sm *selectorModal) OnDismiss() {}

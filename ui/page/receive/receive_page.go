@@ -282,7 +282,7 @@ func (pg *Page) contentLayout(gtx C) D {
 						return layout.Center.Layout(gtx, warning.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !pg.selectedWallet.IsSynced() {
+						if !pg.selectedWallet.IsSynced() && pg.modalLayout != nil {
 							// If wallet is not synced, display a message and don't display the sections
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
 							return layout.Center.Layout(gtx, func(gtx C) D {
