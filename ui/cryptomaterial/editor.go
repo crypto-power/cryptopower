@@ -199,11 +199,11 @@ func (e Editor) Layout(gtx C) D {
 
 	return layout.UniformInset(e.m2).Layout(gtx, func(gtx C) D {
 		return Card{Color: e.t.Color.Surface, Radius: Radius(8)}.Layout(gtx, func(gtx C) D {
-			return e.clickable.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Stack{}.Layout(gtx,
-							layout.Stacked(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Stack{}.Layout(gtx,
+						layout.Stacked(func(gtx C) D {
+							return e.clickable.Layout(gtx, func(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(e.editorLayout),
 									layout.Rigid(func(gtx C) D {
@@ -217,25 +217,26 @@ func (e Editor) Layout(gtx C) D {
 										return D{}
 									}),
 								)
-							}),
-							layout.Stacked(func(gtx C) D {
-								if e.IsTitleLabel {
-									return layout.Inset{
-										Top:  values.MarginPaddingMinus10,
-										Left: values.MarginPadding10,
-									}.Layout(gtx, func(gtx C) D {
-										return Card{Color: e.t.Color.Surface}.Layout(gtx, e.TitleLabel.Layout)
-									})
-								}
-								return D{}
-							}),
-							layout.Stacked(overLay),
-						)
-					}),
-				)
-			})
+							})
+						}),
+						layout.Stacked(func(gtx C) D {
+							if e.IsTitleLabel {
+								return layout.Inset{
+									Top:  values.MarginPaddingMinus10,
+									Left: values.MarginPadding10,
+								}.Layout(gtx, func(gtx C) D {
+									return Card{Color: e.t.Color.Surface}.Layout(gtx, e.TitleLabel.Layout)
+								})
+							}
+							return D{}
+						}),
+						layout.Stacked(overLay),
+					)
+				}),
+			)
 		})
 	})
+
 }
 
 func (e Editor) editorLayout(gtx C) D {
