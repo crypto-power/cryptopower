@@ -314,8 +314,11 @@ func (dw *DEXWallet) SignRawTransaction(ctx context.Context, baseTx *wire.MsgTx)
 // network.
 // Part of the Wallet interface.
 func (dw *DEXWallet) SendRawTransaction(ctx context.Context, tx *wire.MsgTx, _ bool) (*chainhash.Hash, error) {
-	// TODO: Conditional high fee check?
-	return dw.Internal().DCR.PublishTransaction(ctx, tx, dw.syncData.syncer)
+	syncer, err := dw.Internal().DCR.NetworkBackend()
+	if err != nil {
+		return nil, err
+	}
+	return dw.Internal().DCR.PublishTransaction(ctx, tx, syncer)
 }
 
 // GetBestBlock returns the hash and height of the wallet's best block.
