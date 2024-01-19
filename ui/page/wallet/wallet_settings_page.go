@@ -386,7 +386,7 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 
 					// Undo password change.
 					if err = pg.wallet.ChangePrivatePassphraseForWallet(newPassword, currentPassword, sharedW.PassphraseTypePass); err != nil {
-						log.Errorf("Failed to undo pass update: %v", err)
+						log.Errorf("Failed to undo wallet passphrase change: %v", err)
 					}
 
 					return false
