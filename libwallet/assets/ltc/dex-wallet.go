@@ -54,13 +54,13 @@ type DEXWallet struct {
 	acctNum   int32
 	cl        *ltcChainService
 	btcParams *chaincfg.Params
-	syncData  *SyncData
+	isSyncing func() bool
 }
 
 var _ dexbtc.CustomWallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btcParams *chaincfg.Params, syncData *SyncData) *DEXWallet {
+func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btcParams *chaincfg.Params, isSyncing func() bool) *DEXWallet {
 	return &DEXWallet{
 		w:       w,
 		acctNum: acctNum,
@@ -68,7 +68,7 @@ func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btc
 			NeutrinoClient: nc,
 		},
 		btcParams: btcParams,
-		syncData:  syncData,
+		isSyncing: isSyncing,
 	}
 }
 
@@ -93,20 +93,21 @@ func (dw *DEXWallet) OwnsAddress(addr btcutil.Address) (bool, error) {
 	return dw.w.HaveAddress(ltcAddr)
 }
 
-/*
-Note:
-
-The upstream *spvWallet implementation of this method expects that this
-w.PublishTransaction method may take quite some time to return, so it calls the
-method in a goroutine and assumes the method call was successful if the method
-does not complete after waiting for some seconds.
-
-The upstream implementation also unlocks the tx inputs to ensure that the locked
-balance computation isn't affected by coins that were previously locked but are
-now spent.
-*/
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) SendRawTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
+	/*
+		Note:
+
+		The upstream *spvWallet implementation of this method expects that this
+		w.PublishTransaction method may take quite some time to return, so it calls the
+		method in a goroutine and assumes the method call was successful if the method
+		does not complete after waiting for some seconds.
+
+		The upstream implementation also unlocks the tx inputs to ensure that the locked
+		balance computation isn't affected by coins that were previously locked but are
+		now spent.
+	*/
+
 	ltcTx, err := convertMsgTxToLTC(tx)
 	if err != nil {
 		return nil, err
@@ -212,7 +213,7 @@ func (dw *DEXWallet) SyncStatus() (*dexbtc.SyncStatus, error) {
 	return &dexbtc.SyncStatus{
 		Target:  dw.syncHeight(),
 		Height:  walletBlock.Height,
-		Syncing: dw.syncData.isSyncing(),
+		Syncing: dw.isSyncing(),
 	}, nil
 }
 
@@ -1009,14 +1010,12 @@ func (dw *DEXWallet) syncedTo() waddrmgr.BlockStamp {
 	}
 }
 
-// ltcChainService wraps ltcsuite *neutrino.ChainService in order to translate the
-// neutrino.ServerPeer to the SPVPeer interface type as required by the dex btc
-// pkg.
+// ltcChainService wraps ltcsuite *neutrino.ChainService in order to translate
+// the neutrino.ServerPeer to the SPVPeer interface and implement required chain
+// service methods for ltc.
 type ltcChainService struct {
 	*chain.NeutrinoClient
 }
-
-var _ dexbtc.SPVService = (*ltcChainService)(nil)
 
 func (s *ltcChainService) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	ltcHash, err := s.CS.GetBlockHash(height)
@@ -1045,14 +1044,6 @@ func (s *ltcChainService) Peers() []dexbtc.SPVPeer {
 		peers[i] = p
 	}
 	return peers
-}
-
-func (s *ltcChainService) AddPeer(addr string) error {
-	return s.CS.ConnectNode(addr, true)
-}
-
-func (s *ltcChainService) RemovePeer(addr string) error {
-	return s.CS.RemoveNodeByAddr(addr)
 }
 
 func (s *ltcChainService) GetBlockHeight(h *chainhash.Hash) (int32, error) {
@@ -1100,10 +1091,6 @@ func (s *ltcChainService) GetBlock(blockHash chainhash.Hash, _ ...btcneutrino.Qu
 	}
 
 	return btcutil.NewBlockFromBytes(b)
-}
-
-func (s *ltcChainService) Stop() error {
-	return s.CS.Stop()
 }
 
 // secretSource is used to locate keys and redemption scripts while signing a
