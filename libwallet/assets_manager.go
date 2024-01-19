@@ -67,7 +67,8 @@ type AssetsManager struct {
 	RateSource      ext.RateSource
 
 	dexcMtx     sync.RWMutex
-	dexc        *dexc.DEXClient
+	dexcCtx     context.Context
+	dexc        DexClient
 	startingDEX atomic.Bool
 }
 
@@ -365,7 +366,7 @@ func (mgr *AssetsManager) Shutdown() {
 	}
 
 	// Shutdown dexc before closing wallets.
-	if mgr.dexc != nil && mgr.dexc.IsInitialized() {
+	if mgr.dexc != nil && mgr.DexcInitialized() {
 		mgr.dexc.Shutdown()
 		mgr.dexc.WaitForShutdown()
 	}
@@ -902,7 +903,7 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 }
 
 // DexClient returns a dexc client that MUST never be modified.
-func (mgr *AssetsManager) DexClient() *dexc.DEXClient {
+func (mgr *AssetsManager) DexClient() DexClient {
 	mgr.dexcMtx.RLock()
 	defer mgr.dexcMtx.RUnlock()
 	return mgr.dexc
@@ -911,7 +912,8 @@ func (mgr *AssetsManager) DexClient() *dexc.DEXClient {
 func (mgr *AssetsManager) DexcInitialized() bool {
 	mgr.dexcMtx.RLock()
 	defer mgr.dexcMtx.RUnlock()
-	return mgr.dexc != nil
+	dexClient, _ := mgr.dexc.(*dexc.DEXClient) // check concrete type
+	return dexClient != nil && dexClient.Core != nil
 }
 
 // InitializeDEX initializes mgr.dexc. Support for Cryptopower wallets are
@@ -929,6 +931,7 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	}
 
 	// Prevent multiple initialization.
+	mgr.dexcCtx = ctx
 	mgr.startingDEX.Store(true)
 	defer func() {
 		mgr.startingDEX.Store(false)
@@ -940,14 +943,14 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	setDEXWalletLoader(mgr.WalletWithID)
 
 	logDir := filepath.Dir(mgr.LogFile())
-	dexcl, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
+	dexClient, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
 	if err != nil {
 		log.Errorf("Error starting dex client: %v", err)
 		return
 	}
 
 	mgr.dexcMtx.Lock()
-	mgr.dexc = dexcl
+	mgr.dexc = dexClient
 	mgr.dexcMtx.Unlock()
 
 	go func() {
@@ -968,7 +971,7 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 
 	log.Debug("Shutting down DEX client and removing dex data dir....")
 
-	dexDBFile := mgr.dexc.DBPath
+	dexDBFile := mgr.dexc.DBPath()
 	shutdownChan := mgr.dexc.WaitForShutdown()
 
 	// Shutdown the DEX client.
@@ -979,8 +982,17 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 	// both will get the ntfn?
 	<-shutdownChan // wait for shutdown
 
-	// TODO: Set mgr.dexc to nil and unregister the custom wallet constructors!
+	mgr.dexcMtx.Lock()
+	mgr.dexc = nil
+	mgr.dexcMtx.Unlock()
 
 	// Delete dex client db.
-	return os.Remove(dexDBFile)
+	err = os.Remove(dexDBFile)
+	if err != nil {
+		return err
+	}
+
+	// Start a new client.
+	mgr.InitializeDEX(mgr.dexcCtx)
+	return nil
 }

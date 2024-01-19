@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"decred.org/dcrdex/dex/encode"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 
@@ -21,6 +22,9 @@ import (
 	"gioui.org/widget"
 	"golang.org/x/text/message"
 )
+
+// ZeroBytes use for clearing a password or seed byte slice.
+var ZeroBytes = encode.ClearBytes
 
 // the length of name should be 20 characters
 func ValidateLengthName(name string) bool {
