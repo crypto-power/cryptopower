@@ -313,10 +313,11 @@ func (asset *Asset) IsWaiting() bool {
 
 // IsSyncing returns true if the wallet is syncing.
 func (asset *Asset) IsSyncing() bool {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
+	return asset.syncData.isSyncing()
+}
 
-	return asset.syncData.syncing
+func (asset *Asset) SyncData() *SyncData {
+	return asset.syncData
 }
 
 // IsSyncShuttingDown returns true if the wallet is shutting down.

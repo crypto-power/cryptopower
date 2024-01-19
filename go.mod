@@ -131,6 +131,9 @@ require (
 	github.com/gcash/bchd v0.19.0 // indirect
 	github.com/gcash/bchlog v0.0.0-20180913005452-b4f036f92fa6 // indirect
 	github.com/gcash/bchutil v0.0.0-20210113190856-6ea28dff4000 // indirect
+	github.com/gcash/bchwallet v0.10.0 // indirect
+	github.com/gcash/bchwallet/walletdb v0.0.0-20210524114850-4837f9798568 // indirect
+	github.com/gcash/neutrino v0.0.0-20210524114821-3b1878290cf9 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -142,7 +145,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/trillian v1.4.1 // indirect
@@ -228,4 +230,9 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
-replace decred.org/dcrdex v0.6.3 => github.com/decred/dcrdex v0.0.0-20240207234259-462dcb6e0736
+// github.com/ukane-philemon/dcrdex v0.0.0-20240126135833-b75c189e80a9 is the
+// latest dcrdex master plus commits that adds methods required by
+// cryptopower. This should be updated when these PRs get merged.
+// 1. core: add ActiveOrders method to Core: https://github.com/decred/dcrdex/pull/2680
+// 1. core: Add ExpiredBonds method to Core: https://github.com/decred/dcrdex/pull/2679
+replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240127032309-04dce45a6f09
