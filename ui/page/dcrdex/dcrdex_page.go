@@ -12,7 +12,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -28,7 +27,7 @@ type DEXPage struct {
 
 	*load.Load
 
-	generalSettingsBtn   cryptomaterial.Button
+	switchToTestnetBtn   cryptomaterial.Button
 	openTradeMainPage    *cryptomaterial.Clickable
 	splashPageInfoButton cryptomaterial.IconButton
 	splashPageContainer  *widget.List
@@ -49,7 +48,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 			Axis:      layout.Vertical,
 		}},
 		isDexFirstVisit:    true,
-		generalSettingsBtn: l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrExchange))),
+		switchToTestnetBtn: l.Theme.Button(values.String(values.StrSwitchToTestnet)),
 		materialLoader:     material.Loader(l.Theme.Base),
 	}
 
@@ -113,12 +112,12 @@ func (pg *DEXPage) Layout(gtx C) D {
 	}
 
 	hasMultipleWallets := pg.isMultipleAssetTypeWalletAvailable()
-	privacyModeOff := pg.AssetsManager.IsHTTPAPIPrivacyModeOff(utils.ExchangeHTTPAPI)
+	isMainnet := pg.AssetsManager.NetType() == utils.Mainnet
 	var msg string
 	var actionBtn *cryptomaterial.Button
-	if !privacyModeOff {
-		actionBtn = &pg.generalSettingsBtn
-		msg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
+	if isMainnet {
+		actionBtn = &pg.switchToTestnetBtn
+		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
 	} else if !pg.AssetsManager.DexcReady() {
@@ -152,9 +151,9 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *DEXPage) HandleUserInteractions() {
-	if pg.generalSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
-	}
+	if pg.switchToTestnetBtn.Button.Clicked() {
+		log.Info("TODO: implement switch to testnet")
+	} // TODO: implement switch to testnet
 
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions()

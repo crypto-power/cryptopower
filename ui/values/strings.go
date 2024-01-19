@@ -1024,4 +1024,6 @@ const (
 	StrLoginToTradeDEX                 = "loginToTradeDEX"
 	StrLogin                           = "login"
 	StrDestinationWallet               = "destinationWallet"
+	StrSwitchToTestnet                 = "swtichToTestnet"
+	StrDexMainnetNotReady              = "dexMainnetNotReady"
 )
