@@ -534,6 +534,7 @@ func (dw *DEXWallet) scanFilters(txHash *chainhash.Hash, vout uint32, pkScript [
 }
 
 const medianTimeBlocks = 11
+
 var maxFutureBlockTime = 2 * time.Hour // see MaxTimeOffsetSeconds in btcd/blockchain/validate.go
 
 // findBlockForTime locates a good start block so that a search beginning at the
