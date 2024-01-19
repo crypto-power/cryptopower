@@ -378,12 +378,17 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 			}
 
 			if dexPass != "" { // update wallet password in dex
-				fmt.Println("Got here")
 				assetID, _ := dex.BipSymbolID(pg.wallet.GetAssetType().ToStringLower())
 				err := pg.AssetsManager.DexClient().SetWalletPassword([]byte(dexPass), assetID, []byte(newPassword))
 				if err != nil {
 					m.SetError(fmt.Errorf("Failed to update your dex wallet password, try again: %v", err).Error())
 					m.SetLoading(false)
+
+					// Undo password change.
+					if err = pg.wallet.ChangePrivatePassphraseForWallet(newPassword, currentPassword, sharedW.PassphraseTypePass); err != nil {
+						log.Errorf("Failed to undo pass update: %v", err)
+					}
+
 					return false
 				}
 			}
@@ -393,7 +398,6 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 			pg.ParentWindow().ShowModal(info)
 			return true
 		})
-	pg.ParentWindow().ShowModal(newSpendingPasswordModal)
 
 	// DEX password modal.
 	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
@@ -431,8 +435,8 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 			pg.wallet.LockWallet()
 
 			currentPassword = password
-			if pg.AssetsManager.DexcReady() {
-				// Check if this wallet exists in the dex client.
+			if pg.AssetsManager.DexcInitialized() {
+				// Check if this wallet is used by the dex client.
 				assetType := pg.wallet.GetAssetType()
 				assetID, ok := dex.BipSymbolID(assetType.ToStringLower())
 				if ok {
@@ -441,7 +445,8 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 						log.Errorf("AssetsManager.DexClient.WalletIDForAsset error: %w", err)
 					}
 					if walletID != nil && pg.wallet.GetWalletID() == *walletID {
-						// we need to update the password in dex.
+						// We need to update the password in dex, and we need
+						// the dex password to do so.
 						dexPasswordModal = dexPasswordModal.SetDescription(values.StringF(values.StrUpdateDEXWalletPasswordReason, assetType.ToFull(), pg.wallet.GetWalletName()))
 						pg.ParentWindow().ShowModal(dexPasswordModal)
 						return true

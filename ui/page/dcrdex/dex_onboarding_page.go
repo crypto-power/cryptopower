@@ -1132,7 +1132,7 @@ func (pg *DEXOnboarding) postBond() {
 		return
 	}
 
-	if walletID != nil && pg.AssetsManager.WalletWithID(*walletID) != nil {
+	if walletID != nil {
 		// Wallet has been added to core, no need for password.
 		go func() {
 			postBondFn()
@@ -1156,7 +1156,7 @@ func (pg *DEXOnboarding) postBond() {
 			pg.isLoading = false
 			return true
 		}).
-		SetCancelable(false) // user cannot close modal until addWalletFn && postBondFn exists
+		SetCancelable(false) // user cannot close modal until addWalletFn && postBondFn exits
 
 	pg.ParentWindow().ShowModal(walletPasswordModal)
 }

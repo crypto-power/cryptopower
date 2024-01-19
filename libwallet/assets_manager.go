@@ -910,7 +910,7 @@ func (mgr *AssetsManager) DexClient() *dexc.DEXClient {
 	return mgr.dexc
 }
 
-func (mgr *AssetsManager) DexcReady() bool {
+func (mgr *AssetsManager) DexcInitialized() bool {
 	mgr.dexcMtx.RLock()
 	defer mgr.dexcMtx.RUnlock()
 	return mgr.dexc != nil
@@ -926,7 +926,7 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 		dexWalletRegistered.Store(true)
 	}
 
-	if mgr.DexcReady() || mgr.startingDEX.Load() {
+	if mgr.DexcInitialized() || mgr.startingDEX.Load() {
 		log.Debug("Attempted to reinitialize a running dex client instance")
 		return
 	}
