@@ -3,6 +3,7 @@ package wallet
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"sort"
 	"strconv"
@@ -291,7 +292,13 @@ func ParseWalletPeers(peerAddresses string, port string) ([]string, []error) {
 	if peerAddresses != "" {
 		addresses := strings.Split(peerAddresses, ";")
 		for _, address := range addresses {
-			peerAddress, err := utils.NormalizeAddress(address, port)
+			host, p, err := net.SplitHostPort(address)
+			// If err assume because port was not supplied.
+			if err != nil {
+				host = address
+				p = port
+			}
+			peerAddress, err := utils.NormalizeAddress(host, p)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err))
 			} else {
