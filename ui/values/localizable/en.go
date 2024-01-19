@@ -917,4 +917,5 @@ const EN = `
 "destinationWallet" = "Destination Wallet"
 "swtichToTestnet" = "Switch to Testnet"
 "dexMainnetNotReady" = "DCRDEX is currently in beta testing and has been disabled on mainnet to prevent potential loss of funds. Please switch to testnet to try it out."
+"updateDEXWalletPasswordReason" = "Your %s wallet (%s) is connected to your DEX account. Please provided your DEX password to update DEX with the new wallet password."
 `

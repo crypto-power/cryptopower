@@ -1,11 +1,13 @@
 package wallet
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"strconv"
 	"strings"
 
+	"decred.org/dcrdex/dex"
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -359,6 +361,61 @@ func (pg *SettingsPage) subSectionSwitch(title string, option *cryptomaterial.Sw
 }
 
 func (pg *SettingsPage) changeSpendingPasswordModal() {
+	var currentPassword, dexPass string
+	// New wallet password modal.
+	newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		Title(values.String(values.StrChangeSpendingPass)).
+		EnableName(false).
+		PasswordHint(values.String(values.StrNewSpendingPassword)).
+		ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
+		SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+			err := pg.wallet.ChangePrivatePassphraseForWallet(currentPassword,
+				newPassword, sharedW.PassphraseTypePass)
+			if err != nil {
+				m.SetError(err.Error())
+				m.SetLoading(false)
+				return false
+			}
+
+			if dexPass != "" { // update wallet password in dex
+				fmt.Println("Got here")
+				assetID, _ := dex.BipSymbolID(pg.wallet.GetAssetType().ToStringLower())
+				err := pg.AssetsManager.DexClient().SetWalletPassword([]byte(dexPass), assetID, []byte(newPassword))
+				if err != nil {
+					m.SetError(fmt.Errorf("Failed to update your dex wallet password, try again: %v", err).Error())
+					m.SetLoading(false)
+					return false
+				}
+			}
+
+			info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrSpendingPasswordUpdated),
+				modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(info)
+			return true
+		})
+	pg.ParentWindow().ShowModal(newSpendingPasswordModal)
+
+	// DEX password modal.
+	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrDexPassword)).
+		PasswordHint(values.String(values.StrDexPassword)).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := pg.AssetsManager.DexClient().Login([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+
+			dexPass = password
+			pg.ParentWindow().ShowModal(newSpendingPasswordModal)
+			return true
+		}).SetCancelable(false)
+	dexPasswordModal.SetPasswordTitleVisibility(false)
+
+	// Current wallet password modal.
 	currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		Title(values.String(values.StrConfirmSpendingPassword)).
 		PasswordHint(values.String(values.StrCurrentSpendingPassword)).
@@ -373,26 +430,25 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 			}
 			pg.wallet.LockWallet()
 
-			// change password
-			newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-				Title(values.String(values.StrChangeSpendingPass)).
-				EnableName(false).
-				PasswordHint(values.String(values.StrNewSpendingPassword)).
-				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
-				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-					err := pg.wallet.ChangePrivatePassphraseForWallet(password,
-						newPassword, sharedW.PassphraseTypePass)
+			currentPassword = password
+			if pg.AssetsManager.DexcReady() {
+				// Check if this wallet exists in the dex client.
+				assetType := pg.wallet.GetAssetType()
+				assetID, ok := dex.BipSymbolID(assetType.ToStringLower())
+				if ok {
+					walletID, err := pg.AssetsManager.DexClient().WalletIDForAsset(assetID)
 					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return false
+						log.Errorf("AssetsManager.DexClient.WalletIDForAsset error: %w", err)
 					}
+					if walletID != nil && pg.wallet.GetWalletID() == *walletID {
+						// we need to update the password in dex.
+						dexPasswordModal = dexPasswordModal.SetDescription(values.StringF(values.StrUpdateDEXWalletPasswordReason, assetType.ToFull(), pg.wallet.GetWalletName()))
+						pg.ParentWindow().ShowModal(dexPasswordModal)
+						return true
+					}
+				}
+			}
 
-					info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrSpendingPasswordUpdated),
-						modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(info)
-					return true
-				})
 			pg.ParentWindow().ShowModal(newSpendingPasswordModal)
 			return true
 		})
