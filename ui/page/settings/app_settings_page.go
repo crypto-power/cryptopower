@@ -1,12 +1,16 @@
 package settings
 
 import (
+	"image/color"
 	"regexp"
 	"strings"
+	"time"
 
 	"decred.org/dcrdex/dex"
 	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -61,6 +65,8 @@ type AppSettingsPage struct {
 	viewLog                 *cryptomaterial.Clickable
 	deleteDEX               *cryptomaterial.Clickable
 	backupDEX               *cryptomaterial.Clickable
+	copyDEXSeed             cryptomaterial.Button
+	dexSeed                 string
 
 	governanceAPI *cryptomaterial.Switch
 	exchangeAPI   *cryptomaterial.Switch
@@ -99,12 +105,19 @@ func NewAppSettingsPage(l *load.Load) *AppSettingsPage {
 		viewLog:           l.Theme.NewClickable(false),
 		deleteDEX:         l.Theme.NewClickable(false),
 		backupDEX:         l.Theme.NewClickable(false),
+		copyDEXSeed:       l.Theme.Button(values.String(values.StrCopy)),
 	}
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.backButton = components.GetBackButton(l)
 	pg.isDarkModeOn = pg.AssetsManager.IsDarkModeOn()
+
+	pg.copyDEXSeed.TextSize = values.TextSize14
+	pg.copyDEXSeed.Background = color.NRGBA{}
+	pg.copyDEXSeed.HighlightColor = pg.Theme.Color.SurfaceHighlight
+	pg.copyDEXSeed.Color = pg.Theme.Color.Primary
+	pg.copyDEXSeed.Inset = layout.UniformInset(values.MarginPadding16)
 
 	return pg
 }
@@ -121,6 +134,7 @@ func (pg *AppSettingsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) Layout(gtx C) D {
+	pg.handleCopyEvent(gtx)
 	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.pageHeaderLayout),
@@ -729,11 +743,32 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 	}
 }
 
+func (pg *AppSettingsPage) handleCopyEvent(gtx C) {
+	if pg.copyDEXSeed.Clicked() {
+		clipboard.WriteOp{Text: pg.dexSeed}.Add(gtx.Ops)
+		pg.copyDEXSeed.Text = values.String(values.StrCopied)
+		pg.copyDEXSeed.Color = pg.Theme.Color.Success
+		time.AfterFunc(time.Second*3, func() {
+			pg.copyDEXSeed.Text = values.String(values.StrCopy)
+			pg.copyDEXSeed.Color = pg.Theme.Color.Primary
+			pg.ParentWindow().Reload()
+		})
+	}
+}
+
 func (pg *AppSettingsPage) showDEXSeedModal(seed dex.Bytes) {
 	defer utils.ZeroBytes(seed)
-	seedStr := stringifySeed(seed)
+	pg.dexSeed = stringifySeed(seed)
 	seedModal := modal.NewSuccessModal(pg.Load, values.String(values.StrDEXSeed), modal.DefaultClickFunc()).
-		Body(seedStr)
+		UseCustomWidget(func(gtx C) D {
+			seedText := pg.Theme.Body1(pg.dexSeed)
+			seedText.Alignment = text.Middle
+			seedText.Color = pg.Theme.Color.GrayText2
+			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(seedText.Layout),
+				layout.Rigid(pg.copyDEXSeed.Layout),
+			)
+		})
 	pg.ParentWindow().ShowModal(seedModal)
 }
 
@@ -813,7 +848,9 @@ func (pg *AppSettingsPage) updatePrivacySettings() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *AppSettingsPage) OnNavigatedFrom() {}
+func (pg *AppSettingsPage) OnNavigatedFrom() {
+	pg.dexSeed = "" // clear
+}
 
 func (pg *AppSettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, isChecked bool) {
 	switchComponent.SetChecked(false)
