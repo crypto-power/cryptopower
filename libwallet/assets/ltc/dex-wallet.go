@@ -218,7 +218,7 @@ func (dw *DEXWallet) SyncStatus() (*dexbtc.SyncStatus, error) {
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) Balances() (*dexbtc.GetBalancesResult, error) {
 	// Determine trusted vs untrusted coins with listunspent.
-	unspents, err := dw.w.ListUnspent(0, math.MaxInt32, dw.accountInfo().AccountName)
+	unspents, err := dw.w.ListUnspent(0, math.MaxInt32, dw.accountName())
 	if err != nil {
 		return nil, fmt.Errorf("error listing unspent outputs: %w", err)
 	}
@@ -255,7 +255,7 @@ func (dw *DEXWallet) Balances() (*dexbtc.GetBalancesResult, error) {
 
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) ListUnspent() ([]*dexbtc.ListUnspentResult, error) {
-	acctName := dw.accountInfo().AccountName
+	acctName := dw.accountName()
 	unspents, err := dw.w.ListUnspent(0, math.MaxInt32, acctName)
 	if err != nil {
 		return nil, err
@@ -871,21 +871,15 @@ func confirms(txHeight, curHeight int32) int32 {
 	}
 }
 
-// accountInfo returns the account information of the wallet for use by the
-// exchange wallet.
-func (dw *DEXWallet) accountInfo() dexbtc.XCWalletAccount {
-	acct := dexbtc.XCWalletAccount{
-		AccountNumber: uint32(dw.acctNum),
-	}
-
-	accountName, err := dw.w.AccountName(GetScope(), acct.AccountNumber)
+// accountInfo returns the account name of the wallet.
+func (dw *DEXWallet) accountName() string {
+	accountName, err := dw.w.AccountName(GetScope(), uint32(dw.acctNum))
 	if err == nil {
-		acct.AccountName = accountName
-	} else {
-		log.Errorf("error checking selected DEX account name: %v", err)
+		return accountName
 	}
 
-	return acct
+	log.Errorf("error checking selected DEX account name: %v", err)
+	return "" // return "default"?
 }
 
 // serializeMsgTx serializes the wire.MsgTx.
