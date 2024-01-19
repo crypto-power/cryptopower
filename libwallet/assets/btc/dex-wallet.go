@@ -73,6 +73,18 @@ func (dw *DEXWallet) OwnsAddress(addr btcutil.Address) (bool, error) {
 	return dw.w.HaveAddress(addr)
 }
 
+/*
+Note:
+
+The upstream *spvWallet implementation of this method expects that this
+w.PublishTransaction method may take quite some time to return, so it calls the
+method in a goroutine and assumes the method call was successful if the method
+does not complete after waiting for some seconds.
+
+The upstream implementation also unlocks the tx inputs to ensure that the locked
+balance computation isn't affected by coins that were previously locked but are
+now spent.
+*/
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) SendRawTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
 	err := dw.w.PublishTransaction(tx, "")
@@ -112,9 +124,7 @@ func (dw *DEXWallet) GetBestBlockHash() (*chainhash.Hash, error) {
 
 // GetBestBlockHeight returns the height of the best block processed by the
 // wallet, which indicates the height at which the compact filters have been
-// retrieved and scanned for wallet addresses. This is may be less than
-// getChainHeight, which indicates the height that the chain service has reached
-// in its retrieval of block headers and compact filter headers.
+// retrieved and scanned for wallet addresses.
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) GetBestBlockHeight() (int32, error) {
 	return dw.syncedTo().Height, nil
@@ -137,10 +147,9 @@ func (dw *DEXWallet) MedianTime() (time.Time, error) {
 	return dexbtc.CalcMedianTime(dw.getChainStamp, &blk.Hash)
 }
 
-// GetChainHeight is only for confirmations since it does not reflect the wallet
+// getChainHeight is only for confirmations since it does not reflect the wallet
 // manager's sync height, just the chain service.
-// Part of dexbtc.Wallet interface.
-func (dw *DEXWallet) GetChainHeight() (int32, error) {
+func (dw *DEXWallet) getChainHeight() (int32, error) {
 	blk, err := dw.cl.BestBlock()
 	if err != nil {
 		return -1, err
@@ -170,15 +179,6 @@ func (dw *DEXWallet) syncHeight() int32 {
 }
 
 // SyncStatus is information about the wallet's sync status.
-//
-// The neutrino wallet has a two stage sync:
-//  1. chain service fetching block headers and filter headers
-//  2. wallet address manager retrieving and scanning filters
-//
-// We only report a single sync height, so we are going to show some progress in
-// the chain service sync stage that comes before the wallet has performed any
-// address recovery/rescan, and switch to the wallet's sync height when it
-// reports non-zero height.
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) SyncStatus() (*dexbtc.SyncStatus, error) {
 	walletBlock := dw.syncedTo()
@@ -480,7 +480,7 @@ func (dw *DEXWallet) confirmations(txHash *chainhash.Hash, vout uint32) (blockHa
 
 	if details.Block.Hash != (chainhash.Hash{}) {
 		blockHash = &details.Block.Hash
-		height, err := dw.GetChainHeight()
+		height, err := dw.getChainHeight()
 		if err != nil {
 			return nil, 0, false, err
 		}
