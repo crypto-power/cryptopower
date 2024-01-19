@@ -260,12 +260,26 @@ type btcChainService struct {
 var _ dexbtc.SPVService = (*btcChainService)(nil)
 
 func (s *btcChainService) Peers() []dexbtc.SPVPeer {
-	rawPeers := s.CS.Peers()
-	peers := make([]dexbtc.SPVPeer, 0, len(rawPeers))
-	for _, p := range rawPeers {
-		peers = append(peers, p)
+	// *neutrino.ChainService.Peers() may stall, especially if the wallet hasn't
+	// started sync yet. Call the method in a goroutine and wait below to see if
+	// we get a response. Return an empty slice if we don't get a response after
+	// waiting briefly.
+	rawPeersChan := make(chan []*neutrino.ServerPeer)
+	go func() {
+		rawPeersChan <- s.CS.Peers()
+	}()
+
+	select {
+	case rawPeers := <-rawPeersChan:
+		peers := make([]dexbtc.SPVPeer, 0, len(rawPeers))
+		for _, p := range rawPeers {
+			peers = append(peers, p)
+		}
+		return peers
+
+	case <-time.After(2 * time.Second):
+		return nil // CS.Peers() is taking too long to respond
 	}
-	return peers
 }
 
 func (s *btcChainService) AddPeer(addr string) error {
