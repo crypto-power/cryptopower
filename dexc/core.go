@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -70,6 +71,27 @@ func (dc *DEXClient) WaitForShutdown() <-chan struct{} {
 
 func (dc *DEXClient) Shutdown() {
 	dc.cancelFn()
+}
+
+// WalletIDForAsset returns the wallet ID for the provided assetID. It'll return
+// nil, nil if the asset does not exist in the dex client.
+func (dc *DEXClient) WalletIDForAsset(assetID uint32) (*int, error) {
+	if !dc.HasWallet(int32(assetID)) {
+		return nil, nil
+	}
+
+	settings, err := dc.WalletSettings(assetID)
+	if err != nil {
+		return nil, err
+	}
+
+	walletIDStr := settings[WalletIDConfigKey]
+	walletID, err := strconv.Atoi(walletIDStr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing wallet ID: %w", err)
+	}
+
+	return &walletID, nil
 }
 
 type valStamp struct {

@@ -1090,23 +1090,26 @@ func (pg *DEXOnboarding) postBond() {
 		postBond.MaintainTier = nil
 	}
 
-	// postBondFn sends the actual request to post bond.
-	postBondFn := func(walletPass string) {
-		// Add bond wallet to core if it does not exist.
-		if !pg.dexc.HasWallet(int32(bondAsset.ID)) {
-			selectedAcct := pg.bondSourceAccountSelector.SelectedAccount()
-			cfg := map[string]string{
-				dexc.WalletIDConfigKey:            fmt.Sprintf("%d", asset.GetWalletID()),
-				dexc.WalletAccountNumberConfigKey: fmt.Sprint(selectedAcct.AccountNumber),
-			}
-
-			err := pg.dexc.AddWallet(*postBond.Asset, cfg, pg.dexPass, []byte(walletPass))
-			if err != nil {
-				pg.notifyError(fmt.Sprintf("Failed to prepare bond wallet: %v", err))
-				return
-			}
+	// addWalletFn adds a bond wallet to core.
+	addWalletFn := func(walletPass string) bool {
+		selectedAcct := pg.bondSourceAccountSelector.SelectedAccount()
+		cfg := map[string]string{
+			dexc.WalletIDConfigKey:            fmt.Sprintf("%d", asset.GetWalletID()),
+			dexc.WalletAccountNumberConfigKey: fmt.Sprint(selectedAcct.AccountNumber),
 		}
 
+		err := pg.dexc.AddWallet(bondAsset.ID, cfg, pg.dexPass, []byte(walletPass))
+		if err != nil {
+			pg.notifyError(fmt.Sprintf("Failed to prepare bond wallet: %v", err))
+			return false
+		}
+
+		return true
+	}
+
+	// postBondFn sends the actual request to post bond. This must be called
+	// after ensuring the bond wallet has been added to the dex client.
+	postBondFn := func() {
 		res, err := pg.dexc.PostBond(postBond)
 		if err != nil {
 			pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
@@ -1123,7 +1126,22 @@ func (pg *DEXOnboarding) postBond() {
 	}
 
 	pg.isLoading = true
-	// Request for wallet password before attempting to post bond.
+	walletID, err := pg.dexc.WalletIDForAsset(bondAsset.ID)
+	if err != nil {
+		pg.notifyError(err.Error())
+		return
+	}
+
+	if walletID != nil && pg.AssetsManager.WalletWithID(*walletID) != nil {
+		// Wallet has been added to core, no need for password.
+		go func() {
+			postBondFn()
+			pg.isLoading = false
+		}()
+		return
+	}
+
+	// Request for new wallet password before attempting to post bond.
 	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
@@ -1132,11 +1150,13 @@ func (pg *DEXOnboarding) postBond() {
 			pg.isLoading = false
 		}).
 		SetPositiveButtonCallback(func(_, walletPass string, pm *modal.CreatePasswordModal) bool {
-			postBondFn(walletPass)
+			if ok := addWalletFn(walletPass); ok {
+				postBondFn()
+			}
 			pg.isLoading = false
 			return true
 		}).
-		SetCancelable(false) // user cannot close modal until postBondFn exists
+		SetCancelable(false) // user cannot close modal until addWalletFn && postBondFn exists
 
 	pg.ParentWindow().ShowModal(walletPasswordModal)
 }

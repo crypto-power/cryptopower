@@ -1662,8 +1662,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 		}).
 		SetCancelable(false)
 
-		// Prompt user to provide DEX password then show the wallet password
-		// modal.
+	// Prompt user to provide DEX password then show the wallet password modal.
 	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
