@@ -74,7 +74,7 @@ type AssetsManager struct {
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
 // to initialize the rest of the other fields.
-func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
+func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType, dexTestAddr string) (*AssetsManager, error) {
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
@@ -94,10 +94,11 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 	}
 
 	params := &sharedW.InitParams{
-		DbDriver: dbDriver,
-		RootDir:  rootDir,
-		NetType:  netType,
-		LogDir:   logDir,
+		DbDriver:    dbDriver,
+		RootDir:     rootDir,
+		NetType:     netType,
+		LogDir:      logDir,
+		DEXTestAddr: dexTestAddr,
 	}
 
 	mgr := &AssetsManager{
@@ -120,7 +121,7 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 }
 
 // NewAssetsManager creates a new AssetsManager instance.
-func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
+func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType, dexTestAddr string) (*AssetsManager, error) {
 	errors.Separator = ":: "
 
 	// Create a root dir that has the path up the network folder.
@@ -131,7 +132,7 @@ func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType) (*Asset
 
 	// validate the network type before proceeding to initialize the othe fields.
 	dbDriver := "bdb" // TODO: Should be a constant.
-	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType)
+	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType, dexTestAddr)
 	if err != nil {
 		return nil, err
 	}

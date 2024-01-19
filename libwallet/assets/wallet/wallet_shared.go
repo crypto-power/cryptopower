@@ -342,13 +342,23 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		netType:               params.NetType,
 	}
 
-	return wallet.saveNewWallet(func() error {
+	if err := wallet.saveNewWallet(func() error {
 		err := wallet.prepare()
 		if err != nil {
 			return err
 		}
 		return wallet.createWallet(pass.PrivatePass, seed)
-	})
+	}); err != nil {
+		return nil, err
+	}
+	if params.NetType == utils.DEXTest {
+		addr := "127.0.0.1"
+		if params.DEXTestAddr != "" {
+			addr = params.DEXTestAddr
+		}
+		wallet.SetStringConfigValueForKey(SpvPersistentPeerAddressesConfigKey, addr)
+	}
+	return wallet, nil
 }
 
 func (wallet *Wallet) createWallet(privatePassphrase, seedMnemonic string) error {
@@ -400,13 +410,23 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.A
 		netType:               params.NetType,
 	}
 
-	return wallet.saveNewWallet(func() error {
+	if err := wallet.saveNewWallet(func() error {
 		err := wallet.prepare()
 		if err != nil {
 			return err
 		}
 		return wallet.createWatchingOnlyWallet(extendedPublicKey)
-	})
+	}); err != nil {
+		return nil, err
+	}
+	if params.NetType == utils.DEXTest {
+		addr := "127.0.0.1"
+		if params.DEXTestAddr != "" {
+			addr = params.DEXTestAddr
+		}
+		wallet.SetStringConfigValueForKey(SpvPersistentPeerAddressesConfigKey, addr)
+	}
+	return wallet, nil
 }
 
 func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
@@ -445,13 +465,23 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 		netType:               params.NetType,
 	}
 
-	return wallet.saveNewWallet(func() error {
+	if err := wallet.saveNewWallet(func() error {
 		err := wallet.prepare()
 		if err != nil {
 			return err
 		}
 		return wallet.createWallet(pass.PrivatePass, seedMnemonic)
-	})
+	}); err != nil {
+		return nil, err
+	}
+	if params.NetType == utils.DEXTest {
+		addr := "127.0.0.1"
+		if params.DEXTestAddr != "" {
+			addr = params.DEXTestAddr
+		}
+		wallet.SetStringConfigValueForKey(SpvPersistentPeerAddressesConfigKey, addr)
+	}
+	return wallet, nil
 }
 
 func (wallet *Wallet) WalletNameExists(walletName string) (bool, error) {
@@ -491,12 +521,12 @@ func (wallet *Wallet) DeleteWallet(privPass string) error {
 
 // saveNewWallet completes setting up the wallet. Since sync can only be
 // initiated after wallet setup is complete, no sync cancel is necessary here.
-func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
+func (wallet *Wallet) saveNewWallet(setupWallet func() error) error {
 	exists, err := wallet.WalletNameExists(wallet.Name)
 	if err != nil {
-		return nil, utils.TranslateError(err)
+		return utils.TranslateError(err)
 	} else if exists {
-		return nil, errors.New(utils.ErrExist)
+		return errors.New(utils.ErrExist)
 	}
 
 	// Perform database save operations in batch transaction
@@ -537,10 +567,10 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	})
 
 	if err != nil {
-		return nil, utils.TranslateError(err)
+		return utils.TranslateError(err)
 	}
 
-	return wallet, nil
+	return nil
 }
 
 func (wallet *Wallet) IsWatchingOnlyWallet() bool {

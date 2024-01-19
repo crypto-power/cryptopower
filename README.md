@@ -55,6 +55,7 @@ cryptopower [options]
 ```
 
 - Run `./cryptopower --network=testnet` to run cryptopower on the testnet network.
+- Run `./cryptopower --network=dextest` to run cryptopower with the decred dex simnet harness.
 - Run `cryptopower -h` or `cryptopower help` to get general information of commands and options that can be issued on the cli.
 - Use `cryptopower <command> -h` or `cryptopower help <command>` to get detailed information about a command.
 

@@ -256,7 +256,7 @@ func parseDEXNet(net libutils.NetworkType) (dex.Network, error) {
 		return dex.Mainnet, nil
 	case libutils.Testnet:
 		return dex.Testnet, nil
-	case libutils.Regression, libutils.Simulation:
+	case libutils.Regression, libutils.Simulation, libutils.DEXTest:
 		return dex.Simnet, nil
 	default:
 		return 0, fmt.Errorf("unknown network %s", net)

@@ -10,6 +10,7 @@ package dcrdex
 const (
 	decredDEXServerMainnet = "dex.decred.org:7232"
 	decredDEXServerTestnet = "bison.exchange:27232"
+	decredDEXServerSimnet  = "127.0.0.1:17273"
 )
 
 var dexDotDecredCert = []byte(`-----BEGIN CERTIFICATE-----
@@ -49,7 +50,27 @@ hW4bgtaK
 -----END CERTIFICATE-----
 `)
 
+var dexSimSSGenCert = []byte(`-----BEGIN CERTIFICATE-----
+MIICpTCCAgagAwIBAgIQZMfxMkSi24xMr4CClCODrzAKBggqhkjOPQQDBDBJMSIw
+IAYDVQQKExlkY3JkZXggYXV0b2dlbmVyYXRlZCBjZXJ0MSMwIQYDVQQDExp1YnVu
+dHUtcy0xdmNwdS0yZ2ItbG9uMS0wMTAeFw0yMDA2MDgxMjM4MjNaFw0zMDA2MDcx
+MjM4MjNaMEkxIjAgBgNVBAoTGWRjcmRleCBhdXRvZ2VuZXJhdGVkIGNlcnQxIzAh
+BgNVBAMTGnVidW50dS1zLTF2Y3B1LTJnYi1sb24xLTAxMIGbMBAGByqGSM49AgEG
+BSuBBAAjA4GGAAQApXJpVD7si8yxoITESq+xaXWtEpsCWU7X+8isRDj1cFfH53K6
+/XNvn3G+Yq0L22Q8pMozGukA7KuCQAAL0xnuo10AecWBN0Zo2BLHvpwKkmAs71C+
+5BITJksqFxvjwyMKbo3L/5x8S/JmAWrZoepBLfQ7HcoPqLAcg0XoIgJjOyFZgc+j
+gYwwgYkwDgYDVR0PAQH/BAQDAgKkMA8GA1UdEwEB/wQFMAMBAf8wZgYDVR0RBF8w
+XYIadWJ1bnR1LXMtMXZjcHUtMmdiLWxvbjEtMDGCCWxvY2FsaG9zdIcEfwAAAYcQ
+AAAAAAAAAAAAAAAAAAAAAYcEsj5QQYcEChAABYcQ/oAAAAAAAAAYPqf//vUPXDAK
+BggqhkjOPQQDBAOBjAAwgYgCQgFMEhyTXnT8phDJAnzLbYRktg7rTAbTuQRDp1PE
+jf6b2Df4DkSX7JPXvVi3NeBru+mnrOkHBUMqZd0m036aC4q/ZAJCASa+olu4Isx7
+8JE3XB6kGr+s48eIFPtmq1D0gOvRr3yMHrhJe3XDNqvppcHihG0qNb0gyaiX18Cv
+vF8Ti1x2vTkD
+-----END CERTIFICATE-----
+`)
+
 var CertStore = map[string][]byte{
 	decredDEXServerMainnet: dexDotDecredCert,
 	decredDEXServerTestnet: dexTestSSGenCert,
+	decredDEXServerSimnet:  dexSimSSGenCert,
 }
