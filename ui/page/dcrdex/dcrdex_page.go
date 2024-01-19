@@ -85,9 +85,11 @@ func (pg *DEXPage) OnNavigatedTo() {
 
 	pg.dexIsLoading = true
 	go func() {
-		<-pg.AssetsManager.DexClient().Ready()
+		dexc := pg.AssetsManager.DexClient()
+		<-dexc.Ready()
+
 		showOnBoardingPage := true
-		if len(pg.AssetsManager.DexClient().Exchanges()) != 0 { // has at least one exchange
+		if len(dexc.Exchanges()) != 0 { // has at least one exchange
 			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager)
 			showOnBoardingPage = pendingBond != nil
 		}

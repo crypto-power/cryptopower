@@ -34,7 +34,7 @@ const (
 type DEXClient struct {
 	ctx      context.Context
 	cancelFn context.CancelFunc
-	DBPath   string
+	dbPath   string
 	*core.Core
 
 	loggedIn        bool
@@ -62,6 +62,10 @@ func (dc *DEXClient) Login(pw []byte) error {
 	}
 	dc.loggedIn = true
 	return nil
+}
+
+func (dc *DEXClient) DBPath() string {
+	return dc.dbPath
 }
 
 // WaitForShutdown returns a chan that will be closed if core exits.
@@ -109,6 +113,10 @@ type valStamp struct {
 func (dc *DEXClient) BondsFeeBuffer(assetID uint32) uint64 {
 	const expiry = 45 * time.Minute
 
+	if !dc.HasWallet(int32(assetID)) { // no configured wallet
+		return 0
+	}
+
 	buf, ok := dc.bondBufferCache.Load(assetID)
 	var cachedFeeBuffer valStamp
 	if ok {
@@ -129,7 +137,7 @@ func (dc *DEXClient) BondsFeeBuffer(assetID uint32) uint64 {
 		default:
 			feeBuffer, err := dc.Core.BondsFeeBuffer(assetID)
 			if err != nil {
-				dc.log.Error("Error fetching bond fee buffer: %v", err)
+				dc.log.Errorf("Error fetching bond fee buffer: %v", err)
 			} else {
 				dc.log.Tracef("Obtained fresh bond fee buffer: %d", feeBuffer)
 				dc.bondBufferCache.Store(assetID, valStamp{feeBuffer, time.Now()})
@@ -172,7 +180,7 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 
 	shutdownChan := make(chan struct{})
 	dc := &DEXClient{
-		DBPath:       dbPath,
+		dbPath:       dbPath,
 		Core:         clientCore,
 		shutdownChan: shutdownChan,
 		log:          logger,
