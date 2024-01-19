@@ -32,28 +32,27 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/lightninglabs/neutrino"
-	"github.com/lightninglabs/neutrino/headerfs"
 )
 
 // DEXWallet wraps *wallet.Wallet and implements dexbtc.Wallet.
 type DEXWallet struct {
-	w        *wallet.Wallet
-	acctNum  int32
-	cl       *btcChainService
-	syncData *SyncData
+	w         *wallet.Wallet
+	acctNum   int32
+	cl        *btcChainService
+	isSyncing func() bool
 }
 
 var _ dexbtc.CustomWallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, syncData *SyncData) *DEXWallet {
+func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, isSyncing func() bool) *DEXWallet {
 	return &DEXWallet{
 		w:       w,
 		acctNum: acctNum,
 		cl: &btcChainService{
 			NeutrinoClient: nc,
 		},
-		syncData: syncData,
+		isSyncing: isSyncing,
 	}
 }
 
@@ -73,20 +72,21 @@ func (dw *DEXWallet) OwnsAddress(addr btcutil.Address) (bool, error) {
 	return dw.w.HaveAddress(addr)
 }
 
-/*
-Note:
-
-The upstream *spvWallet implementation of this method expects that this
-w.PublishTransaction method may take quite some time to return, so it calls the
-method in a goroutine and assumes the method call was successful if the method
-does not complete after waiting for some seconds.
-
-The upstream implementation also unlocks the tx inputs to ensure that the locked
-balance computation isn't affected by coins that were previously locked but are
-now spent.
-*/
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) SendRawTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
+	/*
+		Note:
+
+		The upstream *spvWallet implementation of this method expects that this
+		w.PublishTransaction method may take quite some time to return, so it calls the
+		method in a goroutine and assumes the method call was successful if the method
+		does not complete after waiting for some seconds.
+
+		The upstream implementation also unlocks the tx inputs to ensure that the locked
+		balance computation isn't affected by coins that were previously locked but are
+		now spent.
+	*/
+
 	err := dw.w.PublishTransaction(tx, "")
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (dw *DEXWallet) SendRawTransaction(tx *wire.MsgTx) (*chainhash.Hash, error)
 
 // Part of dexbtc.TipRedemptionWallet interface.
 func (dw *DEXWallet) GetBlock(blockHash chainhash.Hash) (*wire.MsgBlock, error) {
-	block, err := dw.cl.GetBlock(blockHash)
+	block, err := dw.cl.CS.GetBlock(blockHash)
 	if err != nil {
 		return nil, fmt.Errorf("neutrino GetBlock error: %v", err)
 	}
@@ -108,12 +108,12 @@ func (dw *DEXWallet) GetBlock(blockHash chainhash.Hash) (*wire.MsgBlock, error) 
 
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) GetBlockHash(blockHeight int64) (*chainhash.Hash, error) {
-	return dw.cl.GetBlockHash(blockHeight)
+	return dw.cl.CS.GetBlockHash(blockHeight)
 }
 
 // Part of dexbtc.TipRedemptionWallet interface.
 func (dw *DEXWallet) GetBlockHeight(h *chainhash.Hash) (int32, error) {
-	return dw.cl.GetBlockHeight(h)
+	return dw.cl.CS.GetBlockHeight(h)
 }
 
 // Part of dexbtc.Wallet interface.
@@ -133,7 +133,7 @@ func (dw *DEXWallet) GetBestBlockHeight() (int32, error) {
 // getChainStamp satisfies dexbtc.chainStamper for manual median time
 // calculations.
 func (dw *DEXWallet) getChainStamp(blockHash *chainhash.Hash) (stamp time.Time, prevHash *chainhash.Hash, err error) {
-	hdr, err := dw.cl.GetBlockHeader(blockHash)
+	hdr, err := dw.cl.CS.GetBlockHeader(blockHash)
 	if err != nil {
 		return
 	}
@@ -150,7 +150,7 @@ func (dw *DEXWallet) MedianTime() (time.Time, error) {
 // getChainHeight is only for confirmations since it does not reflect the wallet
 // manager's sync height, just the chain service.
 func (dw *DEXWallet) getChainHeight() (int32, error) {
-	blk, err := dw.cl.BestBlock()
+	blk, err := dw.cl.CS.BestBlock()
 	if err != nil {
 		return -1, err
 	}
@@ -185,7 +185,7 @@ func (dw *DEXWallet) SyncStatus() (*dexbtc.SyncStatus, error) {
 	return &dexbtc.SyncStatus{
 		Target:  dw.syncHeight(),
 		Height:  walletBlock.Height,
-		Syncing: dw.syncData.isSyncing(),
+		Syncing: dw.isSyncing(),
 	}, nil
 }
 
@@ -516,17 +516,17 @@ func (dw *DEXWallet) WalletUnlock(pw []byte) error {
 // For orphaned blocks header.Confirmations is negative.
 // Part of dexbtc.TipRedemptionWallet interface.
 func (dw *DEXWallet) GetBlockHeader(blockHash *chainhash.Hash) (header *dexbtc.BlockHeader, mainchain bool, err error) {
-	hdr, err := dw.cl.GetBlockHeader(blockHash)
+	hdr, err := dw.cl.CS.GetBlockHeader(blockHash)
 	if err != nil {
 		return nil, false, err
 	}
 
-	tip, err := dw.cl.BestBlock()
+	tip, err := dw.cl.CS.BestBlock()
 	if err != nil {
 		return nil, false, fmt.Errorf("BestBlock error: %v", err)
 	}
 
-	blockHeight, err := dw.cl.GetBlockHeight(blockHash)
+	blockHeight, err := dw.cl.CS.GetBlockHeight(blockHash)
 	if err != nil {
 		return nil, false, err
 	}
@@ -587,7 +587,7 @@ func (dw *DEXWallet) GetTxOut(txHash *chainhash.Hash, vout uint32, _ []byte, _ t
 
 	var confs uint32
 	if txDetails.Block.Height > 0 {
-		tip, err := dw.cl.BestBlock()
+		tip, err := dw.cl.CS.BestBlock()
 		if err != nil {
 			return nil, 0, fmt.Errorf("BestBlock error: %v", err)
 		}
@@ -611,7 +611,7 @@ func (dw *DEXWallet) GetTxOut(txHash *chainhash.Hash, vout uint32, _ []byte, _ t
 	// 	return nil, 0, nil
 	// }
 
-	// tip, err := dw.cl.BestBlock()
+	// tip, err := dw.cl.CS.BestBlock()
 	// if err != nil {
 	// 	return nil, 0, fmt.Errorf("BestBlock error: %v", err)
 	// }
@@ -646,7 +646,7 @@ func (dw *DEXWallet) SearchBlockForRedemptions(ctx context.Context, reqs map[dex
 	}
 
 	// There is at least one match. Pull the block.
-	block, err := dw.cl.GetBlock(blockHash)
+	block, err := dw.cl.CS.GetBlock(blockHash)
 	if err != nil {
 		log.Errorf("neutrino GetBlock error: %v", err)
 		return
@@ -716,7 +716,7 @@ func hashTx(tx *wire.MsgTx) *chainhash.Hash {
 // matchPkScript pulls the filter for the block and attempts to match the
 // supplied scripts.
 func (dw *DEXWallet) matchPkScript(blockHash *chainhash.Hash, scripts [][]byte) (bool, error) {
-	filter, err := dw.cl.GetCFilter(*blockHash, wire.GCSFilterRegular)
+	filter, err := dw.cl.CS.GetCFilter(*blockHash, wire.GCSFilterRegular)
 	if err != nil {
 		return false, fmt.Errorf("GetCFilter error: %w", err)
 	}
@@ -739,13 +739,13 @@ func (dw *DEXWallet) matchPkScript(blockHash *chainhash.Hash, scripts [][]byte) 
 func (dw *DEXWallet) blockIsMainchain(blockHash *chainhash.Hash, blockHeight int32) bool {
 	if blockHeight < 0 {
 		var err error
-		blockHeight, err = dw.cl.GetBlockHeight(blockHash)
+		blockHeight, err = dw.cl.CS.GetBlockHeight(blockHash)
 		if err != nil {
 			log.Errorf("Error getting block height for hash %s", blockHash)
 			return false
 		}
 	}
-	checkHash, err := dw.cl.GetBlockHash(int64(blockHeight))
+	checkHash, err := dw.cl.CS.GetBlockHash(int64(blockHeight))
 	if err != nil {
 		log.Errorf("Error retrieving block hash for height %d", blockHeight)
 		return false
@@ -841,13 +841,10 @@ func serializeMsgTx(msgTx *wire.MsgTx) ([]byte, error) {
 }
 
 // btcChainService wraps *chain.NeutrinoClient in order to translate the
-// neutrino.ServerPeer to the SPVPeer interface type as required by the dex btc
-// pkg.
+// neutrino.ServerPeer to the SPVPeer interface.
 type btcChainService struct {
 	*chain.NeutrinoClient
 }
-
-var _ dexbtc.SPVService = (*btcChainService)(nil)
 
 func (s *btcChainService) Peers() []dexbtc.SPVPeer {
 	// *neutrino.ChainService.Peers() may stall, especially if the wallet hasn't
@@ -870,30 +867,6 @@ func (s *btcChainService) Peers() []dexbtc.SPVPeer {
 	case <-time.After(2 * time.Second):
 		return nil // CS.Peers() is taking too long to respond
 	}
-}
-
-func (s *btcChainService) AddPeer(addr string) error {
-	return s.CS.ConnectNode(addr, true)
-}
-
-func (s *btcChainService) RemovePeer(addr string) error {
-	return s.CS.RemoveNodeByAddr(addr)
-}
-
-func (s *btcChainService) BestBlock() (*headerfs.BlockStamp, error) {
-	return s.CS.BestBlock()
-}
-
-func (s *btcChainService) GetBlock(blockHash chainhash.Hash, options ...neutrino.QueryOption) (*btcutil.Block, error) {
-	return s.CS.GetBlock(blockHash, options...)
-}
-
-func (s *btcChainService) GetCFilter(blockHash chainhash.Hash, filterType wire.FilterType, options ...neutrino.QueryOption) (*gcs.Filter, error) {
-	return s.NeutrinoClient.CS.GetCFilter(blockHash, filterType, options...)
-}
-
-func (s *btcChainService) Stop() error {
-	return s.CS.Stop()
 }
 
 // secretSource is used to locate keys and redemption scripts while signing a
