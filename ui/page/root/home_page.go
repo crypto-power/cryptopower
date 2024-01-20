@@ -243,7 +243,7 @@ func (hp *HomePage) initDEX() {
 				for assetID := range walletsToSyncMap {
 					settings, err := dexClient.WalletSettings(assetID)
 					if err != nil {
-						log.Errorf("dexClient.WalletSettings error: %w", err)
+						log.Errorf("dexClient.WalletSettings(%d) error: %w", assetID, err)
 						continue
 					}
 
