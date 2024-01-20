@@ -381,7 +381,7 @@ func (pg *DEXMarketPage) fetchOrderBook() {
 	}
 
 	// Update order form editors.
-	pg.priceEditor.ExtraText = pg.selectedMarketOrderBook.quoteSymbol + " - " + pg.selectedMarketOrderBook.baseSymbol
+	pg.priceEditor.ExtraText = pg.selectedMarketOrderBook.quoteSymbol + " / " + pg.selectedMarketOrderBook.baseSymbol
 	pg.totalEditor.ExtraText = pg.selectedMarketOrderBook.quoteSymbol
 	if !pg.orderWithLots() {
 		pg.lotsOrAmountEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
@@ -1759,7 +1759,7 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 
 func (pg *DEXMarketPage) refreshOrders() {
 	filter := &core.OrderFilter{
-		Statuses: []order.OrderStatus{order.OrderStatusBooked, order.OrderStatusEpoch},
+		Statuses: []order.OrderStatus{order.OrderStatusBooked, order.OrderStatusEpoch, order.OrderStatusExecuted},
 	}
 	if !pg.openOrdersDisplayed {
 		filter = &core.OrderFilter{
@@ -1767,6 +1767,7 @@ func (pg *DEXMarketPage) refreshOrders() {
 		}
 	}
 
+	// TODO: Paginate.
 	orders, err := pg.dexc.Orders(filter)
 	if err != nil {
 		pg.notifyError(err.Error())
@@ -1776,11 +1777,16 @@ func (pg *DEXMarketPage) refreshOrders() {
 	pg.orders = nil
 	for i := range orders {
 		ord := &clickableOrder{Order: orders[i]}
+		if ord.Status == order.OrderStatusExecuted && isActiveOrder(ord.Matches) != pg.openOrdersDisplayed /* display active orders on open order view */ {
+			continue // skip order
+		}
+
 		if pg.openOrdersDisplayed && !ord.Cancelling {
 			btn := pg.Theme.DangerButton(values.String(values.StrCancel))
 			btn.Margin = layout.Inset{}
 			ord.cancelBtn = &btn
 		}
+
 		pg.orders = append(pg.orders, ord)
 	}
 
@@ -1799,6 +1805,15 @@ func (pg *DEXMarketPage) refreshOrders() {
 			})
 		}
 	}
+}
+
+func isActiveOrder(matches []*core.Match) bool {
+	for _, m := range matches {
+		if m.Active {
+			return true
+		}
+	}
+	return false
 }
 
 func (pg *DEXMarketPage) hasValidOrderInfo() bool {
