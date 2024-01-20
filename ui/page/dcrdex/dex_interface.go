@@ -16,6 +16,7 @@ type dexClient interface {
 	GetDEXConfig(dexAddr string, certI any) (*core.Exchange, error)
 	BondsFeeBuffer(assetID uint32) uint64
 	HasWallet(assetID int32) bool
+	WalletIDForAsset(assetID uint32) (*int, error)
 	AddWallet(assetID uint32, settings map[string]string, appPW, walletPW []byte) error
 	PostBond(form *core.PostBondForm) (*core.PostBondResult, error)
 	NotificationFeed() *core.NoteFeed

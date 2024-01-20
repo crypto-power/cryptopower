@@ -52,7 +52,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		materialLoader:     material.Loader(l.Theme.Base),
 	}
 
-	if dp.AssetsManager.DexcReady() && dp.AssetsManager.DexClient().IsDEXPasswordSet() {
+	if dp.AssetsManager.DexcInitialized() && dp.AssetsManager.DexClient().IsDEXPasswordSet() {
 		dp.isDexFirstVisit = false
 	}
 
@@ -73,7 +73,7 @@ func (pg *DEXPage) ID() string {
 // displayed.
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
-	if !pg.AssetsManager.DexcReady() {
+	if !pg.AssetsManager.DexcInitialized() {
 		return
 	}
 
@@ -120,7 +120,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	} else if !pg.AssetsManager.DexcReady() {
+	} else if !pg.AssetsManager.DexcInitialized() {
 		msg = values.String(values.StrDEXInitErrorMsg)
 	}
 

@@ -375,7 +375,7 @@ func (pg *AppSettingsPage) debug() layout.Widget {
 					return pg.clickableRow(gtx, viewLogRow)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DexcReady() {
+					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DexcInitialized() {
 						return D{}
 					}
 
@@ -533,7 +533,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			SetNegativeButtonText(values.String(values.StrCancel)).
 			SetPositiveButtonText(values.String(values.StrDelete)).
 			SetPositiveButtonCallback(func(_ bool, in *modal.InfoModal) bool {
-				if pg.AssetsManager.DexcReady() {
+				if pg.AssetsManager.DexcInitialized() {
 					if err := pg.AssetsManager.DeleteDEXData(); err != nil {
 						return false
 					}

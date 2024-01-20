@@ -1026,4 +1026,5 @@ const (
 	StrDestinationWallet               = "destinationWallet"
 	StrSwitchToTestnet                 = "swtichToTestnet"
 	StrDexMainnetNotReady              = "dexMainnetNotReady"
+	StrUpdateDEXWalletPasswordReason   = "updateDEXWalletPasswordReason"
 )

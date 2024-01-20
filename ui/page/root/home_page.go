@@ -151,7 +151,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.initPageItems()
 
 	go hp.CalculateAssetsUSDBalance()
-	if !hp.AssetsManager.DexcReady() {
+	if !hp.AssetsManager.DexcInitialized() {
 		go hp.AssetsManager.InitializeDEX(hp.dexCtx)
 	}
 
@@ -285,7 +285,7 @@ func (hp *HomePage) displaySelectedPage(title string) {
 	case values.String(values.StrWallets):
 		pg = hp.walletSelectorPage
 	case values.String(values.StrTrade):
-		if !hp.AssetsManager.DexcReady() {
+		if !hp.AssetsManager.DexcInitialized() {
 			// Attempt to initialize dex again.
 			hp.AssetsManager.InitializeDEX(hp.dexCtx)
 		}
