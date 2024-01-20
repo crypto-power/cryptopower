@@ -1777,7 +1777,7 @@ func (pg *DEXMarketPage) refreshOrders() {
 	pg.orders = nil
 	for i := range orders {
 		ord := &clickableOrder{Order: orders[i]}
-		if ord.Status == order.OrderStatusExecuted && isActiveOrder(ord.Matches) != pg.openOrdersDisplayed /* display active orders on open order view */ {
+		if ord.Status == order.OrderStatusExecuted && anyMatchActive(ord.Matches) != pg.openOrdersDisplayed /* display active orders on open order view */ {
 			continue // skip order
 		}
 
@@ -1807,7 +1807,7 @@ func (pg *DEXMarketPage) refreshOrders() {
 	}
 }
 
-func isActiveOrder(matches []*core.Match) bool {
+func anyMatchActive(matches []*core.Match) bool {
 	for _, m := range matches {
 		if m.Active {
 			return true
