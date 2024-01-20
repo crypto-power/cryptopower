@@ -1028,6 +1028,8 @@ const (
 	StrDexMainnetNotReady              = "dexMainnetNotReady"
 	StrUpdateDEXWalletPasswordReason   = "updateDEXWalletPasswordReason"
 	StrLoginDEXForActiveOrders         = "loginDEXForActiveOrders"
-	StrUnlockBondWalletMsg             = "unlockBondWalletMsg"
-	StrSpendingPasswordFor             = "spendingPasswordFor"
+	StrWalletsNeedToSync               = "walletsNeedToSync"
+	StrActiveOrderWalletsNeedToSync    = "activeOrderWalletsNeedToSync"
+	StrIWillSyncLater                  = "iWillSyncLater"
+	StrOkaySync                        = "okaySync"
 )

@@ -2,14 +2,11 @@ package root
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
 
-	"decred.org/dcrdex/client/core"
-	"decred.org/dcrdex/dex"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -176,11 +173,6 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
 }
 
-type dexWalletUnlockInfo struct {
-	passEditor cryptomaterial.Editor
-	wallet     sharedW.Asset
-}
-
 // initDEX initializes a new dex client if dex is not ready.
 func (hp *HomePage) initDEX() {
 	if hp.AssetsManager.DexcInitialized() {
@@ -191,176 +183,121 @@ func (hp *HomePage) initDEX() {
 		hp.AssetsManager.InitializeDEX(hp.dexCtx)
 
 		// If all went well, the dex client must be ready.
-		dexc := hp.AssetsManager.DexClient()
-		if dexc == nil {
+		dexClient := hp.AssetsManager.DexClient()
+		if dexClient == nil {
 			return // nothing to do
 		}
 
 		// Wait until dex is ready
-		<-dexc.Ready()
+		<-dexClient.Ready()
 
-		loginDEXNow := dexc.Active()
-		walletsToUnlock := make(map[string]*dexWalletUnlockInfo)
-		for _, xc := range dexc.Exchanges() {
-			for _, bond := range xc.Auth.PendingBonds {
-				loginInfo, err := hp.dexWalletUnlockInfo(bond.AssetID)
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				walletsToUnlock[bond.Symbol] = loginInfo
-			}
-
-			// Always unlock current bond asset.
-			loginInfo, err := hp.dexWalletUnlockInfo(xc.Auth.BondAssetID)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			walletsToUnlock[dex.BipIDSymbol(xc.Auth.BondAssetID)] = loginInfo
+		hasActiveOrders := dexClient.Active()
+		if !hasActiveOrders {
+			return
 		}
 
-		if !loginDEXNow {
-			loginDEXNow = len(walletsToUnlock) > 0
-		}
-
-		if !loginDEXNow {
-			return // we are done here
-		}
-
+		// Dex has active trades, login now!
 		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
 		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
-		// Dex has active trades, login now!
 		loginModal := modal.NewCustomModal(hp.Load).
-			Title(values.String(values.StrLogin)).
+			Title(values.String(values.StrLoginToTradeDEX)).
 			UseCustomWidget(func(gtx C) D {
-				extra := ""
-				if len(walletsToUnlock) > 0 {
-					extra = values.StringF(values.StrUnlockBondWalletMsg, len(walletsToUnlock))
-				}
-
-				msg := extra
-				if dexc.Active() {
-					msg = values.StringF(values.StrLoginDEXForActiveOrders, extra)
-				}
-
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(msg).Layout)
+						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrders)).Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						// Login dex editor
-						if len(walletsToUnlock) == 0 {
-							return dexPassEditor.Layout(gtx)
-						}
-
-						// Wallet login editor
-						children := []layout.FlexChild{layout.Rigid(dexPassEditor.Layout)}
-						for _, w := range walletsToUnlock {
-							children = append(children, layout.Rigid(func(gtx C) D {
-								return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, w.passEditor.Layout)
-							}))
-						}
-
-						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
-						})
+						return dexPassEditor.Layout(gtx)
 					}),
 				)
 			}).
 			SetPositiveButtonText(values.String(values.StrLogin)).
 			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
 				dexPassEditor.SetError("")
-
-				// Login to dex first.
-				err := dexc.Login([]byte(dexPassEditor.Editor.Text()))
+				err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
 				if err != nil {
 					dexPassEditor.SetError(err.Error())
 					return false
 				}
 
-				// Login to wallets.
-				for _, w := range walletsToUnlock {
-					w.passEditor.SetError("")
-
-					err := w.wallet.UnlockWallet(w.passEditor.Editor.Text())
-					if err != nil {
-						w.passEditor.SetError(err.Error())
-						return false
+				// DEX client has active orders, retrieve the wallets involved
+				// and ensure they are synced or syncing.
+				walletsToSyncMap := make(map[uint32]*struct{})
+				for _, xc := range dexClient.Exchanges() {
+				nextMarket:
+					for _, mkt := range xc.Markets {
+						for _, ord := range mkt.Orders {
+							for _, m := range ord.Matches {
+								if m.Active {
+									walletsToSyncMap[mkt.BaseID] = &struct{}{}
+									walletsToSyncMap[mkt.QuoteID] = &struct{}{}
+									continue nextMarket
+								}
+							}
+						}
 					}
 				}
 
+				var walletsToSync []sharedW.Asset
+				for assetID := range walletsToSyncMap {
+					settings, err := dexClient.WalletSettings(assetID)
+					if err != nil {
+						log.Errorf("dexClient.WalletSettings error: %w", err)
+						continue
+					}
+
+					walletIDStr := settings[dexc.WalletIDConfigKey]
+					walletID, err := strconv.Atoi(walletIDStr)
+					if err != nil {
+						log.Errorf("strconv.Atoi error: %w", err)
+						continue
+					}
+
+					wallet := hp.AssetsManager.WalletWithID(walletID)
+					if wallet == nil { // impossible? but better safe than sorry
+						log.Error("dex wallet with ID %d is missing", walletID)
+						continue
+					}
+
+					if wallet.IsSynced() || wallet.IsSyncing() {
+						continue // ok
+					}
+
+					walletsToSync = append(walletsToSync, wallet)
+				}
+
+				if len(walletsToSync) == 0 {
+					return true
+				}
+
+				walletSyncRequestModal := modal.NewCustomModal(hp.Load).
+					Title(values.String(values.StrWalletsNeedToSync)).
+					Body(values.String(values.StrActiveOrderWalletsNeedToSync)).
+					SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
+					SetPositiveButtonText(values.String(values.StrOkaySync)).
+					SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+						if !hp.isConnected.Load() {
+							// Notify user and return.
+							hp.Toast.NotifyError(values.String(values.StrNotConnected))
+							return false
+						}
+
+						for _, w := range walletsToSync {
+							err := w.SpvSync()
+							if err != nil {
+								log.Error(err)
+							}
+						}
+
+						return true
+					})
+				hp.ParentWindow().ShowModal(walletSyncRequestModal)
 				return true
 			}).
 			SetCancelable(false)
 		hp.ParentWindow().ShowModal(loginModal)
-
-		noteFeeder := dexc.NotificationFeed()
-		for {
-			select {
-			case <-hp.dexCtx.Done():
-				noteFeeder.ReturnFeed()
-				return
-			case n := <-noteFeeder.C:
-				if n.Topic() != core.TopicBondExpired {
-					continue // we only care about expired bond atm.
-				}
-
-				bondNote := n.(*core.BondPostNote)
-				w, err := hp.dexWalletUnlockInfo(bondNote.Auth.BondAssetID)
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-
-				if !w.wallet.IsLocked() {
-					continue // nothing to do
-				}
-
-				// Unlock wallet now.
-				passModal := modal.NewPasswordModal(hp.Load).
-					Title(values.String(values.StrUnlockWithPassword)).
-					Description(values.StringF(values.StrUnlockBondWalletMsg, 1))
-				passModal.PositiveButton(values.String(values.StrUnlock), func(password string, m *modal.PasswordModal) bool {
-					err := w.wallet.UnlockWallet(password)
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return false
-					}
-					return true
-				})
-			}
-		}
 	}()
-}
-
-func (hp *HomePage) dexWalletUnlockInfo(assetID uint32) (*dexWalletUnlockInfo, error) {
-	dexClient := hp.AssetsManager.DexClient()
-	settings, err := dexClient.WalletSettings(assetID)
-	if err != nil {
-		return nil, fmt.Errorf("dexClient.WalletSettings error: %w", err)
-	}
-
-	walletIDStr := settings[dexc.WalletIDConfigKey]
-	walletID, err := strconv.Atoi(walletIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("strconv.Atoi error: %w", err)
-	}
-
-	wallet := hp.AssetsManager.WalletWithID(walletID)
-	if wallet == nil {
-		return nil, fmt.Errorf("dex wallet with ID %d is missing", walletID)
-	}
-
-	wl := &dexWalletUnlockInfo{
-		wallet: wallet,
-	}
-
-	wl.passEditor = hp.Theme.EditorPassword(new(widget.Editor), values.StringF(values.StrSpendingPasswordFor, wallet.GetWalletName()))
-	wl.passEditor.Editor.SingleLine, wl.passEditor.IsRequired = true, true
-	return wl, nil
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed

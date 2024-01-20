@@ -921,4 +921,9 @@ const EN = `
 "loginDEXForActiveOrders" = "You have one or more active order, login to DEX now! %s"
 "unlockBondWalletMsg" = "%d wallet(s) need unlocking to process your DEX bonds."
 "spendingPasswordFor" = "Spending Password for %s"
+"loginDEXForActiveOrders" = "You have one or more active order, login to DEX now!"
+"walletsNeedToSync" = "Wallet(s) need to sync"
+"activeOrderWalletsNeedToSync" = "Wallet(s) used by the DEX client needs to sync to settle active trade(s)."
+"iWillSyncLater" = "I'll sync later"
+"okaySync" = "Okay, sync"
  `
