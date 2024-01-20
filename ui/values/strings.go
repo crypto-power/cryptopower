@@ -103,7 +103,7 @@ func String(key string) string {
 		}
 	}
 
-	return ""
+	return key
 }
 
 func StringF(key string, a ...interface{}) string {
@@ -1024,7 +1024,8 @@ const (
 	StrLoginToTradeDEX                 = "loginToTradeDEX"
 	StrLogin                           = "login"
 	StrDestinationWallet               = "destinationWallet"
-	StrSwitchToTestnet                 = "swtichToTestnet"
+	StrSwitchToMainnet                 = "switchToMainnet"
+	StrSwitchToTestnet                 = "switchToTestnet"
 	StrDexMainnetNotReady              = "dexMainnetNotReady"
 	StrUpdateDEXWalletPasswordReason   = "updateDEXWalletPasswordReason"
 )

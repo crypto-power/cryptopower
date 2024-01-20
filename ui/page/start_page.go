@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/root"
+	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/preference"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -66,9 +68,10 @@ type startPage struct {
 	*app.GenericPageModal
 	ctx context.Context
 
-	addWalletButton cryptomaterial.Button
-	nextButton      cryptomaterial.Button
-	backButton      cryptomaterial.Clickable
+	addWalletButton     cryptomaterial.Button
+	nextButton          cryptomaterial.Button
+	backButton          *cryptomaterial.Clickable
+	networkSwitchButton *cryptomaterial.Clickable
 
 	settingsOptions []*settingsOption
 
@@ -91,9 +94,10 @@ func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app
 		loading:          true,
 		displayStartPage: true,
 
-		addWalletButton: l.Theme.Button(values.String(values.StrAddWallet)),
-		nextButton:      l.Theme.Button(values.String(values.StrNext)),
-		backButton:      *l.Theme.NewClickable(true),
+		addWalletButton:     l.Theme.Button(values.String(values.StrAddWallet)),
+		nextButton:          l.Theme.Button(values.String(values.StrNext)),
+		backButton:          l.Theme.NewClickable(true),
+		networkSwitchButton: l.Theme.NewClickable(true),
 	}
 
 	if len(isShuttingDown) > 0 {
@@ -125,6 +129,7 @@ func (sp *startPage) OnNavigatedTo() {
 		if sp.AssetsManager.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {
+			sp.loading = true
 			go sp.openWalletsAndDisplayHomePage("")
 		}
 	} else {
@@ -234,6 +239,14 @@ func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 // displayed.
 // Part of the load.Page interface.
 func (sp *startPage) HandleUserInteractions() {
+	if sp.networkSwitchButton.Clicked() {
+		newNetType := libutils.Testnet
+		if sp.AssetsManager.NetType() == libutils.Testnet {
+			newNetType = libutils.Mainnet
+		}
+		settings.ChangeNetworkType(sp.Load, sp.ParentWindow(), string(newNetType))
+	}
+
 	if sp.addWalletButton.Clicked() {
 		createWalletPage := components.NewCreateWallet(sp.Load, func() {
 			sp.setLanguagePref(false)
@@ -396,6 +409,20 @@ func (sp *startPage) loadingSection(gtx C) D {
 				}
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
 				return inset.Layout(gtx, sp.addWalletButton.Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if sp.loading {
+					return D{}
+				}
+				switchNetworkText := values.String(values.StrSwitchToTestnet)
+				if sp.AssetsManager.NetType() == libutils.Testnet {
+					switchNetworkText = values.String(values.StrSwitchToMainnet)
+				}
+				switchNetworkLabel := sp.Theme.Label(values.TextSize12, fmt.Sprintf("(%s)", switchNetworkText))
+				switchNetworkLabel.Alignment = text.Middle
+				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+					return sp.networkSwitchButton.Layout(gtx, switchNetworkLabel.Layout)
+				})
 			}),
 		)
 	})
@@ -581,7 +608,7 @@ func (sp *startPage) pageHeaderLayout(gtx C) layout.Dimensions {
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
-		Clickable:   &sp.backButton,
+		Clickable:   sp.backButton,
 		Padding:     layout.UniformInset(values.MarginPadding12),
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {

@@ -19,14 +19,12 @@ import (
 )
 
 const (
-	defaultNetwork        = "mainnet"
 	defaultConfigFileName = "cryptopower.conf"
 	defaultLogFilename    = "cryptopower.log"
 	defaultLogDirname     = "logs"
 )
 
 type config struct {
-	Network          string `long:"network" description:"Network to use"`
 	HomeDir          string `long:"appdata" description:"Directory where the app configuration file and wallet data is stored"`
 	ConfigFile       string `long:"configfile" description:"Filename of the config file in the app directory"`
 	ShowVersion      bool   `short:"V" long:"version" description:"Display version information and exit"`
@@ -36,13 +34,10 @@ type config struct {
 	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
 	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the assetsManager to use transactions that have not been confirmed"`
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
-
-	net libutils.NetworkType
 }
 
 func defaultConfig(defaultHomeDir string) config {
 	return config{
-		Network:    defaultNetwork,
 		HomeDir:    defaultHomeDir,
 		ConfigFile: filepath.Join(defaultHomeDir, defaultConfigFileName),
 		LogDir:     filepath.Join(defaultHomeDir, defaultLogDirname),
@@ -229,18 +224,10 @@ func loadConfig() (*config, error) {
 		cfg.MaxLogZips = 0
 	}
 
-	cfg.net = libutils.ToNetworkType(cfg.Network)
-	if cfg.net == libutils.Unknown {
-		return loadConfigError(fmt.Errorf("network type is not supported: %s", cfg.Network))
-	}
-
 	// Parse, validate, and set debug log level(s).
 	if cfg.Quiet {
 		cfg.DebugLevel = "error"
 	}
-
-	cfg.Network = string(cfg.net)
-	cfg.LogDir = filepath.Join(cfg.LogDir, cfg.Network)
 
 	// Special show command to list supported subsystems and exit.
 	if cfg.DebugLevel == "show" {
