@@ -101,7 +101,7 @@ func loadConfig() (*config, error) {
 
 	// Default config
 	defaultHomeDir := dcrutil.AppDataDir("cryptopower", false)
-	if appos.Current().IsAndroid() {
+	if appos.Current().IsMobile() {
 		homeDir, err := app.DataDir()
 		if err != nil {
 			return nil, fmt.Errorf("unable to get android home dir: %v", err)
