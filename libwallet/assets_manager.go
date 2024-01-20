@@ -17,6 +17,7 @@ import (
 	"decred.org/dcrwallet/v3/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
@@ -920,6 +921,11 @@ func (mgr *AssetsManager) DexcInitialized() bool {
 // initialized first so the DEX client can bind previously added wallets when it
 // starts.
 func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
+	// Ignore attempts to InitializeDEX on mainnet and on mobile.
+	if mgr.NetType() == utils.Mainnet || appos.Current().IsMobile() {
+		return
+	}
+
 	if !dexWalletRegistered.Load() {
 		mgr.prepareDexSupportForDCRWallet()
 		mgr.prepareDexSupportForBTCCloneWallets()

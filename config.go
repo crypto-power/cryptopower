@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"gioui.org/app"
+	"github.com/crypto-power/cryptopower/appos"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/version"
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -100,7 +101,7 @@ func loadConfig() (*config, error) {
 
 	// Default config
 	defaultHomeDir := dcrutil.AppDataDir("cryptopower", false)
-	if isAndroidOS {
+	if appos.Current().IsAndroid() {
 		homeDir, err := app.DataDir()
 		if err != nil {
 			return nil, fmt.Errorf("unable to get android home dir: %v", err)

@@ -5,6 +5,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -52,9 +53,8 @@ func NewTradePage(l *load.Load) *TradePage {
 		},
 	}
 	filteredTabTitles := tabTitles
-	if l.IsMobileView() {
-		// Remove dcrdex for mobile view,
-		// dcrdex isn't supported on mobile yet
+	if appos.Current().IsMobile() {
+		// Remove dcrdex for mobile view, dcrdex isn't supported on mobile yet.
 		filteredTabTitles = filteredTabTitles[1:]
 	}
 
