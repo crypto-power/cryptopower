@@ -28,6 +28,7 @@ type AppConfigValues struct {
 func AppConfigFromFile(jsonFilePath string) (*AppConfig, error) {
 	cfg := &AppConfig{
 		jsonFilePath: jsonFilePath,
+		values:       &AppConfigValues{},
 	}
 
 	cfgJSON, err := os.ReadFile(jsonFilePath)
