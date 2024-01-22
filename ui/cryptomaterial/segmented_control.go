@@ -40,6 +40,7 @@ type SegmentedControl struct {
 	slideAction          *SlideAction
 	slideActionTitle     *SlideAction
 	segmentType          SegmentType
+	isDisableAnimation   bool
 
 	allowCycle            bool
 	isMobileView          bool
@@ -92,6 +93,10 @@ func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
 	sc.isSwipeActionEnabled = enable
 }
 
+func (sc *SegmentedControl) SetDisableAnimation(disable bool) {
+	sc.isDisableAnimation = disable
+}
+
 // Layout handles the segmented control's layout, it receives an optional isMobileView bool
 // parameter which is used to determine if the segmented control should be displayed in mobile view
 // or not. If the parameter is not provided, isMobileView defaults to false.
@@ -120,6 +125,9 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 						return body(gtx)
 					}
 					return sc.slideAction.DragLayout(gtx, func(gtx C) D {
+						if sc.isDisableAnimation {
+							return body(gtx)
+						}
 						return sc.slideAction.TransformLayout(gtx, sc.layoutContent(body))
 					})
 				})
@@ -136,10 +144,7 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 func (sc *SegmentedControl) layoutContent(body layout.Widget) layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				dims := body(gtx)
-				return dims
-			}),
+			layout.Rigid(body),
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 				// 600px use to fill height for swipe action
 				return layout.Spacer{Height: values.MarginPadding600}.Layout(gtx)

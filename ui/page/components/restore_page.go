@@ -73,6 +73,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 	pg.confirmSeedButton.SetEnabled(false)
 	pg.confirmSeedButton.TextSize = textSize16
 	pg.tabs.DisableUniform(true)
+	pg.tabs.SetDisableAnimation(true)
 
 	return pg
 }
