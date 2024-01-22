@@ -259,6 +259,9 @@ func (pg *AppSettingsPage) general() layout.Widget {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					if !pg.CanChangeNetworkType() {
+						return D{}
+					}
 					networkRow := row{
 						title:     values.String(values.StrNetwork),
 						clickable: pg.network,

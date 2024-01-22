@@ -117,7 +117,9 @@ func (pg *DEXPage) Layout(gtx C) D {
 	var msg string
 	var actionBtn *cryptomaterial.Button
 	if isMainnet {
-		actionBtn = &pg.switchToTestnetBtn
+		if pg.CanChangeNetworkType() {
+			actionBtn = &pg.switchToTestnetBtn
+		}
 		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)

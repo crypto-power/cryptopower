@@ -26,9 +26,10 @@ type AppInfo struct {
 	buildDate   time.Time
 	startUpTime time.Time
 
-	cfg               *AppConfig
-	initAssetsManager AssetsManagerInitFn
-	AssetsManager     *libwallet.AssetsManager
+	cfg                   *AppConfig
+	allowNetTypeSwitching bool
+	initAssetsManager     AssetsManagerInitFn
+	AssetsManager         *libwallet.AssetsManager
 
 	windowMtx sync.Mutex
 	window    *giouiApp.Window
@@ -38,11 +39,20 @@ type AppInfo struct {
 	isMobileView    bool
 }
 
-// StartApp returns an instance of AppInfo with the startUpTime set to the current time.
-func StartApp(version string, buildDate time.Time, appCfg *AppConfig, initAssetsManager AssetsManagerInitFn) (*AppInfo, error) {
-	net := utils.Mainnet
-	if netType := appCfg.Values().NetType; netType != "" {
-		net = utils.ToNetworkType(netType)
+// StartApp returns an instance of AppInfo with the startUpTime set to the
+// current time. If netType is empty, the netType to use will be read from the
+// appCfg. If a netType is provided, it'll be used instead of the netType in the
+// appCfg; and in-app network type switching will be disabled.
+func StartApp(version string, buildDate time.Time, netType string, appCfg *AppConfig, initAssetsManager AssetsManagerInitFn) (*AppInfo, error) {
+	var allowNetTypeSwitching bool
+	if netType == "" {
+		netType = appCfg.Values().NetType
+		allowNetTypeSwitching = true
+	}
+
+	net := utils.ToNetworkType(netType)
+	if net == utils.Unknown {
+		return nil, fmt.Errorf("invalid netType: %s", netType)
 	}
 
 	assetsManager, err := initAssetsManager(net)
@@ -51,12 +61,13 @@ func StartApp(version string, buildDate time.Time, appCfg *AppConfig, initAssets
 	}
 
 	return &AppInfo{
-		version:           version,
-		buildDate:         buildDate,
-		startUpTime:       time.Now(),
-		cfg:               appCfg,
-		initAssetsManager: initAssetsManager,
-		AssetsManager:     assetsManager,
+		version:               version,
+		buildDate:             buildDate,
+		startUpTime:           time.Now(),
+		cfg:                   appCfg,
+		allowNetTypeSwitching: allowNetTypeSwitching,
+		initAssetsManager:     initAssetsManager,
+		AssetsManager:         assetsManager,
 	}, nil
 }
 
@@ -112,11 +123,21 @@ func (app *AppInfo) StartPage() app.Page {
 	return app.startPage
 }
 
+// CanChangeNetworkType is true if it is possible to change the network type
+// used by the app.
+func (app *AppInfo) CanChangeNetworkType() bool {
+	return app.allowNetTypeSwitching
+}
+
 // ChangeAssetsManagerNetwork changes the network type used by the app to the
 // value provided. A new AssetsManager for the specified network type is
 // initialized and returned, but not used. Call ChangeAssetsManager to use the
 // new AssetsManager.
 func (app *AppInfo) ChangeAssetsManagerNetwork(netType utils.NetworkType) (*libwallet.AssetsManager, error) {
+	if !app.allowNetTypeSwitching {
+		return nil, fmt.Errorf("this operation is not permitted")
+	}
+
 	currentNetType := app.AssetsManager.NetType()
 	if netType == currentNetType {
 		return nil, fmt.Errorf("new network type is the same as current network type")
@@ -151,6 +172,13 @@ func (app *AppInfo) ChangeAssetsManagerNetwork(netType utils.NetworkType) (*libw
 // parameter. See the TODO comment on *AppInfo.ReadyForDisplay() and
 // *AppInfo.Window().
 func (app *AppInfo) ChangeAssetsManager(newAssetsManager *libwallet.AssetsManager, pageNav app.PageNavigator) {
+	if !app.allowNetTypeSwitching {
+		// Should never happen, because *AppInfo.ChangeAssetsManagerNetwork()
+		// would not even produce a newAssetsManager if network type change is
+		// disabled.
+		panic("network type change is not permitted")
+	}
+
 	appStartPage := app.StartPage()
 	if appStartPage == nil {
 		// Something is wrong. Close the app and let the user restart the app.

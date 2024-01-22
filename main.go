@@ -98,7 +98,7 @@ func main() {
 
 	// Init the AssetsManager using the user-selected netType or mainnet if the
 	// user has not selected a netType from the app's settings page.
-	appInfo, err := load.StartApp(Version, buildDate, appCfg, initializeAssetsManager)
+	appInfo, err := load.StartApp(Version, buildDate, cfg.Network, appCfg, initializeAssetsManager)
 	if err != nil {
 		log.Errorf("init assetsManager error: %v", err)
 		return

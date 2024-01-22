@@ -25,6 +25,7 @@ const (
 )
 
 type config struct {
+	Network          string `long:"network" description:"Network to use (mainnet, testnet or simnet). Cannot be changed from the app once set."`
 	HomeDir          string `long:"appdata" description:"Directory where the app configuration file and wallet data is stored"`
 	ConfigFile       string `long:"configfile" description:"Filename of the config file in the app directory"`
 	ShowVersion      bool   `short:"V" long:"version" description:"Display version information and exit"`
@@ -222,6 +223,10 @@ func loadConfig() (*config, error) {
 	// logger variables may be used. This creates the LogDir if needed.
 	if cfg.MaxLogZips < 0 {
 		cfg.MaxLogZips = 0
+	}
+
+	if cfg.Network != "" && libutils.ToNetworkType(cfg.Network) == libutils.Unknown {
+		return loadConfigError(fmt.Errorf("network type is not supported: %s", cfg.Network))
 	}
 
 	// Parse, validate, and set debug log level(s).

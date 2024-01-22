@@ -22,13 +22,17 @@ type AppConfigValues struct {
 	NetType string `json:"netType"`
 }
 
-// AppConfigFromFile attempts to load and parse the JSON file at the
-// specified path, and read the stored config values. Returns a new, empty
-// AppConfig instance if there is no file at the specified path.
+var defaultAppConfigValues = &AppConfigValues{
+	NetType: string(libutils.Mainnet),
+}
+
+// AppConfigFromFile attempts to load and parse the JSON file at the specified
+// path, and read the stored config values. If there is no file at the specified
+// path, a new AppConfig instance with default values will be returned.
 func AppConfigFromFile(jsonFilePath string) (*AppConfig, error) {
 	cfg := &AppConfig{
 		jsonFilePath: jsonFilePath,
-		values:       &AppConfigValues{},
+		values:       defaultAppConfigValues, // updated below if the json file exists
 	}
 
 	cfgJSON, err := os.ReadFile(jsonFilePath)

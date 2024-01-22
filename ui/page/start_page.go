@@ -411,7 +411,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 				return inset.Layout(gtx, sp.addWalletButton.Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				if sp.loading {
+				if sp.loading || !sp.CanChangeNetworkType() {
 					return D{}
 				}
 				switchNetworkText := values.String(values.StrSwitchToTestnet)
