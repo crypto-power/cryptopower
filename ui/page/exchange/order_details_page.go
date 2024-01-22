@@ -71,7 +71,7 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 	}
 	pg.exchange = exchange
 
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateNewOrder))
 	pg.refreshBtn = pg.Theme.Button(values.String(values.StrRefresh))

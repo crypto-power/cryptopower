@@ -97,7 +97,7 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 	pg.unmixedAccountSelector.SelectFirstValidAccount(dcrWallet)
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 }

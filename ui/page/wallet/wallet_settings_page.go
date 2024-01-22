@@ -100,7 +100,7 @@ func NewSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func
 	}
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 }

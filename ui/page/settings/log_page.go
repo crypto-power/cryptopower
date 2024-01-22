@@ -59,7 +59,7 @@ func NewLogPage(l *load.Load, logPath string, pageTitle string) *LogPage {
 	pg.logPath = logPath
 	pg.title = pageTitle
 
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 	pg.watchLogs()
 	return pg
 }

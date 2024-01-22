@@ -45,7 +45,7 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 	return backButton, infoButton
 }
 
-func GetBackButtons(l *load.Load) cryptomaterial.IconButton {
+func GetBackButton(l *load.Load) cryptomaterial.IconButton {
 	backClickable := new(widget.Clickable)
 	backButton := l.Theme.NewIconButton(l.Theme.Icons.NavigationArrowBack, backClickable)
 	size := values.MarginPadding24

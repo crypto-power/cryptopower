@@ -62,7 +62,7 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 	pg.clearBtn.Font.Weight = font.Medium
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 }

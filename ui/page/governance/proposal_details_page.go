@@ -87,7 +87,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 		voteBar:           components.NewVoteBar(l),
 	}
 
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	pg.vote = l.Theme.Button(values.String(values.StrVote))
 	pg.vote.TextSize = l.ConvertTextSize(values.TextSize14)

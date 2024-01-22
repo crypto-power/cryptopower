@@ -68,7 +68,7 @@ func NewBTCAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.
 		isHiddenExtendedxPubkey: true,
 	}
 
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 }

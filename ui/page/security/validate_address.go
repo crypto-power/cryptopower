@@ -46,7 +46,7 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 		wallet:           wallet,
 	}
 
-	pg.backButton = components.GetBackButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	pg.addressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
 	pg.addressEditor.Editor.SingleLine = true
