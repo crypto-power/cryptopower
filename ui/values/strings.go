@@ -1027,4 +1027,5 @@ const (
 	StrSwitchToTestnet                 = "swtichToTestnet"
 	StrDexMainnetNotReady              = "dexMainnetNotReady"
 	StrUpdateDEXWalletPasswordReason   = "updateDEXWalletPasswordReason"
+	StrPaste                           = "paste"
 )
