@@ -124,7 +124,7 @@ func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *
 		rebroadcastIcon:      l.Theme.Icons.Rebroadcast,
 	}
 
-	pg.backButton, _ = components.SubpageHeaderButtons(pg.Load)
+	pg.backButton = components.GetBackButtons(pg.Load)
 
 	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 	pg.dot.Color = l.Theme.Color.Gray1

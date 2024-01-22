@@ -57,7 +57,7 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 		refreshIcon:      l.Theme.Icons.Restore,
 	}
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButtons(l)
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(10)
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchOrders)

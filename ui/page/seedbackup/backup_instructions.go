@@ -54,7 +54,7 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 
 	bi.viewSeedBtn.Font.Weight = font.Medium
 
-	bi.backButton, _ = components.SubpageHeaderButtons(l)
+	bi.backButton = components.GetBackButtons(l)
 	bi.backButton.Icon = l.Theme.Icons.ContentClear
 
 	bi.checkBoxes = []cryptomaterial.CheckBoxStyle{

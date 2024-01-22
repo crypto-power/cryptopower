@@ -2,6 +2,7 @@ package components
 
 import (
 	"gioui.org/layout"
+	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -28,7 +29,8 @@ type SubPage struct {
 }
 
 func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomaterial.IconButton) {
-	backButton := l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack)
+	backClickable := new(widget.Clickable)
+	backButton := l.Theme.NewIconButton(l.Theme.Icons.NavigationArrowBack, backClickable)
 	infoButton := l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 
 	size := values.MarginPadding24
@@ -41,6 +43,19 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 	backButton.Inset, infoButton.Inset = buttonInset, buttonInset
 
 	return backButton, infoButton
+}
+
+func GetBackButtons(l *load.Load) cryptomaterial.IconButton {
+	backClickable := new(widget.Clickable)
+	backButton := l.Theme.NewIconButton(l.Theme.Icons.NavigationArrowBack, backClickable)
+	size := values.MarginPadding24
+	if l.IsMobileView() {
+		size = values.MarginPadding16
+	}
+	backButton.Size = size
+	backButton.Inset = layout.UniformInset(values.MarginPadding0)
+	l.Theme.AddBackClick(backClickable)
+	return backButton
 }
 
 func (sp *SubPage) Layout(window app.WindowNavigator, gtx C) D {

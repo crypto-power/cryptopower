@@ -120,7 +120,7 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
-	pg.backButton, _ = SubpageHeaderButtons(l)
+	pg.backButton = GetBackButtons(l)
 
 	return pg
 }

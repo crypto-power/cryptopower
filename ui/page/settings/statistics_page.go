@@ -52,7 +52,7 @@ func NewStatPage(l *load.Load, wallet sharedW.Asset) *StatPage {
 		},
 	}
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButtons(l)
 
 	return pg
 }

@@ -94,7 +94,8 @@ func NewAppSettingsPage(l *load.Load) *AppSettingsPage {
 	}
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
+	_, pg.infoButton = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButtons(l)
 	pg.isDarkModeOn = pg.AssetsManager.IsDarkModeOn()
 
 	return pg

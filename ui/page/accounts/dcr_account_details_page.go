@@ -71,7 +71,7 @@ func NewDCRAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.
 		isHiddenExtendedxPubkey: true,
 	}
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButtons(l)
 
 	return pg
 }

@@ -53,7 +53,7 @@ func NewAboutPage(l *load.Load) *AboutPage {
 
 	pg.licenseRow.Radius = cryptomaterial.BottomRadius(14)
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButtons(l)
 	col := pg.Theme.Color.GrayText2
 	pg.versionValue.Color = col
 	pg.buildDateValue.Color = col

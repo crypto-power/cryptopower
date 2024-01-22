@@ -113,6 +113,18 @@ func (t *Theme) IconButton(icon *widget.Icon) IconButton {
 	}
 }
 
+func (t *Theme) NewIconButton(icon *widget.Icon, click *widget.Clickable) IconButton {
+	return IconButton{
+		IconButtonStyle{
+			Icon:   icon,
+			Button: click,
+			Size:   unit.Dp(24),
+			Inset:  layout.UniformInset(unit.Dp(12)),
+		},
+		t.Styles.IconButtonColorStyle,
+	}
+}
+
 func (t *Theme) IconButtonWithStyle(ibs IconButtonStyle, colorStyle *values.ColorStyle) IconButton {
 	return IconButton{
 		ibs,

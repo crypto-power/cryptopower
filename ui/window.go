@@ -305,9 +305,7 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 	// list via a graphical context that is linked to the ops.
 	ops := &op.Ops{}
 	gtx := layout.NewContext(ops, evt)
-	if win.load.IsMobileView() {
-		win.clicker.Add(ops)
-	}
+	win.addEvents(gtx)
 	layout.Stack{Alignment: layout.N}.Layout(
 		gtx,
 		backgroundWidget,
@@ -315,7 +313,7 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 		topModalLayout,
 		layout.Stacked(win.load.Toast.Layout),
 	)
-	win.handleUserClick(gtx)
+	win.handleEvents(gtx)
 
 	return ops
 }
@@ -353,11 +351,42 @@ func (win *Window) addKeyEventRequestsToOps(ops *op.Ops) {
 	}
 }
 
+func (win *Window) handleEvents(gtx C) {
+	win.handleUserClick(gtx)
+	win.handleShortKeys(gtx)
+}
+
 // handleUserClick listen touch action of user for mobile.
 func (win *Window) handleUserClick(gtx C) {
 	for _, evt := range win.clicker.Events(gtx) {
 		if evt.Type == gesture.TypePress && evt.Source == pointer.Touch {
 			win.load.Theme.AutoHideSoftKeyBoard(gtx)
 		}
+	}
+}
+
+// handleShortKeys listen keys pressed.
+func (win *Window) handleShortKeys(gtx C) {
+	// check for presses of the back key.
+	for _, event := range gtx.Events(win) {
+		switch event := event.(type) {
+		case key.Event:
+			if event.Name == key.NameBack && event.State == key.Press {
+				win.load.Theme.OnTapBack()
+			}
+		}
+	}
+}
+
+func (win *Window) addEvents(gtx C) {
+	if win.load.IsMobileView() {
+		win.clicker.Add(gtx.Ops)
+	}
+
+	if runtime.GOOS == "android" {
+		key.InputOp{
+			Tag:  win,
+			Keys: key.NameBack,
+		}.Add(gtx.Ops)
 	}
 }

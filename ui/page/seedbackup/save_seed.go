@@ -85,7 +85,7 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 	pg.copy.Color = pg.Theme.Color.Primary
 	pg.copy.Inset = layout.UniformInset(values.MarginPadding16)
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButtons(l)
 	pg.backButton.Icon = l.Theme.Icons.ContentClear
 
 	pg.actionButton.Font.Weight = font.Medium

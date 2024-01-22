@@ -44,7 +44,8 @@ func NewSetupMixerAccountsPage(l *load.Load, dcrWallet *dcr.Asset) *SetupMixerAc
 	pg.nextIcon.Color = pg.Theme.Color.Gray1
 	pg.autoSetupClickable = pg.Theme.NewClickable(true)
 	pg.manualSetupClickable = pg.Theme.NewClickable(true)
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
+	_, pg.infoButton = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButtons(l)
 	return pg
 }
 
