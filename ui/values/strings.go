@@ -1029,7 +1029,7 @@ const (
 	StrUpdateDEXWalletPasswordReason   = "updateDEXWalletPasswordReason"
 	StrLoginDEXForActiveOrders         = "loginDEXForActiveOrders"
 	StrWalletsNeedToSync               = "walletsNeedToSync"
-	StrActiveOrderWalletsNeedToSync    = "activeOrderWalletsNeedToSync"
+	StrWalletsNeedToSyncMsg            = "walletsNeedToSyncMsg"
 	StrIWillSyncLater                  = "iWillSyncLater"
 	StrOkaySync                        = "okaySync"
 )

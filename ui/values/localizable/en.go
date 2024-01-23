@@ -920,7 +920,7 @@ const EN = `
 "updateDEXWalletPasswordReason" = "Your %s wallet (%s) is connected to your DEX account. Please provide your DEX password to update DEX with the new wallet password."
 "loginDEXForActiveOrders" = "You have one or more active order, login to DEX now!"
 "walletsNeedToSync" = "Wallet(s) need to sync"
-"activeOrderWalletsNeedToSync" = "Wallet(s) used by the DEX client needs to sync to settle active trade(s)."
+"walletsNeedToSyncMsg" = "Wallet(s) used by the DEX client needs to sync to settle active trade(s) or refund expired bonds."
 "iWillSyncLater" = "I'll sync later"
 "okaySync" = "Okay, sync"
  `

@@ -191,12 +191,16 @@ func (hp *HomePage) initDEX() {
 		// Wait until dex is ready
 		<-dexClient.Ready()
 
-		hasActiveOrders := dexClient.Active()
-		if !hasActiveOrders {
-			return
+		activeOrder, _ /* we just initialized dexc, no inflight order expected */, err := dexClient.ActiveOrders()
+		if err != nil {
+			log.Errorf("dexClient.ActiveOrders error: %w", err)
 		}
 
-		// Dex has active trades, login now!
+		expiredBonds := dexClient.ExpiredBonds()
+		if len(activeOrder) == 0 && len(expiredBonds) == 0 {
+			return // nothing to do.
+		}
+
 		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
 		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
@@ -221,21 +225,19 @@ func (hp *HomePage) initDEX() {
 					return false
 				}
 
-				// DEX client has active orders, retrieve the wallets involved
-				// and ensure they are synced or syncing.
+				// DEX client has active orders or expired bonds, retrieve the
+				// wallets involved and ensure they are synced or syncing.
 				walletsToSyncMap := make(map[uint32]*struct{})
-				for _, xc := range dexClient.Exchanges() {
-				nextMarket:
-					for _, mkt := range xc.Markets {
-						for _, ord := range mkt.Orders {
-							for _, m := range ord.Matches {
-								if m.Active {
-									walletsToSyncMap[mkt.BaseID] = &struct{}{}
-									walletsToSyncMap[mkt.QuoteID] = &struct{}{}
-									continue nextMarket
-								}
-							}
-						}
+				for _, orders := range activeOrder {
+					for _, ord := range orders {
+						walletsToSyncMap[ord.Base()] = &struct{}{}
+						walletsToSyncMap[ord.Quote()] = &struct{}{}
+					}
+				}
+
+				for _, bonds := range expiredBonds {
+					for _, bond := range bonds {
+						walletsToSyncMap[bond.AssetID] = &struct{}{}
 					}
 				}
 
@@ -273,7 +275,7 @@ func (hp *HomePage) initDEX() {
 
 				walletSyncRequestModal := modal.NewCustomModal(hp.Load).
 					Title(values.String(values.StrWalletsNeedToSync)).
-					Body(values.String(values.StrActiveOrderWalletsNeedToSync)).
+					Body(values.String(values.StrWalletsNeedToSyncMsg)).
 					SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
 					SetPositiveButtonText(values.String(values.StrOkaySync)).
 					SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
