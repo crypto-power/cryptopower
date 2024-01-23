@@ -436,7 +436,7 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 			pg.wallet.LockWallet()
 
 			currentPassword = password
-			if pg.AssetsManager.DexcInitialized() {
+			if pg.AssetsManager.DEXCInitialized() {
 				// Check if this wallet is used by the dex client.
 				assetType := pg.wallet.GetAssetType()
 				assetID, ok := dex.BipSymbolID(assetType.ToStringLower())

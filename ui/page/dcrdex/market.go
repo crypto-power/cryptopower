@@ -290,7 +290,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 }
 
 func (pg *DEXMarketPage) isDEXReset() bool {
-	if !pg.AssetsManager.DexcInitialized() || !pg.AssetsManager.DexClient().IsDEXPasswordSet() { // dexc was reset
+	if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().IsDEXPasswordSet() { // dexc was reset
 		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
 		return true
 	}

@@ -6,10 +6,11 @@ import (
 	"decred.org/dcrdex/dex"
 )
 
-type DexClient interface {
+type DEXClient interface {
 	Ready() <-chan struct{}
 	WaitForShutdown() <-chan struct{}
 	Shutdown()
+	IsInitialized() bool
 	IsDEXPasswordSet() bool
 	IsLoggedIn() bool
 	InitWithPassword(pw, seed []byte) error
@@ -21,6 +22,7 @@ type DexClient interface {
 	BondsFeeBuffer(assetID uint32) uint64
 	HasWallet(assetID int32) bool
 	AddWallet(assetID uint32, settings map[string]string, appPW, walletPW []byte) error
+	SetWalletPassword(appPW []byte, assetID uint32, newPW []byte) error
 	PostBond(form *core.PostBondForm) (*core.PostBondResult, error)
 	NotificationFeed() *core.NoteFeed
 	Exchanges() map[string]*core.Exchange

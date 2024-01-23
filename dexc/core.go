@@ -47,6 +47,10 @@ func (dc *DEXClient) InitWithPassword(pw []byte, seed []byte) error {
 	return dc.InitializeClient(pw, seed)
 }
 
+func (dc *DEXClient) IsInitialized() bool {
+	return dc != nil && dc.Core != nil
+}
+
 func (dc *DEXClient) IsDEXPasswordSet() bool {
 	return dc.IsInitialized()
 }

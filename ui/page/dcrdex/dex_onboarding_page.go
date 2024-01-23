@@ -228,7 +228,8 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) OnNavigatedTo() {
-	if !pg.AssetsManager.DexcInitialized() {
+	if !pg.AssetsManager.DEXCInitialized() {
+		pg.ParentNavigator().CloseCurrentPage()
 		return
 	}
 
@@ -261,7 +262,7 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) Layout(gtx C) D {
-	if !pg.AssetsManager.DexcInitialized() {
+	if !pg.AssetsManager.DEXCInitialized() {
 		return D{}
 	}
 
