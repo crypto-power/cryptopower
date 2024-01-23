@@ -68,7 +68,7 @@ type AssetsManager struct {
 
 	dexcMtx     sync.RWMutex
 	dexcCtx     context.Context
-	dexc        DexClient
+	dexc        DEXClient
 	startingDEX atomic.Bool
 }
 
@@ -366,7 +366,7 @@ func (mgr *AssetsManager) Shutdown() {
 	}
 
 	// Shutdown dexc before closing wallets.
-	if mgr.dexc != nil && mgr.DexcInitialized() {
+	if mgr.dexc != nil && mgr.DEXCInitialized() {
 		mgr.dexc.Shutdown()
 		mgr.dexc.WaitForShutdown()
 	}
@@ -903,17 +903,16 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 }
 
 // DexClient returns a dexc client that MUST never be modified.
-func (mgr *AssetsManager) DexClient() DexClient {
+func (mgr *AssetsManager) DexClient() DEXClient {
 	mgr.dexcMtx.RLock()
 	defer mgr.dexcMtx.RUnlock()
 	return mgr.dexc
 }
 
-func (mgr *AssetsManager) DexcInitialized() bool {
+func (mgr *AssetsManager) DEXCInitialized() bool {
 	mgr.dexcMtx.RLock()
 	defer mgr.dexcMtx.RUnlock()
-	dexClient, _ := mgr.dexc.(*dexc.DEXClient) // check concrete type
-	return dexClient != nil && dexClient.Core != nil
+	return mgr.dexc != nil && mgr.dexc.IsInitialized()
 }
 
 // InitializeDEX initializes mgr.dexc. Support for Cryptopower wallets are
@@ -925,7 +924,7 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 		return
 	}
 
-	if mgr.DexcInitialized() || mgr.startingDEX.Load() {
+	if mgr.DEXCInitialized() || mgr.startingDEX.Load() {
 		log.Debug("Attempted to reinitialize a running dex client instance")
 		return
 	}

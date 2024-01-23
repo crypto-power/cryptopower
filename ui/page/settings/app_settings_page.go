@@ -301,7 +301,7 @@ func (pg *AppSettingsPage) general() layout.Widget {
 					return pg.subSectionSwitch(gtx, values.String(values.StrTxNotification), pg.transactionNotification)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if !pg.AssetsManager.DexcInitialized() || len(pg.AssetsManager.DexClient().Exchanges()) == 0 {
+					if !pg.AssetsManager.DEXCInitialized() || len(pg.AssetsManager.DexClient().Exchanges()) == 0 {
 						return D{}
 					}
 
@@ -420,7 +420,7 @@ func (pg *AppSettingsPage) debug() layout.Widget {
 					return pg.clickableRow(gtx, viewLogRow)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DexcInitialized() || !pg.AssetsManager.DexClient().IsDEXPasswordSet() {
+					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().IsDEXPasswordSet() {
 						return D{}
 					}
 
@@ -591,7 +591,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			SetNegativeButtonText(values.String(values.StrCancel)).
 			SetPositiveButtonText(values.String(values.StrReset)).
 			SetPositiveButtonCallback(func(_ bool, in *modal.InfoModal) bool {
-				if pg.AssetsManager.DexcInitialized() {
+				if pg.AssetsManager.DEXCInitialized() {
 					if err := pg.AssetsManager.DeleteDEXData(); err != nil {
 						return false
 					}
