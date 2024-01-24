@@ -188,14 +188,12 @@ func (e *Editor) Layout(gtx C) D {
 	e.handleEvents(gtx)
 	clicks := e.clickable.Clicks()
 	if len(clicks) > 0 {
-		if len(clicks) > 0 {
-			clk := clicks[len(clicks)-1]
-			if clk.NumClicks == 2 {
-				e.isShowMenu = true
-			}
-			if clk.NumClicks != 2 && clk.NumClicks > 0 {
-				e.isShowMenu = false
-			}
+		clk := clicks[len(clicks)-1]
+		if clk.NumClicks == 2 {
+			e.isShowMenu = true
+		}
+		if clk.NumClicks != 2 && clk.NumClicks > 0 {
+			e.isShowMenu = false
 		}
 	}
 	return e.layout(gtx)
@@ -428,10 +426,10 @@ func (e *Editor) handleEvents(gtx C) {
 }
 
 func (e *Editor) processEvent(gtx C) {
-	for _, ke := range gtx.Events(&e.eventKey) {
-		switch ke := ke.(type) {
+	for _, event := range gtx.Events(&e.eventKey) {
+		switch eventType := event.(type) {
 		case clipboard.Event:
-			e.Editor.Insert(ke.Text)
+			e.Editor.Insert(eventType.Text)
 		}
 	}
 }
