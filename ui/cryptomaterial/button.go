@@ -106,7 +106,7 @@ func (t *Theme) IconButton(icon *widget.Icon) IconButton {
 		IconButtonStyle{
 			Icon:   icon,
 			Button: new(widget.Clickable),
-			Size:   unit.Dp(values.MarginPadding24),
+			Size:   values.MarginPadding24,
 			Inset:  layout.UniformInset(values.MarginPadding12),
 		},
 		t.Styles.IconButtonColorStyle,
@@ -118,7 +118,7 @@ func (t *Theme) NewIconButton(icon *widget.Icon, click *widget.Clickable) IconBu
 		IconButtonStyle{
 			Icon:   icon,
 			Button: click,
-			Size:   unit.Dp(values.MarginPadding24),
+			Size:   values.MarginPadding24,
 			Inset:  layout.UniformInset(values.MarginPadding12),
 		},
 		t.Styles.IconButtonColorStyle,
