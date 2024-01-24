@@ -19,6 +19,11 @@ type (
 )
 
 var (
+	NetworkTypes = []ItemPreference{
+		{Key: string(libutils.Mainnet), Value: libutils.Mainnet.Display()},
+		{Key: string(libutils.Testnet), Value: libutils.Testnet.Display()},
+	}
+
 	// ExchOptions holds the configurable options for exchange servers.
 	ExchOptions = []ItemPreference{
 		{Key: values.BinanceExchange, Value: values.StrUsdBinance},

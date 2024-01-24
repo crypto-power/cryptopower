@@ -109,7 +109,7 @@ func ShutdownHTTPClients() {
 	for _, c := range activeAPIs {
 		c.cancelFunc()
 	}
-	activeAPIs = nil
+	activeAPIs = make(map[string]*Client)
 }
 
 func (c *Client) getRequestBody(method string, body interface{}) ([]byte, error) {

@@ -364,10 +364,17 @@ func (mgr *AssetsManager) Shutdown() {
 		mgr.InstantSwap.StopSync()
 	}
 
+	// Shutdown dexc before closing wallets.
+	if mgr.dexc != nil && mgr.dexc.IsInitialized() {
+		mgr.dexc.Shutdown()
+		mgr.dexc.WaitForShutdown()
+	}
+
 	for _, wallet := range mgr.AllWallets() {
 		wallet.Shutdown() // Cancels the wallet sync too.
 		wallet.CancelRescan()
 	}
+	mgr.Assets = new(Assets)
 
 	// Disable all active network connections
 	utils.ShutdownHTTPClients()
@@ -947,6 +954,7 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 		<-mgr.dexc.WaitForShutdown()
 		mgr.dexcMtx.Lock()
 		mgr.dexc = nil
+		// TODO: Also unregister the custom wallet constructors!
 		mgr.dexcMtx.Unlock()
 	}()
 }
@@ -965,7 +973,13 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 
 	// Shutdown the DEX client.
 	mgr.dexc.Shutdown()
+	// TODO: Verify that it is possible to listen to this channel here and in
+	// the goroutine in InitializeDEX; it's possible that only one of the
+	// listeners will receive a value. But if the channel was closed, then maybe
+	// both will get the ntfn?
 	<-shutdownChan // wait for shutdown
+
+	// TODO: Set mgr.dexc to nil and unregister the custom wallet constructors!
 
 	// Delete dex client db.
 	return os.Remove(dexDBFile)

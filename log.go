@@ -188,6 +188,13 @@ var subsystemBLoggers = map[string]btclog.Logger{
 // create roll files in the same directory.  It must be called before the
 // package-global log rotater variables are used.
 func initLogRotator(logDir string, maxRolls int) {
+	// Close any previously initialized log rotators.
+	for _, rotator := range logRotators {
+		if rotator != nil {
+			rotator.Close() // TODO: what to do with error?
+		}
+	}
+
 	logRotators = map[string]*rotator.Rotator{
 		btcLogger:  nil,
 		dcrLogger:  nil,

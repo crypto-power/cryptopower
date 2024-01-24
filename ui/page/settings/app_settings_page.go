@@ -42,6 +42,7 @@ type AppSettingsPage struct {
 	pageContainer *widget.List
 
 	changeStartupPass       *cryptomaterial.Clickable
+	network                 *cryptomaterial.Clickable
 	language                *cryptomaterial.Clickable
 	currency                *cryptomaterial.Clickable
 	help                    *cryptomaterial.Clickable
@@ -83,6 +84,7 @@ func NewAppSettingsPage(l *load.Load) *AppSettingsPage {
 		privacyActive:           l.Theme.Switch(),
 
 		changeStartupPass: l.Theme.NewClickable(false),
+		network:           l.Theme.NewClickable(false),
 		language:          l.Theme.NewClickable(false),
 		currency:          l.Theme.NewClickable(false),
 		help:              l.Theme.NewClickable(false),
@@ -257,6 +259,17 @@ func (pg *AppSettingsPage) general() layout.Widget {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					if !pg.CanChangeNetworkType() {
+						return D{}
+					}
+					networkRow := row{
+						title:     values.String(values.StrNetwork),
+						clickable: pg.network,
+						label:     pg.Theme.Body2(pg.AssetsManager.NetType().Display()),
+					}
+					return pg.clickableRow(gtx, networkRow)
+				}),
+				layout.Rigid(func(gtx C) D {
 					languageRow := row{
 						title:     values.String(values.StrLanguage),
 						clickable: pg.language,
@@ -410,7 +423,7 @@ func (pg *AppSettingsPage) clickableRow(gtx C, row row) D {
 	return row.clickable.Layout(gtx, func(gtx C) D {
 		return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPaddingMinus5}.Layout(gtx, func(gtx C) D {
 			return pg.subSection(gtx, row.title, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx,
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(row.label.Layout),
 					layout.Rigid(func(gtx C) D {
 						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding20)
@@ -433,6 +446,19 @@ func (pg *AppSettingsPage) subSectionLabel(title string) layout.Widget {
 // displayed.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) HandleUserInteractions() {
+	for pg.network.Clicked() {
+		currentNetType := string(pg.AssetsManager.NetType())
+		networkSelectorModal := preference.NewListPreference(pg.Load, "", currentNetType, preference.NetworkTypes).
+			Title(values.StrNetwork).
+			UpdateValues(func(selectedNetType string) {
+				if selectedNetType != currentNetType {
+					ChangeNetworkType(pg.Load, pg.ParentWindow(), selectedNetType)
+				}
+			})
+		pg.ParentWindow().ShowModal(networkSelectorModal)
+		break
+	}
+
 	for pg.language.Clicked() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.LanguagePreferenceKey, values.DefaultLanguage, preference.LangOptions).
@@ -647,6 +673,32 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			pg.ParentWindow().ShowModal(currentPasswordModal)
 		}
 	}
+}
+
+func ChangeNetworkType(load *load.Load, windowNav app.WindowNavigator, newNetType string) {
+	modalTitle := values.String(values.StrSwitchToTestnet)
+	if newNetType == string(libutils.Mainnet) {
+		modalTitle = values.String(values.StrSwitchToMainnet)
+	}
+
+	confirmNetworkSwitchModal := modal.NewCustomModal(load).
+		Title(modalTitle).
+		Body("Your app will restart to apply this change. Continue?"). // TODO: localize
+		SetCancelable(true).
+		SetPositiveButtonText(values.String(values.StrYes)).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonCallback(func(isChecked bool, confirmModal *modal.InfoModal) bool {
+			newAssetsManager, err := load.ChangeAssetsManagerNetwork(libutils.ToNetworkType(newNetType))
+			if err != nil {
+				errorModal := modal.NewErrorModal(load, err.Error(), modal.DefaultClickFunc())
+				windowNav.ShowModal(errorModal)
+			} else {
+				// Complete the network switch in the background.
+				go load.ChangeAssetsManager(newAssetsManager, windowNav)
+			}
+			return true
+		})
+	windowNav.ShowModal(confirmNetworkSwitchModal)
 }
 
 func (pg *AppSettingsPage) showNoticeSuccess(title string) {

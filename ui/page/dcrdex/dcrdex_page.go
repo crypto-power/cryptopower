@@ -12,6 +12,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -116,7 +117,9 @@ func (pg *DEXPage) Layout(gtx C) D {
 	var msg string
 	var actionBtn *cryptomaterial.Button
 	if isMainnet {
-		actionBtn = &pg.switchToTestnetBtn
+		if pg.CanChangeNetworkType() {
+			actionBtn = &pg.switchToTestnetBtn
+		}
 		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
@@ -152,8 +155,8 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 // Part of the load.Page interface.
 func (pg *DEXPage) HandleUserInteractions() {
 	if pg.switchToTestnetBtn.Button.Clicked() {
-		log.Info("TODO: implement switch to testnet")
-	} // TODO: implement switch to testnet
+		settings.ChangeNetworkType(pg.Load, pg.ParentWindow(), string(libutils.Testnet))
+	}
 
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions()
