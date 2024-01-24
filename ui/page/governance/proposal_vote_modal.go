@@ -201,6 +201,7 @@ func (vm *voteModal) Handle() {
 		vm.Dismiss()
 		selectedWallet, _ := vm.walletSelector.selectedWallet.(*dcr.Asset)
 		walletCallbackFunc := func() {
+			vm.ParentNavigator().CloseCurrentPage()
 		}
 		swmp := wallet.NewSingleWalletMasterPage(vm.Load, selectedWallet, walletCallbackFunc)
 		vm.ParentNavigator().Display(swmp)
@@ -208,8 +209,6 @@ func (vm *voteModal) Handle() {
 		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStaking))
 	}
 }
-
-// - Layout
 
 func (vm *voteModal) Layout(gtx layout.Context) D {
 	vm.detailsMu.Lock()

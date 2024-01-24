@@ -9,6 +9,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -71,21 +72,25 @@ func (rp *recipient) setSourceAccount(sourceAccount *sharedW.Account) {
 	rp.sourceAccount = sourceAccount
 }
 
+func (rp *recipient) isAccountValid(sourceAccount, account *sharedW.Account) bool {
+	accountIsValid := account.Number != load.MaxInt32
+	// Filter mixed wallet
+	destinationWallet := rp.sendDestination.destinationAccountSelector.SelectedWallet()
+	isMixedAccount := load.MixedAccountNumber(destinationWallet) == account.Number
+
+	// Filter the sending account.
+	sourceWalletID := sourceAccount.WalletID
+	isSameAccount := sourceWalletID == account.WalletID && account.Number == sourceAccount.Number
+	if !accountIsValid || isSameAccount || isMixedAccount {
+		return false
+	}
+	return true
+}
+
 func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) {
 	rp.selectedSourceAccount = sourceAccount
 	rp.sendDestination.destinationAccountSelector = rp.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
-		accountIsValid := account.Number != load.MaxInt32
-		// Filter mixed wallet
-		destinationWallet := rp.sendDestination.destinationAccountSelector.SelectedWallet()
-		isMixedAccount := load.MixedAccountNumber(destinationWallet) == account.Number
-		// Filter the sending account.
-
-		sourceWalletID := sourceAccount.WalletID
-		isSameAccount := sourceWalletID == account.WalletID && account.Number == sourceAccount.Number
-		if !accountIsValid || isSameAccount || isMixedAccount {
-			return false
-		}
-		return true
+		return rp.isAccountValid(sourceAccount, account)
 	})
 
 	rp.sendDestination.destinationAccountSelector.AccountSelected(func(selectedWallet *sharedW.Account) {
@@ -104,6 +109,41 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 	// so assign it an initial value here
 	rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.sendDestination.destinationWalletSelector.SelectedWallet())
 	rp.sendDestination.destinationAddressEditor.Editor.Focus()
+}
+
+func (rp *recipient) isShowSendToWallet() bool {
+	sourceWalletSelected := rp.sendDestination.destinationWalletSelector.SelectedWallet()
+	var wallets []sharedW.Asset
+	switch sourceWalletSelected.GetAssetType() {
+	case utils.BTCWalletAsset:
+		wallets = append(wallets, rp.AssetsManager.AllBTCWallets()...)
+	case utils.DCRWalletAsset:
+		wallets = append(wallets, rp.AssetsManager.AllDCRWallets()...)
+	case utils.LTCWalletAsset:
+		wallets = append(wallets, rp.AssetsManager.AllLTCWallets()...)
+	}
+
+	if len(wallets) == 1 {
+		account, err := wallets[0].GetAccountsRaw()
+		if err != nil {
+			log.Errorf("Error getting accounts:", err)
+			return false
+		}
+		accountValids := make([]sharedW.Account, 0)
+		for _, acc := range account.Accounts {
+			sourceAccountSelected := rp.sendDestination.destinationAccountSelector.SelectedAccount()
+			if rp.isAccountValid(sourceAccountSelected, acc) {
+				accountValids = append(accountValids, *acc)
+			}
+		}
+		return len(accountValids) > 1
+	}
+
+	if len(wallets) > 1 {
+		return true
+	}
+
+	return false
 }
 
 func (rp *recipient) destinationWalletID() int {
@@ -201,6 +241,11 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 					txt := fmt.Sprintf("%s %s", values.String(values.StrDestination), values.String(values.StrAddress))
 					return rp.contentWrapper(gtx, txt, rp.sendDestination.destinationAddressEditor.Layout)
 				}
+
+				if !rp.isShowSendToWallet() {
+					return layoutBody(gtx)
+				}
+
 				if !rp.sendDestination.sendToAddress {
 					layoutBody = rp.walletAccountlayout(window)
 				}
