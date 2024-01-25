@@ -107,10 +107,8 @@ type DEXOnboarding struct {
 	// Step Set Password
 	passwordEditor        cryptomaterial.Editor
 	confirmPasswordEditor cryptomaterial.Editor
+	seedEditor            cryptomaterial.Editor
 	dexPass               []byte
-
-	// Sub Step Restore
-	seedEditor cryptomaterial.Editor
 
 	// Step Choose Server
 	serverDropDown *cryptomaterial.DropDown
