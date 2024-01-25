@@ -924,6 +924,7 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 		return
 	}
 
+	// Prevent multiple initialization.
 	if mgr.DEXCInitialized() || mgr.startingDEX.Load() {
 		log.Debug("Attempted to reinitialize a running dex client instance")
 		return
@@ -980,17 +981,8 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 	// both will get the ntfn?
 	<-shutdownChan // wait for shutdown
 
-	mgr.dexcMtx.Lock()
-	mgr.dexc = nil
-	mgr.dexcMtx.Unlock()
+	// TODO: Set mgr.dexc to nil and unregister the custom wallet constructors!
 
 	// Delete dex client db.
-	err = os.Remove(dexDBFile)
-	if err != nil {
-		return err
-	}
-
-	// Start a new client.
-	mgr.InitializeDEX(mgr.dexcCtx)
-	return nil
+	return os.Remove(dexDBFile)
 }

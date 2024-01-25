@@ -226,8 +226,8 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 			case n := <-noteFeed.C:
 				// Always check if the dex client is ready. We want to exit if
 				// there
-			// was a reset.
-				if n == nil || !pg.AssetsManager.DEXCInitialized(){
+				// was a reset.
+				if n == nil || !pg.AssetsManager.DEXCInitialized() {
 					return
 				}
 
