@@ -220,13 +220,16 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 			noteFeed.ReturnFeed()
 		}()
 		for {
+			// Always check if the dex client is ready. We want to exit if there
+			// was a reset.
+			if !pg.AssetsManager.DEXCInitialized() {
+				return
+			}
+
 			select {
 			case <-pg.ctx.Done():
 				return
 			case n := <-noteFeed.C:
-				// Always check if the dex client is ready. We want to exit if
-				// there
-				// was a reset.
 				if n == nil || !pg.AssetsManager.DEXCInitialized() {
 					return
 				}
@@ -294,7 +297,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 
 func (pg *DEXMarketPage) isDEXReset() bool {
 	if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() { // dexc was reset
-		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
+		pg.ParentNavigator().CloseCurrentPage()
 		return true
 	}
 	return false
@@ -427,6 +430,10 @@ func (pg *DEXMarketPage) listenForOrderbookNotifications() {
 		pg.closeAndResetOrderbookListener()
 	}()
 	for {
+		if !pg.AssetsManager.DEXCInitialized() {
+			return
+		}
+
 		select {
 		case <-pg.ctx.Done():
 			return
@@ -1347,6 +1354,10 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) HandleUserInteractions() {
+	if pg.isDEXReset() {
+		return
+	}
+
 	dexc := pg.AssetsManager.DexClient()
 	if pg.serverSelector.Changed() {
 		selectedServer := pg.serverSelector.Selected()

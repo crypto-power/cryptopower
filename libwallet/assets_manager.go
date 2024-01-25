@@ -981,7 +981,10 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 	// both will get the ntfn?
 	<-shutdownChan // wait for shutdown
 
-	// TODO: Set mgr.dexc to nil and unregister the custom wallet constructors!
+	mgr.dexcMtx.Lock()
+	mgr.dexc = nil
+	// TODO: Also unregister the custom wallet constructors!
+	mgr.dexcMtx.Unlock()
 
 	// Delete dex client db.
 	return os.Remove(dexDBFile)
