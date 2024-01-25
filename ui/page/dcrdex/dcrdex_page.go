@@ -125,7 +125,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	} else if !pg.AssetsManager.DEXCInitialized() {
+	} else if !pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil {
 		msg = values.String(values.StrDEXInitErrorMsg)
 	}
 
