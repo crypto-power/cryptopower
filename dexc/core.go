@@ -51,8 +51,8 @@ func (dc *DEXClient) IsInitialized() bool {
 	return dc != nil && dc.Core != nil
 }
 
-func (dc *DEXClient) IsDEXPasswordSet() bool {
-	return dc.IsInitialized()
+func (dc *DEXClient) InitializedWithPassword() bool {
+	return dc.Core.IsInitialized()
 }
 
 func (dc *DEXClient) IsLoggedIn() bool {

@@ -11,7 +11,7 @@ type DEXClient interface {
 	WaitForShutdown() <-chan struct{}
 	Shutdown()
 	IsInitialized() bool
-	IsDEXPasswordSet() bool
+	InitializedWithPassword() bool
 	IsLoggedIn() bool
 	InitWithPassword(pw, seed []byte) error
 	Login(pw []byte) error

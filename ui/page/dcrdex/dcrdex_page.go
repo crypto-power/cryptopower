@@ -53,7 +53,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		materialLoader:     material.Loader(l.Theme.Base),
 	}
 
-	if dp.AssetsManager.DEXCInitialized() && dp.AssetsManager.DexClient().IsDEXPasswordSet() {
+	if dp.AssetsManager.DEXCInitialized() && dp.AssetsManager.DexClient().InitializedWithPassword() {
 		dp.isDexFirstVisit = false
 	}
 

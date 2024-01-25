@@ -15,7 +15,6 @@ import (
 	"decred.org/dcrdex/dex"
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -68,7 +67,6 @@ const (
 	onboardingPostBond
 
 	// These are sub steps.
-	onboardingStepRestore
 	onBoardingStepAddServer
 	onBoardingStepWaitForConfirmation
 )
@@ -113,8 +111,6 @@ type DEXOnboarding struct {
 
 	// Sub Step Restore
 	seedEditor cryptomaterial.Editor
-	restoreBtn cryptomaterial.Button
-	didRestore bool
 
 	// Step Choose Server
 	serverDropDown *cryptomaterial.DropDown
@@ -157,8 +153,7 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 		scrollContainer:       &widget.List{List: layout.List{Axis: layout.Vertical, Alignment: layout.Middle}},
 		passwordEditor:        newPasswordEditor(th, values.String(values.StrNewPassword)),
 		confirmPasswordEditor: newPasswordEditor(th, values.String(values.StrConfirmPassword)),
-		seedEditor:            newTextEditor(l.Theme, values.String(values.StrRestorationSeed), values.String(values.StrRestorationSeed), true),
-		restoreBtn:            th.Button(values.String(values.StrRestore)),
+		seedEditor:            newTextEditor(l.Theme, values.String(values.StrOptionalRestorationSeed), values.String(values.StrOptionalRestorationSeed), true),
 		addServerBtn:          th.NewClickable(false),
 		bondServer:            &bondServerInfo{},
 		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
@@ -184,10 +179,6 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 		},
 
 		// Sub steps:
-		onboardingStepRestore: {
-			parentStep: onboardingSetPassword,
-			stepFn:     pg.subStepRestore,
-		},
 		onBoardingStepAddServer: {
 			parentStep: onboardingChooseServer,
 			stepFn:     pg.subStepAddServer,
@@ -200,7 +191,7 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 
 	pg.currentStep = onboardingSetPassword
 	dexc := pg.AssetsManager.DexClient()
-	if dexc.IsDEXPasswordSet() {
+	if dexc.InitializedWithPassword() {
 		pg.setAddServerStep()
 	}
 
@@ -402,7 +393,7 @@ func (pg *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 
 // stepSetPassword returns the "Set Password" form.
 func (pg *DEXOnboarding) stepSetPassword(gtx C) D {
-	isPassSet := pg.AssetsManager.DexClient().IsDEXPasswordSet()
+	isPassSet := pg.AssetsManager.DexClient().InitializedWithPassword()
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return centerLayout(gtx, values.MarginPadding20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrSetTradePassword)).Layout)
@@ -418,24 +409,8 @@ func (pg *DEXOnboarding) stepSetPassword(gtx C) D {
 			pg.passwordEditor.Editor.ReadOnly = isPassSet
 			return layout.Inset{Top: dp16}.Layout(gtx, pg.confirmPasswordEditor.Layout)
 		}),
-		layout.Rigid(pg.formFooterButtons),
-	)
-
-	return layoutFlex
-}
-
-func (pg *DEXOnboarding) subStepRestore(gtx C) D {
-	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return centerLayout(gtx, values.MarginPadding20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrRestoreDEX)).Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Body1(values.String(values.StrRestoreDEXMsg))
-			lbl.Alignment = text.Middle
-			return centerLayout(gtx, 0, dp16, lbl.Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: dp5, Bottom: dp10}.Layout(gtx, pg.seedEditor.Layout)
+			return layout.Inset{Top: dp16}.Layout(gtx, pg.seedEditor.Layout)
 		}),
 		layout.Rigid(pg.formFooterButtons),
 	)
@@ -517,19 +492,14 @@ func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 	dexc := pg.AssetsManager.DexClient()
 	nextBtnText := values.String(values.StrNext)
-	addBackBtn, nextBtnEnabled, backBtnEnabled, hideFooter, showRestoreBtn := true, true, true, false, false
+	addBackBtn, nextBtnEnabled, backBtnEnabled, hideFooter := true, true, true, false
 	switch pg.currentStep {
 	case onboardingSetPassword:
 		addBackBtn = false
-		showRestoreBtn = true
-		nextBtnText = values.String(values.StrNewDEX)
-	case onboardingStepRestore:
 	case onboardingChooseServer, onBoardingStepAddServer:
-		backBtnEnabled = !dexc.IsDEXPasswordSet() || pg.dexServerWithEffectTier() != ""
+		backBtnEnabled = !dexc.InitializedWithPassword() || pg.dexServerWithEffectTier() != ""
 		if pg.currentStep == onBoardingStepAddServer && pg.wantCustomServer {
 			nextBtnText = values.String(values.StrAdd)
-			addBackBtn = false
-		} else if pg.didRestore {
 			addBackBtn = false
 		}
 	case onboardingPostBond:
@@ -549,7 +519,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 	dp10 := values.MarginPadding10
 	var nextFlex float32 = 1.0
 	var goBackFlex float32
-	if addBackBtn || showRestoreBtn {
+	if addBackBtn {
 		nextFlex = 0.5
 		goBackFlex = 0.5
 	}
@@ -565,12 +535,8 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Flexed(goBackFlex, func(gtx C) D {
-			if !showRestoreBtn && (!addBackBtn || hideFooter) {
+			if !addBackBtn || hideFooter {
 				return D{}
-			}
-
-			if showRestoreBtn {
-				return layout.Inset{Right: dp10}.Layout(gtx, pg.restoreBtn.Layout)
 			}
 
 			pg.goBackBtn.SetEnabled(backBtnEnabled)
@@ -590,7 +556,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 			}
 
 			pg.nextBtn.SetEnabled(nextBtnEnabled)
-			if !addBackBtn && !showRestoreBtn {
+			if !addBackBtn {
 				return pg.nextBtn.Layout(gtx)
 			}
 			return layout.Inset{Left: dp10}.Layout(gtx, pg.nextBtn.Layout)
@@ -898,17 +864,8 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.serverCertEditor.SetError("")
 	}
 
-	if pg.restoreBtn.Clicked() {
-		ok := pg.validPasswordInputs()
-		if ok {
-			pg.currentStep = onboardingStepRestore
-		}
-	}
-
 	if pg.goBackBtn.Clicked() {
 		switch pg.currentStep {
-		case onboardingStepRestore:
-			pg.currentStep = onboardingSetPassword
 		case onboardingPostBond:
 			if pg.wantCustomServer {
 				pg.currentStep = onBoardingStepAddServer
@@ -949,13 +906,13 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 	if (pg.nextBtn.Clicked() || isSubmit) && !pg.isLoading {
 		dexc := pg.AssetsManager.DexClient()
 		switch pg.currentStep {
-		case onboardingSetPassword, onboardingStepRestore:
+		case onboardingSetPassword:
 			ok := pg.validPasswordInputs()
 			if !ok {
 				return
 			}
 
-			if pg.currentStep == onboardingStepRestore {
+			if pg.seedEditor.Editor.Text() != "" {
 				pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
 
 				// Validate seed and initialize dex client.
@@ -972,7 +929,6 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 					return
 				}
 
-				pg.didRestore = true
 				pg.isLoading = true
 				go func() { // Login now.
 					err := dexc.Login(pg.dexPass)
@@ -1034,7 +990,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			// Initialize with password now, if dex password has not been
 			// initialized.
 			pg.isLoading = true
-			if !dexc.IsDEXPasswordSet() {
+			if !dexc.InitializedWithPassword() {
 				go func() {
 					// Set password.
 					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
@@ -1114,7 +1070,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	var err error
 	if pg.existingDEXServer != "" { // Already registered just want to post bond.
 		xc, err = dexClient.Exchange(pg.bondServer.url)
-	} else if dexClient.IsDEXPasswordSet() {
+	} else if dexClient.InitializedWithPassword() {
 		var paid bool
 		xc, paid, err = dexClient.DiscoverAccount(pg.bondServer.url, pg.dexPass, pg.bondServer.cert)
 		canTrade := paid && xc.ConnectionStatus == comms.Connected && (xc.Auth.EffectiveTier > 0 || len(xc.Auth.PendingBonds) > 0)
