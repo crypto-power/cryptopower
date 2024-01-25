@@ -994,8 +994,10 @@ const (
 	StrIntegratedExchange              = "integratedExchange"
 	StrSeedWords                       = "seedWords"
 	StrAllservers                      = "allservers"
+	StrReset                           = "reset"
 	StrResetDEXData                    = "resetDEXData"
 	StrResetDEXDataWarning             = "resetDEXDataWarning"
+	StrDEXResetSuccessful              = "dexResetSuccessful"
 	StrNoRecentProposals               = "noRecentProposals"
 	StrRecommendedModalBody            = "recommendedModalBody"
 	StrAdvancedModalBody               = "advancedModalBody"
@@ -1037,8 +1039,7 @@ const (
 	StrRestoreDEX                      = "restoreDEX"
 	StrRestoreDEXMsg                   = "restoreDEXMsg"
 	StrRestorationSeed                 = "restorationSeed"
-	StrDEXResetSuccessful              = "dexResetSuccessful"
-	StrReset                           = "reset"
+	StrOptionalRestorationSeed         = "optionalRestorationSeed"
 
 	StrLoginDEXForActiveOrdersOrExpiredBonds = "loginDEXForActiveOrdersOrExpiredBonds"
 )

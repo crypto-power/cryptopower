@@ -66,7 +66,7 @@ type AppSettingsPage struct {
 	deleteDEX               *cryptomaterial.Clickable
 	backupDEX               *cryptomaterial.Clickable
 	copyDEXSeed             cryptomaterial.Button
-	dexSeed                 string
+	dexSeed                 dex.Bytes
 
 	governanceAPI *cryptomaterial.Switch
 	exchangeAPI   *cryptomaterial.Switch
@@ -301,7 +301,7 @@ func (pg *AppSettingsPage) general() layout.Widget {
 					return pg.subSectionSwitch(gtx, values.String(values.StrTxNotification), pg.transactionNotification)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if !pg.AssetsManager.DEXCInitialized() || len(pg.AssetsManager.DexClient().Exchanges()) == 0 {
+					if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
 						return D{}
 					}
 
@@ -420,7 +420,7 @@ func (pg *AppSettingsPage) debug() layout.Widget {
 					return pg.clickableRow(gtx, viewLogRow)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().IsDEXPasswordSet() {
+					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
 						return D{}
 					}
 
@@ -708,32 +708,28 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.backupDEX.Clicked() {
-		// Show modal asking for dex password and then reveal the seeds.
+		// Show modal asking for dex password and then reveal the seed.
 		dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			EnableName(false).
 			EnableConfirmPassword(false).
 			Title(values.String(values.StrDexPassword)).
 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-				var err error
-				defer func() {
-					if err != nil {
-						pm.SetError(err.Error())
-						pm.SetLoading(false)
-					}
-				}()
-
 				dexc := pg.AssetsManager.DexClient()
-				err = dexc.Login([]byte(password))
+				err := dexc.Login([]byte(password))
 				if err != nil {
+					pm.SetError(err.Error())
+					pm.SetLoading(false)
 					return false
 				}
 
-				seed, err := dexc.ExportSeed([]byte(password))
+				pg.dexSeed, err = dexc.ExportSeed([]byte(password))
 				if err != nil {
+					pm.SetError(err.Error())
+					pm.SetLoading(false)
 					return false
 				}
 
-				pg.showDEXSeedModal(seed)
+				pg.showDEXSeedModal()
 				return err == nil
 			})
 
@@ -744,7 +740,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 
 func (pg *AppSettingsPage) handleCopyEvent(gtx C) {
 	if pg.copyDEXSeed.Clicked() {
-		clipboard.WriteOp{Text: pg.dexSeed}.Add(gtx.Ops)
+		clipboard.WriteOp{Text: pg.dexSeed.String()}.Add(gtx.Ops)
 		pg.copyDEXSeed.Text = values.String(values.StrCopied)
 		pg.copyDEXSeed.Color = pg.Theme.Color.Success
 		time.AfterFunc(time.Second*3, func() {
@@ -755,23 +751,25 @@ func (pg *AppSettingsPage) handleCopyEvent(gtx C) {
 	}
 }
 
-func (pg *AppSettingsPage) showDEXSeedModal(seed dex.Bytes) {
-	defer utils.ZeroBytes(seed)
-	pg.dexSeed = stringifySeed(seed)
+func (pg *AppSettingsPage) showDEXSeedModal() {
 	seedModal := modal.NewSuccessModal(pg.Load, values.String(values.StrDEXSeed), modal.DefaultClickFunc()).
 		UseCustomWidget(func(gtx C) D {
-			seedText := pg.Theme.Body1(pg.dexSeed)
+			seedText := pg.Theme.Body1(formatDEXSeedAsString(pg.dexSeed))
 			seedText.Alignment = text.Middle
 			seedText.Color = pg.Theme.Color.GrayText2
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(seedText.Layout),
 				layout.Rigid(pg.copyDEXSeed.Layout),
 			)
+		}).
+		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			utils.ZeroBytes(pg.dexSeed)
+			return true
 		})
 	pg.ParentWindow().ShowModal(seedModal)
 }
 
-func stringifySeed(seed dex.Bytes) string {
+func formatDEXSeedAsString(seed dex.Bytes) string {
 	chunkRegex := regexp.MustCompile(`.{1,32}`) // 64 bytes, 128 hex characters.
 	chunks := chunkRegex.FindAllString(seed.String(), -1)
 
@@ -848,7 +846,7 @@ func (pg *AppSettingsPage) updatePrivacySettings() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) OnNavigatedFrom() {
-	pg.dexSeed = "" // clear
+	utils.ZeroBytes(pg.dexSeed)
 }
 
 func (pg *AppSettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, isChecked bool) {

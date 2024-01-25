@@ -224,7 +224,10 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 			case <-pg.ctx.Done():
 				return
 			case n := <-noteFeed.C:
-				if n == nil {
+				// Always check if the dex client is ready. We want to exit if
+				// there
+			// was a reset.
+				if n == nil || !pg.AssetsManager.DEXCInitialized(){
 					return
 				}
 
@@ -290,7 +293,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 }
 
 func (pg *DEXMarketPage) isDEXReset() bool {
-	if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().IsDEXPasswordSet() { // dexc was reset
+	if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() { // dexc was reset
 		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
 		return true
 	}

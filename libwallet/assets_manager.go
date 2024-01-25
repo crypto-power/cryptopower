@@ -929,7 +929,6 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 		return
 	}
 
-	// Prevent multiple initialization.
 	mgr.dexcCtx = ctx
 	mgr.startingDEX.Store(true)
 	defer func() {
