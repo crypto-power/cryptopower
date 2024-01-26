@@ -805,8 +805,7 @@ func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
 	assetType := asset.GetAssetType()
 	icon := pg.Theme.AssetIcon(assetType)
 	bondAsset := pg.bondServer.bondAssets[assetType]
-	bondsFeeBuffer := pg.dexc.BondsFeeBuffer(bondAsset.ID)
-	amt := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
+	bondsFeeBuffer := pg.AssetsManager.DexClient().BondsFeeBuffer(bondAsset.ID)
 	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if icon == nil {
@@ -814,8 +813,13 @@ func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
 			}
 			return layout.Inset{Right: 5}.Layout(gtx, icon.Layout20dp)
 		}),
-		layout.Rigid(pg.Theme.Label(values.TextSize16, fmt.Sprintf("%v", asset.ToAmount(int64(amt)))).Layout),
+		layout.Rigid(pg.Theme.Label(values.TextSize16, calculateBondAmount(asset, bondAsset, pg.newTier, bondsFeeBuffer)).Layout),
 	)
+}
+
+func calculateBondAmount(asset sharedW.Asset, bondAsset *core.BondAsset, tier int, bondsFeeBuffer uint64) string {
+	amt := uint64(tier)*bondAsset.Amt + bondsFeeBuffer
+	return fmt.Sprintf("%v", asset.ToAmount(int64(amt)))
 }
 
 // HandleUserInteractions is called just before Layout() to determine if any

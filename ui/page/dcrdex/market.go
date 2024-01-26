@@ -135,7 +135,7 @@ type orderbookInfo struct {
 
 type clickableOrder struct {
 	*core.Order
-	cancelBtn *cryptomaterial.Button
+	cancelBtn *cryptomaterial.Clickable
 }
 
 // NewDEXMarketPage prepares and initializes a *DEXMarketPage. Specify
@@ -721,14 +721,32 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	var overlayMsg string
 	var actionBtn *cryptomaterial.Button
 	xc := pg.exchange()
-	hasZeroEffectiveTier := pg.dexc.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
-	if pg.dexc.IsLoggedIn() && pg.noSupportedMarket() {
+	dexClient := pg.AssetsManager.DexClient()
+	hasZeroEffectiveTier := dexClient.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
+	if dexClient.IsLoggedIn() && pg.noSupportedMarket() {
 		overlaySet = true
 		overlayMsg = values.String(values.StrNoSupportedMarketMsg)
 	} else if hasZeroEffectiveTier { // Need to post bond to trade.
 		overlaySet = true
 		overlayMsg = values.String(values.StrPostBondMsg)
-		actionBtn = &pg.postBondBtn
+		targetTier := xc.Auth.TargetTier
+		if targetTier > 0 { // Maintenance enabled
+			bondAssetID := xc.Auth.BondAssetID
+			setting, err := dexClient.WalletSettings(bondAssetID)
+			if err != nil {
+				pg.notifyError(err.Error())
+			} else {
+				// Wallet is been used by the dex client so it exists, can ignore errors.
+				walletID, _ := strconv.Atoi(setting[dexc.WalletIDConfigKey])
+				accountNumber, _ := strconv.Atoi(setting[dexc.WalletAccountNumberConfigKey])
+				asset := pg.AssetsManager.WalletWithID(walletID)
+				accountName, _ := asset.AccountName(int32(accountNumber))
+				bondAmtString := calculateBondAmount(asset, xc.BondAssets[convertAssetIDToAssetType(bondAssetID).ToStringLower()], int(targetTier), dexClient.BondsFeeBuffer(bondAssetID))
+				overlayMsg = values.StringF(values.StrBondPostingInProgressMsg, asset.GetAssetType(), asset.GetWalletName(), accountName, bondAmtString)
+			}
+		} else {
+			actionBtn = &pg.postBondBtn
+		}
 	} else if missingMarketWalletType := pg.missingMarketWallet(); missingMarketWalletType != "" {
 		overlaySet = true
 		overlayMsg = values.StringF(values.StrMissingDEXWalletMsg, missingMarketWalletType, missingMarketWalletType)
@@ -1286,7 +1304,7 @@ func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.D
 				lb.Color = pg.Theme.Color.Text
 				return lb.Layout(gtx)
 			} else if showCancelBtn {
-				return pg.orders[orderIndex].cancelBtn.Layout(gtx)
+				return pg.orders[orderIndex].cancelBtn.Layout(gtx, pg.Theme.Icons.FailedIcon.Layout24dp)
 			}
 
 			return D{}
@@ -1776,14 +1794,13 @@ func (pg *DEXMarketPage) refreshOrders() {
 	pg.orders = nil
 	for i := range orders {
 		ord := &clickableOrder{Order: orders[i]}
-		if ord.Status == order.OrderStatusExecuted && anyMatchActive(ord.Matches) != pg.openOrdersDisplayed /* display active orders on open order view */ {
+		hasActiveMatch := anyMatchActive(ord.Matches)
+		if ord.Status == order.OrderStatusExecuted && hasActiveMatch != pg.openOrdersDisplayed /* display active orders on open order view */ {
 			continue // skip order
 		}
 
-		if pg.openOrdersDisplayed && !ord.Cancelling {
-			btn := pg.Theme.DangerButton(values.String(values.StrCancel))
-			btn.Margin = layout.Inset{}
-			ord.cancelBtn = &btn
+		if pg.openOrdersDisplayed && !ord.Cancelling && !hasActiveMatch {
+			ord.cancelBtn = pg.Theme.NewClickable(false)
 		}
 
 		pg.orders = append(pg.orders, ord)
