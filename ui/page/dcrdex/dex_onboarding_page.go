@@ -1305,7 +1305,6 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 	}
 
 	pg.waitForConfirmationAndListenForBlockNotifications()
-	return
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {
