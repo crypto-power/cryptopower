@@ -234,10 +234,7 @@ func (pg *DEXOnboarding) OnNavigatedTo() {
 func (pg *DEXOnboarding) OnNavigatedFrom() {
 	pg.cancelCtx()
 
-	// Empty dex pass
-	for i := range pg.dexPass {
-		pg.dexPass[i] = 0
-	}
+	utils.ZeroBytes(pg.dexPass) // Empty dex pass
 
 	// Remove bond confirmation listener if any.
 	if pg.bondSourceAccountSelector != nil {
