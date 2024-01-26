@@ -76,7 +76,7 @@ func (cm *CreateWatchOnlyModal) EnableName(enable bool) *CreateWatchOnlyModal {
 	return cm
 }
 
-func (cm *CreateWatchOnlyModal) SetLoading(loading bool) {
+func (cm *CreateWatchOnlyModal) setLoading(loading bool) {
 	cm.isLoading = loading
 	cm.Modal.SetDisabled(loading)
 }
@@ -140,10 +140,14 @@ func (cm *CreateWatchOnlyModal) Handle() {
 			return
 		}
 
-		cm.SetLoading(true)
-		if cm.callback(cm.walletName.Editor.Text(), cm.extendedPubKey.Editor.Text(), cm) {
-			cm.Dismiss()
-		}
+		cm.setLoading(true)
+		go func() {
+			if cm.callback(cm.walletName.Editor.Text(), cm.extendedPubKey.Editor.Text(), cm) {
+				cm.Dismiss()
+				return
+			}
+			cm.setLoading(false)
+		}()
 	}
 
 	cm.btnNegative.SetEnabled(!cm.isLoading)

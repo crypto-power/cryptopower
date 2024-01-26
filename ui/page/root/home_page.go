@@ -1034,7 +1034,6 @@ func (hp *HomePage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUn
 			err := wal.UnlockWallet(password)
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 			unlock(true)

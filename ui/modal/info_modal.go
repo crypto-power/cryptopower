@@ -181,7 +181,7 @@ func (in *InfoModal) CheckBox(checkbox cryptomaterial.CheckBoxStyle, mustBeCheck
 	return in
 }
 
-func (in *InfoModal) SetLoading(loading bool) {
+func (in *InfoModal) setLoading(loading bool) {
 	in.isLoading = loading
 	in.Modal.SetDisabled(loading)
 }
@@ -298,12 +298,13 @@ func (in *InfoModal) Handle() {
 			isChecked = in.checkbox.CheckBox.Value
 		}
 
-		in.SetLoading(true)
+		in.setLoading(true)
 		go func() {
 			if in.positiveButtonClicked(isChecked, in) {
 				in.Dismiss()
+				return
 			}
-			in.SetLoading(false)
+			in.setLoading(false)
 		}()
 	}
 

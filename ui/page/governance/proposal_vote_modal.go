@@ -155,7 +155,6 @@ func (vm *voteModal) sendVotes() {
 			err := vm.AssetsManager.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 			vm.Dismiss()
