@@ -287,7 +287,6 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 			}
 
 			pm.SetError(err.Error())
-			pm.SetLoading(false)
 			return false
 		}).SetCancelable(false)
 	dexPasswordModal.SetPasswordTitleVisibility(false)
@@ -1591,7 +1590,6 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 				defer func() {
 					if err != nil {
 						pm.SetError(err.Error())
-						pm.SetLoading(false)
 					}
 					pg.showLoader = false
 				}()
@@ -1702,7 +1700,6 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 			err := pg.createMissingMarketWallet(missingWallet, dexPass, walletPass)
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 
@@ -1720,7 +1717,6 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 			err := pg.AssetsManager.DexClient().Login([]byte(password))
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 

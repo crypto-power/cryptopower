@@ -69,7 +69,7 @@ func (scm *sendConfirmModal) SetError(err string) {
 	scm.passwordEditor.SetError(values.TranslateErr(err))
 }
 
-func (scm *sendConfirmModal) SetLoading(loading bool) {
+func (scm *sendConfirmModal) setLoading(loading bool) {
 	scm.isSending = loading
 	scm.Modal.SetDisabled(loading)
 }
@@ -82,12 +82,12 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 		return
 	}
 
-	scm.SetLoading(true)
+	scm.setLoading(true)
 	go func() {
+		defer scm.setLoading(false)
 		_, err := scm.asset.Broadcast(password, scm.txLabel)
 		if err != nil {
 			scm.SetError(err.Error())
-			scm.SetLoading(false)
 			return
 		}
 		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), modal.DefaultClickFunc())

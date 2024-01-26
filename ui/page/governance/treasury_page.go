@@ -357,7 +357,6 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 			err := pg.selectedDCRWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 
