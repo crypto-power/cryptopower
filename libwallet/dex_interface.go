@@ -30,6 +30,7 @@ type DEXClient interface {
 	ExportSeed(pw []byte) ([]byte, error)
 	SyncBook(dex string, base, quote uint32) (*orderbook.OrderBook, core.BookFeed, error)
 	Orders(filter *core.OrderFilter) ([]*core.Order, error)
+	ActiveOrders() (map[string][]*core.Order, map[string][]*core.InFlightOrder, error)
 	TradeAsync(pw []byte, form *core.TradeForm) (*core.InFlightOrder, error)
 	WalletState(assetID uint32) *core.WalletState
 	WalletSettings(assetID uint32) (map[string]string, error)
