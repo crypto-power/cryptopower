@@ -52,7 +52,7 @@ func (dc *DEXClient) IsInitialized() bool {
 }
 
 func (dc *DEXClient) InitializedWithPassword() bool {
-	return dc.Core.IsInitialized()
+	return dc.IsInitialized() && dc.Core.IsInitialized()
 }
 
 func (dc *DEXClient) IsLoggedIn() bool {
