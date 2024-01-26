@@ -24,7 +24,7 @@ import (
 
 type TxAuthor struct {
 	sourceAccountNumber uint32
-	destinations        []sharedW.TransactionDestination
+	destinations        map[int]*sharedW.TransactionDestination
 	changeAddress       string
 	changeDestination   *sharedW.TransactionDestination
 
@@ -41,7 +41,7 @@ func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.Un
 
 	asset.TxAuthoredInfo = &TxAuthor{
 		sourceAccountNumber: uint32(sourceAccountNumber),
-		destinations:        make([]sharedW.TransactionDestination, 0),
+		destinations:        make(map[int]*sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
 		utxos:               utxos,
 	}
@@ -87,7 +87,7 @@ func (asset *Asset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
 }
 
-func (asset *Asset) AddSendDestination(address string, atomAmount int64, sendMax bool) error {
+func (asset *Asset) AddSendDestination(id int, address string, atomAmount int64, sendMax bool) error {
 	_, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -97,43 +97,42 @@ func (asset *Asset) AddSendDestination(address string, atomAmount int64, sendMax
 		return err
 	}
 
-	asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations, sharedW.TransactionDestination{
+	asset.TxAuthoredInfo.destinations[id] = &sharedW.TransactionDestination{
+		ID:         id,
 		Address:    address,
 		UnitAmount: atomAmount,
 		SendMax:    sendMax,
-	})
+	}
 	asset.TxAuthoredInfo.needsConstruct = true
 
 	return nil
 }
 
-func (asset *Asset) UpdateSendDestination(index int, address string, atomAmount int64, sendMax bool) error {
+func (asset *Asset) UpdateSendDestination(id int, address string, atomAmount int64, sendMax bool) error {
 	if err := asset.validateSendAmount(sendMax, atomAmount); err != nil {
 		return err
 	}
 
-	if len(asset.TxAuthoredInfo.destinations) < index {
-		return errors.New(utils.ErrIndexOutOfRange)
-	}
-
-	asset.TxAuthoredInfo.destinations[index] = sharedW.TransactionDestination{
+	asset.TxAuthoredInfo.destinations[id] = &sharedW.TransactionDestination{
+		ID:         id,
 		Address:    address,
 		UnitAmount: atomAmount,
 		SendMax:    sendMax,
 	}
+
 	asset.TxAuthoredInfo.needsConstruct = true
 	return nil
 }
 
-func (asset *Asset) RemoveSendDestination(index int) {
-	if len(asset.TxAuthoredInfo.destinations) > index {
-		asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations[:index], asset.TxAuthoredInfo.destinations[index+1:]...)
+func (asset *Asset) RemoveSendDestination(id int) {
+	if _, ok := asset.TxAuthoredInfo.destinations[id]; ok {
+		delete(asset.TxAuthoredInfo.destinations, id)
 		asset.TxAuthoredInfo.needsConstruct = true
 	}
 }
 
-func (asset *Asset) SendDestination(atIndex int) *sharedW.TransactionDestination {
-	return &asset.TxAuthoredInfo.destinations[atIndex]
+func (asset *Asset) SendDestination(id int) *sharedW.TransactionDestination {
+	return asset.TxAuthoredInfo.destinations[id]
 }
 
 func (asset *Asset) SetChangeDestination(address string) {

@@ -131,7 +131,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, dcrWallet *dcr.Asset
 
 	// calculate max amount to be sent
 	amountAtom := sourceAccount.Balance.Spendable.ToInt() - feeAndSize.Fee.UnitValue
-	err = dcrWallet.AddSendDestination(destinationAddress, amountAtom, true)
+	err = dcrWallet.AddSendDestination(0, destinationAddress, amountAtom, true)
 	if err != nil {
 		return err
 	}

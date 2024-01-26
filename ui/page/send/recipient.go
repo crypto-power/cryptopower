@@ -18,6 +18,7 @@ import (
 
 type recipient struct {
 	*load.Load
+	id int
 
 	deleteBtn   *cryptomaterial.Clickable
 	description cryptomaterial.Editor
@@ -31,11 +32,12 @@ type recipient struct {
 	pageParam       getPageFields
 }
 
-func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields) *recipient {
+func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields, id int) *recipient {
 	rp := &recipient{
 		Load:           l,
 		selectedWallet: selectedWallet,
 		pageParam:      pageParam,
+		id:             id,
 	}
 
 	assetType := rp.selectedWallet.GetAssetType()
@@ -61,6 +63,11 @@ func (rp *recipient) onAddressChanged(addressChanged func()) {
 
 func (rp *recipient) onAmountChanged(amountChanged func()) {
 	rp.amount.amountChanged = amountChanged
+}
+
+func (rp *recipient) cleanAllErrors() {
+	rp.amount.setError("")
+	rp.sendDestination.setError("")
 }
 
 func (rp *recipient) setDestinationAssetType(assetType libUtil.AssetType) {
