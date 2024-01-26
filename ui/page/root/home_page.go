@@ -8,6 +8,7 @@ import (
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -168,6 +169,132 @@ func (hp *HomePage) OnNavigatedTo() {
 	}
 
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
+}
+
+// initDEX initializes a new dex client if dex is not ready.
+func (hp *HomePage) initDEX() {
+	if hp.AssetsManager.DexcInitialized() {
+		return // do nothing
+	}
+
+	go func() {
+		hp.AssetsManager.InitializeDEX(hp.dexCtx)
+
+		// If all went well, the dex client must be ready.
+		dexClient := hp.AssetsManager.DexClient()
+		if dexClient == nil {
+			return // nothing to do
+		}
+
+		// Wait until dex is ready
+		<-dexClient.Ready()
+
+		activeOrders, _, err := dexClient.ActiveOrders() // we just initialized dexc, no inflight order expected
+		if err != nil {
+			log.Errorf("dexClient.ActiveOrders error: %w", err)
+		}
+
+		expiredBonds := dexClient.ExpiredBonds()
+		if len(activeOrders) == 0 && len(expiredBonds) == 0 {
+			return // nothing to do.
+		}
+
+		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
+		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
+
+		loginModal := modal.NewCustomModal(hp.Load).
+			Title(values.String(values.StrLoginWithDEXPassword)).
+			UseCustomWidget(func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrdersOrExpiredBonds)).Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return dexPassEditor.Layout(gtx)
+					}),
+				)
+			}).
+			SetPositiveButtonText(values.String(values.StrLogin)).
+			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				dexPassEditor.SetError("")
+				err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
+				if err != nil {
+					dexPassEditor.SetError(err.Error())
+					return false
+				}
+
+				// DEX client has active orders or expired bonds, retrieve the
+				// wallets involved and ensure they are synced or syncing.
+				walletsToSyncMap := make(map[uint32]*struct{})
+				for _, orders := range activeOrders {
+					for _, ord := range orders {
+						walletsToSyncMap[ord.Base()] = &struct{}{}
+						walletsToSyncMap[ord.Quote()] = &struct{}{}
+					}
+				}
+
+				for _, bonds := range expiredBonds {
+					for _, bond := range bonds {
+						walletsToSyncMap[bond.AssetID] = &struct{}{}
+					}
+				}
+
+				var walletsToSync []sharedW.Asset
+				for assetID := range walletsToSyncMap {
+					walletID, err := dexClient.WalletIDForAsset(assetID)
+					if err != nil {
+						log.Errorf("dexClient.WalletIDForAsset(%d) error: %w", assetID, err)
+						continue
+					}
+
+					if walletID == nil {
+						continue // impossible but better safe than sorry
+					}
+
+					wallet := hp.AssetsManager.WalletWithID(*walletID)
+					if wallet == nil { // impossible but better safe than sorry
+						log.Error("dex wallet with ID %d is missing", walletID)
+						continue
+					}
+
+					if wallet.IsSynced() || wallet.IsSyncing() {
+						continue // ok
+					}
+
+					walletsToSync = append(walletsToSync, wallet)
+				}
+
+				if len(walletsToSync) == 0 {
+					return true
+				}
+
+				walletSyncRequestModal := modal.NewCustomModal(hp.Load).
+					Title(values.String(values.StrWalletsNeedToSync)).
+					Body(values.String(values.StrWalletsNeedToSyncMsg)).
+					SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
+					SetPositiveButtonText(values.String(values.StrOkaySync)).
+					SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+						if !hp.isConnected.Load() {
+							// Notify user and return.
+							hp.Toast.NotifyError(values.String(values.StrNotConnected))
+							return false
+						}
+
+						for _, w := range walletsToSync {
+							err := w.SpvSync()
+							if err != nil {
+								log.Error(err)
+							}
+						}
+
+						return true
+					})
+				hp.ParentWindow().ShowModal(walletSyncRequestModal)
+				return true
+			}).
+			SetCancelable(false)
+		hp.ParentWindow().ShowModal(loginModal)
+	}()
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed

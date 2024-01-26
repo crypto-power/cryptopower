@@ -524,8 +524,6 @@ github.com/decred/dcrdata/semver v1.0.0/go.mod h1:z+nQqiAd9fYkHhBLbejysZ2FPHtgkr
 github.com/decred/dcrdata/txhelpers/v3 v3.0.4/go.mod h1:tKEDhoO+TbYrFrx+5qKZDxcla8ELQFYs4f5+8gL4cuY=
 github.com/decred/dcrdata/v8 v8.0.0-20230617164141-fa4d8e1b4e8e h1:BETBkx4F+ozHPju0Fwwdblv0t0odBhvzlkIk9ejGNk8=
 github.com/decred/dcrdata/v8 v8.0.0-20230617164141-fa4d8e1b4e8e/go.mod h1:u7+CQr/8aGJpmq8Wrgff4XejwyxwQp2MWTwndKc9dSQ=
-github.com/decred/dcrdex v0.0.0-20240112112457-2201c692dc59 h1:HPpYDli0foZ7ctMmn75WUd87S46qTB8SfTftl9dsNnM=
-github.com/decred/dcrdex v0.0.0-20240112112457-2201c692dc59/go.mod h1:2U+b4uDx4ZbAkk/pLaa2rv57G23XTyEe0Sw7Um+AdNE=
 github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e h1:sNDR7vx6gaA3WD+WoEofTvtdjfwHAiogtjB3kt8iFco=
 github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e/go.mod h1:IyZnyBE3E6RBFsEjwEs21FrO/UsrLrL15hUnpZZQxpU=
 github.com/decred/dcrwallet v1.2.2/go.mod h1:BrSus0F+Rx8UhvPNBfuRMIjRJBNrW2sLspN9iQR5hm8=
@@ -1580,6 +1578,8 @@ github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGr
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
+github.com/ukane-philemon/dcrdex v0.0.0-20240123003034-3f8508fea639 h1:CWRRlD0T9X1DCkEXTMc2i+2I56qeydEkvYnoUethenw=
+github.com/ukane-philemon/dcrdex v0.0.0-20240123003034-3f8508fea639/go.mod h1:2U+b4uDx4ZbAkk/pLaa2rv57G23XTyEe0Sw7Um+AdNE=
 github.com/ulikunitz/xz v0.5.6/go.mod h1:2bypXElzHzzJZwzH67Y6wb67pO62Rzfn7BSiF4ABRW8=
 github.com/ulikunitz/xz v0.5.7/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ultraware/funlen v0.0.3/go.mod h1:Dp4UiAus7Wdb9KUZsYWZEWiRzGuM2kXM1lPbfaF6xhA=
