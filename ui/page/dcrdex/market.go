@@ -191,14 +191,6 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 
 	pg.setBuyOrSell()
 
-	// Ensure dex client is ready.
-	pg.showLoader = true
-	go func() {
-		<-pg.AssetsManager.DexClient().Ready()
-		pg.showLoader = false
-		pg.ParentWindow().Reload()
-	}()
-
 	return pg
 }
 
@@ -207,22 +199,28 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) OnNavigatedTo() {
-	if pg.isDEXReset() {
+	if pg.isDEXReset(false) {
 		return
 	}
 
 	pg.ctx, pg.cancelCtx = context.WithCancel(context.Background())
 
+	pg.showLoader = true
 	dexc := pg.AssetsManager.DexClient()
 	noteFeed := dexc.NotificationFeed()
 	go func() {
+		// Ensure dex client is ready.
+		<-dexc.Ready()
+		pg.showLoader = false
+		pg.ParentWindow().Reload()
+
 		defer func() {
 			noteFeed.ReturnFeed()
 		}()
 		for {
 			// Always check if the dex client is ready. We want to exit if there
 			// was a reset.
-			if !pg.AssetsManager.DEXCInitialized() {
+			if pg.isDEXReset(false) {
 				return
 			}
 
@@ -295,9 +293,11 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
-func (pg *DEXMarketPage) isDEXReset() bool {
+func (pg *DEXMarketPage) isDEXReset(closePage bool) bool {
 	if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() { // dexc was reset
-		pg.ParentNavigator().CloseCurrentPage()
+		if closePage {
+			pg.ParentNavigator().CloseCurrentPage()
+		}
 		return true
 	}
 	return false
@@ -430,7 +430,7 @@ func (pg *DEXMarketPage) listenForOrderbookNotifications() {
 		pg.closeAndResetOrderbookListener()
 	}()
 	for {
-		if !pg.AssetsManager.DEXCInitialized() {
+		if pg.isDEXReset(false) {
 			return
 		}
 
@@ -527,7 +527,7 @@ func (pg *DEXMarketPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) Layout(gtx C) D {
-	if pg.isDEXReset() {
+	if pg.isDEXReset(true) {
 		return D{}
 	}
 
@@ -1371,7 +1371,7 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) HandleUserInteractions() {
-	if pg.isDEXReset() {
+	if pg.isDEXReset(false) {
 		return
 	}
 

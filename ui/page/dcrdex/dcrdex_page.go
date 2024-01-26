@@ -90,7 +90,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 
 		showOnBoardingPage := true
 		if len(dexc.Exchanges()) != 0 { // has at least one exchange
-			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager)
+			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager, "")
 			showOnBoardingPage = pendingBond != nil
 		}
 
@@ -182,9 +182,9 @@ func (pg *DEXPage) OnNavigatedFrom() {}
 
 // pendingBondConfirmation is a convenience function based on arbitrary
 // heuristics to determine when to show bond confirmation step.
-func pendingBondConfirmation(am *libwallet.AssetsManager) (string, *core.BondAsset, *core.PendingBondState) {
+func pendingBondConfirmation(am *libwallet.AssetsManager, host string) (string, *core.BondAsset, *core.PendingBondState) {
 	for _, xc := range am.DexClient().Exchanges() {
-		if len(xc.Auth.PendingBonds) == 0 {
+		if host != "" && xc.Host != host || len(xc.Auth.PendingBonds) == 0 {
 			continue
 		}
 

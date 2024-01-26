@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"decred.org/dcrdex/client/comms"
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	"gioui.org/font"
@@ -188,8 +187,7 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 	}
 
 	pg.currentStep = onboardingSetPassword
-	dexc := pg.AssetsManager.DexClient()
-	if dexc.InitializedWithPassword() {
+	if pg.AssetsManager.DEXCInitialized() && pg.AssetsManager.DexClient().InitializedWithPassword() {
 		pg.setAddServerStep()
 	}
 
@@ -202,13 +200,6 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 	// Set defaults.
 	pg.newTier = minimumBondStrength
 	pg.bondStrengthEditor.Editor.SetText(fmt.Sprintf("%d", minimumBondStrength))
-
-	pg.isLoading = true
-	go func() {
-		<-dexc.Ready()
-		pg.isLoading = false
-	}()
-
 	return pg
 }
 
@@ -218,12 +209,19 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) OnNavigatedTo() {
 	if !pg.AssetsManager.DEXCInitialized() {
-		pg.ParentNavigator().CloseCurrentPage()
 		return
 	}
 
+	pg.isLoading = true
+	dexc := pg.AssetsManager.DexClient()
+	go func() {
+		<-dexc.Ready()
+		pg.isLoading = false
+		pg.ParentWindow().Reload()
+	}()
+
 	pg.ctx, pg.cancelCtx = context.WithCancel(context.Background())
-	pg.checkForPendingBondPayment()
+	pg.checkForPendingBondPayment("")
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -252,6 +250,7 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) Layout(gtx C) D {
 	if !pg.AssetsManager.DEXCInitialized() {
+		pg.ParentNavigator().CloseCurrentPage()
 		return D{}
 	}
 
@@ -914,7 +913,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
 
 				// Validate seed and initialize dex client.
-				seed, ok := pg.validSeed()
+				seed, ok := pg.validateSeed()
 				if !ok {
 					pg.seedEditor.SetError(values.String(values.StrInvalidHex))
 					return
@@ -1069,12 +1068,15 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	if pg.existingDEXServer != "" { // Already registered just want to post bond.
 		xc, err = dexClient.Exchange(pg.bondServer.url)
 	} else if dexClient.InitializedWithPassword() {
-		var paid bool
-		xc, paid, err = dexClient.DiscoverAccount(pg.bondServer.url, pg.dexPass, pg.bondServer.cert)
-		canTrade := paid && xc.ConnectionStatus == comms.Connected && (xc.Auth.EffectiveTier > 0 || len(xc.Auth.PendingBonds) > 0)
-		if canTrade {
-			pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, xc.Host)) // Show market page with the server selected.
-			return
+		xc, _, err = dexClient.DiscoverAccount(pg.bondServer.url, pg.dexPass, pg.bondServer.cert)
+		if err == nil {
+			if len(xc.Auth.PendingBonds) > 0 { // has pending bonds, let's wait for them
+				pg.checkForPendingBondPayment(xc.Host)
+				return
+			} else if xc.Auth.EffectiveTier > 0 {
+				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, xc.Host)) // Show market page with the server selected.
+				return
+			}
 		}
 	} else { // New fish! Let's check for server info. Will error if DEX already exists.
 		xc, err = dexClient.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
@@ -1275,9 +1277,10 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 	}, DEXOnboardingPageID)
 }
 
-func (pg *DEXOnboarding) checkForPendingBondPayment() {
+// host is optional.
+func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 	// Check if bond has already been posted but still pending confirmation.
-	xcHost, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager)
+	xcHost, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager, host)
 	if bond == nil {
 		return
 	}
@@ -1305,6 +1308,7 @@ func (pg *DEXOnboarding) checkForPendingBondPayment() {
 	}
 
 	pg.waitForConfirmationAndListenForBlockNotifications()
+	return
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {
@@ -1369,13 +1373,13 @@ func (pg *DEXOnboarding) passwordsMatch(editors ...*widget.Editor) bool {
 }
 
 func (pg *DEXOnboarding) validPasswordInputs() bool {
-	pass := strings.TrimSpace(pg.confirmPasswordEditor.Editor.Text())
+	pass := pg.confirmPasswordEditor.Editor.Text()
 	if pass == "" {
 		pg.passwordEditor.SetError(values.String(values.StrErrPassEmpty))
 		return false
 	}
 
-	confirmPass := strings.TrimSpace(pg.confirmPasswordEditor.Editor.Text())
+	confirmPass := pg.confirmPasswordEditor.Editor.Text()
 	if confirmPass == "" {
 		pg.confirmPasswordEditor.SetError(values.String(values.StrErrPassEmpty))
 		return false
@@ -1384,7 +1388,7 @@ func (pg *DEXOnboarding) validPasswordInputs() bool {
 	return pg.passwordsMatch(pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
 }
 
-func (pg *DEXOnboarding) validSeed() (dex.Bytes, bool) {
+func (pg *DEXOnboarding) validateSeed() (dex.Bytes, bool) {
 	seedStr := regexp.MustCompile(`\s+`).ReplaceAllString(pg.seedEditor.Editor.Text(), "") // strip whitespace
 
 	// Quick seed validation.

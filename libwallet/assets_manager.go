@@ -366,9 +366,11 @@ func (mgr *AssetsManager) Shutdown() {
 	}
 
 	// Shutdown dexc before closing wallets.
-	if mgr.dexc != nil && mgr.DEXCInitialized() {
+	if mgr.DEXCInitialized() {
+		mgr.dexcMtx.RLock()
 		mgr.dexc.Shutdown()
 		mgr.dexc.WaitForShutdown()
+		mgr.dexcMtx.RUnlock()
 	}
 
 	for _, wallet := range mgr.AllWallets() {
@@ -925,13 +927,12 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	}
 
 	// Prevent multiple initialization.
-	if mgr.DEXCInitialized() || mgr.startingDEX.Load() {
+	if mgr.DEXCInitialized() || !mgr.startingDEX.CompareAndSwap(false, true) {
 		log.Debug("Attempted to reinitialize a running dex client instance")
 		return
 	}
 
 	mgr.dexcCtx = ctx
-	mgr.startingDEX.Store(true)
 	defer func() {
 		mgr.startingDEX.Store(false)
 	}()
@@ -956,25 +957,32 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 		<-mgr.dexc.WaitForShutdown()
 		mgr.dexcMtx.Lock()
 		mgr.dexc = nil
-		// TODO: Also unregister the custom wallet constructors!
 		mgr.dexcMtx.Unlock()
 	}()
 }
 
 func (mgr *AssetsManager) DeleteDEXData() error {
+	if !mgr.DEXCInitialized() {
+		return nil // nothing to do.
+	}
+
+	mgr.dexcMtx.RLock()
+	dexc := mgr.dexc
+	mgr.dexcMtx.RUnlock()
+
 	// Log out the user.
-	err := mgr.dexc.Logout()
+	err := dexc.Logout()
 	if err != nil {
 		return err
 	}
 
 	log.Debug("Shutting down DEX client and removing dex data dir....")
 
-	dexDBFile := mgr.dexc.DBPath()
-	shutdownChan := mgr.dexc.WaitForShutdown()
+	dexDBFile := dexc.DBPath()
+	shutdownChan := dexc.WaitForShutdown()
 
 	// Shutdown the DEX client.
-	mgr.dexc.Shutdown()
+	dexc.Shutdown()
 	// TODO: Verify that it is possible to listen to this channel here and in
 	// the goroutine in InitializeDEX; it's possible that only one of the
 	// listeners will receive a value. But if the channel was closed, then maybe
@@ -983,7 +991,6 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 
 	mgr.dexcMtx.Lock()
 	mgr.dexc = nil
-	// TODO: Also unregister the custom wallet constructors!
 	mgr.dexcMtx.Unlock()
 
 	// Delete dex client db.
