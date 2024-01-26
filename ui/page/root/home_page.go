@@ -2,7 +2,6 @@ package root
 
 import (
 	"context"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/dexc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -191,13 +189,13 @@ func (hp *HomePage) initDEX() {
 		// Wait until dex is ready
 		<-dexClient.Ready()
 
-		activeOrder, _ /* we just initialized dexc, no inflight order expected */, err := dexClient.ActiveOrders()
+		activeOrders, _, err := dexClient.ActiveOrders() // we just initialized dexc, no inflight order expected
 		if err != nil {
 			log.Errorf("dexClient.ActiveOrders error: %w", err)
 		}
 
 		expiredBonds := dexClient.ExpiredBonds()
-		if len(activeOrder) == 0 && len(expiredBonds) == 0 {
+		if len(activeOrders) == 0 && len(expiredBonds) == 0 {
 			return // nothing to do.
 		}
 
@@ -205,11 +203,11 @@ func (hp *HomePage) initDEX() {
 		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
 		loginModal := modal.NewCustomModal(hp.Load).
-			Title(values.String(values.StrLoginToTradeDEX)).
+			Title(values.String(values.StrLoginWithDEXPassword)).
 			UseCustomWidget(func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrders)).Layout)
+						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrdersOrExpiredBonds)).Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
 						return dexPassEditor.Layout(gtx)
@@ -228,7 +226,7 @@ func (hp *HomePage) initDEX() {
 				// DEX client has active orders or expired bonds, retrieve the
 				// wallets involved and ensure they are synced or syncing.
 				walletsToSyncMap := make(map[uint32]*struct{})
-				for _, orders := range activeOrder {
+				for _, orders := range activeOrders {
 					for _, ord := range orders {
 						walletsToSyncMap[ord.Base()] = &struct{}{}
 						walletsToSyncMap[ord.Quote()] = &struct{}{}
@@ -243,21 +241,18 @@ func (hp *HomePage) initDEX() {
 
 				var walletsToSync []sharedW.Asset
 				for assetID := range walletsToSyncMap {
-					settings, err := dexClient.WalletSettings(assetID)
+					walletID, err := dexClient.WalletIDForAsset(assetID)
 					if err != nil {
-						log.Errorf("dexClient.WalletSettings(%d) error: %w", assetID, err)
+						log.Errorf("dexClient.WalletIDForAsset(%d) error: %w", assetID, err)
 						continue
 					}
 
-					walletIDStr := settings[dexc.WalletIDConfigKey]
-					walletID, err := strconv.Atoi(walletIDStr)
-					if err != nil {
-						log.Errorf("strconv.Atoi error: %w", err)
-						continue
+					if walletID == nil {
+						continue // impossible but better safe than sorry
 					}
 
-					wallet := hp.AssetsManager.WalletWithID(walletID)
-					if wallet == nil { // impossible? but better safe than sorry
+					wallet := hp.AssetsManager.WalletWithID(*walletID)
+					if wallet == nil { // impossible but better safe than sorry
 						log.Error("dex wallet with ID %d is missing", walletID)
 						continue
 					}

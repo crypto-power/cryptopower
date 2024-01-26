@@ -1021,15 +1021,16 @@ const (
 	StrAvailableBalance                = "availableBalance"
 	StrMissingDEXWalletMsg             = "missingDEXWalletMsg"
 	StrSwapAndRedeemFee                = "swapAndRedeemFee"
-	StrLoginToTradeDEX                 = "loginToTradeDEX"
+	StrLoginWithDEXPassword            = "loginWithDEXPassword"
 	StrLogin                           = "login"
 	StrDestinationWallet               = "destinationWallet"
 	StrSwitchToTestnet                 = "swtichToTestnet"
 	StrDexMainnetNotReady              = "dexMainnetNotReady"
 	StrUpdateDEXWalletPasswordReason   = "updateDEXWalletPasswordReason"
-	StrLoginDEXForActiveOrders         = "loginDEXForActiveOrders"
 	StrWalletsNeedToSync               = "walletsNeedToSync"
 	StrWalletsNeedToSyncMsg            = "walletsNeedToSyncMsg"
 	StrIWillSyncLater                  = "iWillSyncLater"
 	StrOkaySync                        = "okaySync"
+
+	StrLoginDEXForActiveOrdersOrExpiredBonds = "loginDEXForActiveOrdersOrExpiredBonds"
 )
