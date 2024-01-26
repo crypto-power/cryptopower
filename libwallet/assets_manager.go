@@ -954,7 +954,7 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	mgr.dexcMtx.Unlock()
 
 	go func() {
-		<-mgr.dexc.WaitForShutdown()
+		<-dexClient.WaitForShutdown()
 		mgr.dexcMtx.Lock()
 		mgr.dexc = nil
 		mgr.dexcMtx.Unlock()

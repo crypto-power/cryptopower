@@ -269,6 +269,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	}
 
 	if dexc.IsLoggedIn() {
+		go pg.refreshOrders()
 		return // All good, return early.
 	}
 
@@ -1254,7 +1255,7 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 									return layout.Flex{Axis: horizontal, Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 										pg.orderColumn(false, fmt.Sprintf("%s %s", values.String(ord.Type.String()), values.String(orderReader.SideString())), columnWidth, index),
 										pg.orderColumn(false, ord.MarketID, columnWidth, index),
-										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime)), columnWidth, index),
+										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime/1000)), columnWidth, index),
 										pg.orderColumn(false, orderReader.RateString(), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s %s", orderReader.BaseQtyString(), strings.ToTitle(orderReader.BaseSymbol)), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s%%", orderReader.FilledPercent()), columnWidth, index),
