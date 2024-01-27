@@ -143,39 +143,20 @@ func (pg *Page) titleLayout(gtx C) D {
 func (pg *Page) recipientsLayout(gtx C) D {
 	return pg.sectionWrapper(gtx, func(gtx C) D {
 		flexChilds := make([]layout.FlexChild, 0)
-		for i, _ := range pg.recipients {
+		for i := range pg.recipients {
+			re := pg.recipients[i]
+			j := i
 			flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
-				fmt.Println("----->", pg.recipients[i].id)
-				return pg.recipients[i].recipientLayout(i+1, false, pg.ParentWindow())(gtx)
+				return re.recipientLayout(j+1, len(pg.recipients) > 1, pg.ParentWindow())(gtx)
 			}))
 		}
-		flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.E.Layout(gtx, pg.addRecipentBtnLayout)
-		}))
+		if pg.modalLayout == nil && len(pg.recipients) < 3 {
+			flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.E.Layout(gtx, pg.addRecipentBtnLayout)
+			}))
+		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexChilds...)
-		// return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		// 	layout.Rigid(func(gtx C) D {
-		// 		recipient := pg.recipient.recipientLayout(1, false, pg.ParentWindow())
-		// 		return recipient(gtx)
-		// 	}),
-		// 	// TODO: to be implemented in follow up PR.
-		// 	// layout.Rigid(func(gtx C) D {
-		// 	// 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-		// 	// 		layout.Flexed(1, func(gtx C) D {
-		// 	// 			return layout.E.Layout(gtx, pg.Theme.Icons.AddIcon.Layout16dp)
-		// 	// 		}),
-		// 	// 		layout.Rigid(func(gtx C) D {
-		// 	// 			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddRecipient))
-		// 	// 			txt.Color = pg.Theme.Color.Primary
-		// 	// 			txt.Font.Weight = font.SemiBold
-		// 	// 			return layout.Inset{
-		// 	// 				Left: values.MarginPadding8,
-		// 	// 			}.Layout(gtx, txt.Layout)
-		// 	// 		}),
-		// 	// 	)
-		// 	// }),
-		// )
 	})
 }
 

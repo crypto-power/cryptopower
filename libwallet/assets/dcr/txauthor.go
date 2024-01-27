@@ -125,9 +125,11 @@ func (asset *Asset) UpdateSendDestination(id int, address string, atomAmount int
 }
 
 func (asset *Asset) RemoveSendDestination(id int) {
-	if _, ok := asset.TxAuthoredInfo.destinations[id]; ok {
-		delete(asset.TxAuthoredInfo.destinations, id)
-		asset.TxAuthoredInfo.needsConstruct = true
+	if asset.TxAuthoredInfo != nil {
+		if _, ok := asset.TxAuthoredInfo.destinations[id]; ok {
+			delete(asset.TxAuthoredInfo.destinations, id)
+			asset.TxAuthoredInfo.needsConstruct = true
+		}
 	}
 }
 

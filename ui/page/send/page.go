@@ -82,8 +82,8 @@ type pageFields struct {
 }
 
 type authoredTxData struct {
-	destinationAddress  string
-	destinationAccount  *sharedW.Account
+	destinationAddress  []string
+	destinationAccount  []*sharedW.Account
 	sourceAccount       *sharedW.Account
 	txFee               string
 	txFeeUSD            string
@@ -128,18 +128,6 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		return pg.selectedWallet.GetAssetType()
 	}
 	pg.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc).ShowSizeAndCost()
-
-	// pg.recipient = newRecipient(l, pg.selectedWallet, pg.pageFields, pg.currentIDRecipient)
-	// pg.recipients = []*recipient{newRecipient(l, pg.selectedWallet, pg.pageFields, pg.currentIDRecipient)}
-
-	//comment when done
-	// pg.recipient.onAddressChanged(func() {
-	// 	pg.validateAndConstructTx()
-	// })
-
-	// pg.recipient.onAmountChanged(func() {
-	// 	pg.validateAndConstructTx()
-	// })
 	pg.addRecipient()
 
 	pg.initializeAccountSelectors()
@@ -157,9 +145,28 @@ func (pg *Page) addRecipient() {
 	rc.onAmountChanged(func() {
 		pg.validateAndConstructTx()
 	})
-	pg.recipients = append(pg.recipients, rc)
 
+	rc.onDeleteRecipient(func(id int) {
+		pg.removeRecipient(id)
+	})
+
+	if pg.sourceAccountSelector != nil {
+		rc.initializeAccountSelectors(pg.sourceAccountSelector.SelectedAccount())
+	}
+	rc.amount.setExchangeRate(pg.exchangeRate)
+	pg.recipients = append(pg.recipients, rc)
 	pg.currentIDRecipient++
+}
+
+func (pg *Page) removeRecipient(id int) {
+	for i, re := range pg.recipients {
+		if re.id == id {
+			pg.recipients = append(pg.recipients[:i], pg.recipients[i+1:]...)
+			break
+		}
+	}
+
+	pg.selectedWallet.RemoveSendDestination(id)
 }
 
 func (pg *Page) pageFields() pageFields {
@@ -182,10 +189,8 @@ func (pg *Page) initModalWalletSelector() {
 		pg.selectedWallet = selectedWallet
 		go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
-		// pg.recipient.setDestinationAssetType(selectedWallet.GetAssetType())
 		pg.setAssetTypeForRecipients()
 		pg.initializeAccountSelectors()
-		// pg.recipient.resetDestinationAccountSelector()
 	})
 }
 
@@ -200,10 +205,6 @@ func (pg *Page) initializeAccountSelectors() {
 			// account is the same as the source account or because the
 			// destination account needs to change based on if the selected
 			// wallet has privacy enabled.
-
-			// pg.recipient.resetDestinationAccountSelector()
-			// pg.recipient.initializeAccountSelectors(selectedAccount)
-
 			pg.initAccountsSelectorForRecipients(selectedAccount)
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
@@ -215,15 +216,7 @@ func (pg *Page) initializeAccountSelectors() {
 
 				// only mixed accounts can send to address/wallets for wallet with privacy setup
 				// don't need to check account the same with destination account
-				// if pg.recipient.isSendToAddress() {
 				accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
-				// } else {
-				// 	// Check the same account and wallet
-				// 	destinationWalletID := pg.recipient.destinationWalletID()
-				// 	if destinationWalletID != pg.selectedWallet.GetWalletID() {
-				// 		accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
-				// 	}
-				// }
 			}
 			return accountIsValid
 		}).
@@ -232,8 +225,6 @@ func (pg *Page) initializeAccountSelectors() {
 	if pg.sourceAccountSelector.SelectedAccount() == nil {
 		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	}
-
-	// pg.recipient.initializeAccountSelectors(pg.sourceAccountSelector.SelectedAccount())
 }
 
 // RestyleWidgets restyles select widgets to match the current theme. This is
@@ -318,7 +309,6 @@ func (pg *Page) fetchExchangeRate() {
 	}
 
 	pg.exchangeRate = rate.LastTradePrice
-	// pg.recipient.amount.setExchangeRate(pg.exchangeRate)
 	pg.updateRecipientExchangeRate()
 	pg.validateAndConstructTx() // convert estimates to usd
 
@@ -328,32 +318,15 @@ func (pg *Page) fetchExchangeRate() {
 
 func (pg *Page) validateAndConstructTx() {
 	// delete all the previous errors set earlier.
-	// pg.recipient.cleanAllErrors()
 	pg.cleanAllRecipientErrors()
 
 	if pg.isAllRecipientValidated() {
-		// if pg.recipient.isValidated() {
 		pg.constructTx()
 	} else {
 		pg.clearEstimates()
 		pg.showBalanceAfterSend()
 	}
 }
-
-// func (pg *Page) createUnsignedTx() {
-// 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-// 	selectedUTXOs := make([]*sharedW.UnspentOutput, 0)
-// 	if sourceAccount == pg.selectedUTXOs.sourceAccount {
-// 		selectedUTXOs = pg.selectedUTXOs.selectedUTXOs
-// 	}
-
-// 	err := pg.selectedWallet.NewUnsignedTx(sourceAccount.Number, selectedUTXOs)
-// 	if err != nil {
-// 		pg.recipient.amountValidationError(err.Error())
-// 		pg.clearEstimates()
-// 		return
-// 	}
-// }
 
 func (pg *Page) constructTx() {
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
@@ -365,58 +338,24 @@ func (pg *Page) constructTx() {
 	err := pg.selectedWallet.NewUnsignedTx(sourceAccount.Number, selectedUTXOs)
 	if err != nil {
 		pg.setRecipientsAmountErr(err)
-		// pg.recipient.amountValidationError(err.Error())
 		pg.clearEstimates()
 		return
 	}
 
-	// destinationAddress := pg.recipient.destinationAddress()
-	// destinationAccount := pg.recipient.destinationAccount()
-
-	// amountAtom, SendMax := pg.recipient.validAmount()
-
-	// if !pg.selectedWallet.IsUnsignedTxExist() {
-	// 	pg.createUnsignedTx()
-	// }
-
-	totalCost, balanceAfterSend, err := pg.addSendDestination()
+	totalCost, balanceAfterSend, totalAmount, err := pg.addSendDestination()
 	if err != nil {
 		return
 	}
 
-	// err = pg.selectedWallet.AddSendDestination(pg.recipient.id, destinationAddress, amountAtom, SendMax)
-	// if err != nil {
-	// 	if strings.Contains(err.Error(), "amount") {
-	// 		pg.recipient.amountValidationError(err.Error())
-	// 	} else {
-	// 		pg.recipient.addressValidationError(err.Error())
-	// 	}
-
-	// 	pg.clearEstimates()
-	// 	return
-	// }
-
 	feeAndSize, err := pg.selectedWallet.EstimateFeeAndSize()
 	if err != nil {
 		pg.setRecipientsAmountErr(err)
-		// 	// pg.recipient.amountValidationError(err.Error())
 		pg.clearEstimates()
 		return
 	}
 
 	feeAtom := feeAndSize.Fee.UnitValue
-	// spendableAmount := sourceAccount.Balance.Spendable.ToInt()
-	// if len(selectedUTXOs) > 0 {
-	// 	spendableAmount = pg.selectedUTXOs.totalUTXOsAmount
-	// }
-
-	// if SendMax {
-	// 	amountAtom = spendableAmount - feeAtom
-	// }
-
 	wal := pg.selectedWallet
-	// totalSendingAmount := wal.ToAmount(amountAtom + feeAtom)
-	// balanceAfterSend := wal.ToAmount(spendableAmount - totalSendingAmount.ToInt())
 
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()
@@ -426,10 +365,9 @@ func (pg *Page) constructTx() {
 	pg.feeRateSelector.SetFeerate(feeAndSize.FeeRate)
 	pg.totalCost = totalCost.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
-	pg.sendAmount = "sendAmount 111"             //wal.ToAmount(amountAtom).String()
-	pg.destinationAddress = "destinationAddress" //destinationAddress
-	destinationAccount := pg.recipients[0].destinationAccount()
-	pg.destinationAccount = destinationAccount
+	pg.sendAmount = wal.ToAmount(totalAmount).String()
+	pg.destinationAddress = pg.getDestinationAddresses()
+	pg.destinationAccount = pg.getDestinationAccounts()
 	pg.sourceAccount = sourceAccount
 
 	// if SendMax {
@@ -442,15 +380,15 @@ func (pg *Page) constructTx() {
 		pg.feeRateSelector.USDExchangeSet = true
 		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
 		pg.feeRateSelector.TxFeeUSD = pg.txFeeUSD
-		pg.totalCostUSD = utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, 12 /*totalSendingAmount.ToCoin()*/))
+		pg.totalCostUSD = utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalCost.ToCoin() /*totalSendingAmount.ToCoin()*/))
 		pg.balanceAfterSendUSD = utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
-		usdAmount := utils.CryptoToUSD(pg.exchangeRate, wal.ToAmount( /*amountAtom*/ 12).ToCoin())
+		usdAmount := utils.CryptoToUSD(pg.exchangeRate, wal.ToAmount( /*amountAtom*/ totalAmount).ToCoin())
 		pg.sendAmountUSD = utils.FormatAsUSDString(pg.Printer, usdAmount)
 	}
 }
 
-func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, error) {
+func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, int64, error) {
 	var totalCost int64 = 0
 
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
@@ -462,7 +400,7 @@ func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, 
 	feeAndSize, err := pg.selectedWallet.EstimateFeeAndSize()
 	if err != nil {
 		pg.setRecipientsAmountErr(err)
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 	feeAtom := feeAndSize.Fee.UnitValue
 	spendableAmount := sourceAccount.Balance.Spendable.ToInt()
@@ -471,6 +409,7 @@ func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, 
 	}
 
 	wal := pg.selectedWallet
+	var totalSendAmount int64 = 0
 	for _, recipient := range pg.recipients {
 		destinationAddress := recipient.destinationAddress()
 		amountAtom, SendMax := recipient.validAmount()
@@ -489,48 +428,55 @@ func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, 
 			amountAtom = spendableAmount - feeAtom
 			recipient.setAmount(amountAtom)
 		}
-		cost := amountAtom + feeAtom // wal.ToAmount(amountAtom + feeAtom)
+		totalSendAmount += amountAtom
+		cost := amountAtom + feeAtom
 		totalCost += cost
 	}
 	balanceAfterSend := wal.ToAmount(spendableAmount - totalCost)
-	return wal.ToAmount(totalCost), balanceAfterSend, nil
+	return wal.ToAmount(totalCost), balanceAfterSend, totalSendAmount, nil
 
 }
 
 func (pg *Page) isAllRecipientValidated() bool {
 	isValid := true
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		isValid = isValid && recipient.isValidated()
 	}
 	return isValid
 }
 
 func (pg *Page) cleanAllRecipientErrors() {
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		recipient.cleanAllErrors()
 	}
 }
 
 func (pg *Page) updateRecipientExchangeRate() {
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		recipient.amount.setExchangeRate(pg.exchangeRate)
 	}
 }
 
 func (pg *Page) setAssetTypeForRecipients() {
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		recipient.setDestinationAssetType(pg.selectedWallet.GetAssetType())
 	}
 }
 
 func (pg *Page) initAccountsSelectorForRecipients(account *sharedW.Account) {
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		recipient.initializeAccountSelectors(account)
 	}
 }
 
 func (pg *Page) setRecipientsAmountErr(err error) {
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		recipient.amountValidationError(err.Error())
 	}
 	pg.clearEstimates()
@@ -538,7 +484,8 @@ func (pg *Page) setRecipientsAmountErr(err error) {
 
 func (pg *Page) allRecipientsIsValid() bool {
 	isValid := true
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		isValid = isValid && recipient.isValidated()
 	}
 	return isValid
@@ -546,10 +493,42 @@ func (pg *Page) allRecipientsIsValid() bool {
 
 func (pg *Page) validateAllRecipientsAmount() bool {
 	isValid := true
-	for _, recipient := range pg.recipients {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
 		recipient.validateAmount()
 	}
 	return isValid
+}
+
+func (pg *Page) resetRecipientsFields() {
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
+		recipient.resetFields()
+	}
+}
+
+func (pg *Page) getDestinationAccounts() []*sharedW.Account {
+	accounts := make([]*sharedW.Account, 0)
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
+		destinationAccount := recipient.destinationAccount()
+		if destinationAccount != nil && !recipient.isSendToAddress() {
+			accounts = append(accounts, destinationAccount)
+		}
+	}
+	return accounts
+}
+
+func (pg *Page) getDestinationAddresses() []string {
+	addresses := make([]string, 0)
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
+		destinationAddress := recipient.destinationAddress()
+		if destinationAddress != "" && recipient.isSendToAddress() {
+			addresses = append(addresses, destinationAddress)
+		}
+	}
+	return addresses
 }
 
 func (pg *Page) showBalanceAfterSend() {
@@ -584,7 +563,6 @@ func (pg *Page) clearEstimates() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
-	// pg.recipientEventsHandle()
 	if pg.feeRateSelector.SaveRate.Clicked() {
 		pg.feeRateSelector.OnEditRateClicked(pg.selectedWallet)
 	}
@@ -606,22 +584,28 @@ func (pg *Page) HandleUserInteractions() {
 	// }
 
 	if pg.toCoinSelection.Clicked() {
-		// if pg.recipient.destinationAddress() != "" {
-		// 	if pg.modalLayout != nil {
-		// 		pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
-		// 	} else {
-		// 		pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
-		// 	}
-		// }
+		if len(pg.getDestinationAddresses()) == len(pg.recipients) {
+			if pg.modalLayout != nil {
+				pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
+			} else {
+				pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+			}
+		}
 	}
 
 	if pg.nextButton.Clicked() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
-			pg.confirmTxModal.txLabel = pg.recipients[0].descriptionText()
+			// TODO handle if have many descryption text
+			// this workaround to show description text when have one recipient and don't show when have more
+			descriptionText := ""
+			if len(pg.recipients) == 1 {
+				descriptionText = pg.recipients[0].descriptionText()
+			}
+			pg.confirmTxModal.txLabel = descriptionText
 			pg.confirmTxModal.txSent = func() {
-				pg.recipients[0].resetFields()
+				pg.resetRecipientsFields()
 				pg.clearEstimates()
 				if pg.modalLayout != nil {
 					pg.modalLayout.Dismiss()
@@ -634,7 +618,6 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.sourceAccountSelector.Changed() {
 		pg.validateAllRecipientsAmount()
-		// pg.recipient.validateAmount()
 		pg.validateAndConstructTx()
 	}
 

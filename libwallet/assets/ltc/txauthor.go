@@ -130,10 +130,11 @@ func (asset *Asset) AddSendDestination(id int, address string, litoshiAmount int
 func (asset *Asset) RemoveSendDestination(id int) {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
-
-	if _, ok := asset.TxAuthoredInfo.destinations[id]; ok {
-		delete(asset.TxAuthoredInfo.destinations, id)
-		asset.TxAuthoredInfo.needsConstruct = true
+	if asset.TxAuthoredInfo != nil {
+		if _, ok := asset.TxAuthoredInfo.destinations[id]; ok {
+			delete(asset.TxAuthoredInfo.destinations, id)
+			asset.TxAuthoredInfo.needsConstruct = true
+		}
 	}
 }
 
