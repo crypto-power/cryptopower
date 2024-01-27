@@ -47,12 +47,6 @@ type SyncData struct {
 	*activeSyncData
 }
 
-func (sd *SyncData) isSyncing() bool {
-	sd.mu.RLock()
-	defer sd.mu.RUnlock()
-	return sd.syncing
-}
-
 // reading/writing of properties of this struct are protected by syncData.mu.
 type activeSyncData struct {
 	syncStage utils.SyncStage
