@@ -14,12 +14,12 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sort"
 	"sync"
 	"time"
 
 	"decred.org/dcrdex/client/asset"
 	dexbtc "decred.org/dcrdex/client/asset/btc"
+	"decred.org/dcrdex/dex"
 	dexbtchelper "decred.org/dcrdex/dex/networks/btc"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
@@ -28,10 +28,12 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	btcwallet "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/dcrlabs/neutrino-ltc/chain"
+	"github.com/decred/slog"
 	btcneutrino "github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
@@ -56,13 +58,31 @@ type DEXWallet struct {
 	cl        *ltcChainService
 	btcParams *chaincfg.Params
 	isSyncing func() bool
+	*dexbtc.BlockFiltersScanner
+}
+
+// dexLogger satisfies dex.Logger.
+type dexLogger struct {
+	btclog.Logger
+}
+
+func (dl dexLogger) Level() slog.Level {
+	return slog.Level(dl.Logger.Level())
+}
+
+func (dl dexLogger) SetLevel(lvl slog.Level) {
+	dl.Logger.SetLevel(btclog.Level(lvl))
+}
+
+func (dl dexLogger) SubLogger(string) dex.Logger {
+	return dl
 }
 
 var _ dexbtc.CustomWallet = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
 func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btcParams *chaincfg.Params, isSyncing func() bool) *DEXWallet {
-	return &DEXWallet{
+	dw := &DEXWallet{
 		w:       w,
 		acctNum: acctNum,
 		cl: &ltcChainService{
@@ -71,6 +91,9 @@ func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btc
 		btcParams: btcParams,
 		isSyncing: isSyncing,
 	}
+
+	dw.BlockFiltersScanner = dexbtc.NewBlockFiltersScanner(dw, dexLogger{Logger: log})
+	return dw
 }
 
 // Part of dexbtc.Wallet interface.
@@ -508,17 +531,25 @@ func (dw *DEXWallet) SwapConfirmations(txHash *chainhash.Hash, vout uint32, pkSc
 		return 0, false, err
 	}
 
-	// Upstream checks a block cache but we don't have that here.
+	// If we still don't have the block hash, we may have it stored. Check the
+	// dex database first. This won't give us the confirmations and spent
+	// status, but it will allow us to short circuit a longer scan if we already
+	// know the output is spent.
+	if blockHash == nil {
+		blockHash, _ = dw.MainchainBlockForStoredTx(txHash)
+	}
 
 	// Our last option is neutrino.
 	log.Tracef("swapConfirmations - scanFilters: %v:%d (block %v, start time %v)",
 		txHash, vout, blockHash, startTime)
-	utxo, err := dw.scanFilters(txHash, vout, pkScript, startTime, blockHash)
+	walletBlock := dw.syncedTo() // where cfilters are received and processed
+	walletTip := walletBlock.Height
+	utxo, err := dw.ScanFilters(txHash, vout, pkScript, walletTip, startTime, blockHash)
 	if err != nil {
 		return 0, false, err
 	}
 
-	if utxo.spend == nil && utxo.blockHash == nil {
+	if utxo.Spend == nil && utxo.BlockHash == nil {
 		if assumedMempool {
 			log.Tracef("swapConfirmations - scanFilters did not find %v:%d, assuming in mempool.",
 				txHash, vout)
@@ -530,15 +561,15 @@ func (dw *DEXWallet) SwapConfirmations(txHash *chainhash.Hash, vout uint32, pkSc
 			txHash, vout, startTime, pkScript)
 	}
 
-	if utxo.blockHash != nil {
-		bestHeight, err := dw.getChainHeight()
+	if utxo.BlockHash != nil {
+		bestHeight, err := dw.GetChainHeight()
 		if err != nil {
 			return 0, false, fmt.Errorf("getBestBlockHeight error: %v", err)
 		}
-		confs = uint32(bestHeight) - utxo.blockHeight + 1
+		confs = uint32(bestHeight) - utxo.BlockHeight + 1
 	}
 
-	if utxo.spend != nil {
+	if utxo.Spend != nil {
 		// In the off-chance that a spend was found but not the output itself,
 		// confs will be incorrect here.
 		// In situations where we're looking for the counter-party's swap, we
@@ -552,235 +583,6 @@ func (dw *DEXWallet) SwapConfirmations(txHash *chainhash.Hash, vout uint32, pkSc
 
 	// unspent
 	return confs, false, nil
-}
-
-// scanFilters enables searching for an output and its spending input by
-// scanning BIP158 compact filters. Caller should supply either blockHash or
-// startTime. blockHash takes precedence. If blockHash is supplied, the scan
-// will start at that block and continue to the current blockchain tip, or until
-// both the output and a spending transaction is found. if startTime is
-// supplied, and the blockHash for the output is not known to the wallet, a
-// candidate block will be selected with findBlockTime.
-func (dw *DEXWallet) scanFilters(txHash *chainhash.Hash, vout uint32, pkScript []byte, startTime time.Time, blockHash *chainhash.Hash) (*filterScanResult, error) {
-	// TODO: Check that any blockHash supplied is not orphaned?
-
-	// Check if we know the block hash for the tx.
-	var limitHeight int32
-	if blockHash == nil {
-		// No checkpoint and no block hash. Gotta guess based on time.
-		var err error
-		_, limitHeight, err = dw.findBlockForTime(startTime)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// No checkpoint, but user supplied a block hash.
-		var err error
-		limitHeight, err = dw.GetBlockHeight(blockHash)
-		if err != nil {
-			return nil, fmt.Errorf("error getting height for supplied block hash %s", blockHash)
-		}
-	}
-
-	log.Debugf("Performing cfilters scan for %v:%d from height %d", txHash, vout, limitHeight)
-
-	// Do a filter scan.
-	utxo, err := dw.filterScanFromHeight(*txHash, vout, pkScript, limitHeight, nil)
-	if err != nil {
-		return nil, fmt.Errorf("filterScanFromHeight error: %w", err)
-	}
-	if utxo == nil {
-		return nil, asset.CoinNotFoundError
-	}
-
-	// If we found a block, let's store a reference in our local database so we
-	// can maybe bypass a long search next time.
-	if utxo.blockHash != nil {
-		log.Debugf("cfilters scan SUCCEEDED for %v:%d. block hash: %v, spent: %v",
-			txHash, vout, utxo.blockHash, utxo.spend != nil)
-	}
-
-	return utxo, nil
-}
-
-const medianTimeBlocks = 11
-
-var maxFutureBlockTime = 2 * time.Hour // see MaxTimeOffsetSeconds in btcd/blockchain/validate.go
-
-// findBlockForTime locates a good start block so that a search beginning at the
-// returned block has a very low likelihood of missing any blocks that have time
-// > matchTime. This is done by performing a binary search (sort.Search) to find
-// a block with a block time maxFutureBlockTime before matchTime. To ensure
-// we also accommodate the median-block time rule and aren't missing anything
-// due to out of sequence block times we use an unsophisticated algorithm of
-// choosing the first block in an 11 block window with no times >= matchTime.
-func (dw *DEXWallet) findBlockForTime(matchTime time.Time) (*chainhash.Hash, int32, error) {
-	offsetTime := matchTime.Add(-maxFutureBlockTime)
-
-	bestHeight, err := dw.getChainHeight()
-	if err != nil {
-		return nil, 0, fmt.Errorf("getChainHeight error: %v", err)
-	}
-
-	getBlockTimeForHeight := func(height int32) (*chainhash.Hash, time.Time, error) {
-		hash, err := dw.cl.GetBlockHash(int64(height))
-		if err != nil {
-			return nil, time.Time{}, err
-		}
-		header, err := dw.cl.GetBlockHeader(hash)
-		if err != nil {
-			return nil, time.Time{}, err
-		}
-		return hash, header.Timestamp, nil
-	}
-
-	iHeight := sort.Search(int(bestHeight), func(h int) bool {
-		var iTime time.Time
-		_, iTime, err = getBlockTimeForHeight(int32(h))
-		if err != nil {
-			return true
-		}
-		return iTime.After(offsetTime)
-	})
-	if err != nil {
-		return nil, 0, fmt.Errorf("binary search error finding best block for time %q: %w", matchTime, err)
-	}
-
-	// We're actually breaking an assumption of sort.Search here because block
-	// times aren't always monotonically increasing. This won't matter though as
-	// long as there are not > medianTimeBlocks blocks with inverted time order.
-	var count int
-	var iHash *chainhash.Hash
-	var iTime time.Time
-	for iHeight > 0 {
-		iHash, iTime, err = getBlockTimeForHeight(int32(iHeight))
-		if err != nil {
-			return nil, 0, fmt.Errorf("getBlockTimeForHeight error: %w", err)
-		}
-		if iTime.Before(offsetTime) {
-			count++
-			if count == medianTimeBlocks {
-				return iHash, int32(iHeight), nil
-			}
-		} else {
-			count = 0
-		}
-		iHeight--
-	}
-	return dw.btcParams.GenesisHash, 0, nil
-}
-
-// spendingInput is added to a filterScanResult if a spending input is found.
-type spendingInput struct {
-	txHash      chainhash.Hash
-	vin         uint32
-	blockHash   chainhash.Hash
-	blockHeight uint32
-}
-
-// filterScanResult is the result from a filter scan.
-type filterScanResult struct {
-	// blockHash is the block that the output was found in.
-	blockHash *chainhash.Hash
-	// blockHeight is the height of the block that the output was found in.
-	blockHeight uint32
-	// txOut is the output itself.
-	txOut *wire.TxOut
-	// spend will be set if a spending input is found.
-	spend *spendingInput
-	// checkpoint is used to track the last block scanned so that future scans
-	// can skip scanned blocks.
-	checkpoint chainhash.Hash
-}
-
-// / filterScanFromHeight scans BIP158 filters beginning at the specified block
-// height until the tip, or until a spending transaction is found.
-func (dw *DEXWallet) filterScanFromHeight(txHash chainhash.Hash, vout uint32, pkScript []byte, startBlockHeight int32, checkPt *filterScanResult) (*filterScanResult, error) {
-	walletBlock := dw.syncedTo() // where cfilters are received and processed
-	tip := walletBlock.Height
-
-	res := checkPt
-	if res == nil {
-		res = new(filterScanResult)
-	}
-
-search:
-	for height := startBlockHeight; height <= tip; height++ {
-		if res.spend != nil && res.blockHash == nil {
-			log.Warnf("A spending input (%s) was found during the scan but the output (%s) "+
-				"itself wasn't found. Was the startBlockHeight early enough?",
-				dexbtc.NewOutPoint(&res.spend.txHash, res.spend.vin),
-				dexbtc.NewOutPoint(&txHash, vout),
-			)
-			return res, nil
-		}
-		blockHash, err := dw.cl.GetBlockHash(int64(height))
-		if err != nil {
-			return nil, fmt.Errorf("error getting block hash for height %d: %w", height, err)
-		}
-		matched, err := dw.matchPkScript(blockHash, [][]byte{pkScript})
-		if err != nil {
-			return nil, fmt.Errorf("matchPkScript error: %w", err)
-		}
-
-		res.checkpoint = *blockHash
-		if !matched {
-			continue search
-		}
-		// Pull the block.
-		log.Tracef("Block %v matched pkScript for output %v:%d. Pulling the block...",
-			blockHash, txHash, vout)
-		block, err := dw.cl.GetBlock(*blockHash)
-		if err != nil {
-			return nil, fmt.Errorf("GetBlock error: %v", err)
-		}
-		msgBlock := block.MsgBlock()
-
-		// Scan every transaction.
-	nextTx:
-		for _, tx := range msgBlock.Transactions {
-			// Look for a spending input.
-			if res.spend == nil {
-				for vin, txIn := range tx.TxIn {
-					prevOut := &txIn.PreviousOutPoint
-					if prevOut.Hash == txHash && prevOut.Index == vout {
-						res.spend = &spendingInput{
-							txHash:      tx.TxHash(),
-							vin:         uint32(vin),
-							blockHash:   *blockHash,
-							blockHeight: uint32(height),
-						}
-						log.Tracef("Found txn %v spending %v in block %v (%d)", res.spend.txHash,
-							txHash, res.spend.blockHash, res.spend.blockHeight)
-						if res.blockHash != nil {
-							break search
-						}
-						// The output could still be in this block, just not
-						// in this transaction.
-						continue nextTx
-					}
-				}
-			}
-			// Only check for the output if this is the right transaction.
-			if res.blockHash != nil || tx.TxHash() != txHash {
-				continue nextTx
-			}
-			for _, txOut := range tx.TxOut {
-				if bytes.Equal(txOut.PkScript, pkScript) {
-					res.blockHash = blockHash
-					res.blockHeight = uint32(height)
-					res.txOut = txOut
-					log.Tracef("Found txn %v in block %v (%d)", txHash, res.blockHash, height)
-					if res.spend != nil {
-						break search
-					}
-					// Keep looking for the spending transaction.
-					continue nextTx
-				}
-			}
-		}
-	}
-	return res, nil
 }
 
 // confirmations looks for the confirmation count and spend status on a
@@ -870,7 +672,25 @@ func (dw *DEXWallet) GetBestBlockHeader() (*dexbtc.BlockHeader, error) {
 }
 
 // Part of dexbtc.Wallet interface.
-func (dw *DEXWallet) Connect(_ context.Context, _ *sync.WaitGroup) (err error) {
+func (dw *DEXWallet) Connect(ctx context.Context, wg *sync.WaitGroup) (err error) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ticker := time.NewTicker(time.Minute * 20)
+		defer ticker.Stop()
+		expiration := time.Hour * 2
+		for {
+			select {
+			case <-ticker.C:
+				dw.BlockFiltersScanner.CleanCaches(expiration)
+
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -917,23 +737,25 @@ func (dw *DEXWallet) GetTxOut(txHash *chainhash.Hash, vout uint32, pkScript []by
 	}
 
 	// We don't really know if it's spent, so we'll need to scan.
-	utxo, err := dw.scanFilters(txHash, vout, pkScript, startTime, blockHash)
+	walletBlock := dw.syncedTo() // where cfilters are received and processed
+	walletTip := walletBlock.Height
+	utxo, err := dw.ScanFilters(txHash, vout, pkScript, walletTip, startTime, blockHash)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if utxo == nil || utxo.spend != nil || utxo.blockHash == nil {
+	if utxo == nil || utxo.Spend != nil || utxo.BlockHash == nil {
 		return nil, 0, nil
 	}
 
-	tip, err := dw.cl.BestBlock()
+	tip, err := dw.cl.CS.BestBlock()
 	if err != nil {
 		return nil, 0, fmt.Errorf("BestBlock error: %v", err)
 	}
 
-	confs := uint32(confirms(int32(utxo.blockHeight), tip.Height))
+	confs := uint32(confirms(int32(utxo.BlockHeight), tip.Height))
 
-	return utxo.txOut, confs, nil
+	return utxo.TxOut, confs, nil
 }
 
 // SearchBlockForRedemptions attempts to find spending info for the specified
