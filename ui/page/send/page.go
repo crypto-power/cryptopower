@@ -389,7 +389,7 @@ func (pg *Page) constructTx() {
 }
 
 func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, int64, error) {
-	var totalCost int64 = 0
+	var totalCost int64
 
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
 	selectedUTXOs := make([]*sharedW.UnspentOutput, 0)
@@ -409,7 +409,7 @@ func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, 
 	}
 
 	wal := pg.selectedWallet
-	var totalSendAmount int64 = 0
+	var totalSendAmount int64
 	for _, recipient := range pg.recipients {
 		destinationAddress := recipient.destinationAddress()
 		amountAtom, SendMax := recipient.validAmount()
