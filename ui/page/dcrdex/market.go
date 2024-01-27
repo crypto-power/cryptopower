@@ -271,7 +271,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrLogin)).
-		SetDescription(values.String(values.StrLoginToTradeDEX)).
+		SetDescription(values.String(values.StrLoginWithDEXPassword)).
 		PasswordHint(values.String(values.StrDexPassword)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			err := pg.dexc.Login([]byte(password))

@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"time"
 
 	giouiApp "gioui.org/app"
 	"gioui.org/gesture"
@@ -20,7 +19,6 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -67,14 +65,14 @@ type WriteClipboard struct {
 // Should never be called more than once as it calls
 // app.NewWindow() which does not support being called more
 // than once.
-func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Time) (*Window, error) {
+func CreateWindow(appInfo *load.AppInfo) (*Window, error) {
 	appTitle := giouiApp.Title(values.String(values.StrAppName))
 	// appSize overwrites gioui's default app size of 'Size(800, 600)'
 	appSize := giouiApp.Size(values.AppWidth, values.AppHeight)
 	// appMinSize is the minimum size the app.
 	appMinSize := giouiApp.MinSize(values.MobileAppWidth, values.MobileAppHeight)
 	// Display network on the app title if its not on mainnet.
-	if net := mw.NetType(); net != libutils.Mainnet {
+	if net := appInfo.AssetsManager.NetType(); net != libutils.Mainnet {
 		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, net.Display()))
 	}
 
@@ -89,16 +87,20 @@ func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Ti
 		IsShutdown: make(chan struct{}, 1),
 	}
 
-	l, err := win.NewLoad(mw, version, buildDate)
+	l, err := win.NewLoad(appInfo)
 	if err != nil {
 		return nil, err
 	}
+
 	win.load = l
+
+	startPage := page.NewStartPage(win.ctx, win.load)
+	win.load.AppInfo.ReadyForDisplay(win.Window, startPage)
 
 	return win, nil
 }
 
-func (win *Window) NewLoad(mw *libwallet.AssetsManager, version string, buildDate time.Time) (*load.Load, error) {
+func (win *Window) NewLoad(appInfo *load.AppInfo) (*load.Load, error) {
 	th := cryptomaterial.NewTheme(assets.FontCollection(), assets.DecredIcons, false)
 	if th == nil {
 		return nil, errors.New("unexpected error while loading theme")
@@ -109,14 +111,14 @@ func (win *Window) NewLoad(mw *libwallet.AssetsManager, version string, buildDat
 
 	// Set the user-configured theme colors on app load.
 	var isDarkModeOn bool
-	if mw.LoadedWalletsCount() > 0 {
+	if appInfo.AssetsManager.LoadedWalletsCount() > 0 {
 		// A valid DB interface must have been set. Otherwise no valid wallet exists.
-		isDarkModeOn = mw.IsDarkModeOn()
+		isDarkModeOn = appInfo.AssetsManager.IsDarkModeOn()
 	}
 	th.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 
 	l := &load.Load{
-		AppInfo: load.StartApp(version, buildDate, mw),
+		AppInfo: appInfo,
 
 		Theme: th,
 
@@ -222,7 +224,7 @@ func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
 	switch {
 	case win.navigator.CurrentPage() == nil:
 		// Prepare to display the StartPage if no page is currently displayed.
-		win.navigator.Display(page.NewStartPage(win.ctx, win.load))
+		win.navigator.Display(win.load.StartPage())
 
 	default:
 		// The app window may have received some user interaction such as key
