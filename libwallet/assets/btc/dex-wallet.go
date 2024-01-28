@@ -64,6 +64,7 @@ func (dl dexLogger) SubLogger(string) dex.Logger {
 }
 
 var _ dexbtc.CustomWallet = (*DEXWallet)(nil)
+var _ dexbtc.BlockInfoReader = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
 func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, isSyncing func() bool) *DEXWallet {
@@ -121,6 +122,7 @@ func (dw *DEXWallet) SendRawTransaction(tx *wire.MsgTx) (*chainhash.Hash, error)
 }
 
 // Part of dexbtc.TipRedemptionWallet interface.
+// Part of dexbtc.BlockInfoReader interface.
 func (dw *DEXWallet) GetBlock(blockHash chainhash.Hash) (*wire.MsgBlock, error) {
 	block, err := dw.cl.CS.GetBlock(blockHash)
 	if err != nil {
@@ -131,13 +133,20 @@ func (dw *DEXWallet) GetBlock(blockHash chainhash.Hash) (*wire.MsgBlock, error) 
 }
 
 // Part of dexbtc.Wallet interface.
+// Part of dexbtc.BlockInfoReader interface.
 func (dw *DEXWallet) GetBlockHash(blockHeight int64) (*chainhash.Hash, error) {
 	return dw.cl.CS.GetBlockHash(blockHeight)
 }
 
 // Part of dexbtc.TipRedemptionWallet interface.
+// Part of dexbtc.BlockInfoReader interface.
 func (dw *DEXWallet) GetBlockHeight(h *chainhash.Hash) (int32, error) {
 	return dw.cl.CS.GetBlockHeight(h)
+}
+
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) GetBlockHeaderVerbose(blockHash *chainhash.Hash) (*wire.BlockHeader, error) {
+	return dw.cl.CS.GetBlockHeader(blockHash)
 }
 
 // Part of dexbtc.Wallet interface.
@@ -171,9 +180,10 @@ func (dw *DEXWallet) MedianTime() (time.Time, error) {
 	return dexbtc.CalcMedianTime(dw.getChainStamp, &blk.Hash)
 }
 
-// getChainHeight is only for confirmations since it does not reflect the wallet
+// GetChainHeight is only for confirmations since it does not reflect the wallet
 // manager's sync height, just the chain service.
-func (dw *DEXWallet) getChainHeight() (int32, error) {
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) GetChainHeight() (int32, error) {
 	blk, err := dw.cl.CS.BestBlock()
 	if err != nil {
 		return -1, err
@@ -525,7 +535,7 @@ func (dw *DEXWallet) confirmations(txHash *chainhash.Hash, vout uint32) (blockHa
 
 	if details.Block.Hash != (chainhash.Hash{}) {
 		blockHash = &details.Block.Hash
-		height, err := dw.getChainHeight()
+		height, err := dw.GetChainHeight()
 		if err != nil {
 			return nil, 0, false, err
 		}
@@ -556,7 +566,7 @@ func (dw *DEXWallet) WalletUnlock(pw []byte) error {
 	return dw.w.Unlock(pw, nil)
 }
 
-// GetBlockHeader gets the *blockHeader for the specified block hash. It also
+// GetBlockHeader gets the *dexbtc.BlockHeader for the specified block hash. It also
 // returns a bool value to indicate whether this block is a part of main chain.
 // For orphaned blocks header.Confirmations is negative.
 // Part of dexbtc.TipRedemptionWallet interface.
@@ -684,7 +694,7 @@ func (dw *DEXWallet) SearchBlockForRedemptions(ctx context.Context, reqs map[dex
 
 	discovered = make(map[dexbtc.OutPoint]*dexbtc.FindRedemptionResult, len(reqs))
 
-	matchFound, err := dw.matchPkScript(&blockHash, scripts)
+	matchFound, err := dw.MatchPkScript(&blockHash, scripts)
 	if err != nil {
 		log.Errorf("matchPkScript error: %v", err)
 		return
@@ -762,9 +772,10 @@ func hashTx(tx *wire.MsgTx) *chainhash.Hash {
 	return &h
 }
 
-// matchPkScript pulls the filter for the block and attempts to match the
+// MatchPkScript pulls the filter for the block and attempts to match the
 // supplied scripts.
-func (dw *DEXWallet) matchPkScript(blockHash *chainhash.Hash, scripts [][]byte) (bool, error) {
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) MatchPkScript(blockHash *chainhash.Hash, scripts [][]byte) (bool, error) {
 	filter, err := dw.cl.CS.GetCFilter(*blockHash, wire.GCSFilterRegular)
 	if err != nil {
 		return false, fmt.Errorf("GetCFilter error: %w", err)
