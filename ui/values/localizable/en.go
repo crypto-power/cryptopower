@@ -924,4 +924,5 @@ const EN = `
 "walletsNeedToSyncMsg" = "Wallet(s) used by the DEX client needs to sync to settle active trade(s) or refund expired bonds."
 "iWillSyncLater" = "I'll sync later"
 "okaySync" = "Okay, sync"
+"paste" = "Paste"
  `

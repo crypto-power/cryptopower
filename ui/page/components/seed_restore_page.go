@@ -274,20 +274,16 @@ func (pg *SeedRestore) seedEditorViewMobile(gtx layout.Context) layout.Dimension
 }
 
 func (pg *SeedRestore) inputsGroup(gtx C, l *layout.List, len, startIndex int) D {
-	return layout.Stack{Alignment: layout.N}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return l.Layout(gtx, len, func(gtx C, i int) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-							pg.layoutSeedMenu(gtx, i*5+startIndex)
-							return pg.seedEditors.editors[i*5+startIndex].Layout(gtx)
-						})
-					}),
-				)
-			})
-		}),
-	)
+	return l.Layout(gtx, len, func(gtx C, i int) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+					pg.layoutSeedMenu(gtx, i*5+startIndex)
+					return pg.seedEditors.editors[i*5+startIndex].Layout(gtx)
+				})
+			}),
+		)
+	})
 }
 
 func (pg *SeedRestore) inputsGroupMobile(gtx layout.Context, l *layout.List, len, startIndex int) layout.Dimensions {

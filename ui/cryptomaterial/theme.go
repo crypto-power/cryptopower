@@ -50,7 +50,8 @@ type Theme struct {
 	dropDownMenus    []*DropDown
 	DropdownBackdrop *widget.Clickable
 
-	allEditors []*Editor
+	allEditors  []*Editor
+	backButtons []*widget.Clickable
 }
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
@@ -333,6 +334,16 @@ func (t *Theme) AutoHideSoftKeyBoard(gtx C) {
 	}
 	if isHide {
 		key.SoftKeyboardOp{Show: false}.Add(gtx.Ops)
+	}
+}
+
+func (t *Theme) AddBackClick(clickable *widget.Clickable) {
+	t.backButtons = append(t.backButtons, clickable)
+}
+
+func (t *Theme) OnTapBack() {
+	for _, clickable := range t.backButtons {
+		clickable.Click()
 	}
 }
 

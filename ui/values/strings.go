@@ -1032,6 +1032,7 @@ const (
 	StrWalletsNeedToSyncMsg            = "walletsNeedToSyncMsg"
 	StrIWillSyncLater                  = "iWillSyncLater"
 	StrOkaySync                        = "okaySync"
+	StrPaste                           = "paste"
 
 	StrLoginDEXForActiveOrdersOrExpiredBonds = "loginDEXForActiveOrdersOrExpiredBonds"
 )

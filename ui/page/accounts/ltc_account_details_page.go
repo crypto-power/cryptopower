@@ -68,7 +68,7 @@ func NewLTCAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.
 		isHiddenExtendedxPubkey: true,
 	}
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 }

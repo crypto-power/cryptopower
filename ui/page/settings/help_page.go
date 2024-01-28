@@ -61,7 +61,7 @@ func NewHelpPage(l *load.Load) *HelpPage {
 	pg.shadowBox.SetShadowRadius(14)
 
 	pg.documentation.Radius = cryptomaterial.Radius(14)
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	axis := layout.Horizontal
 	if l.IsMobileView() {

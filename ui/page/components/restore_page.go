@@ -59,7 +59,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 		tabs:             l.Theme.SegmentedControl(tabTitles, cryptomaterial.SegmentTypeGroup),
 	}
 
-	pg.backButton, _ = SubpageHeaderButtons(l)
+	pg.backButton = GetBackButton(l)
 	pg.backButton.Icon = pg.Theme.Icons.ContentClear
 	textSize16 := values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 
@@ -73,6 +73,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 	pg.confirmSeedButton.SetEnabled(false)
 	pg.confirmSeedButton.TextSize = textSize16
 	pg.tabs.DisableUniform(true)
+	pg.tabs.SetDisableAnimation(true)
 
 	return pg
 }

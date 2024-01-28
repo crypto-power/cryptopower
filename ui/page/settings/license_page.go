@@ -42,7 +42,7 @@ func NewLicensePage(l *load.Load) *LicensePage {
 			List: layout.List{Axis: layout.Vertical},
 		},
 	}
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 }

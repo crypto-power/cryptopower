@@ -5,7 +5,9 @@ package cryptomaterial
 import (
 	"image/color"
 
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -64,6 +66,11 @@ type Editor struct {
 	m5 unit.Dp
 
 	clickable *widget.Clickable
+
+	copy, paste   Button
+	eventKey      int
+	isShowMenu    bool
+	isDisableMenu bool
 }
 
 func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
@@ -154,19 +161,45 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 		},
 		CustomButton: t.Button(""),
 		clickable:    new(widget.Clickable),
+		copy:         t.Button(values.String(values.StrCopy)),
+		paste:        t.Button(values.String(values.StrPaste)),
 	}
+	newEditor.copy.TextSize = values.TextSize10
+	newEditor.copy.Background = color.NRGBA{}
+	newEditor.copy.HighlightColor = t.Color.SurfaceHighlight
+	newEditor.copy.Color = t.Color.Primary
+	newEditor.copy.Inset = layout.UniformInset(values.MarginPadding5)
+
+	newEditor.paste.TextSize = values.TextSize10
+	newEditor.paste.Background = color.NRGBA{}
+	newEditor.paste.HighlightColor = t.Color.SurfaceHighlight
+	newEditor.paste.Color = t.Color.Primary
+	newEditor.paste.Inset = layout.UniformInset(values.MarginPadding5)
 	t.allEditors = append(t.allEditors, &newEditor)
 
 	return newEditor
 }
 
-func (e Editor) Pressed() bool {
-	return e.clickable.Pressed()
+func (e *Editor) Pressed() bool {
+	return e.clickable.Pressed() || e.copy.Clicked() || e.paste.Clicked()
 }
 
-func (e Editor) Layout(gtx C) D {
-	e.handleEvents()
+func (e *Editor) Layout(gtx C) D {
+	e.handleEvents(gtx)
+	clicks := e.clickable.Clicks()
+	if len(clicks) > 0 {
+		clk := clicks[len(clicks)-1]
+		if clk.NumClicks == 2 {
+			e.isShowMenu = true
+		}
+		if clk.NumClicks != 2 && clk.NumClicks > 0 {
+			e.isShowMenu = false
+		}
+	}
+	return e.layout(gtx)
+}
 
+func (e Editor) layout(gtx C) D {
 	if e.Editor.Len() > 0 {
 		e.TitleLabel.Text = e.Hint
 	}
@@ -197,7 +230,7 @@ func (e Editor) Layout(gtx C) D {
 		gtx = gtx.Disabled()
 	}
 
-	return layout.UniformInset(e.m2).Layout(gtx, func(gtx C) D {
+	dims := layout.UniformInset(e.m2).Layout(gtx, func(gtx C) D {
 		return Card{Color: e.t.Color.Surface, Radius: Radius(8)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -236,10 +269,13 @@ func (e Editor) Layout(gtx C) D {
 			)
 		})
 	})
-
+	if !e.isDisableMenu {
+		e.editorMenusLayout(gtx, dims.Size.Y)
+	}
+	return dims
 }
 
-func (e Editor) editorLayout(gtx C) D {
+func (e *Editor) editorLayout(gtx C) D {
 	if e.Bordered {
 		border := widget.Border{Color: e.LineColor, CornerRadius: unit.Dp(8), Width: unit.Dp(2)}
 		return border.Layout(gtx, func(gtx C) D {
@@ -259,11 +295,32 @@ func (e Editor) editorLayout(gtx C) D {
 		Left:   values.MarginPadding12,
 		Right:  values.MarginPadding12,
 	}
-
 	return inset.Layout(gtx, e.editor)
 }
 
-func (e Editor) layoutIconEditor(gtx C) D {
+func (e *Editor) editorMenusLayout(gtx C, editorHeight int) {
+	if e.isShowMenu {
+		flexChilds := make([]layout.FlexChild, 0)
+		if len(e.Editor.Text()) > 0 {
+			flexChilds = append(flexChilds, layout.Rigid(e.copy.Layout))
+			flexChilds = append(flexChilds, layout.Rigid(e.t.Line(20, 1).Layout))
+		}
+		flexChilds = append(flexChilds, layout.Rigid(e.paste.Layout))
+		macro := op.Record(gtx.Ops)
+		LinearLayout{
+			Width:      WrapContent,
+			Height:     WrapContent,
+			Background: e.t.Color.Surface,
+			Margin:     layout.Inset{Top: gtx.Metric.PxToDp(-(editorHeight - 10))},
+			Padding:    layout.UniformInset(values.MarginPadding5),
+			Alignment:  layout.Middle,
+			Border:     Border{Radius: Radius(8), Color: e.t.Color.Gray2, Width: unit.Dp(0.5)},
+		}.Layout(gtx, flexChilds...)
+		op.Defer(gtx.Ops, macro.Stop())
+	}
+}
+
+func (e *Editor) layoutIconEditor(gtx C) D {
 	inset := layout.Inset{
 		Top: e.m2,
 	}
@@ -282,7 +339,7 @@ func (e Editor) layoutIconEditor(gtx C) D {
 	})
 }
 
-func (e Editor) editor(gtx C) D {
+func (e *Editor) editor(gtx C) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if e.showEditorIcon && !e.alignEditorIconEnd {
@@ -343,7 +400,8 @@ func (e Editor) editor(gtx C) D {
 	)
 }
 
-func (e Editor) handleEvents() {
+func (e *Editor) handleEvents(gtx C) {
+	e.processEvent(gtx)
 	if e.showHidePassword.Button.Clicked() {
 		if e.Editor.Mask == '*' {
 			e.Editor.Mask = 0
@@ -354,6 +412,25 @@ func (e Editor) handleEvents() {
 
 	if e.editorIconButton.Button.Clicked() {
 		e.EditorIconButtonEvent()
+	}
+
+	if e.copy.Clicked() {
+		clipboard.WriteOp{Text: e.Editor.Text()}.Add(gtx.Ops)
+		e.isShowMenu = false
+	}
+
+	if e.paste.Clicked() {
+		clipboard.ReadOp{Tag: &e.eventKey}.Add(gtx.Ops)
+		e.isShowMenu = false
+	}
+}
+
+func (e *Editor) processEvent(gtx C) {
+	for _, event := range gtx.Events(&e.eventKey) {
+		switch eventType := event.(type) {
+		case clipboard.Event:
+			e.Editor.Insert(eventType.Text)
+		}
 	}
 }
 

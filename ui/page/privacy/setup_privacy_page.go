@@ -44,7 +44,8 @@ func NewSetupPrivacyPage(l *load.Load, wallet *dcr.Asset) *SetupPrivacyPage {
 		wallet:           wallet,
 		toPrivacySetup:   l.Theme.Button(values.String(values.StrSetUpStakeShuffleIntroButton)),
 	}
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
+	_, pg.infoButton = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 

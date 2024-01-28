@@ -88,7 +88,8 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 	}
 
 	pg.signedMessageLabel.Color = l.Theme.Color.GrayText2
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
+	_, pg.infoButton = components.SubpageHeaderButtons(l)
+	pg.backButton = components.GetBackButton(l)
 
 	return pg
 }
