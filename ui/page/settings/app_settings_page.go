@@ -183,6 +183,7 @@ func (pg *AppSettingsPage) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.general(),
 		pg.networkSettings(),
+		pg.dexSettings(),
 		pg.security(),
 		pg.info(),
 		pg.debug(),
@@ -301,18 +302,6 @@ func (pg *AppSettingsPage) general() layout.Widget {
 				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrTxNotification), pg.transactionNotification)
 				}),
-				layout.Rigid(func(gtx C) D {
-					if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
-						return D{}
-					}
-
-					backupDEX := row{
-						title:     values.String(values.StrBackupDEXSeed),
-						clickable: pg.backupDEX,
-						label:     pg.Theme.Body2(""),
-					}
-					return pg.clickableRow(gtx, backupDEX)
-				}),
 			)
 		})
 	}
@@ -346,6 +335,39 @@ func (pg *AppSettingsPage) networkSettings() layout.Widget {
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrVSPAPI), pg.vspAPI)
+				}),
+			)
+		})
+	}
+}
+
+func (pg *AppSettingsPage) dexSettings() layout.Widget {
+	return func(gtx C) D {
+		return pg.wrapSection(gtx, values.String(values.StrDEX), func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
+						return D{}
+					}
+
+					backupDEX := row{
+						title:     values.String(values.StrBackupDEXSeed),
+						clickable: pg.backupDEX,
+						label:     pg.Theme.Body2(""),
+					}
+					return pg.clickableRow(gtx, backupDEX)
+				}),
+				layout.Rigid(func(gtx C) D {
+					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
+						return D{}
+					}
+
+					deleteDEXClientRow := row{
+						title:     values.String(values.StrResetDEXData),
+						clickable: pg.deleteDEX,
+						label:     pg.Theme.Body2(""),
+					}
+					return pg.clickableRow(gtx, deleteDEXClientRow)
 				}),
 			)
 		})
@@ -419,18 +441,6 @@ func (pg *AppSettingsPage) debug() layout.Widget {
 						label:     pg.Theme.Body2(""),
 					}
 					return pg.clickableRow(gtx, viewLogRow)
-				}),
-				layout.Rigid(func(gtx C) D {
-					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
-						return D{}
-					}
-
-					deleteDEXClientRow := row{
-						title:     values.String(values.StrResetDEXData),
-						clickable: pg.deleteDEX,
-						label:     pg.Theme.Body2(""),
-					}
-					return pg.clickableRow(gtx, deleteDEXClientRow)
 				}),
 			)
 		})

@@ -288,7 +288,7 @@ const (
 	StrDestinationMissing              = "destinationMissing"
 	StrDestinationModalInfo            = "destinationModalInfo"
 	StrDestinationWalletNotSynced      = "destinationWalletNotSynced"
-	StrDex                             = "dex"
+	StrDEX                             = "dex"
 	StrDexContent                      = "dexContent"
 	StrDexDataReset                    = "dexDataReset"
 	StrDexDataResetFalse               = "dexDataResetFalse"
