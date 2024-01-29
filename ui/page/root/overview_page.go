@@ -13,6 +13,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/decred/dcrd/dcrutil/v4"
 
@@ -203,15 +204,14 @@ func (pg *OverviewPage) ID() string {
 // Part of the load.Page interface.
 func (pg *OverviewPage) OnNavigatedTo() {
 	pg.updateAssetsSliders()
-	go pg.updateAssetsUSDBalance()
+	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		go pg.AssetsManager.RateSource.Refresh(false)
+		go pg.updateAssetsUSDBalance()
+	}
 	go pg.loadTransactions()
 
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true, "")
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true, "", "")
-
-	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
-		go pg.AssetsManager.RateSource.Refresh(false)
-	}
 
 	pg.listenForMixerNotifications() // listeners are stopped in OnNavigatedFrom().
 
@@ -353,8 +353,18 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 		pg.infoWalletLayout,
 		pg.mobileMarketOverview,
 		pg.txStakingSection,
-		pg.recentTrades,
 		pg.recentProposal,
+	}
+
+	if !appos.Current().IsIOS() {
+		// Determine the insertion point, which is second to last position
+		insertionPoint := len(pageContent) - 1
+		if insertionPoint < 0 {
+			insertionPoint = 0
+		}
+
+		// Append at the second to last position
+		pageContent = append(pageContent[:insertionPoint], append([]func(gtx C) D{pg.recentTrades}, pageContent[insertionPoint:]...)...)
 	}
 
 	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
@@ -1202,7 +1212,9 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 
 	// Reload the window whenever there is an exchange rate update.
 	rateListener := &ext.RateListener{
-		OnRateUpdated: pg.ParentWindow().Reload,
+		OnRateUpdated: func() {
+			go pg.updateAssetsUSDBalance()
+		},
 	}
 	err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
 	if err != nil {
