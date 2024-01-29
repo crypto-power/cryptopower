@@ -1017,6 +1017,7 @@ const (
 	StrIWillGet                        = "iWillGet"
 	StrIWillGive                       = "iWillGive"
 	StrPostBondMsg                     = "postBondMsg"
+	StrBondPostingInProgressMsg        = "bondPostingInProgressMsg"
 	StrMaxDEX                          = "maxDEX"
 	StrAvailableBalance                = "availableBalance"
 	StrMissingDEXWalletMsg             = "missingDEXWalletMsg"
