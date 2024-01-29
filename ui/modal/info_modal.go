@@ -298,9 +298,13 @@ func (in *InfoModal) Handle() {
 			isChecked = in.checkbox.CheckBox.Value
 		}
 
-		if in.positiveButtonClicked(isChecked, in) {
-			in.Dismiss()
-		}
+		in.SetLoading(true)
+		go func() {
+			if in.positiveButtonClicked(isChecked, in) {
+				in.Dismiss()
+			}
+			in.SetLoading(false)
+		}()
 	}
 
 	for in.btnNegative.Clicked() {
