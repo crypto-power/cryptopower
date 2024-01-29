@@ -65,8 +65,6 @@ type HomePage struct {
 	isConnected        *atomic.Bool
 	showNavigationFunc showNavigationFunc
 	startSpvSync       uint32
-
-	// totalBalanceUSD string
 }
 
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
