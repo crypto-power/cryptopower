@@ -81,8 +81,6 @@ type DEXMarketPage struct {
 	ctx       context.Context
 	cancelCtx context.CancelFunc
 
-	dexc dexClient
-
 	scrollContainer                    *widget.List
 	openOrdersAndOrderHistoryContainer *widget.List
 
@@ -144,8 +142,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 	th := l.Theme
 	pg := &DEXMarketPage{
 		Load:                               l,
-		GenericPageModal:                   app.NewGenericPageModal(DEXOnboardingPageID),
-		dexc:                               l.AssetsManager.DexClient(),
+		GenericPageModal:                   app.NewGenericPageModal(DEXMarketPageID),
 		scrollContainer:                    &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		openOrdersAndOrderHistoryContainer: &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		addServerBtn:                       th.NewClickable(false),
@@ -194,14 +191,6 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 
 	pg.setBuyOrSell()
 
-	// Ensure dex client is ready.
-	pg.showLoader = true
-	go func() {
-		<-pg.dexc.Ready()
-		pg.showLoader = false
-		pg.ParentWindow().Reload()
-	}()
-
 	return pg
 }
 
@@ -210,19 +199,36 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) OnNavigatedTo() {
+	if pg.isDEXReset() {
+		return
+	}
+
 	pg.ctx, pg.cancelCtx = context.WithCancel(context.Background())
 
-	noteFeed := pg.dexc.NotificationFeed()
+	pg.showLoader = true
+	dexc := pg.AssetsManager.DexClient()
+	noteFeed := dexc.NotificationFeed()
 	go func() {
+		// Ensure dex client is ready.
+		<-dexc.Ready()
+		pg.showLoader = false
+		pg.ParentWindow().Reload()
+
 		defer func() {
 			noteFeed.ReturnFeed()
 		}()
 		for {
+			// Always check if the dex client is ready. We want to exit if there
+			// was a reset.
+			if pg.isDEXReset() {
+				return
+			}
+
 			select {
 			case <-pg.ctx.Done():
 				return
 			case n := <-noteFeed.C:
-				if n == nil {
+				if n == nil || !pg.AssetsManager.DEXCInitialized() {
 					return
 				}
 
@@ -262,7 +268,8 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 		}
 	}
 
-	if pg.dexc.IsLoggedIn() {
+	if dexc.IsLoggedIn() {
+		go pg.refreshOrders()
 		return // All good, return early.
 	}
 
@@ -274,7 +281,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 		SetDescription(values.String(values.StrLoginWithDEXPassword)).
 		PasswordHint(values.String(values.StrDexPassword)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.dexc.Login([]byte(password))
+			err := dexc.Login([]byte(password))
 			if err == nil {
 				return true
 			}
@@ -287,8 +294,12 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
+func (pg *DEXMarketPage) isDEXReset() bool {
+	return !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword()
+}
+
 func (pg *DEXMarketPage) resetServerAndMarkets() {
-	xcs := pg.dexc.Exchanges()
+	xcs := pg.AssetsManager.DexClient().Exchanges()
 	var servers []cryptomaterial.DropDownItem
 	for _, xc := range xcs {
 		servers = append(servers, cryptomaterial.DropDownItem{
@@ -324,11 +335,12 @@ func (pg *DEXMarketPage) setServerOrMarketDropdownStyle(d *cryptomaterial.DropDo
 
 func (pg *DEXMarketPage) setServerMarkets() {
 	// Set available market pairs.
+	dexc := pg.AssetsManager.DexClient()
 	var markets []cryptomaterial.DropDownItem
 	var lastSelectedItem *cryptomaterial.DropDownItem
 	if pg.serverSelector.Selected() != values.String(values.StrAddServer) {
 		host := pg.serverSelector.Selected()
-		xc, err := pg.dexc.Exchange(host)
+		xc, err := dexc.Exchange(host)
 		if err != nil {
 			pg.notifyError(err.Error())
 		} else {
@@ -343,7 +355,7 @@ func (pg *DEXMarketPage) setServerMarkets() {
 					DisplayFn: pg.marketDropdownListItem(base, quote),
 				}
 
-				if pg.dexc.HasWallet(int32(m.BaseID)) && pg.dexc.HasWallet(int32(m.QuoteID)) {
+				if dexc.HasWallet(int32(m.BaseID)) && dexc.HasWallet(int32(m.QuoteID)) {
 					lastSelectedItem = &marketItem
 				}
 
@@ -390,7 +402,7 @@ func (pg *DEXMarketPage) fetchOrderBook() {
 	pg.showLoader = true
 	go func() {
 		// Fetch order book and only update if we're still on the same market.
-		book, feed, err := pg.dexc.SyncBook(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
+		book, feed, err := pg.AssetsManager.DexClient().SyncBook(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
 		if err == nil && pg.selectedMarketOrderBook.base == baseAssetID && pg.selectedMarketOrderBook.quote == quoteAssetID {
 			pg.selectedMarketOrderBook.marketID = pg.formatSelectedMarketAsDEXMarketName()
 			pg.selectedMarketOrderBook.feed = feed
@@ -413,6 +425,10 @@ func (pg *DEXMarketPage) listenForOrderbookNotifications() {
 		pg.closeAndResetOrderbookListener()
 	}()
 	for {
+		if pg.isDEXReset() {
+			return
+		}
+
 		select {
 		case <-pg.ctx.Done():
 			return
@@ -506,6 +522,11 @@ func (pg *DEXMarketPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) Layout(gtx C) D {
+	if pg.isDEXReset() {
+		pg.ParentNavigator().CloseCurrentPage()
+		return D{}
+	}
+
 	pageContent := []func(gtx C) D{
 		pg.priceAndVolumeDetail,
 		pg.orderFormAndOrderBook,
@@ -662,7 +683,7 @@ func (pg *DEXMarketPage) formatSelectedMarketAsDEXMarketName() string {
 
 func (pg *DEXMarketPage) exchange() *core.Exchange {
 	host := pg.serverSelector.Selected()
-	xc, err := pg.dexc.Exchange(host)
+	xc, err := pg.AssetsManager.DexClient().Exchange(host)
 	if err != nil {
 		pg.notifyError(err.Error())
 		return nil
@@ -903,10 +924,11 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 }
 
 func (pg *DEXMarketPage) missingMarketWallet() libutils.AssetType {
-	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.base)) {
+	dexc := pg.AssetsManager.DexClient()
+	if !dexc.HasWallet(int32(pg.selectedMarketOrderBook.base)) {
 		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.base)
 	}
-	if !pg.dexc.HasWallet(int32(pg.selectedMarketOrderBook.quote)) {
+	if !dexc.HasWallet(int32(pg.selectedMarketOrderBook.quote)) {
 		return convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)
 	}
 	return ""
@@ -924,12 +946,14 @@ func (pg *DEXMarketPage) estimateOrderFee() {
 
 	host, base, quote := pg.serverSelector.Selected(), pg.selectedMarketOrderBook.base, pg.selectedMarketOrderBook.quote
 
+	dexc := pg.AssetsManager.DexClient()
+
 	var est *core.MaxOrderEstimate
 	var err error
 	if pg.isSellOrder() {
-		est, err = pg.dexc.MaxSell(host, base, quote)
+		est, err = dexc.MaxSell(host, base, quote)
 	} else {
-		est, err = pg.dexc.MaxBuy(host, base, quote, mkt.ConventionalRateToMsg(price))
+		est, err = dexc.MaxBuy(host, base, quote, mkt.ConventionalRateToMsg(price))
 	}
 	if err != nil || est.Swap == nil || est.Redeem == nil {
 		return
@@ -978,12 +1002,13 @@ func (pg *DEXMarketPage) availableWalletAccountBalanceString(forQuoteAsset bool)
 		assetID = pg.selectedMarketOrderBook.base
 	}
 
+	dexc := pg.AssetsManager.DexClient()
 	assetSym = convertAssetIDToAssetType(assetID).String()
-	if !pg.dexc.HasWallet(int32(assetID)) {
+	if !dexc.HasWallet(int32(assetID)) {
 		return 0, assetSym
 	}
 
-	walletState := pg.dexc.WalletState(assetID)
+	walletState := dexc.WalletState(assetID)
 	if walletState != nil && walletState.Balance != nil { // better safe than sorry
 		bal = conventionalAmt(walletState.Balance.Available)
 	}
@@ -1242,7 +1267,7 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 									return layout.Flex{Axis: horizontal, Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 										pg.orderColumn(false, fmt.Sprintf("%s %s", values.String(ord.Type.String()), values.String(orderReader.SideString())), columnWidth, index),
 										pg.orderColumn(false, ord.MarketID, columnWidth, index),
-										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime)), columnWidth, index),
+										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime/1000)), columnWidth, index),
 										pg.orderColumn(false, orderReader.RateString(), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s %s", orderReader.BaseQtyString(), strings.ToTitle(orderReader.BaseSymbol)), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s%%", orderReader.FilledPercent()), columnWidth, index),
@@ -1342,9 +1367,14 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) HandleUserInteractions() {
+	if pg.isDEXReset() {
+		return
+	}
+
+	dexc := pg.AssetsManager.DexClient()
 	if pg.serverSelector.Changed() {
 		selectedServer := pg.serverSelector.Selected()
-		xc, err := pg.dexc.Exchange(selectedServer)
+		xc, err := dexc.Exchange(selectedServer)
 		if err != nil && xc.Auth.EffectiveTier == 0 /* need to post bond now */ {
 			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer))
 		} else {
@@ -1536,7 +1566,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 
 	for _, ord := range pg.orders {
 		if ord.cancelBtn != nil && ord.cancelBtn.Clicked() {
-			err := pg.dexc.Cancel(ord.ID)
+			err := dexc.Cancel(ord.ID)
 			if err != nil {
 				pg.notifyError(fmt.Errorf("Error canceling order: %v", err).Error())
 			} else {
@@ -1566,12 +1596,12 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 					pg.showLoader = false
 				}()
 
-				err = pg.dexc.Login([]byte(password))
+				err = dexc.Login([]byte(password))
 				if err != nil {
 					return false
 				}
 
-				_, err = pg.dexc.TradeAsync([]byte(password), orderForm)
+				_, err = dexc.TradeAsync([]byte(password), orderForm)
 				return err == nil
 			})
 
@@ -1687,7 +1717,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 		Title(values.String(values.StrDexPassword)).
 		PasswordHint(values.String(values.StrDexPassword)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.dexc.Login([]byte(password))
+			err := pg.AssetsManager.DexClient().Login([]byte(password))
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -1736,7 +1766,6 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 	asset := pg.walletSelector.SelectedWallet()
 	selectedAccount := pg.accountSelector.SelectedAccount()
 	if selectedAccount == nil || asset == nil {
-		fmt.Println(asset, selectedAccount)
 		return errors.New("No wallet selected")
 	}
 
@@ -1749,7 +1778,8 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 		return fmt.Errorf("No assetID for %s", missingWallet)
 	}
 
-	if pg.dexc.HasWallet(int32(walletAssetID)) {
+	dexClient := pg.AssetsManager.DexClient()
+	if dexClient.HasWallet(int32(walletAssetID)) {
 		// TODO: For now return. We might need to allow users select
 		// which wallet to use at the time of trade.
 		return fmt.Errorf("%s wallet already exists in dex client", missingWallet)
@@ -1766,7 +1796,7 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 		dexc.WalletAccountNumberConfigKey: fmt.Sprint(selectedAccount.AccountNumber),
 	}
 
-	err = pg.dexc.AddWallet(walletAssetID, cfg, []byte(dexPass), []byte(walletPass))
+	err = dexClient.AddWallet(walletAssetID, cfg, []byte(dexPass), []byte(walletPass))
 	if err != nil {
 		return fmt.Errorf("Failed to add wallet to DEX client: %w", err)
 	}
@@ -1785,7 +1815,7 @@ func (pg *DEXMarketPage) refreshOrders() {
 	}
 
 	// TODO: Paginate.
-	orders, err := pg.dexc.Orders(filter)
+	orders, err := pg.AssetsManager.DexClient().Orders(filter)
 	if err != nil {
 		pg.notifyError(err.Error())
 		return

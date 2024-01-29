@@ -229,9 +229,9 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
-// github.com/ukane-philemon/dcrdex v0.0.0-20240123003034-3f8508fea639 is the
-// latest dcrdex master plus 2 commits that adds methods required by
+// github.com/ukane-philemon/dcrdex v0.0.0-20240126135833-b75c189e80a9 is the
+// latest dcrdex master plus commits that adds methods required by
 // cryptopower. This should be updated when these PRs get merged.
 // 1. core: add ActiveOrders method to Core: https://github.com/decred/dcrdex/pull/2680
 // 1. core: Add ExpiredBonds method to Core: https://github.com/decred/dcrdex/pull/2679
-replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240123003034-3f8508fea639
+replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240126135833-b75c189e80a9

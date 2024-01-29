@@ -1,8 +1,16 @@
 package settings
 
 import (
+	"image/color"
+	"regexp"
+	"strings"
+	"time"
+
+	"decred.org/dcrdex/dex"
 	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -56,6 +64,9 @@ type AppSettingsPage struct {
 	logLevel                *cryptomaterial.Clickable
 	viewLog                 *cryptomaterial.Clickable
 	deleteDEX               *cryptomaterial.Clickable
+	backupDEX               *cryptomaterial.Clickable
+	copyDEXSeed             cryptomaterial.Button
+	dexSeed                 dex.Bytes
 
 	governanceAPI *cryptomaterial.Switch
 	exchangeAPI   *cryptomaterial.Switch
@@ -93,12 +104,20 @@ func NewAppSettingsPage(l *load.Load) *AppSettingsPage {
 		logLevel:          l.Theme.NewClickable(false),
 		viewLog:           l.Theme.NewClickable(false),
 		deleteDEX:         l.Theme.NewClickable(false),
+		backupDEX:         l.Theme.NewClickable(false),
+		copyDEXSeed:       l.Theme.Button(values.String(values.StrCopy)),
 	}
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.backButton = components.GetBackButton(l)
 	pg.isDarkModeOn = pg.AssetsManager.IsDarkModeOn()
+
+	pg.copyDEXSeed.TextSize = values.TextSize14
+	pg.copyDEXSeed.Background = color.NRGBA{}
+	pg.copyDEXSeed.HighlightColor = pg.Theme.Color.SurfaceHighlight
+	pg.copyDEXSeed.Color = pg.Theme.Color.Primary
+	pg.copyDEXSeed.Inset = layout.UniformInset(values.MarginPadding16)
 
 	return pg
 }
@@ -115,6 +134,7 @@ func (pg *AppSettingsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) Layout(gtx C) D {
+	pg.handleDEXSeedCopyEvent(gtx)
 	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.pageHeaderLayout),
@@ -163,6 +183,7 @@ func (pg *AppSettingsPage) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.general(),
 		pg.networkSettings(),
+		pg.dexSettings(),
 		pg.security(),
 		pg.info(),
 		pg.debug(),
@@ -320,6 +341,35 @@ func (pg *AppSettingsPage) networkSettings() layout.Widget {
 	}
 }
 
+func (pg *AppSettingsPage) dexSettings() layout.Widget {
+	return func(gtx C) D {
+		if pg.AssetsManager.NetType() == libutils.Mainnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
+			return D{}
+		}
+
+		return pg.wrapSection(gtx, values.String(values.StrDEX), func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					backupDEX := row{
+						title:     values.String(values.StrBackupDEXSeed),
+						clickable: pg.backupDEX,
+						label:     pg.Theme.Body2(""),
+					}
+					return pg.clickableRow(gtx, backupDEX)
+				}),
+				layout.Rigid(func(gtx C) D {
+					deleteDEXClientRow := row{
+						title:     values.String(values.StrResetDEXData),
+						clickable: pg.deleteDEX,
+						label:     pg.Theme.Body2(""),
+					}
+					return pg.clickableRow(gtx, deleteDEXClientRow)
+				}),
+			)
+		})
+	}
+}
+
 func (pg *AppSettingsPage) security() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrSecurity), func(gtx C) D {
@@ -387,18 +437,6 @@ func (pg *AppSettingsPage) debug() layout.Widget {
 						label:     pg.Theme.Body2(""),
 					}
 					return pg.clickableRow(gtx, viewLogRow)
-				}),
-				layout.Rigid(func(gtx C) D {
-					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DexcInitialized() {
-						return D{}
-					}
-
-					deleteDEXClientRow := row{
-						title:     values.String(values.StrDeleteDEXData),
-						clickable: pg.deleteDEX,
-						label:     pg.Theme.Body2(""),
-					}
-					return pg.clickableRow(gtx, deleteDEXClientRow)
 				}),
 			)
 		})
@@ -555,15 +593,16 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 	if pg.deleteDEX.Clicked() {
 		// Show warning modal.
 		deleteDEXModal := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrDeleteDEXData)).
-			Body(values.String(values.StrDeleteDEXDataWarning)).
+			Title(values.String(values.StrResetDEXData)).
+			Body(values.String(values.StrResetDEXDataWarning)).
 			SetNegativeButtonText(values.String(values.StrCancel)).
-			SetPositiveButtonText(values.String(values.StrDelete)).
+			SetPositiveButtonText(values.String(values.StrReset)).
 			SetPositiveButtonCallback(func(_ bool, in *modal.InfoModal) bool {
-				if pg.AssetsManager.DexcInitialized() {
+				if pg.AssetsManager.DEXCInitialized() {
 					if err := pg.AssetsManager.DeleteDEXData(); err != nil {
 						return false
 					}
+					pg.showNoticeSuccess(values.String(values.StrDEXResetSuccessful))
 				}
 				return true
 			}).
@@ -674,6 +713,74 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			pg.ParentWindow().ShowModal(currentPasswordModal)
 		}
 	}
+
+	if pg.backupDEX.Clicked() {
+		// Show modal asking for dex password and then reveal the seed.
+		dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+			EnableName(false).
+			EnableConfirmPassword(false).
+			Title(values.String(values.StrDexPassword)).
+			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+				dexSeed, err := pg.AssetsManager.DexClient().ExportSeed([]byte(password))
+				if err != nil {
+					pm.SetError(err.Error())
+					pm.SetLoading(false)
+					return false
+				}
+
+				pg.dexSeed = dexSeed
+				pg.showDEXSeedModal()
+				return true
+			})
+
+		dexPasswordModal.SetPasswordTitleVisibility(false)
+		pg.ParentWindow().ShowModal(dexPasswordModal)
+	}
+}
+
+func (pg *AppSettingsPage) handleDEXSeedCopyEvent(gtx C) {
+	if pg.copyDEXSeed.Clicked() {
+		clipboard.WriteOp{Text: pg.dexSeed.String()}.Add(gtx.Ops)
+		pg.copyDEXSeed.Text = values.String(values.StrCopied)
+		pg.copyDEXSeed.Color = pg.Theme.Color.Success
+		time.AfterFunc(time.Second*3, func() {
+			pg.copyDEXSeed.Text = values.String(values.StrCopy)
+			pg.copyDEXSeed.Color = pg.Theme.Color.Primary
+			pg.ParentWindow().Reload()
+		})
+	}
+}
+
+func (pg *AppSettingsPage) showDEXSeedModal() {
+	seedModal := modal.NewSuccessModal(pg.Load, values.String(values.StrDEXSeed), modal.DefaultClickFunc()).
+		UseCustomWidget(func(gtx C) D {
+			seedText := pg.Theme.Body1(formatDEXSeedAsString(pg.dexSeed))
+			seedText.Alignment = text.Middle
+			seedText.Color = pg.Theme.Color.GrayText2
+			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(seedText.Layout),
+				layout.Rigid(pg.copyDEXSeed.Layout),
+			)
+		}).
+		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			utils.ZeroBytes(pg.dexSeed)
+			return true
+		})
+	pg.ParentWindow().ShowModal(seedModal)
+}
+
+func formatDEXSeedAsString(seed dex.Bytes) string {
+	chunkRegex := regexp.MustCompile(`.{1,32}`) // 64 bytes, 128 hex characters.
+	chunks := chunkRegex.FindAllString(seed.String(), -1)
+
+	var seedChunks []string
+	subChunkRegex := regexp.MustCompile(`.{1,8}`)
+	for _, chunk := range chunks {
+		subChunks := subChunkRegex.FindAllString(chunk, -1)
+		seedChunks = append(seedChunks, strings.Join(subChunks, "  "))
+	}
+
+	return strings.Join(seedChunks, "\n")
 }
 
 func ChangeNetworkType(load *load.Load, windowNav app.WindowNavigator, newNetType string) {
@@ -738,7 +845,9 @@ func (pg *AppSettingsPage) updatePrivacySettings() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *AppSettingsPage) OnNavigatedFrom() {}
+func (pg *AppSettingsPage) OnNavigatedFrom() {
+	utils.ZeroBytes(pg.dexSeed)
+}
 
 func (pg *AppSettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, isChecked bool) {
 	switchComponent.SetChecked(false)

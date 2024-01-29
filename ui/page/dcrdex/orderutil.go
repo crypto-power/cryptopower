@@ -33,7 +33,7 @@ func (pg *DEXMarketPage) orderReader(ord *core.Order) *core.OrderReader {
 		if err == nil {
 			return unitInfo
 		}
-		xc := pg.dexc.Exchanges()[ord.Host]
+		xc := pg.AssetsManager.DexClient().Exchanges()[ord.Host]
 		a, found := xc.Assets[assetID]
 		if !found || a.UnitInfo.Conventional.ConversionFactor == 0 {
 			return defaultUnitInfo(symbol)

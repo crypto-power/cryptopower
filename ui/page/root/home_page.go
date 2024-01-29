@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	dexdb "decred.org/dcrdex/client/db"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -150,11 +151,9 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
 	hp.initPageItems()
+	hp.initDEX()
 
 	go hp.CalculateAssetsUSDBalance()
-	if !hp.AssetsManager.DexcInitialized() {
-		go hp.AssetsManager.InitializeDEX(hp.dexCtx)
-	}
 
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
@@ -173,7 +172,7 @@ func (hp *HomePage) OnNavigatedTo() {
 
 // initDEX initializes a new dex client if dex is not ready.
 func (hp *HomePage) initDEX() {
-	if hp.AssetsManager.DexcInitialized() {
+	if hp.AssetsManager.DEXCInitialized() {
 		return // do nothing
 	}
 
@@ -194,16 +193,20 @@ func (hp *HomePage) initDEX() {
 			log.Errorf("dexClient.ActiveOrders error: %w", err)
 		}
 
-		expiredBonds := dexClient.ExpiredBonds()
-		if len(activeOrders) == 0 && len(expiredBonds) == 0 {
-			return // nothing to do.
+		var expiredBonds []*dexdb.Bond
+		xcs := dexClient.Exchanges()
+		for _, xc := range xcs {
+			if len(xc.Auth.ExpiredBonds) == 0 {
+				continue // nothing to do.
+			}
+
+			expiredBonds = append(expiredBonds, xc.Auth.ExpiredBonds...)
 		}
 
 		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
 		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
 		loginModal := modal.NewCustomModal(hp.Load).
-			Title(values.String(values.StrLoginWithDEXPassword)).
 			UseCustomWidget(func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
@@ -228,15 +231,13 @@ func (hp *HomePage) initDEX() {
 				walletsToSyncMap := make(map[uint32]*struct{})
 				for _, orders := range activeOrders {
 					for _, ord := range orders {
-						walletsToSyncMap[ord.Base()] = &struct{}{}
-						walletsToSyncMap[ord.Quote()] = &struct{}{}
+						walletsToSyncMap[ord.BaseID] = &struct{}{}
+						walletsToSyncMap[ord.QuoteID] = &struct{}{}
 					}
 				}
 
-				for _, bonds := range expiredBonds {
-					for _, bond := range bonds {
-						walletsToSyncMap[bond.AssetID] = &struct{}{}
-					}
+				for _, bond := range expiredBonds {
+					walletsToSyncMap[bond.AssetID] = &struct{}{}
 				}
 
 				var walletsToSync []sharedW.Asset
@@ -412,7 +413,7 @@ func (hp *HomePage) displaySelectedPage(title string) {
 	case values.String(values.StrWallets):
 		pg = hp.walletSelectorPage
 	case values.String(values.StrTrade):
-		if !hp.AssetsManager.DexcInitialized() {
+		if !hp.AssetsManager.DEXCInitialized() {
 			// Attempt to initialize dex again.
 			hp.AssetsManager.InitializeDEX(hp.dexCtx)
 		}

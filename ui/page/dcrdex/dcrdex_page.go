@@ -53,7 +53,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		materialLoader:     material.Loader(l.Theme.Base),
 	}
 
-	if dp.AssetsManager.DexcInitialized() && dp.AssetsManager.DexClient().IsDEXPasswordSet() {
+	if dp.AssetsManager.DEXCInitialized() && dp.AssetsManager.DexClient().InitializedWithPassword() {
 		dp.isDexFirstVisit = false
 	}
 
@@ -74,7 +74,7 @@ func (pg *DEXPage) ID() string {
 // displayed.
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
-	if !pg.AssetsManager.DexcInitialized() {
+	if !pg.AssetsManager.DEXCInitialized() {
 		return
 	}
 
@@ -85,10 +85,12 @@ func (pg *DEXPage) OnNavigatedTo() {
 
 	pg.dexIsLoading = true
 	go func() {
-		<-pg.AssetsManager.DexClient().Ready()
+		dexc := pg.AssetsManager.DexClient()
+		<-dexc.Ready()
+
 		showOnBoardingPage := true
-		if len(pg.AssetsManager.DexClient().Exchanges()) != 0 { // has at least one exchange
-			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager)
+		if len(dexc.Exchanges()) != 0 { // has at least one exchange
+			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager, "")
 			showOnBoardingPage = pendingBond != nil
 		}
 
@@ -123,7 +125,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	} else if !pg.AssetsManager.DexcInitialized() {
+	} else if !pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil {
 		msg = values.String(values.StrDEXInitErrorMsg)
 	}
 
@@ -180,9 +182,9 @@ func (pg *DEXPage) OnNavigatedFrom() {}
 
 // pendingBondConfirmation is a convenience function based on arbitrary
 // heuristics to determine when to show bond confirmation step.
-func pendingBondConfirmation(am *libwallet.AssetsManager) (string, *core.BondAsset, *core.PendingBondState) {
+func pendingBondConfirmation(am *libwallet.AssetsManager, host string) (string, *core.BondAsset, *core.PendingBondState) {
 	for _, xc := range am.DexClient().Exchanges() {
-		if len(xc.Auth.PendingBonds) == 0 {
+		if (host != "" && xc.Host != host) || len(xc.Auth.PendingBonds) == 0 {
 			continue
 		}
 
