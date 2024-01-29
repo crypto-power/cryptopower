@@ -369,7 +369,7 @@ func (com *confirmOrderModal) constructTx(depositAddress string, unitAmount floa
 	case utils.LTCWalletAsset:
 		amount = ltc.AmountLitoshi(unitAmount)
 	}
-	err = com.sourceWalletSelector.SelectedWallet().AddSendDestination(destinationAddress, amount, false)
+	err = com.sourceWalletSelector.SelectedWallet().AddSendDestination(0, destinationAddress, amount, false)
 	if err != nil {
 		return err
 	}

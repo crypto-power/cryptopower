@@ -17,24 +17,27 @@ import (
 
 type recipient struct {
 	*load.Load
+	id int
 
 	deleteBtn   *cryptomaterial.Clickable
 	description cryptomaterial.Editor
 
 	selectedWallet        sharedW.Asset
 	selectedSourceAccount *sharedW.Account
-	sourceAccount         *sharedW.Account
 
 	sendDestination *destination
 	amount          *sendAmount
 	pageParam       getPageFields
+	deleteRecipient func(int)
 }
 
-func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields) *recipient {
+func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields, id int) *recipient {
 	rp := &recipient{
 		Load:           l,
 		selectedWallet: selectedWallet,
 		pageParam:      pageParam,
+		id:             id,
+		deleteBtn:      l.Theme.NewClickable(false),
 	}
 
 	assetType := rp.selectedWallet.GetAssetType()
@@ -62,30 +65,39 @@ func (rp *recipient) onAmountChanged(amountChanged func()) {
 	rp.amount.amountChanged = amountChanged
 }
 
+func (rp *recipient) onDeleteRecipient(onDelete func(int)) {
+	rp.deleteRecipient = onDelete
+}
+
+func (rp *recipient) cleanAllErrors() {
+	rp.amount.setError("")
+	rp.sendDestination.setError("")
+}
+
 func (rp *recipient) setDestinationAssetType(assetType libUtil.AssetType) {
 	rp.amount.setAssetType(assetType)
 	rp.sendDestination.initDestinationWalletSelector(assetType)
 }
 
-func (rp *recipient) setSourceAccount(sourceAccount *sharedW.Account) {
-	rp.sourceAccount = sourceAccount
+func (rp *recipient) isAccountValid(sourceAccount, account *sharedW.Account) bool {
+	accountIsValid := account.Number != load.MaxInt32
+	// Filter mixed wallet
+	destinationWallet := rp.sendDestination.destinationAccountSelector.SelectedWallet()
+	isMixedAccount := load.MixedAccountNumber(destinationWallet) == account.Number
+
+	// Filter the sending account.
+	sourceWalletID := sourceAccount.WalletID
+	isSameAccount := sourceWalletID == account.WalletID && account.Number == sourceAccount.Number
+	if !accountIsValid || isSameAccount || isMixedAccount {
+		return false
+	}
+	return true
 }
 
 func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) {
 	rp.selectedSourceAccount = sourceAccount
 	rp.sendDestination.destinationAccountSelector = rp.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
-		accountIsValid := account.Number != load.MaxInt32
-		// Filter mixed wallet
-		destinationWallet := rp.sendDestination.destinationAccountSelector.SelectedWallet()
-		isMixedAccount := load.MixedAccountNumber(destinationWallet) == account.Number
-		// Filter the sending account.
-
-		sourceWalletID := sourceAccount.WalletID
-		isSameAccount := sourceWalletID == account.WalletID && account.Number == sourceAccount.Number
-		if !accountIsValid || isSameAccount || isMixedAccount {
-			return false
-		}
-		return true
+		return rp.isAccountValid(sourceAccount, account)
 	})
 
 	rp.sendDestination.destinationAccountSelector.AccountSelected(func(selectedWallet *sharedW.Account) {
@@ -94,20 +106,45 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 
 	rp.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		//TODO this should not be here.
-		// if rp.selectedWallet.GetAssetType() == libUtil.DCRWalletAsset {
-		// 	rp.sourceAccountSelector.SelectFirstValidAccount(rp.selectedWallet)
-		// }
 	})
 
 	// destinationAccountSelector does not have a default value,
 	// so assign it an initial value here
 	rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.sendDestination.destinationWalletSelector.SelectedWallet())
-	rp.sendDestination.destinationAddressEditor.Editor.Focus()
 }
 
-func (rp *recipient) destinationWalletID() int {
-	return rp.sendDestination.destinationWalletSelector.SelectedWallet().GetWalletID()
+func (rp *recipient) isShowSendToWallet() bool {
+	sourceWalletSelected := rp.sendDestination.destinationWalletSelector.SelectedWallet()
+	var wallets []sharedW.Asset
+	switch sourceWalletSelected.GetAssetType() {
+	case libUtil.BTCWalletAsset:
+		wallets = append(wallets, rp.AssetsManager.AllBTCWallets()...)
+	case libUtil.DCRWalletAsset:
+		wallets = append(wallets, rp.AssetsManager.AllDCRWallets()...)
+	case libUtil.LTCWalletAsset:
+		wallets = append(wallets, rp.AssetsManager.AllLTCWallets()...)
+	}
+
+	if len(wallets) == 1 {
+		account, err := wallets[0].GetAccountsRaw()
+		if err != nil {
+			log.Errorf("Error getting accounts:", err)
+			return false
+		}
+		accountValids := make([]sharedW.Account, 0)
+		for _, acc := range account.Accounts {
+			if rp.isAccountValid(rp.selectedSourceAccount, acc) {
+				accountValids = append(accountValids, *acc)
+			}
+		}
+		return len(accountValids) > 1
+	}
+
+	if len(wallets) > 1 {
+		return true
+	}
+
+	return false
 }
 
 func (rp *recipient) isSendToAddress() bool {
@@ -148,10 +185,6 @@ func (rp *recipient) descriptionText() string {
 	return rp.description.Editor.Text()
 }
 
-func (rp *recipient) addressValidated() bool {
-	return rp.sendDestination.validate()
-}
-
 func (rp *recipient) validAmount() (int64, bool) {
 	amountAtom, sendMax, err := rp.amount.validAmount()
 	if err != nil {
@@ -160,10 +193,6 @@ func (rp *recipient) validAmount() (int64, bool) {
 	}
 
 	return amountAtom, sendMax
-}
-
-func (rp *recipient) amountValidated() bool {
-	return rp.amount.amountIsValid()
 }
 
 func (rp *recipient) setAmount(amount int64) {
@@ -178,10 +207,6 @@ func (rp *recipient) addressValidationError(err string) {
 	rp.sendDestination.setError(err)
 }
 
-func (rp *recipient) resetDestinationAccountSelector() {
-	rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.selectedWallet)
-}
-
 func (rp *recipient) recipientLayout(index int, showIcon bool, window app.WindowNavigator) layout.Widget {
 	rp.handle()
 	return func(gtx C) D {
@@ -192,7 +217,9 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				if showIcon {
-					return rp.topLayout(gtx, index)
+					return layout.Inset{Bottom: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
+						return rp.topLayout(gtx, index)
+					})
 				}
 				return D{}
 			}),
@@ -201,6 +228,11 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 					txt := fmt.Sprintf("%s %s", values.String(values.StrDestination), values.String(values.StrAddress))
 					return rp.contentWrapper(gtx, txt, rp.sendDestination.destinationAddressEditor.Layout)
 				}
+
+				if !rp.isShowSendToWallet() {
+					return layoutBody(gtx)
+				}
+
 				if !rp.sendDestination.sendToAddress {
 					layoutBody = rp.walletAccountlayout(window)
 				}
@@ -221,7 +253,9 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(titleTxt.Layout),
 		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, rp.Theme.Icons.DeleteIcon.Layout20dp)
+			return layout.E.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return rp.deleteBtn.Layout(gtx, rp.Theme.Icons.DeleteIcon.Layout20dp)
+			})
 		}),
 	)
 }
@@ -330,6 +364,10 @@ func (rp *recipient) handle() {
 		rp.amount.setError("")
 		rp.amount.SendMax = true
 		rp.amount.amountChanged()
+	}
+
+	if rp.deleteBtn.Clicked() {
+		rp.deleteRecipient(rp.id)
 	}
 
 	// if destination switch is equal to Address

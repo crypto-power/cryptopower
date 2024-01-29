@@ -377,6 +377,7 @@ type WAccount struct {
 
 type TransactionDestination struct {
 	// Shared fields.
+	ID         int
 	Address    string
 	SendMax    bool
 	UnitAmount int64

@@ -27,7 +27,7 @@ type TxAuthor struct {
 	sourceAccountNumber uint32
 	// A map is used in place of an array because every destination address
 	// is supposed to be unique.
-	destinations      map[string]*sharedW.TransactionDestination
+	destinations      map[int]*sharedW.TransactionDestination
 	changeAddress     string
 	inputs            []*wire.TxIn
 	inputValues       []btcutil.Amount
@@ -58,7 +58,7 @@ func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.Un
 
 	asset.TxAuthoredInfo = &TxAuthor{
 		sourceAccountNumber: uint32(sourceAccountNumber),
-		destinations:        make(map[string]*sharedW.TransactionDestination, 0),
+		destinations:        make(map[int]*sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
 		selectedUXTOs:       utxos,
 	}
@@ -102,7 +102,7 @@ func (asset *Asset) ComputeTxSizeEstimation(dstAddress string, utxos []*sharedW.
 // AddSendDestination adds a destination address to the transaction.
 // The amount to be sent to the address is specified in satoshi.
 // If sendMax is true, the amount is ignored and the maximum amount is sent.
-func (asset *Asset) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
+func (asset *Asset) AddSendDestination(id int, address string, satoshiAmount int64, sendMax bool) error {
 	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -115,7 +115,8 @@ func (asset *Asset) AddSendDestination(address string, satoshiAmount int64, send
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
 
-	asset.TxAuthoredInfo.destinations[address] = &sharedW.TransactionDestination{
+	asset.TxAuthoredInfo.destinations[id] = &sharedW.TransactionDestination{
+		ID:         id,
 		Address:    address,
 		UnitAmount: satoshiAmount,
 		SendMax:    sendMax,
@@ -125,23 +126,49 @@ func (asset *Asset) AddSendDestination(address string, satoshiAmount int64, send
 	return nil
 }
 
+func (asset *Asset) UpdateSendDestination(id int, address string, atomAmount int64, sendMax bool) error {
+	if err := asset.validateSendAmount(sendMax, atomAmount); err != nil {
+		return err
+	}
+
+	foundID := false
+	for i, dest := range asset.TxAuthoredInfo.destinations {
+		if dest.ID == id {
+			asset.TxAuthoredInfo.destinations[i] = &sharedW.TransactionDestination{
+				ID:         id,
+				Address:    address,
+				UnitAmount: atomAmount,
+				SendMax:    sendMax,
+			}
+			foundID = true
+			break
+		}
+	}
+	if !foundID {
+		return errors.New(utils.ErrNotExist)
+	}
+	asset.TxAuthoredInfo.needsConstruct = true
+	return nil
+}
+
 // RemoveSendDestination removes a destination address from the transaction.
-func (asset *Asset) RemoveSendDestination(address string) {
+func (asset *Asset) RemoveSendDestination(id int) {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
-
-	if _, ok := asset.TxAuthoredInfo.destinations[address]; ok {
-		delete(asset.TxAuthoredInfo.destinations, address)
-		asset.TxAuthoredInfo.needsConstruct = true
+	if asset.TxAuthoredInfo != nil {
+		if _, ok := asset.TxAuthoredInfo.destinations[id]; ok {
+			delete(asset.TxAuthoredInfo.destinations, id)
+			asset.TxAuthoredInfo.needsConstruct = true
+		}
 	}
 }
 
 // SendDestination returns a list of all destination addresses added to the transaction.
-func (asset *Asset) SendDestination(address string) *sharedW.TransactionDestination {
+func (asset *Asset) SendDestination(id int) *sharedW.TransactionDestination {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
 
-	return asset.TxAuthoredInfo.destinations[address]
+	return asset.TxAuthoredInfo.destinations[id]
 }
 
 // SetChangeDestination sets the change address for the transaction.

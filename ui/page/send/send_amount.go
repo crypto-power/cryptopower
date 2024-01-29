@@ -108,7 +108,7 @@ func (sa *sendAmount) amountIsValid() bool {
 	}
 
 	amountEditorErrors := sa.amountErrorText == ""
-	return err == nil && amountEditorErrors || sa.SendMax
+	return err == nil && amountEditorErrors
 }
 
 func (sa *sendAmount) validAmount() (int64, bool, error) {
@@ -137,7 +137,6 @@ func (sa *sendAmount) validateAmount() {
 			sa.amountErrorText = values.String(values.StrInvalidAmount)
 			return
 		}
-
 		if sa.exchangeRate != -1 {
 			usdAmount := utils.CryptoToUSD(sa.exchangeRate, amount)
 			sa.usdAmountEditor.Editor.SetText(fmt.Sprintf("%.2f", usdAmount)) // 2 decimal places

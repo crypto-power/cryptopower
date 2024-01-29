@@ -105,9 +105,12 @@ type Asset interface {
 	ReadStringConfigValueForKey(key string, defaultValue string) string
 
 	NewUnsignedTx(accountNumber int32, utxos []*UnspentOutput) error
-	AddSendDestination(address string, unitAmount int64, sendMax bool) error
+	AddSendDestination(id int, address string, unitAmount int64, sendMax bool) error
 	ComputeTxSizeEstimation(dstAddress string, utxos []*UnspentOutput) (int, error)
 	Broadcast(passphrase, label string) ([]byte, error)
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
 	IsUnsignedTxExist() bool
+	RemoveSendDestination(id int)
+	SendDestination(id int) *TransactionDestination
+	UpdateSendDestination(id int, address string, atomAmount int64, sendMax bool) error
 }

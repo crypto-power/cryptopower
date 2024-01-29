@@ -264,6 +264,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 		pg.showNavigationFunc(true)
 		walletCallbackFunc := func() {
 			pg.showNavigationFunc(false)
+			pg.ParentNavigator().CloseCurrentPage()
 		}
 		swmp := wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
 		pg.ParentNavigator().Display(swmp)

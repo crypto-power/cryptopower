@@ -195,7 +195,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		}
 
 		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %d", order.DepositAddress, amount)
-		err = sourceWallet.AddSendDestination(order.DepositAddress, amount, false)
+		err = sourceWallet.AddSendDestination(0, order.DepositAddress, amount, false)
 		if err != nil {
 			log.Error("error adding send destination: ", err.Error())
 			return errors.E(op, err)
