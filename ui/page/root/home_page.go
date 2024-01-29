@@ -154,7 +154,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.initDEX()
 
 	go hp.CalculateAssetsUSDBalance()
-	
+
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
 	}
