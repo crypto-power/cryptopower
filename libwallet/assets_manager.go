@@ -966,32 +966,29 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 		return nil // nothing to do.
 	}
 
-	mgr.dexcMtx.RLock()
-	dexc := mgr.dexc
-	mgr.dexcMtx.RUnlock()
+	mgr.dexcMtx.Lock()
+	defer mgr.dexcMtx.Unlock()
 
 	// Log out the user.
-	err := dexc.Logout()
+	err := mgr.dexc.Logout()
 	if err != nil {
 		return err
 	}
 
 	log.Debug("Shutting down DEX client and removing dex data dir....")
 
-	dexDBFile := dexc.DBPath()
-	shutdownChan := dexc.WaitForShutdown()
+	dexDBFile := mgr.dexc.DBPath()
+	shutdownChan := mgr.dexc.WaitForShutdown()
 
 	// Shutdown the DEX client.
-	dexc.Shutdown()
+	mgr.dexc.Shutdown()
 	// TODO: Verify that it is possible to listen to this channel here and in
 	// the goroutine in InitializeDEX; it's possible that only one of the
 	// listeners will receive a value. But if the channel was closed, then maybe
 	// both will get the ntfn?
 	<-shutdownChan // wait for shutdown
 
-	mgr.dexcMtx.Lock()
 	mgr.dexc = nil
-	mgr.dexcMtx.Unlock()
 
 	// Delete dex client db.
 	return os.Remove(dexDBFile)

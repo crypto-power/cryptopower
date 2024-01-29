@@ -199,7 +199,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) OnNavigatedTo() {
-	if pg.isDEXReset(false) {
+	if pg.isDEXReset() {
 		return
 	}
 
@@ -220,7 +220,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 		for {
 			// Always check if the dex client is ready. We want to exit if there
 			// was a reset.
-			if pg.isDEXReset(false) {
+			if pg.isDEXReset() {
 				return
 			}
 
@@ -294,14 +294,8 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
-func (pg *DEXMarketPage) isDEXReset(closePage bool) bool {
-	if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() { // dexc was reset
-		if closePage {
-			pg.ParentNavigator().CloseCurrentPage()
-		}
-		return true
-	}
-	return false
+func (pg *DEXMarketPage) isDEXReset() bool {
+	return !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword()
 }
 
 func (pg *DEXMarketPage) resetServerAndMarkets() {
@@ -431,7 +425,7 @@ func (pg *DEXMarketPage) listenForOrderbookNotifications() {
 		pg.closeAndResetOrderbookListener()
 	}()
 	for {
-		if pg.isDEXReset(false) {
+		if pg.isDEXReset() {
 			return
 		}
 
@@ -528,7 +522,8 @@ func (pg *DEXMarketPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) Layout(gtx C) D {
-	if pg.isDEXReset(true) {
+	if pg.isDEXReset() {
+		pg.ParentNavigator().CloseCurrentPage()
 		return D{}
 	}
 
@@ -1372,7 +1367,7 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) HandleUserInteractions() {
-	if pg.isDEXReset(false) {
+	if pg.isDEXReset() {
 		return
 	}
 

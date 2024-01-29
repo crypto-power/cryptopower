@@ -134,7 +134,7 @@ func (pg *AppSettingsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) Layout(gtx C) D {
-	pg.handleCopyEvent(gtx)
+	pg.handleDEXSeedCopyEvent(gtx)
 	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.pageHeaderLayout),
@@ -715,23 +715,16 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			EnableConfirmPassword(false).
 			Title(values.String(values.StrDexPassword)).
 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-				dexc := pg.AssetsManager.DexClient()
-				err := dexc.Login([]byte(password))
+				dexSeed, err := pg.AssetsManager.DexClient().ExportSeed([]byte(password))
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
 					return false
 				}
 
-				pg.dexSeed, err = dexc.ExportSeed([]byte(password))
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return false
-				}
-
+				pg.dexSeed = dexSeed
 				pg.showDEXSeedModal()
-				return err == nil
+				return true
 			})
 
 		dexPasswordModal.SetPasswordTitleVisibility(false)
@@ -739,7 +732,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 	}
 }
 
-func (pg *AppSettingsPage) handleCopyEvent(gtx C) {
+func (pg *AppSettingsPage) handleDEXSeedCopyEvent(gtx C) {
 	if pg.copyDEXSeed.Clicked() {
 		clipboard.WriteOp{Text: pg.dexSeed.String()}.Add(gtx.Ops)
 		pg.copyDEXSeed.Text = values.String(values.StrCopied)

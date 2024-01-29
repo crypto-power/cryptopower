@@ -1037,10 +1037,6 @@ const (
 	StrPaste                           = "paste"
 	StrBackupDEXSeed                   = "backupDEXSeed"
 	StrDEXSeed                         = "dexSeed"
-	StrNewDEX                          = "newDex"
-	StrRestoreDEX                      = "restoreDEX"
-	StrRestoreDEXMsg                   = "restoreDEXMsg"
-	StrRestorationSeed                 = "restorationSeed"
 	StrOptionalRestorationSeed         = "optionalRestorationSeed"
 
 	StrLoginDEXForActiveOrdersOrExpiredBonds = "loginDEXForActiveOrdersOrExpiredBonds"

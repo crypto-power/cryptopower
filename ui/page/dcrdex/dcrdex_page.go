@@ -184,7 +184,7 @@ func (pg *DEXPage) OnNavigatedFrom() {}
 // heuristics to determine when to show bond confirmation step.
 func pendingBondConfirmation(am *libwallet.AssetsManager, host string) (string, *core.BondAsset, *core.PendingBondState) {
 	for _, xc := range am.DexClient().Exchanges() {
-		if host != "" && xc.Host != host || len(xc.Auth.PendingBonds) == 0 {
+		if (host != "" && xc.Host != host) || len(xc.Auth.PendingBonds) == 0 {
 			continue
 		}
 
