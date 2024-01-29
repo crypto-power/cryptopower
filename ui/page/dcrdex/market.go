@@ -741,7 +741,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 				accountNumber, _ := strconv.Atoi(setting[dexc.WalletAccountNumberConfigKey])
 				asset := pg.AssetsManager.WalletWithID(walletID)
 				accountName, _ := asset.AccountName(int32(accountNumber))
-				bondAmtString := calculateBondAmount(asset, xc.BondAssets[convertAssetIDToAssetType(bondAssetID).ToStringLower()], int(targetTier), dexClient.BondsFeeBuffer(bondAssetID))
+				bondAmtString := calculateBondAmount(asset, xc.BondAssets[asset.GetAssetType().ToStringLower()], int(targetTier), dexClient.BondsFeeBuffer(bondAssetID))
 				overlayMsg = values.StringF(values.StrBondPostingInProgressMsg, asset.GetAssetType(), asset.GetWalletName(), accountName, bondAmtString)
 			}
 		} else {
