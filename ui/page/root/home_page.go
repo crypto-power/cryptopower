@@ -13,6 +13,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -32,6 +33,8 @@ import (
 const (
 	HomePageID = "Home"
 )
+
+var totalBalanceUSD string
 
 type HomePage struct {
 	*app.MasterPage
@@ -63,7 +66,7 @@ type HomePage struct {
 	showNavigationFunc showNavigationFunc
 	startSpvSync       uint32
 
-	totalBalanceUSD string
+	// totalBalanceUSD string
 }
 
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
@@ -153,8 +156,6 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.initPageItems()
 	hp.initDEX()
 
-	go hp.CalculateAssetsUSDBalance()
-
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
 	}
@@ -167,6 +168,16 @@ func (hp *HomePage) OnNavigatedTo() {
 		}
 	}
 
+	// Reload the window whenever there is an exchange rate update.
+	rateListener := &ext.RateListener{
+		OnRateUpdated: hp.CalculateAssetsUSDBalance,
+	}
+	err := hp.AssetsManager.RateSource.AddRateListener(rateListener, HomePageID)
+	if err != nil {
+		log.Error("RateSource.AddRateListener error: %v", err)
+	}
+
+	go hp.CalculateAssetsUSDBalance()
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
 }
 
@@ -475,6 +486,8 @@ func (hp *HomePage) OnNavigatedFrom() {
 		activeTab.OnNavigatedFrom()
 	}
 
+	hp.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
+
 	hp.ctxCancel()
 }
 
@@ -768,7 +781,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 }
 
 func (hp *HomePage) balanceLayout(gtx C) D {
-	if hp.AssetsManager.ExchangeRateFetchingEnabled() && hp.totalBalanceUSD != "" {
+	if hp.AssetsManager.ExchangeRateFetchingEnabled() && totalBalanceUSD != "" {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
@@ -789,7 +802,7 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 
 // TODO: use real values
 func (hp *HomePage) LayoutUSDBalance(gtx C) D {
-	lblText := hp.Theme.Label(values.TextSize30, hp.totalBalanceUSD)
+	lblText := hp.Theme.Label(values.TextSize30, totalBalanceUSD)
 
 	if hp.isBalanceHidden {
 		lblText = hp.Theme.Label(values.TextSize24, "******")
@@ -959,7 +972,7 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 			totalBalance += balance
 		}
 
-		hp.totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
+		totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
 		hp.ParentWindow().Reload()
 	}
 }
