@@ -1794,12 +1794,11 @@ func (pg *DEXMarketPage) refreshOrders() {
 	pg.orders = nil
 	for i := range orders {
 		ord := &clickableOrder{Order: orders[i]}
-		hasActiveMatch := anyMatchActive(ord.Matches)
-		if ord.Status == order.OrderStatusExecuted && hasActiveMatch != pg.openOrdersDisplayed /* display active orders on open order view */ {
+		if ord.Status == order.OrderStatusExecuted && anyMatchActive(ord.Matches) != pg.openOrdersDisplayed /* display active orders on open order view */ {
 			continue // skip order
 		}
 
-		if pg.openOrdersDisplayed && !ord.Cancelling && !hasActiveMatch {
+		if pg.openOrdersDisplayed && ord.Status.IsActive() {
 			ord.cancelBtn = pg.Theme.NewClickable(false)
 		}
 
@@ -1813,14 +1812,13 @@ func (pg *DEXMarketPage) refreshOrders() {
 			for _, ord := range mkt.InFlightOrders {
 				pg.orders = append(pg.orders, &clickableOrder{Order: ord.Order})
 			}
-
-			// We've just appended new orders, sort to ensure newest orders are
-			// displayed first.
-			sort.SliceStable(orders, func(i, j int) bool {
-				return pg.orders[i].SubmitTime > orders[j].SubmitTime
-			})
 		}
 	}
+
+	// Always sort orders.
+	sort.SliceStable(pg.orders, func(i, j int) bool {
+		return pg.orders[i].SubmitTime > orders[j].SubmitTime
+	})
 }
 
 func anyMatchActive(matches []*core.Match) bool {
