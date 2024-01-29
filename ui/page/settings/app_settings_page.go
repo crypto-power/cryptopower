@@ -343,13 +343,13 @@ func (pg *AppSettingsPage) networkSettings() layout.Widget {
 
 func (pg *AppSettingsPage) dexSettings() layout.Widget {
 	return func(gtx C) D {
+		if pg.AssetsManager.NetType() == libutils.Mainnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
+			return D{}
+		}
+
 		return pg.wrapSection(gtx, values.String(values.StrDEX), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
-						return D{}
-					}
-
 					backupDEX := row{
 						title:     values.String(values.StrBackupDEXSeed),
 						clickable: pg.backupDEX,
@@ -358,10 +358,6 @@ func (pg *AppSettingsPage) dexSettings() layout.Widget {
 					return pg.clickableRow(gtx, backupDEX)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if pg.AssetsManager.NetType() != libutils.Testnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
-						return D{}
-					}
-
 					deleteDEXClientRow := row{
 						title:     values.String(values.StrResetDEXData),
 						clickable: pg.deleteDEX,
