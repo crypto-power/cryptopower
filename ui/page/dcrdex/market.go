@@ -736,7 +736,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 			if err != nil {
 				pg.notifyError(err.Error())
 			} else {
-				// Wallet is been used by the dex client so it exists, can ignore errors.
+				// Wallet is being used by the dex client so it exists, can ignore errors.
 				walletID, _ := strconv.Atoi(setting[dexc.WalletIDConfigKey])
 				accountNumber, _ := strconv.Atoi(setting[dexc.WalletAccountNumberConfigKey])
 				asset := pg.AssetsManager.WalletWithID(walletID)
