@@ -230,7 +230,10 @@ func (pg *Page) initializeAccountSelectors() {
 // RestyleWidgets restyles select widgets to match the current theme. This is
 // especially necessary when the dark mode setting is changed.
 func (pg *Page) RestyleWidgets() {
-	// pg.recipient.restyleWidgets()
+	for i := range pg.recipients {
+		recipient := pg.recipients[i]
+		recipient.restyleWidgets()
+	}
 }
 
 func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
@@ -369,12 +372,6 @@ func (pg *Page) constructTx() {
 	pg.destinationAddress = pg.getDestinationAddresses()
 	pg.destinationAccount = pg.getDestinationAccounts()
 	pg.sourceAccount = sourceAccount
-
-	// if SendMax {
-	// TODO: this workaround ignores the change events from the
-	// amount input to avoid construct tx cycle.
-	// 	pg.recipient.setAmount(amountAtom)
-	// }
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
 		pg.feeRateSelector.USDExchangeSet = true
@@ -597,8 +594,8 @@ func (pg *Page) HandleUserInteractions() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
-			// TODO handle if have many descryption text
-			// this workaround to show description text when have one recipient and don't show when have more
+			// TODO handle if there are many description texts
+			// this workaround shows the description text when there is only one recipient and does not show when have more than one recipient
 			descriptionText := ""
 			if len(pg.recipients) == 1 {
 				descriptionText = pg.recipients[0].descriptionText()
