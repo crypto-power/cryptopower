@@ -1817,7 +1817,7 @@ func (pg *DEXMarketPage) refreshOrders() {
 
 	// Always sort orders.
 	sort.SliceStable(pg.orders, func(i, j int) bool {
-		return pg.orders[i].SubmitTime > orders[j].SubmitTime
+		return pg.orders[i].SubmitTime > pg.orders[j].SubmitTime
 	})
 }
 
