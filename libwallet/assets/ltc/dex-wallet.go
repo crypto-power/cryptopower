@@ -683,7 +683,25 @@ func (dw *DEXWallet) GetBestBlockHeader() (*dexbtc.BlockHeader, error) {
 }
 
 // Part of dexbtc.Wallet interface.
-func (dw *DEXWallet) Connect(_ context.Context, _ *sync.WaitGroup) (err error) {
+func (dw *DEXWallet) Connect(ctx context.Context, wg *sync.WaitGroup) (err error) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ticker := time.NewTicker(time.Minute * 20)
+		defer ticker.Stop()
+		expiration := time.Hour * 2
+		for {
+			select {
+			case <-ticker.C:
+				dw.CleanCaches(expiration)
+
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	return nil
 }
 
