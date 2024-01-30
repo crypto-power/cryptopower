@@ -598,26 +598,25 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 					if pg.transaction.Direction == txhelper.TxDirectionReceived {
 						lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(pg.txDestinationAddresses[0], 0))
 						return lbl.Layout(gtx)
-					} else {
-						flexChilds := make([]layout.FlexChild, 0)
-						for i := range pg.txDestinationAddresses {
-							address := pg.txDestinationAddresses[i]
-							clickable := pg.destAddressClickables[i]
-							flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
-								// copy destination Address
-								if clickable.Clicked() {
-									clipboard.WriteOp{Text: address}.Add(gtx.Ops)
-									pg.Toast.Notify(values.String(values.StrTxHashCopied))
-								}
-								lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(address, 0))
-								lbl.Color = pg.Theme.Color.Primary
-								return clickable.Layout(gtx, lbl.Layout)
-							}))
-							flexChilds = append(flexChilds, layout.Rigid(layout.Spacer{Height: values.MarginPadding5}.Layout))
-						}
-
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexChilds...)
 					}
+					flexChilds := make([]layout.FlexChild, 0)
+					for i := range pg.txDestinationAddresses {
+						address := pg.txDestinationAddresses[i]
+						clickable := pg.destAddressClickables[i]
+						flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
+							// copy destination Address
+							if clickable.Clicked() {
+								clipboard.WriteOp{Text: address}.Add(gtx.Ops)
+								pg.Toast.Notify(values.String(values.StrTxHashCopied))
+							}
+							lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(address, 0))
+							lbl.Color = pg.Theme.Color.Primary
+							return clickable.Layout(gtx, lbl.Layout)
+						}))
+						flexChilds = append(flexChilds, layout.Rigid(layout.Spacer{Height: values.MarginPadding5}.Layout))
+					}
+
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexChilds...)
 				}
 				// if transaction is transferred, show the destination account
 				// without being wrapped in a clickable
