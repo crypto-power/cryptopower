@@ -54,11 +54,11 @@ const (
 
 // DEXWallet wraps *wallet.Wallet and implements dexbtc.BTCWallet.
 type DEXWallet struct {
-	w         *wallet.Wallet
-	acctNum   int32
-	cl        *ltcChainService
-	btcParams *chaincfg.Params
-	isSyncing func() bool
+	w                 *wallet.Wallet
+	acctNum           int32
+	cl                *ltcChainService
+	btcParams         *chaincfg.Params
+	syncStatusChecker SyncStatusChecker
 	*dexbtc.BlockFiltersScanner
 }
 
@@ -79,19 +79,24 @@ func (dl dexLogger) SubLogger(string) dex.Logger {
 	return dl
 }
 
+type SyncStatusChecker interface {
+	IsSyncing() bool
+	IsSynced() bool
+}
+
 var _ dexbtc.CustomWallet = (*DEXWallet)(nil)
 var _ dexbtc.BlockInfoReader = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btcParams *chaincfg.Params, isSyncing func() bool) *DEXWallet {
+func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btcParams *chaincfg.Params, syncStatusChecker SyncStatusChecker) *DEXWallet {
 	dw := &DEXWallet{
 		w:       w,
 		acctNum: acctNum,
 		cl: &ltcChainService{
 			NeutrinoClient: nc,
 		},
-		btcParams: btcParams,
-		isSyncing: isSyncing,
+		btcParams:         btcParams,
+		syncStatusChecker: syncStatusChecker,
 	}
 
 	dw.BlockFiltersScanner = dexbtc.NewBlockFiltersScanner(dw, dexLogger{Logger: log})
@@ -222,11 +227,19 @@ func (dw *DEXWallet) GetChainHeight() (int32, error) {
 
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) PeerCount() (uint32, error) {
+	if !dw.syncStatusChecker.IsSyncing() && !dw.syncStatusChecker.IsSynced() {
+		return 0, nil // avoid expensive call to dw.cl.Peers()
+	}
+
 	return uint32(len(dw.cl.Peers())), nil
 }
 
 // syncHeight is the best known sync height among peers.
 func (dw *DEXWallet) syncHeight() int32 {
+	if !dw.syncStatusChecker.IsSyncing() && !dw.syncStatusChecker.IsSynced() {
+		return 0 // avoid expensive call to dw.cl.Peers()
+	}
+
 	var maxHeight int32
 	for _, p := range dw.cl.Peers() {
 		tipHeight := p.StartingHeight()
@@ -248,7 +261,7 @@ func (dw *DEXWallet) SyncStatus() (*dexbtc.SyncStatus, error) {
 	return &dexbtc.SyncStatus{
 		Target:  dw.syncHeight(),
 		Height:  walletBlock.Height,
-		Syncing: dw.isSyncing(),
+		Syncing: dw.syncStatusChecker.IsSyncing(),
 	}, nil
 }
 

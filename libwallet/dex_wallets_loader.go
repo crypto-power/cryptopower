@@ -199,7 +199,7 @@ func btcCloneWalletConstructor(isLtc bool) func(settings map[string]string, chai
 		}
 
 		if isLtc {
-			return ltc.NewDEXWallet(wallet.Internal().LTC, accountNumber, wallet.(*ltc.Asset).NeutrinoClient(), chainParams, wallet.IsSyncing), nil
+			return ltc.NewDEXWallet(wallet.Internal().LTC, accountNumber, wallet.(*ltc.Asset).NeutrinoClient(), chainParams, wallet), nil
 		}
 
 		return btc.NewDEXWallet(wallet.Internal().BTC, accountNumber, wallet.(*btc.Asset).NeutrinoClient(), wallet), nil
