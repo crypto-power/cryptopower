@@ -212,6 +212,10 @@ func (hp *HomePage) initDEX() {
 			expiredBonds = append(expiredBonds, xc.Auth.ExpiredBonds...)
 		}
 
+		if len(activeOrders) == 0 && len(expiredBonds) == 0 {
+			return // nothing to do
+		}
+
 		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
 		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
