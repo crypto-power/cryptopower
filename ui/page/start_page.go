@@ -710,4 +710,5 @@ func (sp *startPage) updateSettings() {
 	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHTTPAPI, true)
 	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHTTPAPI, true)
 	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, true)
+	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.UpdateAPI, true)
 }

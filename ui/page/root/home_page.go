@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -70,6 +71,7 @@ type HomePage struct {
 
 	updateAvailableBtn *cryptomaterial.Clickable
 	copyRedirectURL    *cryptomaterial.Clickable
+	releaseResponse    *components.ReleaseResponse
 }
 
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
@@ -184,6 +186,10 @@ func (hp *HomePage) OnNavigatedTo() {
 
 	go hp.CalculateAssetsUSDBalance()
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
+
+	if hp.isCheckForUpdateAPIAllowed() {
+		go hp.checkForUpdates()
+	}
 }
 
 // initDEX initializes a new dex client if dex is not ready.
@@ -423,10 +429,8 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	if hp.updateAvailableBtn.Clicked() {
-		host := "https://github.com/crypto-power/cryptopower/releases/tag/v1.0.0"
-
 		info := modal.NewCustomModal(hp.Load).
-			Title("A new update is available").
+			Title(fmt.Sprintf(values.String(values.StrNewUpdateText), hp.releaseResponse.TagName)).
 			Body(values.String(values.StrCopyLink)).
 			SetCancelable(true).
 			UseCustomWidget(func(gtx C) D {
@@ -439,11 +443,11 @@ func (hp *HomePage) HandleUserInteractions() {
 							return wrapper.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
 									return layout.Flex{}.Layout(gtx,
-										layout.Flexed(0.9, hp.Theme.Body1(host).Layout),
+										layout.Flexed(0.9, hp.Theme.Body1(hp.releaseResponse.URL).Layout),
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												if hp.copyRedirectURL.Clicked() {
-													clipboard.WriteOp{Text: host}.Add(gtx.Ops)
+													clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
 													hp.Toast.Notify(values.String(values.StrCopied))
 												}
 												return hp.copyRedirectURL.Layout(gtx, hp.Theme.Icons.CopyIcon.Layout24dp)
@@ -585,7 +589,13 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 					)
 				}),
 				layout.Flexed(1, hp.CurrentPage().Layout),
-				layout.Rigid(hp.layoutUpdateAvailable),
+				layout.Rigid(func(gtx C) D {
+					if hp.isCheckForUpdateAPIAllowed() && hp.releaseResponse != nil {
+						return hp.layoutUpdateAvailable(gtx)
+					}
+
+					return D{}
+				}),
 			)
 		}),
 	)
@@ -1036,27 +1046,22 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 }
 
 func (hp *HomePage) layoutUpdateAvailable(gtx C) D {
-	// return func(gtx C) D {
-	padding20 := values.MarginPadding40
-	padding10 := values.MarginPadding10
-
-	topBottomPadding := padding10
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Horizontal,
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Background:  hp.Theme.Color.DefaultThemeColors().SurfaceHighlight,
 		Clickable:   hp.updateAvailableBtn,
-		Padding: layout.Inset{
-			Right:  padding20,
-			Bottom: topBottomPadding,
+		Margin: layout.Inset{
+			Top:    values.MarginPaddingMinus10,
+			Bottom: values.MarginPadding10,
+			Right:  values.MarginPadding40,
 		},
-		Border: cryptomaterial.Border{Radius: hp.updateAvailableBtn.Radius},
-		// Alignment:  layout.End,
+		Border:    cryptomaterial.Border{Radius: hp.updateAvailableBtn.Radius},
 		Direction: layout.E,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			txt := hp.Theme.Label(values.TextSize14, "Update Available")
+			txt := hp.Theme.Label(values.TextSize14, values.String(values.StrUpdateAvailable))
 			txt.Color = hp.Theme.Color.DefaultThemeColors().Primary
 			txt.Font.Weight = font.SemiBold
 			return layout.Inset{
@@ -1064,44 +1069,19 @@ func (hp *HomePage) layoutUpdateAvailable(gtx C) D {
 			}.Layout(gtx, txt.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := hp.Theme.Label(values.TextSize14, "V1.0.0")
+			txt := hp.Theme.Label(values.TextSize14, hp.releaseResponse.TagName)
 			txt.Font.Weight = font.SemiBold
 			return layout.Inset{
 				Left: values.MarginPadding4,
 			}.Layout(gtx, txt.Layout)
 		}),
 	)
+}
 
-	// widgets := []func(gtx C) D{
-	// 	func(gtx C) D {
-	// 		return cryptomaterial.LinearLayout{
-	// 			Orientation: layout.Horizontal,
-	// 			Width:       cryptomaterial.MatchParent,
-	// 			Height:      cryptomaterial.WrapContent,
-	// 			Background:  hp.Theme.Color.DefaultThemeColors().SurfaceHighlight,
-	// 			Clickable:   hp.updateAvailableBtn,
-	// 			Border:      cryptomaterial.Border{Radius: hp.updateAvailableBtn.Radius},
-	// 			// Alignment:  layout.End,
-	// 			// Direction: layout.E,
-	// 		}.Layout(gtx,
-	// 			layout.Rigid(func(gtx C) D {
-	// 				txt := hp.Theme.Label(values.TextSize14, "Update Available")
-	// 				txt.Color = hp.Theme.Color.DefaultThemeColors().Primary
-	// 				txt.Font.Weight = font.SemiBold
-	// 				return layout.Inset{
-	// 					Left: values.MarginPadding4,
-	// 				}.Layout(gtx, txt.Layout)
-	// 			}),
-	// 		)
-	// 	},
-	// 	func(gtx C) D {
-	// 		txt := hp.Theme.Label(values.TextSize14, "V1.1.0")
-	// 		return txt.Layout(gtx)
-	// 	},
-	// }
-	// options := components.FlexOptions{
-	// 	Axis: layout.Horizontal,
-	// }
-	// return components.FlexLayout(gtx, options, widgets)
-	// }
+func (hp *HomePage) checkForUpdates() {
+	hp.releaseResponse = components.CheckForUpdate(hp.Load)
+}
+
+func (hp *HomePage) isCheckForUpdateAPIAllowed() bool {
+	return hp.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.UpdateAPI)
 }
