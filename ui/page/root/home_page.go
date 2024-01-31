@@ -7,6 +7,8 @@ import (
 	"time"
 
 	dexdb "decred.org/dcrdex/client/db"
+	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -65,14 +67,18 @@ type HomePage struct {
 	isConnected        *atomic.Bool
 	showNavigationFunc showNavigationFunc
 	startSpvSync       uint32
+
+	updateAvailableBtn *cryptomaterial.Clickable
+	copyRedirectURL    *cryptomaterial.Clickable
 }
 
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp := &HomePage{
-		Load:        l,
-		MasterPage:  app.NewMasterPage(HomePageID),
-		isConnected: new(atomic.Bool),
-		dexCtx:      dexCtx,
+		Load:            l,
+		MasterPage:      app.NewMasterPage(HomePageID),
+		isConnected:     new(atomic.Bool),
+		dexCtx:          dexCtx,
+		copyRedirectURL: l.Theme.NewClickable(false),
 	}
 
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
@@ -80,6 +86,7 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp.appNotificationButton = hp.Theme.NewClickable(false)
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
+	hp.updateAvailableBtn = l.Theme.NewClickable(false)
 
 	go func() {
 		hp.isConnected.Store(libutils.IsOnline())
@@ -414,6 +421,54 @@ func (hp *HomePage) HandleUserInteractions() {
 			}
 		}
 	}
+
+	if hp.updateAvailableBtn.Clicked() {
+		host := "https://github.com/crypto-power/cryptopower/releases/tag/v1.0.0"
+
+		info := modal.NewCustomModal(hp.Load).
+			Title("A new update is available").
+			Body(values.String(values.StrCopyLink)).
+			SetCancelable(true).
+			UseCustomWidget(func(gtx C) D {
+				return layout.Stack{}.Layout(gtx,
+					layout.Stacked(func(gtx C) D {
+						border := widget.Border{Color: hp.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+						wrapper := hp.Theme.Card()
+						wrapper.Color = hp.Theme.Color.Gray4
+						return border.Layout(gtx, func(gtx C) D {
+							return wrapper.Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+									return layout.Flex{}.Layout(gtx,
+										layout.Flexed(0.9, hp.Theme.Body1(host).Layout),
+										layout.Flexed(0.1, func(gtx C) D {
+											return layout.E.Layout(gtx, func(gtx C) D {
+												if hp.copyRedirectURL.Clicked() {
+													clipboard.WriteOp{Text: host}.Add(gtx.Ops)
+													hp.Toast.Notify(values.String(values.StrCopied))
+												}
+												return hp.copyRedirectURL.Layout(gtx, hp.Theme.Icons.CopyIcon.Layout24dp)
+											})
+										}),
+									)
+								})
+							})
+						})
+					}),
+					layout.Stacked(func(gtx C) D {
+						return layout.Inset{
+							Top:  values.MarginPaddingMinus10,
+							Left: values.MarginPadding10,
+						}.Layout(gtx, func(gtx C) D {
+							label := hp.Theme.Body2(values.String(values.StrWebURL))
+							label.Color = hp.Theme.Color.GrayText2
+							return label.Layout(gtx)
+						})
+					}),
+				)
+			}).
+			SetPositiveButtonText(values.String(values.StrGotIt))
+		hp.ParentWindow().ShowModal(info)
+	}
 }
 
 func (hp *HomePage) displaySelectedPage(title string) {
@@ -530,6 +585,7 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 					)
 				}),
 				layout.Flexed(1, hp.CurrentPage().Layout),
+				layout.Rigid(hp.layoutUpdateAvailable),
 			)
 		}),
 	)
@@ -977,4 +1033,75 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 		totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
 		hp.ParentWindow().Reload()
 	}
+}
+
+func (hp *HomePage) layoutUpdateAvailable(gtx C) D {
+	// return func(gtx C) D {
+	padding20 := values.MarginPadding40
+	padding10 := values.MarginPadding10
+
+	topBottomPadding := padding10
+	return cryptomaterial.LinearLayout{
+		Orientation: layout.Horizontal,
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Background:  hp.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+		Clickable:   hp.updateAvailableBtn,
+		Padding: layout.Inset{
+			Right:  padding20,
+			Bottom: topBottomPadding,
+		},
+		Border: cryptomaterial.Border{Radius: hp.updateAvailableBtn.Radius},
+		// Alignment:  layout.End,
+		Direction: layout.E,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			txt := hp.Theme.Label(values.TextSize14, "Update Available")
+			txt.Color = hp.Theme.Color.DefaultThemeColors().Primary
+			txt.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left: values.MarginPadding4,
+			}.Layout(gtx, txt.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			txt := hp.Theme.Label(values.TextSize14, "V1.0.0")
+			txt.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left: values.MarginPadding4,
+			}.Layout(gtx, txt.Layout)
+		}),
+	)
+
+	// widgets := []func(gtx C) D{
+	// 	func(gtx C) D {
+	// 		return cryptomaterial.LinearLayout{
+	// 			Orientation: layout.Horizontal,
+	// 			Width:       cryptomaterial.MatchParent,
+	// 			Height:      cryptomaterial.WrapContent,
+	// 			Background:  hp.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+	// 			Clickable:   hp.updateAvailableBtn,
+	// 			Border:      cryptomaterial.Border{Radius: hp.updateAvailableBtn.Radius},
+	// 			// Alignment:  layout.End,
+	// 			// Direction: layout.E,
+	// 		}.Layout(gtx,
+	// 			layout.Rigid(func(gtx C) D {
+	// 				txt := hp.Theme.Label(values.TextSize14, "Update Available")
+	// 				txt.Color = hp.Theme.Color.DefaultThemeColors().Primary
+	// 				txt.Font.Weight = font.SemiBold
+	// 				return layout.Inset{
+	// 					Left: values.MarginPadding4,
+	// 				}.Layout(gtx, txt.Layout)
+	// 			}),
+	// 		)
+	// 	},
+	// 	func(gtx C) D {
+	// 		txt := hp.Theme.Label(values.TextSize14, "V1.1.0")
+	// 		return txt.Layout(gtx)
+	// 	},
+	// }
+	// options := components.FlexOptions{
+	// 	Axis: layout.Horizontal,
+	// }
+	// return components.FlexLayout(gtx, options, widgets)
+	// }
 }
