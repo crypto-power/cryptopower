@@ -1033,6 +1033,7 @@ const (
 	StrWalletsNeedToSync                     = "walletsNeedToSync"
 	StrWalletsNeedToSyncMsg                  = "walletsNeedToSyncMsg"
 	StrIWillSyncLater                        = "iWillSyncLater"
+	StrIWillLoginLater                       = "iWillLoginLater"
 	StrOkaySync                              = "okaySync"
 	StrPaste                                 = "paste"
 	StrBackupDEXSeed                         = "backupDEXSeed"

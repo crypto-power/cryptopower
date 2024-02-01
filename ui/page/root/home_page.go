@@ -233,7 +233,7 @@ func (hp *HomePage) initDEX() {
 		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
 		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
-		showWalletToSyncModal := func() {
+		showWalletsToSyncModal := func() {
 			// DEX client has active orders or expired bonds, retrieve the
 			// wallets involved and ensure they are synced or syncing.
 			walletsToSyncMap := make(map[uint32]*struct{})
@@ -248,7 +248,7 @@ func (hp *HomePage) initDEX() {
 				walletsToSyncMap[bond.AssetID] = &struct{}{}
 			}
 
-			var walletsToSyncStr string
+			var namesOfWalletsToSync []string
 			var walletsToSync []sharedW.Asset
 			for assetID := range walletsToSyncMap {
 				walletID, err := dexClient.WalletIDForAsset(assetID)
@@ -272,7 +272,7 @@ func (hp *HomePage) initDEX() {
 				}
 
 				walletsToSync = append(walletsToSync, wallet)
-				walletsToSyncStr += "," + fmt.Sprintf("%s (%s)", wallet.GetWalletName(), wallet.GetAssetType())
+				namesOfWalletsToSync = append(namesOfWalletsToSync, fmt.Sprintf("%s (%s)", wallet.GetWalletName(), wallet.GetAssetType()))
 			}
 
 			if len(walletsToSync) == 0 {
@@ -281,7 +281,7 @@ func (hp *HomePage) initDEX() {
 
 			walletSyncRequestModal := modal.NewCustomModal(hp.Load).
 				Title(values.String(values.StrWalletsNeedToSync)).
-				Body(values.StringF(values.StrWalletsNeedToSyncMsg, strings.Trim(walletsToSyncStr, ","))).
+				Body(values.StringF(values.StrWalletsNeedToSyncMsg, strings.Join(namesOfWalletsToSync, ", "))).
 				SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
 				SetPositiveButtonText(values.String(values.StrOkaySync)).
 				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
@@ -300,7 +300,6 @@ func (hp *HomePage) initDEX() {
 						}
 					}
 
-					hp.ParentWindow().Reload()
 					return true
 				}).SetCancelable(false)
 			hp.ParentWindow().ShowModal(walletSyncRequestModal)
@@ -317,10 +316,9 @@ func (hp *HomePage) initDEX() {
 					}),
 				)
 			}).
-			SetNegativeButtonText(values.String(values.StrLoginLater)).
-			NegativeButtonStyle(hp.Theme.Color.OrangeRipple, hp.Theme.Color.Surface).
+			SetNegativeButtonText(values.String(values.StrIWillLoginLater)).
 			SetNegativeButtonCallback(func() {
-				showWalletToSyncModal()
+				showWalletsToSyncModal()
 			}).
 			SetPositiveButtonText(values.String(values.StrLogin)).
 			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
@@ -331,7 +329,7 @@ func (hp *HomePage) initDEX() {
 					return false
 				}
 
-				showWalletToSyncModal()
+				showWalletsToSyncModal()
 				return true
 			}).
 			SetCancelable(false)
