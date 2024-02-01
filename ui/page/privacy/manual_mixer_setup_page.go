@@ -260,7 +260,6 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			errfunc := func(err error) bool {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 			mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number

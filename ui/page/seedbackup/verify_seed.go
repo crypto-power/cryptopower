@@ -194,13 +194,11 @@ func (pg *VerifySeedPage) verifySeed() {
 					return false
 				}
 
-				m.SetLoading(false)
 				m.SetError(err.Error())
 				return false
 			}
-			m.Dismiss()
-			pg.ParentNavigator().Display(NewBackupSuccessPage(pg.Load, pg.redirectCallback))
 
+			pg.ParentNavigator().Display(NewBackupSuccessPage(pg.Load, pg.redirectCallback))
 			return true
 		})
 	pg.ParentWindow().ShowModal(passwordModal)

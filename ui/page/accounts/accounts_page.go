@@ -275,7 +275,6 @@ func (pg *Page) HandleUserInteractions() {
 				_, err := pg.wallet.CreateNewAccount(accountName, password)
 				if err != nil {
 					m.SetError(err.Error())
-					m.SetLoading(false)
 					return false
 				}
 				pg.loadWalletAccount()

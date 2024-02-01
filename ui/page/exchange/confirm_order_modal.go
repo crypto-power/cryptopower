@@ -88,7 +88,7 @@ func (com *confirmOrderModal) SetError(err string) {
 	com.passwordEditor.SetError(values.TranslateErr(err))
 }
 
-func (com *confirmOrderModal) SetLoading(loading bool) {
+func (com *confirmOrderModal) setLoading(loading bool) {
 	com.isCreating = loading
 	com.Modal.SetDisabled(loading)
 }
@@ -102,24 +102,30 @@ func (com *confirmOrderModal) confirmOrder() {
 		return
 	}
 
-	com.SetLoading(true)
+	com.setLoading(true)
 	go func() {
+		var err error
+		defer func() {
+			if err != nil {
+				com.setLoading(false)
+			}
+		}()
+
 		if !com.sourceWalletSelector.SelectedWallet().IsSynced() {
-			com.SetError(values.String(values.StrSourceWalletNotSynced))
-			com.SetLoading(false)
+			err = errors.New(values.String(values.StrSourceWalletNotSynced))
+			com.SetError(err.Error())
 			return
 		}
 
 		if !com.destinationWalletSelector.SelectedWallet().IsSynced() {
-			com.SetError(values.String(values.StrDestinationWalletNotSynced))
-			com.SetLoading(false)
+			err = errors.New(values.String(values.StrDestinationWalletNotSynced))
+			com.SetError(err.Error())
 			return
 		}
 
-		err := com.sourceWalletSelector.SelectedWallet().UnlockWallet(password)
+		err = com.sourceWalletSelector.SelectedWallet().UnlockWallet(password)
 		if err != nil {
 			com.SetError(err.Error())
-			com.SetLoading(false)
 			return
 		}
 
@@ -127,7 +133,6 @@ func (com *confirmOrderModal) confirmOrder() {
 		if err != nil {
 			log.Error(errors.E(errors.Op("instantSwap.CreateOrder"), err))
 			com.SetError(err.Error())
-			com.SetLoading(false)
 			return
 		}
 
@@ -135,7 +140,6 @@ func (com *confirmOrderModal) confirmOrder() {
 		if err != nil {
 			com.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
-			com.SetLoading(false)
 			return
 		}
 
@@ -144,7 +148,6 @@ func (com *confirmOrderModal) confirmOrder() {
 		if err != nil {
 			com.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
-			com.SetLoading(false)
 			return
 		}
 

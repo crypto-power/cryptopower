@@ -73,7 +73,6 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 			err := dcrWallet.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 

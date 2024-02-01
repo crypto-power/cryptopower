@@ -288,7 +288,6 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 					sig, err := pg.wallet.SignMessage(password, address, message)
 					if err != nil {
 						pm.SetError(err.Error())
-						pm.SetLoading(false)
 						return false
 					}
 

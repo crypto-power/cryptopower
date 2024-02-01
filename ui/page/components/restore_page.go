@@ -291,7 +291,6 @@ func (pg *Restore) restoreFromSeedEditor() {
 					errString = values.StringF(values.StrWalletExist, pg.walletName)
 				}
 				m.SetError(errString)
-				m.SetLoading(false)
 				clearEditor()
 				return false
 			}

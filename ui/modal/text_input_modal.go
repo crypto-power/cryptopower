@@ -53,7 +53,7 @@ func (tm *TextInputModal) Hint(hint string) *TextInputModal {
 	return tm
 }
 
-func (tm *TextInputModal) SetLoading(loading bool) {
+func (tm *TextInputModal) setLoading(loading bool) {
 	tm.isLoading = loading
 	tm.Modal.SetDisabled(loading)
 }
@@ -115,11 +115,15 @@ func (tm *TextInputModal) Handle() {
 			return
 		}
 
-		tm.SetLoading(true)
+		tm.setLoading(true)
 		tm.SetError("")
-		if tm.callback(tm.textInput.Editor.Text(), tm) {
-			tm.Dismiss()
-		}
+		go func() {
+			if tm.callback(tm.textInput.Editor.Text(), tm) {
+				tm.Dismiss()
+				return
+			}
+			tm.setLoading(false)
+		}()
 	}
 
 	for tm.btnNegative.Clicked() {

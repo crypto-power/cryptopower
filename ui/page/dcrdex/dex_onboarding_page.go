@@ -1024,7 +1024,6 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 
 					pg.isLoading = false
 					pm.SetError(err.Error())
-					pm.SetLoading(false)
 					return false
 				})
 			dexPasswordModal.SetPasswordTitleVisibility(false)

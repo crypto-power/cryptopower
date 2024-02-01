@@ -400,7 +400,6 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			if !pg.dcrWallet.IsConnectedToNetwork() {
 				pm.SetError(values.String(values.StrNotConnected))
-				pm.SetLoading(false)
 				pg.stake.SetChecked(false)
 				return false
 			}
@@ -408,7 +407,6 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 			err := pg.dcrWallet.StartTicketBuyer(password)
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 
