@@ -25,7 +25,7 @@ const (
 )
 
 type config struct {
-	Network          string `long:"network" description:"Network to use (mainnet, testnet or simnet). Cannot be changed from the app once set."`
+	Network          string `long:"network" description:"Network to use (mainnet, simnet, testnet, dextest). Default is mainnet. Cannot be changed from the app once set."`
 	HomeDir          string `long:"appdata" description:"Directory where the app configuration file and wallet data is stored"`
 	ConfigFile       string `long:"configfile" description:"Filename of the config file in the app directory"`
 	ShowVersion      bool   `short:"V" long:"version" description:"Display version information and exit"`
@@ -35,6 +35,9 @@ type config struct {
 	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
 	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the assetsManager to use transactions that have not been confirmed"`
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
+	DEXTestAddr      string `long:"dextestaddr" description:"If using the dextest network, set an address for the dex harness to be used as a persistant peer for all new wallets."`
+
+	net libutils.NetworkType
 }
 
 func defaultConfig(defaultHomeDir string) config {

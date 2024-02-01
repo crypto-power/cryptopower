@@ -18,6 +18,7 @@ const (
 	Testnet    NetworkType = "testnet"
 	Regression NetworkType = "regression"
 	Simulation NetworkType = "simulation"
+	DEXTest    NetworkType = "dextest"
 	Unknown    NetworkType = "unknown"
 )
 
@@ -39,6 +40,8 @@ func ToNetworkType(str string) NetworkType {
 		return Regression
 	case "simulation", "sim", "simnet":
 		return Simulation
+	case "dextest":
+		return DEXTest
 	default:
 		return Unknown
 	}
@@ -52,19 +55,28 @@ type ChainsParams struct {
 }
 
 var (
-	DCRmainnetParams = dcrcfg.MainNetParams()
-	DCRtestnetParams = dcrcfg.TestNet3Params()
-	DCRSimnetParams  = dcrcfg.SimNetParams()
-	DCRRegnetParams  = dcrcfg.RegNetParams()
-	BTCmainnetParams = &btccfg.MainNetParams
-	BTCtestnetParams = &btccfg.TestNet3Params
-	BTCSimnetParams  = &btccfg.SimNetParams
-	BTCRegnetParams  = &btccfg.RegressionNetParams
-	LTCmainnetParams = &ltccfg.MainNetParams
-	LTCtestnetParams = &ltccfg.TestNet4Params
-	LTCSimnetParams  = &ltccfg.SimNetParams
-	LTCRegnetParams  = &ltccfg.RegressionNetParams
+	DCRmainnetParams      = dcrcfg.MainNetParams()
+	DCRtestnetParams      = dcrcfg.TestNet3Params()
+	DCRSimnetParams       = dcrcfg.SimNetParams()
+	DCRRegnetParams       = dcrcfg.RegNetParams()
+	BTCmainnetParams      = &btccfg.MainNetParams
+	BTCtestnetParams      = &btccfg.TestNet3Params
+	BTCSimnetParams       = &btccfg.SimNetParams
+	BTCRegnetParamsVal    = btccfg.RegressionNetParams
+	LTCmainnetParams      = &ltccfg.MainNetParams
+	LTCtestnetParams      = &ltccfg.TestNet4Params
+	LTCSimnetParams       = &ltccfg.SimNetParams
+	LTCRegnetParamsVal    = ltccfg.RegressionNetParams
+	DCRDEXSimnetParams    = dcrcfg.SimNetParams()
+	BTCDEXRegnetParamsVal = btccfg.RegressionNetParams
+	LTCDEXRegnetParamsVal = ltccfg.RegressionNetParams
 )
+
+func init() {
+	DCRDEXSimnetParams.DefaultPort = "19560"
+	BTCDEXRegnetParamsVal.DefaultPort = "20575"
+	LTCDEXRegnetParamsVal.DefaultPort = "20585"
+}
 
 // NetDir returns data directory name for a given asset's type and network connected.
 // If "unknown" is returned, unsupported asset type or network was detected.
@@ -99,6 +111,8 @@ func DCRChainParams(netType NetworkType) (*dcrcfg.Params, error) {
 		return DCRSimnetParams, nil
 	case Regression:
 		return DCRRegnetParams, nil
+	case DEXTest:
+		return DCRDEXSimnetParams, nil
 	default:
 		return nil, fmt.Errorf("%v: (%v)", ErrInvalidNet, netType)
 	}
@@ -115,7 +129,9 @@ func BTCChainParams(netType NetworkType) (*btccfg.Params, error) {
 	case Simulation:
 		return BTCSimnetParams, nil
 	case Regression:
-		return BTCRegnetParams, nil
+		return &BTCRegnetParamsVal, nil
+	case DEXTest:
+		return &BTCDEXRegnetParamsVal, nil
 	default:
 		return nil, fmt.Errorf("%v: (%v)", ErrInvalidNet, netType)
 	}
@@ -132,7 +148,9 @@ func LTCChainParams(netType NetworkType) (*ltccfg.Params, error) {
 	case Simulation:
 		return LTCSimnetParams, nil
 	case Regression:
-		return LTCRegnetParams, nil
+		return &LTCRegnetParamsVal, nil
+	case DEXTest:
+		return &LTCDEXRegnetParamsVal, nil
 	default:
 		return nil, fmt.Errorf("%v: (%v)", ErrInvalidNet, netType)
 	}

@@ -45,6 +45,9 @@ var (
 		libutils.Testnet: {{
 			Text: decredDEXServerTestnet,
 		}},
+		libutils.DEXTest: {{
+			Text: decredDEXServerSimnet,
+		}},
 	}
 
 	// formWidth is the width for form elements on the onboarding DEX page.
