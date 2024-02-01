@@ -233,7 +233,7 @@ func (hp *HomePage) initDEX() {
 		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
 		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
-		showWalletToSyncModal := func() bool {
+		showWalletToSyncModal := func() {
 			// DEX client has active orders or expired bonds, retrieve the
 			// wallets involved and ensure they are synced or syncing.
 			walletsToSyncMap := make(map[uint32]*struct{})
@@ -276,7 +276,7 @@ func (hp *HomePage) initDEX() {
 			}
 
 			if len(walletsToSync) == 0 {
-				return true
+				return
 			}
 
 			walletSyncRequestModal := modal.NewCustomModal(hp.Load).
@@ -304,7 +304,6 @@ func (hp *HomePage) initDEX() {
 					return true
 				}).SetCancelable(false)
 			hp.ParentWindow().ShowModal(walletSyncRequestModal)
-			return true
 		}
 
 		loginModal := modal.NewCustomModal(hp.Load).
@@ -332,7 +331,8 @@ func (hp *HomePage) initDEX() {
 					return false
 				}
 
-				return showWalletToSyncModal()
+				showWalletToSyncModal()
+				return true
 			}).
 			SetCancelable(false)
 		hp.ParentWindow().ShowModal(loginModal)
