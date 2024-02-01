@@ -933,4 +933,5 @@ const EN = `
 "updateAPI" = "Check for Update API"
 "newUpdateText" = "A new update, %s, is available"
 "updateAvailable" = "Update Available"
+"loginLater" = "I'll login later"
 `

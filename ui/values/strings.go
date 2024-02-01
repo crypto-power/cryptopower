@@ -1038,6 +1038,7 @@ const (
 	StrBackupDEXSeed                         = "backupDEXSeed"
 	StrDEXSeed                               = "dexSeed"
 	StrOptionalRestorationSeed               = "optionalRestorationSeed"
+	StrLoginLater                            = "loginLater"
 	StrLoginDEXForActiveOrdersOrExpiredBonds = "loginDEXForActiveOrdersOrExpiredBonds"
 	StrUpdateAPI                             = "updateAPI"
 	StrNewUpdateText                         = "newUpdateText"
