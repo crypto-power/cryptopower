@@ -420,7 +420,9 @@ func (e *Editor) handleEvents(gtx C) {
 	}
 
 	if e.paste.Clicked() {
-		clipboard.ReadOp{Tag: &e.eventKey}.Add(gtx.Ops)
+		if e.eventKey > 0 {
+			clipboard.ReadOp{Tag: &e.eventKey}.Add(gtx.Ops)
+		}
 		e.isShowMenu = false
 	}
 }
