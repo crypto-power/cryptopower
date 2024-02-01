@@ -40,12 +40,9 @@ type DEXWallet struct {
 }
 
 type WalletHelper interface {
-	AccountName(accountNumber int32) (string, error)
 	IsAccountMixerActive() bool
 	UnmixedAccountNumber() int32
 	MixedAccountNumber() int32
-	LockWallet()
-	UnlockWallet(pass string) error
 }
 
 var _ dexdcr.Wallet = (*DEXWallet)(nil)
@@ -81,7 +78,7 @@ func (dw *DEXWallet) SpvMode() bool {
 // Accounts returns the names of the accounts for use by the exchange wallet.
 func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 	var accts dexdcr.XCWalletAccounts
-	accountName, err := dw.helper.AccountName(dw.tradingAccountNumber)
+	accountName, err := dw.w.AccountName(context.Background(), uint32(dw.tradingAccountNumber))
 	if err == nil {
 		accts.PrimaryAccount = accountName
 	} else {
@@ -94,13 +91,13 @@ func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 
 	unMixedAcctNum := dw.helper.UnmixedAccountNumber()
 	mixedAcctNum := dw.helper.MixedAccountNumber()
-	unMixedAcctName, err := dw.helper.AccountName(unMixedAcctNum)
+	unMixedAcctName, err := dw.w.AccountName(context.Background(), uint32(unMixedAcctNum))
 	if err != nil {
 		log.Errorf("error retrieving unmixed account name: %v", err)
 		return accts
 	}
 
-	mixedAcctName, err := dw.helper.AccountName(mixedAcctNum)
+	mixedAcctName, err := dw.w.AccountName(context.Background(), uint32(mixedAcctNum))
 	if err != nil {
 		log.Errorf("error retrieving mixed account name: %v", err)
 		return accts
@@ -521,15 +518,15 @@ func (dw *DEXWallet) AccountUnlocked(_ context.Context, _ string) (bool, error) 
 // LockAccount locks the specified account.
 // Part of the Wallet interface.
 func (dw *DEXWallet) LockAccount(_ context.Context, _ string) error {
-	dw.helper.LockWallet()
+	dw.w.Lock()
 	return nil
 }
 
 // UnlockAccount unlocks the specified account or the wallet if account is not
 // encrypted.
 // Part of the Wallet interface.
-func (dw *DEXWallet) UnlockAccount(_ context.Context, pass []byte, _ string) error {
-	return dw.helper.UnlockWallet(string(pass))
+func (dw *DEXWallet) UnlockAccount(ctx context.Context, pass []byte, _ string) error {
+	return dw.w.Unlock(ctx, pass, nil)
 }
 
 // SyncStatus returns the wallet's sync status.
