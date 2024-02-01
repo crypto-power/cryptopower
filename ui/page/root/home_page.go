@@ -267,6 +267,7 @@ func (hp *HomePage) initDEX() {
 					walletsToSyncMap[bond.AssetID] = &struct{}{}
 				}
 
+				var walletsToSyncStr string
 				var walletsToSync []sharedW.Asset
 				for assetID := range walletsToSyncMap {
 					walletID, err := dexClient.WalletIDForAsset(assetID)
@@ -290,6 +291,7 @@ func (hp *HomePage) initDEX() {
 					}
 
 					walletsToSync = append(walletsToSync, wallet)
+					walletsToSyncStr += "," + fmt.Sprintf("%s (%s)", wallet.GetWalletName(), wallet.GetAssetType())
 				}
 
 				if len(walletsToSync) == 0 {
@@ -298,7 +300,7 @@ func (hp *HomePage) initDEX() {
 
 				walletSyncRequestModal := modal.NewCustomModal(hp.Load).
 					Title(values.String(values.StrWalletsNeedToSync)).
-					Body(values.String(values.StrWalletsNeedToSyncMsg)).
+					Body(values.StringF(values.StrWalletsNeedToSyncMsg, strings.Trim(walletsToSyncStr, ","))).
 					SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
 					SetPositiveButtonText(values.String(values.StrOkaySync)).
 					SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
@@ -312,9 +314,12 @@ func (hp *HomePage) initDEX() {
 							err := w.SpvSync()
 							if err != nil {
 								log.Error(err)
+							} else {
+								w.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true)
 							}
 						}
 
+						hp.ParentWindow().Reload()
 						return true
 					})
 				hp.ParentWindow().ShowModal(walletSyncRequestModal)
