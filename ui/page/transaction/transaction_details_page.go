@@ -151,7 +151,7 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 
 	// find destination address
 destinationAddrLoop:
-	for i, output := range pg.transaction.Outputs {
+	for _, output := range pg.transaction.Outputs {
 		switch pg.transaction.Direction {
 		case txhelper.TxDirectionSent:
 			// mixed account number
@@ -160,14 +160,22 @@ destinationAddrLoop:
 			if libutils.DCRWalletAsset == pg.wallet.GetAssetType() {
 				mixedAcc = pg.wallet.(*dcr.Asset).UnmixedAccountNumber()
 			}
-			if pg.transaction.Type == txhelper.TxTypeMixed &&
-				output.AccountNumber == mixedAcc {
-				accountName, err := pg.wallet.AccountName(output.AccountNumber)
-				if err != nil {
-					log.Error(err)
+			if pg.transaction.Type == txhelper.TxTypeMixed {
+				if output.AccountNumber == mixedAcc {
+					accountName, err := pg.wallet.AccountName(output.AccountNumber)
+					if err != nil {
+						log.Error(err)
+					} else {
+						txDestinationAddress = accountName
+					}
 				} else {
-					txDestinationAddress = accountName
+					if output.AccountNumber == -1 {
+						txDestinationAddress = output.Address
+					}
 				}
+				pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
+				pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
+				break destinationAddrLoop
 			}
 
 			if output.AccountNumber == -1 {
@@ -177,9 +185,6 @@ destinationAddrLoop:
 			if txDestinationAddress != "" {
 				pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
 				pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
-			}
-			if i == len(pg.transaction.Outputs)-1 {
-				break destinationAddrLoop
 			}
 		case txhelper.TxDirectionReceived:
 			if output.AccountNumber != -1 {
