@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"decred.org/dcrdex/client/comms"
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/client/orderbook"
 	"decred.org/dcrdex/dex"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/dexc"
+	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
@@ -101,6 +103,7 @@ type DEXMarketPage struct {
 	maxBuyOrSellStr     string
 	orderFeeEstimateStr string
 
+	loginBtn               cryptomaterial.Button
 	postBondBtn            cryptomaterial.Button
 	createOrderBtn         cryptomaterial.Button
 	immediateOrderCheckbox cryptomaterial.CheckBoxStyle
@@ -154,6 +157,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 		totalEditor:                        newTextEditor(th, values.String(values.StrTotal), "", false),
 		maxBuyOrSellStr:                    "---",
 		orderFeeEstimateStr:                "------",
+		loginBtn:                           th.Button(values.String(values.StrLogin)),
 		postBondBtn:                        th.Button(values.String(values.StrPostBond)),
 		addWalletToDEX:                     th.Button(values.String(values.StrAddWallet)),
 		createOrderBtn:                     th.Button(values.String(values.StrBuy)),
@@ -240,13 +244,15 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
 							modal := modal.NewSuccessModal(pg.Load, n.Details(), modal.DefaultClickFunc())
 							pg.ParentWindow().ShowModal(modal)
-							pg.ParentWindow().Reload()
 						}
 					case core.TopicDEXDisconnected, core.TopicDexConnectivity:
 						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
 							pg.notifyError(n.Details())
 						}
 					}
+
+					pg.ParentWindow().Reload()
+
 				case core.NoteTypeOrder, core.NoteTypeMatch:
 					if n.Topic() == core.TopicAsyncOrderFailure {
 						pg.notifyError(n.Details())
@@ -274,24 +280,36 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	}
 
 	// Prompt user to login now.
-	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+	pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, false, nil))
+}
+
+func dexLoginModal(load *load.Load, dexClient libwallet.DEXClient, forPendingBond bool, positiveBtnCallback func()) *modal.CreatePasswordModal {
+	dexPasswordModal := modal.NewCreatePasswordModal(load).
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrLogin)).
 		SetDescription(values.String(values.StrLoginWithDEXPassword)).
 		PasswordHint(values.String(values.StrDexPassword)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := dexc.Login([]byte(password))
-			if err == nil {
-				return true
+			err := dexClient.Login([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
 			}
 
-			pm.SetError(err.Error())
-			pm.SetLoading(false)
-			return false
+			if positiveBtnCallback != nil {
+				positiveBtnCallback()
+			}
+			return true
 		}).SetCancelable(false)
+
+	if forPendingBond {
+		dexPasswordModal = dexPasswordModal.SetDescription(values.String(values.StrLoginDEXForPendingBonds))
+	}
+
 	dexPasswordModal.SetPasswordTitleVisibility(false)
-	pg.ParentWindow().ShowModal(dexPasswordModal)
+	return dexPasswordModal
 }
 
 func (pg *DEXMarketPage) isDEXReset() bool {
@@ -338,12 +356,14 @@ func (pg *DEXMarketPage) setServerMarkets() {
 	dexc := pg.AssetsManager.DexClient()
 	var markets []cryptomaterial.DropDownItem
 	var lastSelectedItem *cryptomaterial.DropDownItem
+	var serverIsDisconnected bool
 	if pg.serverSelector.Selected() != values.String(values.StrAddServer) {
 		host := pg.serverSelector.Selected()
 		xc, err := dexc.Exchange(host)
 		if err != nil {
 			pg.notifyError(err.Error())
 		} else {
+			serverIsDisconnected = xc.ConnectionStatus != comms.Connected
 			for _, m := range xc.Markets {
 				base, quote := convertAssetIDToAssetType(m.BaseID), convertAssetIDToAssetType(m.QuoteID)
 				if base == "" || quote == "" {
@@ -364,11 +384,15 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		}
 	}
 
-	if len(markets) == 0 {
-		markets = append(markets, cryptomaterial.DropDownItem{
-			Text:             values.String(values.StrNoSupportedMarket),
+	if len(markets) == 0 || serverIsDisconnected {
+		msg := values.String(values.StrNoSupportedMarket)
+		if serverIsDisconnected {
+			msg = values.String(values.StrDEXServerDisconnected)
+		}
+		markets = []cryptomaterial.DropDownItem{{
+			Text:             msg,
 			PreventSelection: true,
-		})
+		}}
 	}
 
 	pg.marketSelector = pg.Theme.DropDown(markets, lastSelectedItem, values.DEXCurrencyPairGroup, false)
@@ -388,7 +412,7 @@ func (pg *DEXMarketPage) fetchOrderBook() {
 	}
 	pg.closeAndResetOrderbookListener()
 
-	if pg.noSupportedMarket() {
+	if pg.noMarket() {
 		return // nothing to do.
 	}
 
@@ -744,9 +768,13 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	xc := pg.exchange()
 	dexClient := pg.AssetsManager.DexClient()
 	hasZeroEffectiveTier := dexClient.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
-	if dexClient.IsLoggedIn() && pg.noSupportedMarket() {
+	if dexClient.IsLoggedIn() && pg.noMarket() {
 		overlaySet = true
-		overlayMsg = values.String(values.StrNoSupportedMarketMsg)
+		if xc != nil && xc.ConnectionStatus != comms.Connected {
+			overlayMsg = values.String(values.StrDEXServerDisconnected)
+		} else {
+			overlayMsg = values.String(values.StrNoSupportedMarketMsg)
+		}
 	} else if hasZeroEffectiveTier { // Need to post bond to trade.
 		overlaySet = true
 		overlayMsg = values.String(values.StrPostBondMsg)
@@ -763,11 +791,15 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 				asset := pg.AssetsManager.WalletWithID(walletID)
 				accountName, _ := asset.AccountName(int32(accountNumber))
 				bondAmtString := calculateBondAmount(asset, xc.BondAssets[asset.GetAssetType().ToStringLower()], int(targetTier), dexClient.BondsFeeBuffer(bondAssetID))
-				overlayMsg = values.StringF(values.StrBondPostingInProgressMsg, asset.GetAssetType(), asset.GetWalletName(), accountName, bondAmtString)
+				overlayMsg = values.StringF(values.StrBondPostingInProgressMsg, bondAmtString, accountName, asset.GetAssetType(), asset.GetWalletName())
 			}
 		} else {
 			actionBtn = &pg.postBondBtn
 		}
+	} else if !dexClient.IsLoggedIn() {
+		overlaySet = true
+		overlayMsg = values.String(values.StrLoginWithDEXPassword)
+		actionBtn = &pg.loginBtn
 	} else if missingMarketWalletType := pg.missingMarketWallet(); missingMarketWalletType != "" {
 		overlaySet = true
 		overlayMsg = values.StringF(values.StrMissingDEXWalletMsg, missingMarketWalletType, missingMarketWalletType)
@@ -796,121 +828,123 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 		},
 		Orientation: vertical,
 	}.Layout2(gtx, func(gtx C) D {
-		return layout.Stack{Alignment: layout.NW}.Layout(gtx,
-			layout.Expanded(func(gtx C) D {
-				return cryptomaterial.LinearLayout{
-					Width:       cryptomaterial.MatchParent,
-					Height:      cryptomaterial.WrapContent,
-					Margin:      layout.Inset{Top: values.MarginPadding70},
-					Orientation: vertical,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return orderFormRow(gtx, vertical, []layout.FlexChild{
-							layout.Rigid(pg.semiBoldLabelText(values.String(values.StrPrice)).Layout),
-							layout.Rigid(pg.priceEditor.Layout),
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return orderFormRow(gtx, vertical, []layout.FlexChild{
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Bottom: dp5}.Layout(gtx, func(gtx C) D {
-									var labelText string
-									if pg.orderWithLots() {
-										labelText = fmt.Sprintf("%s (%s)", values.String(values.StrLots), lotsOrAmountSubtext)
-									} else {
-										labelText = fmt.Sprintf("%s (%s)", values.String(values.StrAmount), lotsOrAmountSubtext)
-									}
+		formLayout := func(gtx C) D {
+			return layout.Stack{Alignment: layout.NW}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.WrapContent,
+						Margin:      layout.Inset{Top: values.MarginPadding70},
+						Orientation: vertical,
+					}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return orderFormRow(gtx, vertical, []layout.FlexChild{
+								layout.Rigid(pg.semiBoldLabelText(values.String(values.StrPrice)).Layout),
+								layout.Rigid(pg.priceEditor.Layout),
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							return orderFormRow(gtx, vertical, []layout.FlexChild{
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Bottom: dp5}.Layout(gtx, func(gtx C) D {
+										var labelText string
+										if pg.orderWithLots() {
+											labelText = fmt.Sprintf("%s (%s)", values.String(values.StrLots), lotsOrAmountSubtext)
+										} else {
+											labelText = fmt.Sprintf("%s (%s)", values.String(values.StrAmount), lotsOrAmountSubtext)
+										}
+										return layout.Flex{Axis: horizontal}.Layout(gtx,
+											layout.Rigid(pg.semiBoldLabelText(labelText).Layout),
+											layout.Flexed(1, func(gtx C) D {
+												return layout.E.Layout(gtx, pg.switchLotsOrAmount.Layout)
+											}),
+										)
+									})
+								}),
+								layout.Rigid(pg.lotsOrAmountEditor.Layout),
+								layout.Rigid(func(gtx C) D {
 									return layout.Flex{Axis: horizontal}.Layout(gtx,
-										layout.Rigid(pg.semiBoldLabelText(labelText).Layout),
-										layout.Flexed(1, func(gtx C) D {
-											return layout.E.Layout(gtx, pg.switchLotsOrAmount.Layout)
+										layout.Rigid(func(gtx C) D {
+											if !sell {
+												return D{}
+											}
+											return layout.W.Layout(gtx, pg.Theme.Label(values.TextSize12, values.StringF(values.StrAvailableBalance, balStr)).Layout)
+										}),
+										layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+											return layout.E.Layout(gtx, pg.Theme.Label(values.TextSize12, values.StringF(values.StrMaxDEX, tradeDirection, pg.maxBuyOrSellStr)).Layout)
 										}),
 									)
-								})
-							}),
-							layout.Rigid(pg.lotsOrAmountEditor.Layout),
-							layout.Rigid(func(gtx C) D {
-								return layout.Flex{Axis: horizontal}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										if !sell {
-											return D{}
-										}
-										return layout.W.Layout(gtx, pg.Theme.Label(values.TextSize12, values.StringF(values.StrAvailableBalance, balStr)).Layout)
-									}),
-									layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-										return layout.E.Layout(gtx, pg.Theme.Label(values.TextSize12, values.StringF(values.StrMaxDEX, tradeDirection, pg.maxBuyOrSellStr)).Layout)
-									}),
-								)
-							}),
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return orderFormRow(gtx, vertical, []layout.FlexChild{
-							layout.Rigid(func(gtx C) D {
-								totalLabelTxt := fmt.Sprintf("%s (%s)", values.String(values.StrTotal), totalSubText)
-								return layout.Inset{Bottom: dp5}.Layout(gtx, pg.semiBoldLabelText(totalLabelTxt).Layout)
-							}),
-							layout.Rigid(pg.totalEditor.Layout),
-							layout.Rigid(func(gtx C) D {
-								if sell {
-									return D{} // Base asset available balance is shown on the sell form view
-								}
+								}),
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							return orderFormRow(gtx, vertical, []layout.FlexChild{
+								layout.Rigid(func(gtx C) D {
+									totalLabelTxt := fmt.Sprintf("%s (%s)", values.String(values.StrTotal), totalSubText)
+									return layout.Inset{Bottom: dp5}.Layout(gtx, pg.semiBoldLabelText(totalLabelTxt).Layout)
+								}),
+								layout.Rigid(pg.totalEditor.Layout),
+								layout.Rigid(func(gtx C) D {
+									if sell {
+										return D{} // Base asset available balance is shown on the sell form view
+									}
 
-								// Show quote asset balance
-								return layout.Flex{Axis: horizontal}.Layout(gtx,
-									layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-										return layout.E.Layout(gtx, pg.Theme.Label(values.TextSize12, values.StringF(values.StrAvailableBalance, balStr)).Layout)
-									}),
-								)
-							}),
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: horizontal, Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(semiBoldLabelGrey3(pg.Theme, values.String(values.StrEstimatedFee)).Layout),
-							layout.Rigid(func(gtx C) D {
-								feeEstimatedLabel := pg.Theme.Label(values.TextSize12, pg.orderFeeEstimateStr)
-								feeEstimatedLabel.Alignment = text.Middle
-								return feeEstimatedLabel.Layout(gtx)
-							}),
-						)
-					}),
-					layout.Rigid(func(gtx C) D {
-						pg.immediateOrderCheckbox.Color = pg.Theme.Color.Text
-						return orderFormRow(gtx, horizontal, []layout.FlexChild{
-							layout.Rigid(pg.immediateOrderCheckbox.Layout),
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Top: dp10, Left: dp2}.Layout(gtx, func(gtx C) D {
-									return pg.immediateOrderInfoBtn.Layout(gtx, pg.Theme.Icons.InfoAction.Layout16dp)
-								})
-							})},
-						)
-					}),
-					layout.Rigid(func(gtx C) D {
-						pg.createOrderBtn.SetEnabled(pg.hasValidOrderInfo())
-						return layout.Flex{Axis: horizontal, Alignment: layout.Middle}.Layout(gtx,
-							layout.Flexed(1, pg.createOrderBtn.Layout),
-						)
-					}),
-				)
-			}),
-			layout.Stacked(func(gtx C) D {
-				return layout.Flex{Axis: horizontal}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return pg.toggleBuyAndSellBtn.GroupTileLayout(gtx)
-					}),
-					layout.Flexed(1, func(gtx C) D {
-						pg.orderTypesDropdown.Background = &pg.Theme.Color.Surface
-						return layout.Inset{Bottom: dp5, Top: dp5}.Layout(gtx, pg.orderTypesDropdown.Layout)
-					}),
-				)
-			}),
-			layout.Stacked(func(gtx C) D {
-				if !overlaySet {
-					return D{}
-				}
+									// Show quote asset balance
+									return layout.Flex{Axis: horizontal}.Layout(gtx,
+										layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+											return layout.E.Layout(gtx, pg.Theme.Label(values.TextSize12, values.StringF(values.StrAvailableBalance, balStr)).Layout)
+										}),
+									)
+								}),
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							return layout.Flex{Axis: horizontal, Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(semiBoldLabelGrey3(pg.Theme, values.String(values.StrEstimatedFee)).Layout),
+								layout.Rigid(func(gtx C) D {
+									feeEstimatedLabel := pg.Theme.Label(values.TextSize12, pg.orderFeeEstimateStr)
+									feeEstimatedLabel.Alignment = text.Middle
+									return feeEstimatedLabel.Layout(gtx)
+								}),
+							)
+						}),
+						layout.Rigid(func(gtx C) D {
+							pg.immediateOrderCheckbox.Color = pg.Theme.Color.Text
+							return orderFormRow(gtx, horizontal, []layout.FlexChild{
+								layout.Rigid(pg.immediateOrderCheckbox.Layout),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Top: dp10, Left: dp2}.Layout(gtx, func(gtx C) D {
+										return pg.immediateOrderInfoBtn.Layout(gtx, pg.Theme.Icons.InfoAction.Layout16dp)
+									})
+								})},
+							)
+						}),
+						layout.Rigid(func(gtx C) D {
+							pg.createOrderBtn.SetEnabled(pg.hasValidOrderInfo())
+							return layout.Flex{Axis: horizontal, Alignment: layout.Middle}.Layout(gtx,
+								layout.Flexed(1, pg.createOrderBtn.Layout),
+							)
+						}),
+					)
+				}),
+				layout.Stacked(func(gtx C) D {
+					return layout.Flex{Axis: horizontal}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return pg.toggleBuyAndSellBtn.GroupTileLayout(gtx)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							pg.orderTypesDropdown.Background = &pg.Theme.Color.Surface
+							return layout.Inset{Bottom: dp5, Top: dp5}.Layout(gtx, pg.orderTypesDropdown.Layout)
+						}),
+					)
+				}),
+			)
+		}
 
-				gtxCopy := gtx
+		overlay := func(gtx C) D { return D{} }
+		if overlaySet {
+			gtxCopy := gtx
+			overlay = func(gtx C) D {
 				label := pg.Theme.Body1(overlayMsg)
 				label.Alignment = text.Middle
 				return cryptomaterial.DisableLayout(nil, gtxCopy,
@@ -918,8 +952,12 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, label.Layout)
 					},
 					nil, 180, pg.Theme.Color.Gray3, actionBtn)
-			}),
-		)
+			}
+
+			gtx = gtx.Disabled()
+		}
+
+		return layout.Stack{}.Layout(gtx, layout.Expanded(formLayout), layout.Stacked(overlay))
 	})
 }
 
@@ -991,7 +1029,7 @@ func trimZeros(s string) string {
 // account for the quote or base asset of the selected market. Returns the
 // wallet's spendable balance as string.
 func (pg *DEXMarketPage) availableWalletAccountBalanceString(forQuoteAsset bool) (bal float64, assetSym string) {
-	if pg.noSupportedMarket() {
+	if pg.noMarket() {
 		return 0, ""
 	}
 
@@ -1560,6 +1598,10 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, pg.serverSelector.Selected()))
 	}
 
+	if pg.loginBtn.Clicked() {
+		pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, false, nil))
+	}
+
 	for pg.addWalletToDEX.Clicked() {
 		pg.handleMissingMarketWallet()
 	}
@@ -1928,8 +1970,10 @@ func (pg *DEXMarketPage) orderWithLots() bool {
 	return !pg.switchLotsOrAmount.IsChecked()
 }
 
-func (pg *DEXMarketPage) noSupportedMarket() bool {
-	return pg.marketSelector.Selected() == values.String(values.StrNoSupportedMarket)
+// noMarket checks if the selected server is disconnected or has no supported
+// markets.
+func (pg *DEXMarketPage) noMarket() bool {
+	return pg.marketSelector.Selected() == values.String(values.StrNoSupportedMarket) || pg.marketSelector.Selected() == values.String(values.StrDEXServerDisconnected)
 }
 
 func (pg *DEXMarketPage) notifyError(errMsg string) {

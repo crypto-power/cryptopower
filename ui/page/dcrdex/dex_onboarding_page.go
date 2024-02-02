@@ -1285,29 +1285,39 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 		return
 	}
 
-	pg.newTier = 1
-	pg.currentStep = onBoardingStepWaitForConfirmation
-	pg.bondConfirmationInfo = &bondConfirmationInfo{
-		bondCoinID:       bond.CoinID,
-		requiredBondConf: uint16(bondAsset.Confs),
-		currentBondConf:  int32(bond.Confs),
+	waitForBondTx := func() {
+		pg.newTier = 1
+		pg.currentStep = onBoardingStepWaitForConfirmation
+		pg.bondConfirmationInfo = &bondConfirmationInfo{
+			bondCoinID:       bond.CoinID,
+			requiredBondConf: uint16(bondAsset.Confs),
+			currentBondConf:  int32(bond.Confs),
+		}
+
+		// Set fields required by pg.stepWaitForBondConfirmation page. Also See:
+		// pg.bondAmountInfoDisplay.
+		bondAssetType := convertAssetIDToAssetType(bondAsset.ID)
+		pg.bondServer.bondAssets = map[libutils.AssetType]*core.BondAsset{
+			bondAssetType: bondAsset,
+		}
+		pg.bondServer.url = xcHost
+		pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
+		ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
+		if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.
+			pg.notifyError(values.String(values.StrNoWalletLoaded))
+			return
+		}
+
+		pg.waitForConfirmationAndListenForBlockNotifications()
 	}
 
-	// Set fields required by pg.stepWaitForBondConfirmation page. Also See:
-	// pg.bondAmountInfoDisplay.
-	bondAssetType := convertAssetIDToAssetType(bondAsset.ID)
-	pg.bondServer.bondAssets = map[libutils.AssetType]*core.BondAsset{
-		bondAssetType: bondAsset,
-	}
-	pg.bondServer.url = xcHost
-	pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
-	ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
-	if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.
-		pg.notifyError(values.String(values.StrNoWalletLoaded))
+	dexClient := pg.AssetsManager.DexClient()
+	if !dexClient.IsLoggedIn() {
+		pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexClient, true, waitForBondTx))
 		return
 	}
 
-	pg.waitForConfirmationAndListenForBlockNotifications()
+	waitForBondTx()
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {
