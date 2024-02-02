@@ -295,8 +295,6 @@ func (hp *HomePage) initDEX() {
 						err := w.SpvSync()
 						if err != nil {
 							log.Error(err)
-						} else {
-							w.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true)
 						}
 					}
 
