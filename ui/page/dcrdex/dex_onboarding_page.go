@@ -57,6 +57,7 @@ var (
 	dp16 = values.MarginPadding16
 	dp2  = values.MarginPadding2
 	dp10 = values.MarginPadding10
+	dp12 = values.MarginPadding12
 )
 
 // onboardingStep is each step of the flow required for a user to create a DEX
@@ -503,10 +504,14 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 		nextBtnEnabled = pg.validateBondStrength() && pg.bondAccountHasEnough() && !pg.isLoading
 	case onBoardingStepWaitForConfirmation:
 		xc, err := dexc.Exchange(pg.bondServer.url)
-		nextBtnEnabled = err != nil && xc.Auth.EffectiveTier > 0
+		nextBtnEnabled = err == nil && xc.Auth.EffectiveTier > 0
 		hideFooter = !nextBtnEnabled
 		addBackBtn = false
-		if nextBtnEnabled {
+		if !dexc.IsLoggedIn() {
+			hideFooter = false
+			nextBtnEnabled = true
+			nextBtnText = values.String(values.StrLogin)
+		} else if nextBtnEnabled {
 			nextBtnText = values.String(values.StrSkip)
 		}
 	}
@@ -708,7 +713,6 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 		cardBg = *bg
 	}
 	return func(gtx C) D {
-		dp12 := values.MarginPadding12
 		dp15 := values.MarginPadding15
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
@@ -734,9 +738,28 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 	}
 }
 
+func (pg *DEXOnboarding) loginDEXForPendingBondsLayout(gtx C) D {
+	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return centerLayout(gtx, dp20, dp12, pg.Theme.H6(values.String(values.StrLogin)).Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrLoginDEXForPendingBonds)).Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			pg.passwordEditor.Hint = values.String(values.StrDexPassword)
+			return layout.Inset{Top: dp16}.Layout(gtx, pg.passwordEditor.Layout)
+		}),
+		layout.Rigid(pg.formFooterButtons),
+	)
+}
+
 func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
-	dp12 := values.MarginPadding12
-	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+	if !pg.AssetsManager.DexClient().IsLoggedIn() {
+		return pg.loginDEXForPendingBondsLayout(gtx)
+	}
+
+	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return centerLayout(gtx, dp20, dp12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
@@ -814,8 +837,6 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 		}),
 		layout.Rigid(pg.formFooterButtons),
 	)
-
-	return layoutFlex
 }
 
 func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
@@ -966,10 +987,19 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 
 			pg.bondServer = serverInfo
 			pg.isLoading = true
-			go func() {
-				pg.connectServerAndPrepareForBonding()
-				pg.isLoading = false
-			}()
+			if !dexc.InitializedWithPassword() || len(pg.dexPass) > 0 {
+				go func() {
+					pg.connectServerAndPrepareForBonding()
+					pg.isLoading = false
+				}()
+				break
+			}
+
+			// dexc password is already set and the dex password is not cached.
+			// Prompt the user to login now so we can use
+			// dexClient.DiscoverAccount in
+			// pg.connectServerAndPrepareForBonding.
+			pg.showDEXPasswordModal(pg.connectServerAndPrepareForBonding)
 
 		case onboardingPostBond:
 			// Validate all input fields.
@@ -984,56 +1014,101 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				return
 			}
 
-			// Initialize with password now, if dex password has not been
-			// initialized.
 			pg.isLoading = true
-			if !dexc.InitializedWithPassword() {
-				go func() {
-					// Set password.
-					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
-					if err := dexc.InitWithPassword(pg.dexPass, nil); err != nil {
+			if dexc.InitializedWithPassword() {
+				if !dexc.IsLoggedIn() {
+					pg.showDEXPasswordModal(pg.postBond)
+				} else {
+					go func() {
+						pg.postBond()
 						pg.isLoading = false
-						pg.notifyError(err.Error())
-						return
-					}
+					}()
+				}
 
-					// Login.
-					err := dexc.Login(pg.dexPass)
-					if err != nil {
-						pg.isLoading = false
-						pg.notifyError(err.Error())
-						return
-					}
+				break
+			}
 
-					pg.postBond()
-				}()
+			// DEX has not been initialized with a password, do it now.
+			go func() {
+				// Set password.
+				pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
+				if err := dexc.InitWithPassword(pg.dexPass, nil); err != nil {
+					pg.isLoading = false
+					pg.notifyError(err.Error())
+					return
+				}
 
+				// Login.
+				err := dexc.Login(pg.dexPass)
+				if err != nil {
+					pg.isLoading = false
+					pg.notifyError(err.Error())
+					return
+				}
+
+				pg.postBond()
+			}()
+
+		case onBoardingStepWaitForConfirmation:
+			if dexc.IsLoggedIn() {
+				break // nothing to do
+			}
+
+			pass := pg.passwordEditor.Editor.Text()
+			if pass == "" {
+				pg.passwordEditor.SetError(values.String(values.StrErrPassEmpty))
 				return
 			}
 
-			// dexc password is already set.
-			dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-				EnableName(false).
-				EnableConfirmPassword(false).
-				Title(values.String(values.StrDexPassword)).
-				PasswordHint(values.String(values.StrDexPassword)).
-				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					pg.dexPass = []byte(password)
-					err := dexc.Login(pg.dexPass)
-					if err == nil {
-						pg.postBond()
-						return true
+			pg.isLoading = true
+			go func() {
+				pg.dexPass = []byte(pass)
+				err := dexc.Login(pg.dexPass)
+				if err != nil {
+					pg.notifyError(err.Error())
+				} else {
+					// Check now if we should still wait.
+					xc, err := dexc.Exchange(pg.bondServer.url)
+					if err != nil {
+						pg.notifyError(err.Error())
+					} else if len(xc.Auth.PendingBonds) == 0 {
+						// No pending bonds to wait for, show market page with
+						// the server selected.
+						pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, xc.Host))
 					}
+					pg.ParentWindow().Reload()
+				}
 
-					pg.isLoading = false
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return false
-				})
-			dexPasswordModal.SetPasswordTitleVisibility(false)
-			pg.ParentWindow().ShowModal(dexPasswordModal)
+				pg.isLoading = false
+			}()
 		}
 	}
+}
+
+func (pg *DEXOnboarding) showDEXPasswordModal(callbackFn func()) {
+	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrDexPassword)).
+		PasswordHint(values.String(values.StrDexPassword)).
+		SetNegativeButtonCallback(func() {
+			pg.isLoading = false
+		}).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			pg.dexPass = []byte(password)
+			err := pg.AssetsManager.DexClient().Login(pg.dexPass)
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+
+			callbackFn()
+			pg.isLoading = false
+			return true
+		})
+	dexPasswordModal.SetPasswordTitleVisibility(false)
+	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
 func (pg *DEXOnboarding) setAddServerStep() {
@@ -1271,6 +1346,10 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 	asset.RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
 	asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
 		OnBlockAttached: func(_ int, _ int32) {
+			if pg.AssetsManager.DEXCInitialized() && !pg.AssetsManager.DexClient().IsLoggedIn() {
+				// Don't update conf if we are not yet logged in.
+				return
+			}
 			pg.bondConfirmationInfo.currentBondConf++
 			pg.ParentWindow().Reload()
 		},
@@ -1280,7 +1359,7 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 // host is optional.
 func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 	// Check if bond has already been posted but still pending confirmation.
-	xcHost, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager, host)
+	xc, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager, host)
 	if bond == nil {
 		return
 	}
@@ -1300,7 +1379,7 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 		pg.bondServer.bondAssets = map[libutils.AssetType]*core.BondAsset{
 			bondAssetType: bondAsset,
 		}
-		pg.bondServer.url = xcHost
+		pg.bondServer.url = xc.Host
 		pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
 		ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
 		if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.
@@ -1313,11 +1392,15 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 
 	dexClient := pg.AssetsManager.DexClient()
 	if !dexClient.IsLoggedIn() {
-		pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexClient, true, waitForBondTx))
+		dexPasswordModal := dexLoginModal(pg.Load, dexClient, waitForBondTx)
+		dexPasswordModal.SetDescription(values.String(values.StrLoginDEXForPendingBonds))
+		dexPasswordModal.SetNegativeButtonCallback(waitForBondTx) // We'll display a form for them to login.
+		pg.ParentWindow().ShowModal(dexPasswordModal)
 		return
 	}
 
 	waitForBondTx()
+	return
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {

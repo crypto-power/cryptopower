@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"decred.org/dcrdex/client/comms"
 	"decred.org/dcrdex/client/core"
@@ -90,7 +91,8 @@ type DEXMarketPage struct {
 	lastSelectedDEXServer string
 	addServerBtn          *cryptomaterial.Clickable
 
-	marketSelector *cryptomaterial.DropDown
+	marketSelector               *cryptomaterial.DropDown
+	noMarketOrServerDisconnected atomic.Bool
 
 	toggleBuyAndSellBtn *cryptomaterial.SegmentedControl
 	orderTypesDropdown  *cryptomaterial.DropDown
@@ -240,12 +242,17 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 				case core.NoteTypeConnEvent:
 					switch n.Topic() {
 					case core.TopicDEXConnected:
+						pg.noMarketOrServerDisconnected.Store(true)
 						pg.setServerMarkets()
 						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
 							modal := modal.NewSuccessModal(pg.Load, n.Details(), modal.DefaultClickFunc())
 							pg.ParentWindow().ShowModal(modal)
 						}
 					case core.TopicDEXDisconnected, core.TopicDexConnectivity:
+						if n.Topic() == core.TopicDEXDisconnected {
+							pg.noMarketOrServerDisconnected.Store(false)
+						}
+
 						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
 							pg.notifyError(n.Details())
 						}
@@ -280,10 +287,10 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	}
 
 	// Prompt user to login now.
-	pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, false, nil))
+	pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, nil))
 }
 
-func dexLoginModal(load *load.Load, dexClient libwallet.DEXClient, forPendingBond bool, positiveBtnCallback func()) *modal.CreatePasswordModal {
+func dexLoginModal(load *load.Load, dexClient libwallet.DEXClient, positiveBtnCallback func()) *modal.CreatePasswordModal {
 	dexPasswordModal := modal.NewCreatePasswordModal(load).
 		EnableName(false).
 		EnableConfirmPassword(false).
@@ -303,10 +310,6 @@ func dexLoginModal(load *load.Load, dexClient libwallet.DEXClient, forPendingBon
 			}
 			return true
 		}).SetCancelable(false)
-
-	if forPendingBond {
-		dexPasswordModal = dexPasswordModal.SetDescription(values.String(values.StrLoginDEXForPendingBonds))
-	}
 
 	dexPasswordModal.SetPasswordTitleVisibility(false)
 	return dexPasswordModal
@@ -384,7 +387,10 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		}
 	}
 
-	if len(markets) == 0 || serverIsDisconnected {
+	noMarketOrServerDisconnected := len(markets) == 0 || serverIsDisconnected
+	pg.noMarketOrServerDisconnected.Store(noMarketOrServerDisconnected)
+
+	if noMarketOrServerDisconnected {
 		msg := values.String(values.StrNoSupportedMarket)
 		if serverIsDisconnected {
 			msg = values.String(values.StrDEXServerDisconnected)
@@ -412,7 +418,7 @@ func (pg *DEXMarketPage) fetchOrderBook() {
 	}
 	pg.closeAndResetOrderbookListener()
 
-	if pg.noMarket() {
+	if pg.noMarketOrServerDisconnected.Load() {
 		return // nothing to do.
 	}
 
@@ -768,7 +774,11 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	xc := pg.exchange()
 	dexClient := pg.AssetsManager.DexClient()
 	hasZeroEffectiveTier := dexClient.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
-	if dexClient.IsLoggedIn() && pg.noMarket() {
+	if !dexClient.IsLoggedIn() {
+		overlaySet = true
+		overlayMsg = values.String(values.StrLoginWithDEXPassword)
+		actionBtn = &pg.loginBtn
+	} else if pg.noMarketOrServerDisconnected.Load() {
 		overlaySet = true
 		if xc != nil && xc.ConnectionStatus != comms.Connected {
 			overlayMsg = values.String(values.StrDEXServerDisconnected)
@@ -796,10 +806,6 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 		} else {
 			actionBtn = &pg.postBondBtn
 		}
-	} else if !dexClient.IsLoggedIn() {
-		overlaySet = true
-		overlayMsg = values.String(values.StrLoginWithDEXPassword)
-		actionBtn = &pg.loginBtn
 	} else if missingMarketWalletType := pg.missingMarketWallet(); missingMarketWalletType != "" {
 		overlaySet = true
 		overlayMsg = values.StringF(values.StrMissingDEXWalletMsg, missingMarketWalletType, missingMarketWalletType)
@@ -941,22 +947,22 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 			)
 		}
 
-		overlay := func(gtx C) D { return D{} }
-		if overlaySet {
-			gtxCopy := gtx
-			overlay = func(gtx C) D {
-				label := pg.Theme.Body1(overlayMsg)
-				label.Alignment = text.Middle
-				return cryptomaterial.DisableLayout(nil, gtxCopy,
-					func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, label.Layout)
-					},
-					nil, 180, pg.Theme.Color.Gray3, actionBtn)
-			}
-
-			gtx = gtx.Disabled()
+		if !overlaySet {
+			return formLayout(gtx)
 		}
 
+		gtxCopy := gtx
+		overlay := func(gtx C) D {
+			label := pg.Theme.Body1(overlayMsg)
+			label.Alignment = text.Middle
+			return cryptomaterial.DisableLayout(nil, gtxCopy,
+				func(gtx C) D {
+					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, label.Layout)
+				},
+				nil, 180, pg.Theme.Color.Gray3, actionBtn)
+		}
+
+		gtx = gtx.Disabled()
 		return layout.Stack{}.Layout(gtx, layout.Expanded(formLayout), layout.Stacked(overlay))
 	})
 }
@@ -1029,7 +1035,7 @@ func trimZeros(s string) string {
 // account for the quote or base asset of the selected market. Returns the
 // wallet's spendable balance as string.
 func (pg *DEXMarketPage) availableWalletAccountBalanceString(forQuoteAsset bool) (bal float64, assetSym string) {
-	if pg.noMarket() {
+	if pg.noMarketOrServerDisconnected.Load() {
 		return 0, ""
 	}
 
@@ -1599,7 +1605,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 	}
 
 	if pg.loginBtn.Clicked() {
-		pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, false, nil))
+		pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, nil))
 	}
 
 	for pg.addWalletToDEX.Clicked() {
@@ -1608,12 +1614,15 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 
 	for _, ord := range pg.orders {
 		if ord.cancelBtn != nil && ord.cancelBtn.Clicked() {
-			err := dexc.Cancel(ord.ID)
-			if err != nil {
-				pg.notifyError(fmt.Errorf("Error canceling order: %v", err).Error())
-			} else {
-				pg.ParentWindow().Reload()
-			}
+			ordID := ord.ID
+			go func() {
+				err := dexc.Cancel(ordID)
+				if err != nil {
+					pg.notifyError(fmt.Errorf("Error canceling order: %v", err).Error())
+				} else {
+					pg.ParentWindow().Reload()
+				}
+			}()
 		}
 	}
 
@@ -1968,12 +1977,6 @@ func (pg *DEXMarketPage) isSellOrder() bool {
 
 func (pg *DEXMarketPage) orderWithLots() bool {
 	return !pg.switchLotsOrAmount.IsChecked()
-}
-
-// noMarket checks if the selected server is disconnected or has no supported
-// markets.
-func (pg *DEXMarketPage) noMarket() bool {
-	return pg.marketSelector.Selected() == values.String(values.StrNoSupportedMarket) || pg.marketSelector.Selected() == values.String(values.StrDEXServerDisconnected)
 }
 
 func (pg *DEXMarketPage) notifyError(errMsg string) {
