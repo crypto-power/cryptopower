@@ -17,6 +17,8 @@ const (
 	TradePageID = "Trade"
 )
 
+var tab *cryptomaterial.SegmentedControl
+
 var tabTitles = []string{
 	values.String(values.StrDcrDex),
 	values.String(values.StrCentralizedExchange),
@@ -32,12 +34,9 @@ type TradePage struct {
 	dexc *dexc.DEXClient
 
 	scrollContainer *widget.List
-
-	tab *cryptomaterial.SegmentedControl
-
-	shadowBox   *cryptomaterial.Shadow
-	exchangeBtn *cryptomaterial.Clickable
-	dcrdexBtn   *cryptomaterial.Clickable
+	shadowBox       *cryptomaterial.Shadow
+	exchangeBtn     *cryptomaterial.Clickable
+	dcrdexBtn       *cryptomaterial.Clickable
 }
 
 func NewTradePage(l *load.Load) *TradePage {
@@ -58,8 +57,7 @@ func NewTradePage(l *load.Load) *TradePage {
 		filteredTabTitles = filteredTabTitles[1:]
 	}
 
-	pg.tab = l.Theme.SegmentedControl(filteredTabTitles, cryptomaterial.SegmentTypeGroup)
-
+	tab = l.Theme.SegmentedControl(filteredTabTitles, cryptomaterial.SegmentTypeGroup)
 	rad := cryptomaterial.Radius(14)
 	pg.exchangeBtn = l.Theme.NewClickable(false)
 	pg.exchangeBtn.Radius = rad
@@ -98,12 +96,12 @@ func (pg *TradePage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) HandleUserInteractions() {
-	selectedIndex := pg.tab.SelectedIndex()
+	selectedIndex := tab.SelectedIndex()
 	if pg.IsMobileView() {
 		selectedIndex++ // Adjust index for mobile view
 	}
 
-	if pg.CurrentPage() == nil || pg.tab.Changed() {
+	if pg.CurrentPage() == nil || tab.Changed() {
 		switch selectedIndex {
 		case 0: // DCRDEX
 			if pg.CurrentPageID() != dcrdex.DCRDEXPageID {
@@ -140,5 +138,5 @@ func (pg *TradePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TradePage) Layout(gtx C) D {
-	return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
+	return tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
 }

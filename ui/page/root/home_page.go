@@ -15,6 +15,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -663,46 +664,59 @@ func (hp *HomePage) layoutTopBar(gtx C) D {
 }
 
 func (hp *HomePage) initBottomNavItems() {
-	hp.bottomNavigationBar = components.BottomNavigationBar{
-		Load:        hp.Load,
-		CurrentPage: hp.CurrentPageID(),
-		BottomNavigationItems: []components.BottomNavigationBarHandler{
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.OverviewIcon,
-				ImageInactive: hp.Theme.Icons.OverviewIconInactive,
-				Title:         values.String(values.StrOverview),
-				PageID:        OverviewPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.TransactionsIcon,
-				ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
-				Title:         values.String(values.StrTransactions),
-				PageID:        transaction.TransactionsPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.WalletIcon,
-				ImageInactive: hp.Theme.Icons.WalletIconInactive,
-				Title:         values.String(values.StrWallets),
-				PageID:        WalletSelectorPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.TradeIconActive,
-				ImageInactive: hp.Theme.Icons.TradeIconInactive,
-				Title:         values.String(values.StrTrade),
-				PageID:        exchange.TradePageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.GovernanceActiveIcon,
-				ImageInactive: hp.Theme.Icons.GovernanceInactiveIcon,
-				Title:         values.String(values.StrGovernance),
-				PageID:        governance.GovernancePageID,
-			},
+	items := []components.BottomNavigationBarHandler{
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.OverviewIcon,
+			ImageInactive: hp.Theme.Icons.OverviewIconInactive,
+			Title:         values.String(values.StrOverview),
+			PageID:        OverviewPageID,
 		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.TransactionsIcon,
+			ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
+			Title:         values.String(values.StrTransactions),
+			PageID:        transaction.TransactionsPageID,
+		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.WalletIcon,
+			ImageInactive: hp.Theme.Icons.WalletIconInactive,
+			Title:         values.String(values.StrWallets),
+			PageID:        WalletSelectorPageID,
+		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.GovernanceActiveIcon,
+			ImageInactive: hp.Theme.Icons.GovernanceInactiveIcon,
+			Title:         values.String(values.StrGovernance),
+			PageID:        governance.GovernancePageID,
+		},
+	}
+
+	// Add the trade tab only if not on mobile
+	if !appos.Current().IsIOS() {
+		tradeTab := components.BottomNavigationBarHandler{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.TradeIconActive,
+			ImageInactive: hp.Theme.Icons.TradeIconInactive,
+			Title:         values.String(values.StrTrade),
+			PageID:        exchange.TradePageID,
+		}
+		// Determine the insertion point, which is second to last position
+		insertionPoint := len(items) - 1
+		if insertionPoint < 0 {
+			insertionPoint = 0
+		}
+		// Append at the second to last position
+		items = append(items[:insertionPoint], append([]components.BottomNavigationBarHandler{tradeTab}, items[insertionPoint:]...)...)
+	}
+
+	hp.bottomNavigationBar = components.BottomNavigationBar{
+		Load:                  hp.Load,
+		CurrentPage:           hp.CurrentPageID(),
+		BottomNavigationItems: items,
 	}
 
 	hp.floatingActionButton = components.BottomNavigationBar{
