@@ -1391,16 +1391,15 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 	}
 
 	dexClient := pg.AssetsManager.DexClient()
-	if !dexClient.IsLoggedIn() {
-		dexPasswordModal := dexLoginModal(pg.Load, dexClient, waitForBondTx)
-		dexPasswordModal.SetDescription(values.String(values.StrLoginDEXForPendingBonds))
-		dexPasswordModal.SetNegativeButtonCallback(waitForBondTx) // We'll display a form for them to login.
-		pg.ParentWindow().ShowModal(dexPasswordModal)
+	if dexClient.IsLoggedIn() {
+		waitForBondTx()
 		return
 	}
 
-	waitForBondTx()
-	return
+	dexPasswordModal := dexLoginModal(pg.Load, dexClient, waitForBondTx)
+	dexPasswordModal.SetDescription(values.String(values.StrLoginDEXForPendingBonds))
+	dexPasswordModal.SetNegativeButtonCallback(waitForBondTx) // We'll display a form for them to login.
+	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {
