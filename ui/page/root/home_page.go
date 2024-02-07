@@ -2,16 +2,20 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	dexdb "decred.org/dcrdex/client/db"
+	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -65,14 +69,19 @@ type HomePage struct {
 	isConnected        *atomic.Bool
 	showNavigationFunc showNavigationFunc
 	startSpvSync       uint32
+
+	updateAvailableBtn *cryptomaterial.Clickable
+	copyRedirectURL    *cryptomaterial.Clickable
+	releaseResponse    *components.ReleaseResponse
 }
 
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp := &HomePage{
-		Load:        l,
-		MasterPage:  app.NewMasterPage(HomePageID),
-		isConnected: new(atomic.Bool),
-		dexCtx:      dexCtx,
+		Load:            l,
+		MasterPage:      app.NewMasterPage(HomePageID),
+		isConnected:     new(atomic.Bool),
+		dexCtx:          dexCtx,
+		copyRedirectURL: l.Theme.NewClickable(false),
 	}
 
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
@@ -80,6 +89,7 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp.appNotificationButton = hp.Theme.NewClickable(false)
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
+	hp.updateAvailableBtn = l.Theme.NewClickable(false)
 
 	go func() {
 		hp.isConnected.Store(libutils.IsOnline())
@@ -177,6 +187,10 @@ func (hp *HomePage) OnNavigatedTo() {
 
 	go hp.CalculateAssetsUSDBalance()
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
+
+	if hp.isUpdateAPIAllowed() {
+		go hp.checkForUpdates()
+	}
 }
 
 // initDEX initializes a new dex client if dex is not ready.
@@ -414,6 +428,52 @@ func (hp *HomePage) HandleUserInteractions() {
 			}
 		}
 	}
+
+	if hp.updateAvailableBtn.Clicked() {
+		info := modal.NewCustomModal(hp.Load).
+			Title(fmt.Sprintf(values.String(values.StrNewUpdateText), hp.releaseResponse.TagName)).
+			Body(values.String(values.StrCopyLink)).
+			SetCancelable(true).
+			UseCustomWidget(func(gtx C) D {
+				return layout.Stack{}.Layout(gtx,
+					layout.Stacked(func(gtx C) D {
+						border := widget.Border{Color: hp.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+						wrapper := hp.Theme.Card()
+						wrapper.Color = hp.Theme.Color.Gray4
+						return border.Layout(gtx, func(gtx C) D {
+							return wrapper.Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+									return layout.Flex{}.Layout(gtx,
+										layout.Flexed(0.9, hp.Theme.Body1(hp.releaseResponse.URL).Layout),
+										layout.Flexed(0.1, func(gtx C) D {
+											return layout.E.Layout(gtx, func(gtx C) D {
+												if hp.copyRedirectURL.Clicked() {
+													clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
+													hp.Toast.Notify(values.String(values.StrCopied))
+												}
+												return hp.copyRedirectURL.Layout(gtx, hp.Theme.Icons.CopyIcon.Layout24dp)
+											})
+										}),
+									)
+								})
+							})
+						})
+					}),
+					layout.Stacked(func(gtx C) D {
+						return layout.Inset{
+							Top:  values.MarginPaddingMinus10,
+							Left: values.MarginPadding10,
+						}.Layout(gtx, func(gtx C) D {
+							label := hp.Theme.Body2(values.String(values.StrWebURL))
+							label.Color = hp.Theme.Color.GrayText2
+							return label.Layout(gtx)
+						})
+					}),
+				)
+			}).
+			SetPositiveButtonText(values.String(values.StrGotIt))
+		hp.ParentWindow().ShowModal(info)
+	}
 }
 
 func (hp *HomePage) displaySelectedPage(title string) {
@@ -530,6 +590,13 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 					)
 				}),
 				layout.Flexed(1, hp.CurrentPage().Layout),
+				layout.Rigid(func(gtx C) D {
+					if hp.isUpdateAPIAllowed() && hp.releaseResponse != nil {
+						return hp.layoutUpdateAvailable(gtx)
+					}
+
+					return D{}
+				}),
 			)
 		}),
 	)
@@ -597,46 +664,59 @@ func (hp *HomePage) layoutTopBar(gtx C) D {
 }
 
 func (hp *HomePage) initBottomNavItems() {
-	hp.bottomNavigationBar = components.BottomNavigationBar{
-		Load:        hp.Load,
-		CurrentPage: hp.CurrentPageID(),
-		BottomNavigationItems: []components.BottomNavigationBarHandler{
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.OverviewIcon,
-				ImageInactive: hp.Theme.Icons.OverviewIconInactive,
-				Title:         values.String(values.StrOverview),
-				PageID:        OverviewPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.TransactionsIcon,
-				ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
-				Title:         values.String(values.StrTransactions),
-				PageID:        transaction.TransactionsPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.WalletIcon,
-				ImageInactive: hp.Theme.Icons.WalletIconInactive,
-				Title:         values.String(values.StrWallets),
-				PageID:        WalletSelectorPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.TradeIconActive,
-				ImageInactive: hp.Theme.Icons.TradeIconInactive,
-				Title:         values.String(values.StrTrade),
-				PageID:        exchange.TradePageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.GovernanceActiveIcon,
-				ImageInactive: hp.Theme.Icons.GovernanceInactiveIcon,
-				Title:         values.String(values.StrGovernance),
-				PageID:        governance.GovernancePageID,
-			},
+	items := []components.BottomNavigationBarHandler{
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.OverviewIcon,
+			ImageInactive: hp.Theme.Icons.OverviewIconInactive,
+			Title:         values.String(values.StrOverview),
+			PageID:        OverviewPageID,
 		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.TransactionsIcon,
+			ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
+			Title:         values.String(values.StrTransactions),
+			PageID:        transaction.TransactionsPageID,
+		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.WalletIcon,
+			ImageInactive: hp.Theme.Icons.WalletIconInactive,
+			Title:         values.String(values.StrWallets),
+			PageID:        WalletSelectorPageID,
+		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.GovernanceActiveIcon,
+			ImageInactive: hp.Theme.Icons.GovernanceInactiveIcon,
+			Title:         values.String(values.StrGovernance),
+			PageID:        governance.GovernancePageID,
+		},
+	}
+
+	// Add the trade tab only if not on mobile
+	if !appos.Current().IsIOS() {
+		tradeTab := components.BottomNavigationBarHandler{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.TradeIconActive,
+			ImageInactive: hp.Theme.Icons.TradeIconInactive,
+			Title:         values.String(values.StrTrade),
+			PageID:        exchange.TradePageID,
+		}
+		// Determine the insertion point, which is second to last position
+		insertionPoint := len(items) - 1
+		if insertionPoint < 0 {
+			insertionPoint = 0
+		}
+		// Append at the second to last position
+		items = append(items[:insertionPoint], append([]components.BottomNavigationBarHandler{tradeTab}, items[insertionPoint:]...)...)
+	}
+
+	hp.bottomNavigationBar = components.BottomNavigationBar{
+		Load:                  hp.Load,
+		CurrentPage:           hp.CurrentPageID(),
+		BottomNavigationItems: items,
 	}
 
 	hp.floatingActionButton = components.BottomNavigationBar{
@@ -977,4 +1057,45 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 		totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
 		hp.ParentWindow().Reload()
 	}
+}
+
+func (hp *HomePage) layoutUpdateAvailable(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Orientation: layout.Horizontal,
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Background:  hp.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+		Clickable:   hp.updateAvailableBtn,
+		Margin: layout.Inset{
+			Top:    values.MarginPaddingMinus10,
+			Bottom: values.MarginPadding10,
+			Right:  values.MarginPadding40,
+		},
+		Border:    cryptomaterial.Border{Radius: hp.updateAvailableBtn.Radius},
+		Direction: layout.E,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			txt := hp.Theme.Label(values.TextSize14, values.String(values.StrUpdateAvailable))
+			txt.Color = hp.Theme.Color.DefaultThemeColors().Primary
+			txt.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left: values.MarginPadding4,
+			}.Layout(gtx, txt.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			txt := hp.Theme.Label(values.TextSize14, hp.releaseResponse.TagName)
+			txt.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left: values.MarginPadding4,
+			}.Layout(gtx, txt.Layout)
+		}),
+	)
+}
+
+func (hp *HomePage) checkForUpdates() {
+	hp.releaseResponse = components.CheckForUpdate(hp.Load)
+}
+
+func (hp *HomePage) isUpdateAPIAllowed() bool {
+	return hp.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.UpdateAPI)
 }

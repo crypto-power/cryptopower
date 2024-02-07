@@ -60,6 +60,28 @@ func (mgr *AssetsManager) CreateNewLTCWatchOnlyWallet(walletName, extendedPublic
 	return wallet, nil
 }
 
+// RestoreLTCWallet restores a LTC wallet from a seed and returns it.
+func (mgr *AssetsManager) RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
+	pass := &sharedW.AuthInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := ltc.RestoreWallet(seedMnemonic, pass, mgr.params)
+	if err != nil {
+		return nil, err
+	}
+
+	mgr.Assets.LTC.Wallets[wallet.GetWalletID()] = wallet
+
+	// extract the db interface if it hasn't been set already.
+	if mgr.db == nil && wallet != nil {
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
+	}
+
+	return wallet, nil
+}
+
 // LTCWalletWithSeed returns the ID of the LTC wallet that was created or restored
 // using the same seed as the one provided. Returns -1 if no wallet uses the
 // provided seed.

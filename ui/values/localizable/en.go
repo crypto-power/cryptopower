@@ -930,4 +930,7 @@ const EN = `
 "backupDEXSeed" = "Backup DEX Seed"
 "dexSeed" = "DEX Seed"
 "optionalRestorationSeed" = "Restoration Seed (optional)"
+"updateAPI" = "Check for Update API"
+"newUpdateText" = "A new update, %s, is available"
+"updateAvailable" = "Update Available"
 `
