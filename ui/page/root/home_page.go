@@ -188,7 +188,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	go hp.CalculateAssetsUSDBalance()
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
 
-	if hp.isCheckForUpdateAPIAllowed() {
+	if hp.isUpdateAPIAllowed() {
 		go hp.checkForUpdates()
 	}
 }
@@ -591,7 +591,7 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 				}),
 				layout.Flexed(1, hp.CurrentPage().Layout),
 				layout.Rigid(func(gtx C) D {
-					if hp.isCheckForUpdateAPIAllowed() && hp.releaseResponse != nil {
+					if hp.isUpdateAPIAllowed() && hp.releaseResponse != nil {
 						return hp.layoutUpdateAvailable(gtx)
 					}
 
@@ -1096,6 +1096,6 @@ func (hp *HomePage) checkForUpdates() {
 	hp.releaseResponse = components.CheckForUpdate(hp.Load)
 }
 
-func (hp *HomePage) isCheckForUpdateAPIAllowed() bool {
+func (hp *HomePage) isUpdateAPIAllowed() bool {
 	return hp.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.UpdateAPI)
 }

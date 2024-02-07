@@ -364,7 +364,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 		text := in.Theme.Body1(in.subtitle)
 		text.Alignment = in.subTileTextAlignment
 		text.Color = in.Theme.Color.GrayText2
-		return text.Layout(gtx)
+		return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, text.Layout)
 	}
 
 	var w []layout.Widget

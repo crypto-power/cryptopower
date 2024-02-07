@@ -37,6 +37,7 @@ const (
 	Uint32Size    = 32 // 32 or 64 ? shifting 32-bit value by 32 bits will always clear it
 	MaxInt32      = 1<<(Uint32Size-1) - 1
 	WalletsPageID = "Wallets"
+	releaseURL    = "https://api.github.com/repos/crypto-power/cryptopower/releases/latest"
 )
 
 type (
@@ -996,8 +997,6 @@ func GetServerIcon(theme *cryptomaterial.Theme, serverName string) *cryptomateri
 // by comparing the current version with the latest release version
 // available on GitHub.
 func CheckForUpdate(l *load.Load) *ReleaseResponse {
-	releaseURL := "https://api.github.com/repos/crypto-power/cryptopower/releases/latest"
-
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HTTPURL: releaseURL,
