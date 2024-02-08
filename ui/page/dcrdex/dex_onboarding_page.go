@@ -1359,7 +1359,7 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 // host is optional.
 func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 	// Check if bond has already been posted but still pending confirmation.
-	xc, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager, host)
+	xcHost, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager, host)
 	if bond == nil {
 		return
 	}
@@ -1379,7 +1379,7 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 		pg.bondServer.bondAssets = map[libutils.AssetType]*core.BondAsset{
 			bondAssetType: bondAsset,
 		}
-		pg.bondServer.url = xc.Host
+		pg.bondServer.url = xcHost
 		pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
 		ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
 		if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.

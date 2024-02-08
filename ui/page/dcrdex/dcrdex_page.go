@@ -125,7 +125,9 @@ func (pg *DEXPage) Layout(gtx C) D {
 		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	} else if !pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil {
+	} else if !pg.AssetsManager.DEXCInitialized() {
+		msg = values.String(values.StrDEXMsgAfterReset)
+	} else if pg.CurrentPage() == nil {
 		msg = values.String(values.StrDEXInitErrorMsg)
 	}
 
@@ -182,7 +184,7 @@ func (pg *DEXPage) OnNavigatedFrom() {}
 
 // pendingBondConfirmation is a convenience function based on arbitrary
 // heuristics to determine when to show bond confirmation step.
-func pendingBondConfirmation(am *libwallet.AssetsManager, host string) (*core.Exchange, *core.BondAsset, *core.PendingBondState) {
+func pendingBondConfirmation(am *libwallet.AssetsManager, host string) (string, *core.BondAsset, *core.PendingBondState) {
 	for _, xc := range am.DexClient().Exchanges() {
 		if (host != "" && xc.Host != host) || len(xc.Auth.PendingBonds) == 0 {
 			continue
@@ -191,9 +193,9 @@ func pendingBondConfirmation(am *libwallet.AssetsManager, host string) (*core.Ex
 		for _, bond := range xc.Auth.PendingBonds {
 			bondAsset := xc.BondAssets[bond.Symbol]
 			if bond.Confs < bondAsset.Confs {
-				return xc, bondAsset, bond
+				return xc.Host, bondAsset, bond
 			}
 		}
 	}
-	return nil, nil, nil
+	return "", nil, nil
 }

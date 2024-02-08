@@ -875,7 +875,7 @@ const EN = `
 "noSupportedBondAsset" = "DEX server (%s) does not support available asset wallets. Please choose another server."
 "dexPassword" = "DCRDEX Password"
 "insufficientBondAmount" = "Insufficient funds in this account, you need a minimum of %v to post bond."
-"DEXInitErrorMsg" = "Something unexpected happened, please restart the Cryptopower Wallet."
+"DEXInitErrorMsg" = "Something unexpected happened, please revisit this page or restart the Cryptopower Wallet."
 "txRegular" = "Regular Transactions"
 "stakingTx" = "Staking Transactions"
 "filter" = "Filter"
@@ -933,4 +933,8 @@ const EN = `
 "dexSeed" = "DEX Seed"
 "optionalRestorationSeed" = "Restoration Seed (optional)"
 "dexServerDisconnected" = "DEX server is disconnected"
+"dexMsgAfterReset" = "It seems DCRDEX has been reset, please revisit this page."
+"updateAPI" = "Check for Update API"
+"newUpdateText" = "A new update, %s, is available"
+"updateAvailable" = "Update Available"
 `
