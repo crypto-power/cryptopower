@@ -986,20 +986,18 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}
 
 			pg.bondServer = serverInfo
-			pg.isLoading = true
-			if !dexc.InitializedWithPassword() || len(pg.dexPass) > 0 {
-				go func() {
-					pg.connectServerAndPrepareForBonding()
-					pg.isLoading = false
-				}()
-				break
+			if dexc.InitializedWithPassword() && len(pg.dexPass) == 0 {
+				// Prompt the user to login now so we can use
+				// dexClient.DiscoverAccount in
+				// pg.connectServerAndPrepareForBonding.
+				pg.showDEXPasswordModal(pg.connectServerAndPrepareForBonding)
 			}
 
-			// dexc password is already set and the dex password is not cached.
-			// Prompt the user to login now so we can use
-			// dexClient.DiscoverAccount in
-			// pg.connectServerAndPrepareForBonding.
-			pg.showDEXPasswordModal(pg.connectServerAndPrepareForBonding)
+			pg.isLoading = true
+			go func() {
+				pg.connectServerAndPrepareForBonding()
+				pg.isLoading = false
+			}()
 
 		case onboardingPostBond:
 			// Validate all input fields.
@@ -1016,14 +1014,10 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 
 			pg.isLoading = true
 			if dexc.InitializedWithPassword() {
-				if !dexc.IsLoggedIn() {
-					pg.showDEXPasswordModal(pg.postBond)
-				} else {
-					go func() {
-						pg.postBond()
-						pg.isLoading = false
-					}()
-				}
+				go func() {
+					pg.postBond()
+					pg.isLoading = false
+				}()
 
 				break
 			}

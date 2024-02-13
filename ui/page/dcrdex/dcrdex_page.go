@@ -33,7 +33,7 @@ type DEXPage struct {
 	splashPageInfoButton cryptomaterial.IconButton
 	splashPageContainer  *widget.List
 	startTradingBtn      cryptomaterial.Button
-	isDexFirstVisit      bool
+	showSplashPage       bool
 	dexIsLoading         bool
 	materialLoader       material.LoaderStyle
 }
@@ -48,13 +48,13 @@ func NewDEXPage(l *load.Load) *DEXPage {
 			Alignment: layout.Middle,
 			Axis:      layout.Vertical,
 		}},
-		isDexFirstVisit:    true,
+		showSplashPage:     true,
 		switchToTestnetBtn: l.Theme.Button(values.String(values.StrSwitchToTestnet)),
 		materialLoader:     material.Loader(l.Theme.Base),
 	}
 
 	if dp.AssetsManager.DEXCInitialized() && dp.AssetsManager.DexClient().InitializedWithPassword() {
-		dp.isDexFirstVisit = false
+		dp.showSplashPage = false
 	}
 
 	// Init splash page more info widget.
@@ -75,21 +75,31 @@ func (pg *DEXPage) ID() string {
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
 	if !pg.AssetsManager.DEXCInitialized() {
+		pg.showSplashPage = true
 		return
 	}
 
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().OnNavigatedTo()
+	} else {
+		pg.setPage()
+	}
+}
+
+// setPage starts a goroutine that waits for dexc to get ready before displaying
+// an appropriate page.
+func (pg *DEXPage) setPage() {
+	dexClient := pg.AssetsManager.DexClient()
+	if dexClient == nil {
 		return
 	}
 
 	pg.dexIsLoading = true
 	go func() {
-		dexc := pg.AssetsManager.DexClient()
-		<-dexc.Ready()
+		<-dexClient.Ready()
 
 		showOnBoardingPage := true
-		if len(dexc.Exchanges()) != 0 { // has at least one exchange
+		if len(dexClient.Exchanges()) != 0 { // has at least one exchange
 			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager, "")
 			showOnBoardingPage = pendingBond != nil
 		}
@@ -101,6 +111,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 		}
 
 		pg.dexIsLoading = false
+		pg.showSplashPage = false
 	}()
 }
 
@@ -108,12 +119,6 @@ func (pg *DEXPage) OnNavigatedTo() {
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	if pg.isDexFirstVisit || pg.dexIsLoading {
-		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
-			return pg.splashPage(gtx)
-		})
-	}
-
 	hasMultipleWallets := pg.isMultipleAssetTypeWalletAvailable()
 	isMainnet := pg.AssetsManager.NetType() == utils.Mainnet
 	var msg string
@@ -125,14 +130,21 @@ func (pg *DEXPage) Layout(gtx C) D {
 		msg = values.String(values.StrDexMainnetNotReady)
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	} else if !pg.AssetsManager.DEXCInitialized() {
-		msg = values.String(values.StrDEXMsgAfterReset)
-	} else if pg.CurrentPage() == nil {
-		msg = values.String(values.StrDEXInitErrorMsg)
+	} else if !pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil { // dexc must have been reset.
+		pg.showSplashPage = true
+		if !pg.dexIsLoading {
+			pg.setPage()
+		}
 	}
 
 	if msg != "" {
 		return components.DisablePageWithOverlay(pg.Load, nil, gtx, msg, "", actionBtn)
+	}
+
+	if pg.showSplashPage || pg.dexIsLoading {
+		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.splashPage(gtx)
+		})
 	}
 
 	return pg.CurrentPage().Layout(gtx)
@@ -169,7 +181,7 @@ func (pg *DEXPage) HandleUserInteractions() {
 		pg.showInfoModal()
 	}
 	if pg.startTradingBtn.Button.Clicked() {
-		pg.isDexFirstVisit = false
+		pg.showSplashPage = false
 	}
 }
 

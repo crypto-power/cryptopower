@@ -230,108 +230,105 @@ func (hp *HomePage) initDEX() {
 			return // nothing to do
 		}
 
-		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
-		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
+		showDEXLoginModal := func() {
+			dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
+			dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
-		showWalletsToSyncModal := func() {
-			// DEX client has active orders or expired bonds, retrieve the
-			// wallets involved and ensure they are synced or syncing.
-			walletsToSyncMap := make(map[uint32]*struct{})
-			for _, orders := range activeOrders {
-				for _, ord := range orders {
-					walletsToSyncMap[ord.BaseID] = &struct{}{}
-					walletsToSyncMap[ord.QuoteID] = &struct{}{}
-				}
-			}
-
-			for _, bond := range expiredBonds {
-				walletsToSyncMap[bond.AssetID] = &struct{}{}
-			}
-
-			var namesOfWalletsToSync []string
-			var walletsToSync []sharedW.Asset
-			for assetID := range walletsToSyncMap {
-				walletID, err := dexClient.WalletIDForAsset(assetID)
-				if err != nil {
-					log.Errorf("dexClient.WalletIDForAsset(%d) error: %w", assetID, err)
-					continue
-				}
-
-				if walletID == nil {
-					continue // impossible but better safe than sorry
-				}
-
-				wallet := hp.AssetsManager.WalletWithID(*walletID)
-				if wallet == nil { // impossible but better safe than sorry
-					log.Error("dex wallet with ID %d is missing", walletID)
-					continue
-				}
-
-				if wallet.IsSynced() || wallet.IsSyncing() {
-					continue // ok
-				}
-
-				walletsToSync = append(walletsToSync, wallet)
-				namesOfWalletsToSync = append(namesOfWalletsToSync, fmt.Sprintf("%s (%s)", wallet.GetWalletName(), wallet.GetAssetType()))
-			}
-
-			if len(walletsToSync) == 0 {
-				return
-			}
-
-			walletSyncRequestModal := modal.NewCustomModal(hp.Load).
-				Title(values.String(values.StrWalletsNeedToSync)).
-				Body(values.StringF(values.StrWalletsNeedToSyncMsg, strings.Join(namesOfWalletsToSync, ", "))).
-				SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
-				SetPositiveButtonText(values.String(values.StrOkaySync)).
+			loginModal := modal.NewCustomModal(hp.Load).
+				UseCustomWidget(func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrdersOrExpiredBonds)).Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return dexPassEditor.Layout(gtx)
+						}),
+					)
+				}).
+				SetNegativeButtonText(values.String(values.StrIWillLoginLater)).
+				SetPositiveButtonText(values.String(values.StrLogin)).
 				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-					if !hp.isConnected.Load() {
-						// Notify user and return.
-						hp.Toast.NotifyError(values.String(values.StrNotConnected))
+					dexPassEditor.SetError("")
+					err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
+					if err != nil {
+						dexPassEditor.SetError(err.Error())
 						return false
 					}
+					return true
+				}).
+				SetCancelable(false)
+			hp.ParentWindow().ShowModal(loginModal)
+		}
 
+		// DEX client has active orders or expired bonds, retrieve the
+		// wallets involved and ensure they are synced or syncing.
+		walletsToSyncMap := make(map[uint32]*struct{})
+		for _, orders := range activeOrders {
+			for _, ord := range orders {
+				walletsToSyncMap[ord.BaseID] = &struct{}{}
+				walletsToSyncMap[ord.QuoteID] = &struct{}{}
+			}
+		}
+
+		for _, bond := range expiredBonds {
+			walletsToSyncMap[bond.AssetID] = &struct{}{}
+		}
+
+		var namesOfWalletsToSync []string
+		var walletsToSync []sharedW.Asset
+		for assetID := range walletsToSyncMap {
+			walletID, err := dexClient.WalletIDForAsset(assetID)
+			if err != nil {
+				log.Errorf("dexClient.WalletIDForAsset(%d) error: %w", assetID, err)
+				continue
+			}
+
+			if walletID == nil {
+				continue // impossible but better safe than sorry
+			}
+
+			wallet := hp.AssetsManager.WalletWithID(*walletID)
+			if wallet == nil { // impossible but better safe than sorry
+				log.Error("dex wallet with ID %d is missing", walletID)
+				continue
+			}
+
+			if wallet.IsSynced() || wallet.IsSyncing() {
+				continue // ok
+			}
+
+			walletsToSync = append(walletsToSync, wallet)
+			namesOfWalletsToSync = append(namesOfWalletsToSync, fmt.Sprintf("%s (%s)", wallet.GetWalletName(), wallet.GetAssetType()))
+		}
+
+		if len(walletsToSync) == 0 {
+			showDEXLoginModal() // Request dex login now.
+			return
+		}
+
+		walletSyncRequestModal := modal.NewCustomModal(hp.Load).
+			Title(values.String(values.StrWalletsNeedToSync)).
+			Body(values.StringF(values.StrWalletsNeedToSyncMsg, strings.Join(namesOfWalletsToSync, ", "))).
+			SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
+			SetNegativeButtonCallback(showDEXLoginModal).
+			SetPositiveButtonText(values.String(values.StrOkaySync)).
+			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				if !hp.isConnected.Load() {
+					hp.Toast.NotifyError(values.String(values.StrNotConnected))
+				} else {
 					for _, w := range walletsToSync {
 						err := w.SpvSync()
 						if err != nil {
 							log.Error(err)
 						}
 					}
-
-					return true
-				}).SetCancelable(false)
-			hp.ParentWindow().ShowModal(walletSyncRequestModal)
-		}
-
-		loginModal := modal.NewCustomModal(hp.Load).
-			UseCustomWidget(func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrdersOrExpiredBonds)).Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return dexPassEditor.Layout(gtx)
-					}),
-				)
-			}).
-			SetNegativeButtonText(values.String(values.StrIWillLoginLater)).
-			SetNegativeButtonCallback(func() {
-				showWalletsToSyncModal()
-			}).
-			SetPositiveButtonText(values.String(values.StrLogin)).
-			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-				dexPassEditor.SetError("")
-				err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
-				if err != nil {
-					dexPassEditor.SetError(err.Error())
-					return false
 				}
 
-				showWalletsToSyncModal()
+				showDEXLoginModal()
 				return true
-			}).
-			SetCancelable(false)
-		hp.ParentWindow().ShowModal(loginModal)
+			}).SetCancelable(false)
+		hp.ParentWindow().ShowModal(walletSyncRequestModal)
+
 	}()
 }
 

@@ -1614,15 +1614,14 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 
 	for _, ord := range pg.orders {
 		if ord.cancelBtn != nil && ord.cancelBtn.Clicked() {
-			ordID := ord.ID
-			go func() {
+			go func(ordID dex.Bytes) {
 				err := dexc.Cancel(ordID)
 				if err != nil {
 					pg.notifyError(fmt.Errorf("Error canceling order: %v", err).Error())
 				} else {
 					pg.ParentWindow().Reload()
 				}
-			}()
+			}(ord.ID)
 		}
 	}
 
