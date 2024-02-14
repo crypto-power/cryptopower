@@ -1092,7 +1092,7 @@ func (pg *OverviewPage) updateAssetsUSDBalance() {
 }
 
 func (pg *OverviewPage) updateAssetsSliders() {
-	assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance()
+	assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance(true)
 	if err != nil {
 		log.Error(err)
 		return
