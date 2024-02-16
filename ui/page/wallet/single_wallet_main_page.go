@@ -68,7 +68,7 @@ type SingleWalletMasterPage struct {
 	PageNavigationTab      *cryptomaterial.SegmentedControl
 	hideBalanceButton      *cryptomaterial.Clickable
 	refreshExchangeRateBtn *cryptomaterial.Clickable
-	openWalletSelector     *cryptomaterial.Clickable
+	openWalletSelector     cryptomaterial.IconButton
 	checkBox               cryptomaterial.CheckBoxStyle
 	navigateToSyncBtn      cryptomaterial.Button
 
@@ -97,8 +97,10 @@ func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigatio
 
 	swmp.activeTab = make(map[string]string)
 	swmp.hideBalanceButton = swmp.Theme.NewClickable(false)
-	swmp.openWalletSelector = swmp.Theme.NewClickable(false)
+	swmp.openWalletSelector = swmp.Theme.IconButton(swmp.Theme.Icons.NavigationArrowBack)
 	swmp.refreshExchangeRateBtn = swmp.Theme.NewClickable(true)
+
+	swmp.openWalletSelector = components.GetBackButton(l)
 
 	swmp.initTabOptions()
 
@@ -167,26 +169,34 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 	}
 
 	if !swmp.selectedWallet.IsWatchingOnlyWallet() {
-		restrictedAccessTabs := []string{
-			values.String(values.StrSend),
-		}
-
-		// update the tab options with additional items at specific index
-		commonTabs = append(commonTabs[:1], append(restrictedAccessTabs, commonTabs[1:]...)...)
+		// Add 'Send' to the tabs for non-watching-only wallets.
+		sendTab := []string{values.String(values.StrSend)}
+		// Insert 'Send' after 'StrInfo'.
+		commonTabs = append(commonTabs[:1], append(sendTab, commonTabs[1:]...)...)
 	}
 
+	// Insert DCR-specific tabs if the wallet's asset type is DCR,
+	// and adjust the logic to exclude 'StrStakeShuffle' for watching-only wallets.
 	if swmp.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
-		dcrSpecificTabs := []string{
-			values.String(values.StrStakeShuffle),
-			values.String(values.StrStaking),
+		dcrSpecificTabs := []string{}
+
+		// Conditionally add 'StrStakeShuffle' if the wallet is not a watch-only wallet.
+		if !swmp.selectedWallet.IsWatchingOnlyWallet() {
+			dcrSpecificTabs = append(dcrSpecificTabs, values.String(values.StrStakeShuffle))
 		}
 
-		insertIndex := 4
-		if len(commonTabs) == 4 {
-			insertIndex = 3
+		// Always add 'StrStaking' for DCR asset type wallets.
+		dcrSpecificTabs = append(dcrSpecificTabs, values.String(values.StrStaking))
+
+		// Find the correct insertion index for DCR-specific tabs before 'StrAccounts'.
+		insertIndex := 3 // Default position before 'StrAccounts' in the commonTabs.
+
+		// If 'Send' has been added, adjust the insertIndex accordingly.
+		if !swmp.selectedWallet.IsWatchingOnlyWallet() {
+			insertIndex += 1
 		}
 
-		// update the tab options with additional items at specific index
+		// Update the commonTabs with DCR-specific items at the determined index.
 		commonTabs = append(commonTabs[:insertIndex], append(dcrSpecificTabs, commonTabs[insertIndex:]...)...)
 	}
 
@@ -285,7 +295,7 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		go swmp.fetchExchangeRate()
 	}
 
-	for swmp.openWalletSelector.Clicked() {
+	for swmp.openWalletSelector.Button.Clicked() {
 		swmp.showNavigationFunc()
 	}
 
@@ -486,7 +496,6 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 				},
 			}.GradientLayout(gtx, assetType,
 				layout.Rigid(func(gtx C) D {
-					clickable := swmp.openWalletSelector
 					return layout.Flex{
 						Axis:      layout.Horizontal,
 						Alignment: layout.Middle,
@@ -496,8 +505,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 								Width:       cryptomaterial.WrapContent,
 								Height:      cryptomaterial.WrapContent,
 								Orientation: orientation,
-								Clickable:   clickable,
-							}.Layout2(gtx, swmp.Theme.Icons.ChevronLeft.Layout24dp)
+							}.Layout2(gtx, swmp.openWalletSelector.Layout)
 						}),
 						layout.Flexed(1, func(gtx C) D {
 							isWatchOnlyWallet := swmp.selectedWallet.IsWatchingOnlyWallet()
@@ -507,14 +515,12 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 								if isMobile {
 									alignment = layout.Middle
 									orientation = layout.Vertical
-									clickable = nil
 								}
 								return cryptomaterial.LinearLayout{
 									Width:       cryptomaterial.WrapContent,
 									Height:      cryptomaterial.WrapContent,
 									Orientation: orientation,
 									Alignment:   alignment,
-									Clickable:   clickable,
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										return layout.Flex{

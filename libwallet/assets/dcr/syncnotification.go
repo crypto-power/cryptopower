@@ -403,6 +403,11 @@ func (asset *Asset) discoverAddressesFinished() {
 		return
 	}
 
+	err := asset.MarkWalletAsDiscoveredAccounts() // Mark address discovery as completed.
+	if err != nil {
+		log.Error(err)
+	}
+
 	asset.stopUpdatingAddressDiscoveryProgress()
 }
 

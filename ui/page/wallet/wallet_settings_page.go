@@ -524,6 +524,7 @@ func (pg *SettingsPage) deleteWalletModal() {
 func (pg *SettingsPage) renameWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
+		SetText(pg.wallet.GetWalletName()).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(newName string, tm *modal.TextInputModal) bool {
 			name := strings.TrimSpace(newName)
