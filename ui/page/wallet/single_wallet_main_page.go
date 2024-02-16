@@ -193,7 +193,7 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 
 		// If 'Send' has been added, adjust the insertIndex accordingly.
 		if !swmp.selectedWallet.IsWatchingOnlyWallet() {
-			insertIndex += 1
+			insertIndex++
 		}
 
 		// Update the commonTabs with DCR-specific items at the determined index.
