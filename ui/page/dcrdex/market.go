@@ -290,7 +290,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 	pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, nil))
 }
 
-func dexLoginModal(load *load.Load, dexClient libwallet.DEXClient, positiveBtnCallback func()) *modal.CreatePasswordModal {
+func dexLoginModal(load *load.Load, dexClient libwallet.DEXClient, positiveBtnCallback func(password string)) *modal.CreatePasswordModal {
 	dexPasswordModal := modal.NewCreatePasswordModal(load).
 		EnableName(false).
 		EnableConfirmPassword(false).
@@ -306,7 +306,7 @@ func dexLoginModal(load *load.Load, dexClient libwallet.DEXClient, positiveBtnCa
 			}
 
 			if positiveBtnCallback != nil {
-				positiveBtnCallback()
+				positiveBtnCallback(password)
 			}
 			return true
 		}).SetCancelable(false)

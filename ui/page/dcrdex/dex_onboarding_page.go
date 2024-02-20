@@ -986,18 +986,36 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}
 
 			pg.bondServer = serverInfo
-			if dexc.InitializedWithPassword() && len(pg.dexPass) == 0 {
-				// Prompt the user to login now so we can use
-				// dexClient.DiscoverAccount in
-				// pg.connectServerAndPrepareForBonding.
-				pg.showDEXPasswordModal(pg.connectServerAndPrepareForBonding)
+			pg.isLoading = true
+			if !dexc.InitializedWithPassword() || len(pg.dexPass) > 0 {
+				go func() {
+					pg.connectServerAndPrepareForBonding()
+					pg.isLoading = false
+				}()
+				break
 			}
 
-			pg.isLoading = true
-			go func() {
+			// If the user has already initialized using their dex seed and we
+			// don't have a cache because they navigated away from this page,
+			// prompt the user to provide their password now so we can use
+			// dexClient.DiscoverAccount in
+			// pg.connectServerAndPrepareForBonding.
+			// Note: User is already logged in from before, but we don't have a
+			// temporary cache to work with, so just ask for the password.
+			// Re-login is a no-op.
+			callbackFn := func(password string) {
+				pg.dexPass = []byte(password)
 				pg.connectServerAndPrepareForBonding()
 				pg.isLoading = false
-			}()
+			}
+
+			dexPasswordModal := dexLoginModal(pg.Load, pg.AssetsManager.DexClient(), callbackFn).
+				Title(values.String(values.StrDexPassword)).
+				SetDescription("").
+				SetNegativeButtonCallback(func() {
+					pg.isLoading = false
+				})
+			pg.ParentWindow().ShowModal(dexPasswordModal)
 
 		case onboardingPostBond:
 			// Validate all input fields.
@@ -1013,18 +1031,14 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}
 
 			pg.isLoading = true
-			if dexc.InitializedWithPassword() {
-				go func() {
+			go func() {
+				if dexc.InitializedWithPassword() {
 					pg.postBond()
 					pg.isLoading = false
-				}()
+					return
+				}
 
-				break
-			}
-
-			// DEX has not been initialized with a password, do it now.
-			go func() {
-				// Set password.
+				// DEX has not been initialized with a password, do it now.
 				pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
 				if err := dexc.InitWithPassword(pg.dexPass, nil); err != nil {
 					pg.isLoading = false
@@ -1077,32 +1091,6 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}()
 		}
 	}
-}
-
-func (pg *DEXOnboarding) showDEXPasswordModal(callbackFn func()) {
-	dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-		EnableName(false).
-		EnableConfirmPassword(false).
-		Title(values.String(values.StrDexPassword)).
-		PasswordHint(values.String(values.StrDexPassword)).
-		SetNegativeButtonCallback(func() {
-			pg.isLoading = false
-		}).
-		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			pg.dexPass = []byte(password)
-			err := pg.AssetsManager.DexClient().Login(pg.dexPass)
-			if err != nil {
-				pm.SetError(err.Error())
-				pm.SetLoading(false)
-				return false
-			}
-
-			callbackFn()
-			pg.isLoading = false
-			return true
-		})
-	dexPasswordModal.SetPasswordTitleVisibility(false)
-	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
 func (pg *DEXOnboarding) setAddServerStep() {
@@ -1358,7 +1346,10 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 		return
 	}
 
-	waitForBondTx := func() {
+	// waitForBondTx prepares the required information to display the
+	// onBoardingStepWaitForConfirmation page and sets up a listener for pending
+	// bond(s).
+	waitForBondTx := func(_ string) {
 		pg.newTier = 1
 		pg.currentStep = onBoardingStepWaitForConfirmation
 		pg.bondConfirmationInfo = &bondConfirmationInfo{
@@ -1386,13 +1377,13 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 
 	dexClient := pg.AssetsManager.DexClient()
 	if dexClient.IsLoggedIn() {
-		waitForBondTx()
+		waitForBondTx("")
 		return
 	}
 
 	dexPasswordModal := dexLoginModal(pg.Load, dexClient, waitForBondTx)
 	dexPasswordModal.SetDescription(values.String(values.StrLoginDEXForPendingBonds))
-	dexPasswordModal.SetNegativeButtonCallback(waitForBondTx) // We'll display a form for them to login.
+	dexPasswordModal.SetNegativeButtonCallback(func() { waitForBondTx("") }) // We'll display a form for them to login.
 	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
