@@ -136,6 +136,7 @@ const (
 	StrAddressDiscoveryInProgress            = "addressDiscoveryInProgress"
 	StrAddressDiscoveryStarted               = "addressDiscoveryStarted"
 	StrAddressDiscoveryStartedBody           = "addressDiscoveryStartedBody"
+	StrAddressDiscovering                    = "addressDiscovering"
 	StrAddrNotOwned                          = "addrNotOwned"
 	StrAddVSP                                = "addVSP"
 	StrAddWallet                             = "addWallet"

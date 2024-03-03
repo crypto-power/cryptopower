@@ -24,6 +24,7 @@ const EN = `
 "address" = "Address"
 "addressCopied" = "Address copied"
 "addressDiscoveryInProgress" = "Address Discovery in Progress..."
+"addressDiscovering" = "Address Discovering"
 "addressDiscoveryStarted" = "Address discovery started successfully"
 "addressDiscoveryStartedBody"    = "See wallet information page for progress"
 "addrNotOwned" = "Address not owned by any wallet"
