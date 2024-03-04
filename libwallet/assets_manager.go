@@ -213,14 +213,8 @@ func (mgr *AssetsManager) initRateSource() (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mgr.cancelFuncs = append(mgr.cancelFuncs, cancel)
 
-	rateSource := values.DefaultExchangeValue
-	disabled := true
-	// Check if database has been initialized. ATM, new setups need a wallet
-	// before mgr.db is initialized.
-	// if mgr.db != nil {
-	rateSource = mgr.GetCurrencyConversionExchange()
-	disabled = mgr.IsPrivacyModeOn()
-	// }
+	rateSource := mgr.GetCurrencyConversionExchange()
+	disabled := mgr.IsPrivacyModeOn()
 
 	mgr.RateSource, err = ext.NewCommonRateSource(ctx, rateSource)
 	if err != nil {
