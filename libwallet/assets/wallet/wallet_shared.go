@@ -590,7 +590,6 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 
 func (wallet *Wallet) OpenWallet() error {
 	pubPass := []byte(w.InsecurePubPassphrase)
-
 	ctx, _ := wallet.ShutdownContextWithCancel()
 	_, err := wallet.loader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), pubPass)
 	if err != nil {

@@ -75,12 +75,9 @@ func main() {
 		}
 
 		// if debuglevel is passed at commandLine persist the option.
-		if cfg.DebugLevel != "" && assetsManager.IsAssetManagerDB() {
+		if cfg.DebugLevel != "" {
 			assetsManager.SetLogLevels(cfg.DebugLevel)
-		}
-
-		if assetsManager.IsAssetManagerDB() {
-			// now that assets manager is up, set stored debuglevel
+		} else {
 			logger.SetLogLevels(assetsManager.GetLogLevels())
 		}
 
