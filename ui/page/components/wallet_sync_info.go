@@ -462,6 +462,7 @@ func (wsi *WalletSyncInfo) progressStatusDetails() (int, string) {
 func (wsi *WalletSyncInfo) layoutAutoSyncSection(gtx C) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			wsi.syncSwitch.SetChecked(wsi.wallet.IsSyncing() || wsi.wallet.IsSynced())
 			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, wsi.syncSwitch.Layout)
 		}),
 		layout.Rigid(wsi.Theme.Body2(values.String(values.StrSync)).Layout),

@@ -553,6 +553,10 @@ func (dw *DEXWallet) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (
 	return privKey, err
 }
 
+func (dw *DEXWallet) ListSinceBlock(ctx context.Context, start, end, syncHeight int32) ([]walletjson.ListTransactionsResult, error) {
+	return dw.w.ListSinceBlock(ctx, start, end, syncHeight)
+}
+
 // Part of the Wallet interface.
 func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ dex.Network, _ string) (restart bool, err error) {
 	return false, errors.New("Reconfigure not implemented by Cryptopower DEX wallet")
