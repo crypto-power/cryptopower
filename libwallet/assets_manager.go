@@ -193,11 +193,6 @@ func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType, dexTest
 		return nil, err
 	}
 
-	// Attempt to set the log levels if a valid db interface was found.
-	// if mgr.IsAssetManagerDB() {
-	// 	mgr.GetLogLevels()
-	// }
-
 	mgr.listenForShutdown()
 
 	return mgr, nil
