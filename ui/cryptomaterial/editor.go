@@ -18,7 +18,7 @@ import (
 
 type RestoreEditor struct {
 	t          *Theme
-	Edit       Editor
+	Edit       *Editor
 	TitleLabel Label
 	LineColor  color.NRGBA
 	height     int
@@ -81,13 +81,13 @@ func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
 	return e
 }
 
-func (t *Theme) RestoreEditor(editor *widget.Editor, hint string, title string) RestoreEditor {
+func (t *Theme) RestoreEditor(editor *widget.Editor, hint string, title string) *RestoreEditor {
 	e := t.Editor(editor, hint)
 	e.Bordered = false
 	e.SelectionColor = color.NRGBA{}
-	return RestoreEditor{
+	return &RestoreEditor{
 		t:          t,
-		Edit:       e,
+		Edit:       &e,
 		TitleLabel: t.Body2(title),
 		LineColor:  t.Color.Gray2,
 		height:     31,
@@ -184,6 +184,10 @@ func (e *Editor) Pressed() bool {
 	return e.clickable.Pressed() || e.copy.Clicked() || e.paste.Clicked()
 }
 
+func (e *Editor) FirstPressed() bool {
+	return !e.Editor.Focused() && e.clickable.Pressed()
+}
+
 func (e *Editor) Layout(gtx C) D {
 	e.handleEvents(gtx)
 	clicks := e.clickable.Clicks()
@@ -192,6 +196,9 @@ func (e *Editor) Layout(gtx C) D {
 		if clk.NumClicks == 2 {
 			e.isShowMenu = true
 		}
+		if clk.NumClicks == 1 {
+			e.Editor.Focus()
+		}
 		if clk.NumClicks != 2 && clk.NumClicks > 0 {
 			e.isShowMenu = false
 		}
@@ -199,13 +206,13 @@ func (e *Editor) Layout(gtx C) D {
 	return e.layout(gtx)
 }
 
-func (e Editor) layout(gtx C) D {
+func (e *Editor) layout(gtx C) D {
 	if e.Editor.Len() > 0 {
 		e.TitleLabel.Text = e.Hint
 	}
 
 	e.LineColor, e.TitleLabel.Color = e.t.Color.Gray2, e.t.Color.GrayText3
-	if e.Editor.Focused() && !e.Editor.ReadOnly {
+	if e.Editor.Focused() {
 		e.TitleLabel.Text = e.Hint
 		e.TitleLabel.Color, e.LineColor = e.t.Color.Primary, e.t.Color.Primary
 		e.Hint = ""

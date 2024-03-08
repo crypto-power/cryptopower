@@ -2,6 +2,7 @@ package load
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
@@ -238,6 +239,10 @@ func (app *AppInfo) CurrentAppWidth() unit.Dp {
 // view width.
 func (app *AppInfo) IsMobileView() bool {
 	return app.isMobileView
+}
+
+func (app *AppInfo) IsIOS() bool {
+	return runtime.GOOS == "ios"
 }
 
 // ConvertTextSize returns the appropriate text size for desktop and mobile,
