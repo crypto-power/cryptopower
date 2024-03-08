@@ -362,7 +362,7 @@ func (win *Window) handleEvents(gtx C) {
 func (win *Window) handleUserClick(gtx C) {
 	for _, evt := range win.clicker.Events(gtx) {
 		if evt.Type == gesture.TypePress && evt.Source == pointer.Touch {
-			// win.load.Theme.AutoHideSoftKeyBoard(gtx)
+			win.load.Theme.AutoHideSoftKeyBoard(gtx)
 		}
 	}
 }
