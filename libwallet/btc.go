@@ -35,11 +35,6 @@ func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase strin
 
 	mgr.Assets.BTC.Wallets[wallet.GetWalletID()] = wallet
 
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
-
 	return wallet, nil
 }
 
@@ -51,11 +46,6 @@ func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublic
 	}
 
 	mgr.Assets.BTC.Wallets[wallet.GetWalletID()] = wallet
-
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
 
 	return wallet, nil
 }
@@ -73,11 +63,6 @@ func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePass
 	}
 
 	mgr.Assets.BTC.Wallets[wallet.GetWalletID()] = wallet
-
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
 
 	return wallet, nil
 }

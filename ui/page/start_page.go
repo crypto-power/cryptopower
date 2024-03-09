@@ -250,16 +250,15 @@ func (sp *startPage) HandleUserInteractions() {
 	if sp.addWalletButton.Clicked() {
 		createWalletPage := components.NewCreateWallet(sp.Load, func() {
 			sp.setLanguagePref(false)
-			sp.updateSettings()
 			sp.ParentNavigator().Display(root.NewHomePage(sp.ctx, sp.Load))
 		})
 		sp.ParentNavigator().Display(createWalletPage)
 	}
 
 	for sp.nextButton.Clicked() {
-		// TODO: Handle Selected settings option (language and advanced or
-		// recommended settings). Might requires refactor of settings page.
 		if sp.currentPageIndex == len(sp.onBoardingScreens)-1 { // index starts at 0
+			// save user setting when reached the last sceen
+			sp.updateSettings()
 			sp.currentPageIndex = -1 // we have reached the last screen.
 		} else {
 			sp.currentPageIndex++
@@ -267,8 +266,11 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	for i, item := range sp.settingsOptions {
-		for item.clickable.Clicked() { // TODO: Show settings page and allow user pick settings for advanced setup.
+		for item.clickable.Clicked() {
 			sp.selectedSettingsOptionIndex = i
+			if item.title == values.String(values.StrAdvanced) {
+				sp.ParentWindow().Display(settings.NewAppSettingsPage(sp.Load))
+			}
 		}
 
 		for item.infoButton.Button.Clicked() {
@@ -701,7 +703,7 @@ func (sp *startPage) selectedLanguageKey() string {
 func (sp *startPage) updateSettings() {
 	wantAdvanced := sp.selectedSettingsOptionIndex == advancedSettingsOptionIndex
 	if wantAdvanced {
-		return // nothing to do?
+		return
 	}
 
 	sp.AssetsManager.SetTransactionsNotifications(true)

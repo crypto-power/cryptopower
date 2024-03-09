@@ -55,8 +55,6 @@ type AssetsManager struct {
 	params *sharedW.InitParams
 	Assets *Assets
 
-	db sharedW.AssetsManagerDB // Interface to manage db access at the ASM.
-
 	shuttingDown chan bool
 	cancelFuncs  []context.CancelFunc
 	chainsParams utils.ChainsParams
@@ -195,11 +193,6 @@ func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType, dexTest
 		return nil, err
 	}
 
-	// Attempt to set the log levels if a valid db interface was found.
-	if mgr.IsAssetManagerDB() {
-		mgr.GetLogLevels()
-	}
-
 	mgr.listenForShutdown()
 
 	return mgr, nil
@@ -215,14 +208,8 @@ func (mgr *AssetsManager) initRateSource() (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mgr.cancelFuncs = append(mgr.cancelFuncs, cancel)
 
-	rateSource := values.DefaultExchangeValue
-	disabled := true
-	// Check if database has been initialized. ATM, new setups need a wallet
-	// before mgr.db is initialized.
-	if mgr.db != nil {
-		rateSource = mgr.GetCurrencyConversionExchange()
-		disabled = mgr.IsPrivacyModeOn()
-	}
+	rateSource := mgr.GetCurrencyConversionExchange()
+	disabled := mgr.IsPrivacyModeOn()
 
 	mgr.RateSource, err = ext.NewCommonRateSource(ctx, rateSource)
 	if err != nil {
@@ -255,9 +242,7 @@ func (mgr *AssetsManager) initRateSource() (err error) {
 	return nil
 }
 
-// prepareExistingWallets loads all the valid and bad wallets. It also attempts
-// to extract the assets manager db access interface from one of the validly
-// created wallets.
+// prepareExistingWallets loads all the valid and bad wallets.
 func (mgr *AssetsManager) prepareExistingWallets() error {
 	// read all stored wallets info from the db and initialize wallets interfaces.
 	query := mgr.params.DB.Select(q.True()).OrderBy("ID")
@@ -265,21 +250,6 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 	err := query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
 		return err
-	}
-
-	isOK := func(val interface{}) bool {
-		var ok bool
-		if val != nil {
-			// Extracts the walletExists method and checks if the current wallet
-			// walletDataDb file exists. Returns true if affirmative.
-			ok, _ = val.(interface{ WalletExists() (bool, error) }).WalletExists()
-			// Extracts the asset manager db interface from one of the wallets.
-			// Assets Manager Db interface that exists in all wallets by default.
-			if mgr.db == nil {
-				mgr.setDBInterface(val.(sharedW.AssetsManagerDB))
-			}
-		}
-		return ok
 	}
 
 	// prepare the wallets loaded from db for use
@@ -293,10 +263,6 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 		switch wallet.Type {
 		case utils.BTCWalletAsset:
 			w, err := btc.LoadExisting(wallet, mgr.params)
-			if err == nil && !isOK(w) {
-				err = fmt.Errorf("missing wallet database file: %v", path)
-				log.Warn(err)
-			}
 			if err != nil {
 				mgr.Assets.BTC.BadWallets[wallet.ID] = wallet
 				log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
@@ -306,10 +272,6 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 
 		case utils.DCRWalletAsset:
 			w, err := dcr.LoadExisting(wallet, mgr.params)
-			if err == nil && !isOK(w) {
-				err = fmt.Errorf("missing wallet database file: %v", path)
-				log.Debug(err)
-			}
 			if err != nil {
 				mgr.Assets.DCR.BadWallets[wallet.ID] = wallet
 				log.Warnf("Ignored dcr wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
@@ -319,10 +281,6 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 
 		case utils.LTCWalletAsset:
 			w, err := ltc.LoadExisting(wallet, mgr.params)
-			if err == nil && !isOK(w) {
-				err = fmt.Errorf("missing wallet database file: %v", path)
-				log.Debug(err)
-			}
 			if err != nil {
 				mgr.Assets.LTC.BadWallets[wallet.ID] = wallet
 				log.Warnf("Ignored ltc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
@@ -407,14 +365,6 @@ func (mgr *AssetsManager) NetType() utils.NetworkType {
 // LogDir returns the log directory of the assets manager.
 func (mgr *AssetsManager) LogDir() string {
 	return filepath.Join(mgr.params.RootDir, logFileName)
-}
-
-// IsAssetManagerDB returns true if the asset manager db interface was extracted
-// from one of the loaded valid wallets. Assets Manager Db interface exists in
-// all wallets by default. If no valid asset manager db interface exists,
-// there is no valid wallet loaded yet; - they maybe no wallets at all to load.
-func (mgr *AssetsManager) IsAssetManagerDB() bool {
-	return mgr.db != nil
 }
 
 // OpenWallets opens all wallets in the assets manager.

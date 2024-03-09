@@ -38,11 +38,6 @@ func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase strin
 
 	mgr.Assets.DCR.Wallets[wallet.GetWalletID()] = wallet
 
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
-
 	// Allow spending from the default account by default.
 	wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
 
@@ -57,11 +52,6 @@ func (mgr *AssetsManager) CreateNewDCRWatchOnlyWallet(walletName, extendedPublic
 	}
 
 	mgr.Assets.DCR.Wallets[wallet.GetWalletID()] = wallet
-
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
 
 	// Allow spending from the default account by default.
 	wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
@@ -82,11 +72,6 @@ func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePass
 	}
 
 	mgr.Assets.DCR.Wallets[wallet.GetWalletID()] = wallet
-
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
 
 	// Allow spending from the default account by default.
 	wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)

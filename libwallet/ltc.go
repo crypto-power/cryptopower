@@ -35,11 +35,6 @@ func (mgr *AssetsManager) CreateNewLTCWallet(walletName, privatePassphrase strin
 
 	mgr.Assets.LTC.Wallets[wallet.GetWalletID()] = wallet
 
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
-
 	return wallet, nil
 }
 
@@ -51,11 +46,6 @@ func (mgr *AssetsManager) CreateNewLTCWatchOnlyWallet(walletName, extendedPublic
 	}
 
 	mgr.Assets.LTC.Wallets[wallet.GetWalletID()] = wallet
-
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
 
 	return wallet, nil
 }
@@ -73,11 +63,6 @@ func (mgr *AssetsManager) RestoreLTCWallet(walletName, seedMnemonic, privatePass
 	}
 
 	mgr.Assets.LTC.Wallets[wallet.GetWalletID()] = wallet
-
-	// extract the db interface if it hasn't been set already.
-	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	}
 
 	return wallet, nil
 }
