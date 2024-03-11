@@ -89,8 +89,8 @@ type activeSyncData struct {
 	rescanStartTime int64
 
 	totalInactiveSeconds int64
-	isrescanning         bool
-	isAddDiscovering     bool
+	isRescanning         bool
+	isAddressDiscovery   bool
 }
 
 const (
@@ -388,7 +388,7 @@ func (asset *Asset) IsAddressDiscovering() bool {
 	defer asset.syncData.mu.RUnlock()
 
 	if asset.syncData != nil && asset.syncData.syncing {
-		return asset.syncData.isAddDiscovering
+		return asset.syncData.isAddressDiscovery
 	}
 
 	return false
@@ -399,7 +399,7 @@ func (asset *Asset) IsSycnRescanning() bool {
 	defer asset.syncData.mu.RUnlock()
 
 	if asset.syncData != nil && asset.syncData.syncing {
-		return asset.syncData.isrescanning
+		return asset.syncData.isRescanning
 	}
 
 	return false

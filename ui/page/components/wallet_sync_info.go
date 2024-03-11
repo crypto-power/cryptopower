@@ -323,7 +323,13 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
 								return D{}
 							}
-							blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, wsi.FetchSyncProgress().HeadersToFetchOrScan)
+							header := wsi.FetchSyncProgress().HeadersToFetchOrScan
+							// When progress's state is rescan header is a header of rescan and not fetch
+							// this is a workaround display block for user
+							if header < bestBlock.Height {
+								header = bestBlock.Height
+							}
+							blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, header)
 							return wsi.labelTexSize16Layout(blockHeightFetched, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
