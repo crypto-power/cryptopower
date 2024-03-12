@@ -274,7 +274,14 @@ func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalanc
 				return layout.Inset{
 					Left: values.MarginPadding8,
 				}.Layout(gtx, func(gtx C) D {
-					return components.WalletHighlightLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
+					if !pg.IsMobileView() {
+						return components.WalletHighlightLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
+					}
+					image := components.CoinImageBySymbol(pg.Load, item.wallet.GetAssetType(), true)
+					if image == nil {
+						return D{}
+					}
+					return image.LayoutTransform(gtx, true, values.MarginPadding24)
 				})
 			}
 			return D{}

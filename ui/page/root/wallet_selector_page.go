@@ -277,7 +277,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 			Margin: layout.Inset{
 				Bottom: values.MarginPadding30,
 			},
-			Padding: layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16},
+			Padding: components.HorizontalInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)),
 		}.Layout2(gtx, func(gtx C) D {
 			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 				return pageContent[i](gtx)
@@ -288,17 +288,13 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 
 func (pg *WalletSelectorPage) assetDropdown(asset libutils.AssetType) layout.Widget {
 	return func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return pg.assetCollapsibles[asset].Layout(gtx,
-					func(gtx C) D {
-						return pg.dropdownTitleLayout(gtx, asset)
-					},
-					func(gtx C) D {
-						return pg.dropdownContentLayout(gtx, asset)
-					},
-				)
-			}),
+		return pg.assetCollapsibles[asset].Layout(gtx,
+			func(gtx C) D {
+				return pg.dropdownTitleLayout(gtx, asset)
+			},
+			func(gtx C) D {
+				return pg.dropdownContentLayout(gtx, asset)
+			},
 		)
 	}
 }
