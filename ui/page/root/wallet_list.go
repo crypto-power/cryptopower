@@ -264,9 +264,11 @@ func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalanc
 		Axis: layout.Horizontal,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Max.X = gtx.Constraints.Max.X * 3 / 5
 			txt := pg.Theme.Label(values.TextSize18, item.wallet.GetWalletName())
 			txt.Color = pg.Theme.Color.Text
 			txt.Font.Weight = font.SemiBold
+			txt.MaxLines = 1
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
