@@ -363,6 +363,7 @@ func (d *DropDown) itemLayout(gtx C, index int, clickable *Clickable, item *Drop
 
 			return bodyLayout.Layout2(gtx, func(gtx C) D {
 				lbl := d.theme.Body2(item.Text)
+				lbl.MaxLines = 1
 				if !d.expanded && len(item.Text) > d.maxTextLeng {
 					lbl.Text = item.Text[:d.maxTextLeng-3 /* subtract space for the ellipsis */] + "..."
 				}
