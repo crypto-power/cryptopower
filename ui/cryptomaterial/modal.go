@@ -91,7 +91,7 @@ func (m *Modal) IsShown() bool {
 
 // Layout renders the modal widget to screen. The modal assumes the size of
 // its content plus padding.
-func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...float32) layout.Dimensions {
+func (m *Modal) Layout(gtx C, widgets []layout.Widget, width ...float32) D {
 	mGtx := gtx
 	if m.isDisabled {
 		mGtx = gtx.Disabled()
@@ -101,9 +101,9 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			fillMax(gtx, m.overlayColor, CornerRadius{})
 
-			return m.button.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			return m.button.Layout(gtx, func(gtx C) D {
 				semantic.Button.Add(gtx.Ops)
-				return layout.Dimensions{Size: gtx.Constraints.Min}
+				return D{Size: gtx.Constraints.Min}
 			})
 		}),
 		layout.Stacked(func(gtx C) D {
@@ -118,7 +118,7 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 				widgetFuncs = append(widgetFuncs, widgets...)
 			}
 
-			maxWidth := float32(360)
+			maxWidth := float32(450)
 			if len(width) > 0 && width[0] > 0 {
 				maxWidth = width[0]
 			} else if currentAppWidth := gtx.Metric.PxToDp(gtx.Constraints.Max.X); currentAppWidth <= values.StartMobileView {
@@ -138,8 +138,8 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 			return inset.Layout(gtx, func(gtx C) D {
 				return layout.Stack{Alignment: layout.Center}.Layout(gtx,
 					layout.Expanded(func(gtx C) D {
-						return m.overlayBlinder.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-							return layout.Dimensions{Size: gtx.Constraints.Min}
+						return m.overlayBlinder.Layout(gtx, func(gtx C) D {
+							return D{Size: gtx.Constraints.Min}
 						})
 					}),
 					layout.Stacked(func(gtx C) D {

@@ -26,7 +26,7 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
+
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -997,13 +997,13 @@ func GetServerIcon(theme *cryptomaterial.Theme, serverName string) *cryptomateri
 // by comparing the current version with the latest release version
 // available on GitHub.
 func CheckForUpdate(l *load.Load) *ReleaseResponse {
-	req := &utils.ReqConfig{
+	req := &libutils.ReqConfig{
 		Method:  http.MethodGet,
 		HTTPURL: releaseURL,
 	}
 
 	releaseResponse := new(ReleaseResponse)
-	if _, err := utils.HTTPRequest(req, &releaseResponse); err != nil {
+	if _, err := libutils.HTTPRequest(req, &releaseResponse); err != nil {
 		log.Error("checking for update failed:", err)
 		return nil
 	}
