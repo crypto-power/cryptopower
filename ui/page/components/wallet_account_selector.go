@@ -291,7 +291,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 					}.Layout(gtx,
 						layout.Rigid(ws.setWalletLogo),
 						layout.Rigid(func(gtx C) D {
-							gtx.Constraints.Max.X = gtx.Constraints.Max.X * 3 / 5
+							gtx.Constraints.Max.X = gtx.Constraints.Max.X / 2
 							if ws.accountSelector {
 								if ws.selectedAccount == nil {
 									return ws.Theme.Body1("").Layout(gtx)
@@ -699,7 +699,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 					acct.Color = sm.Theme.Color.Text
 					acct.Font.Weight = font.Normal
 					return EndToEndRow(gtx, func(gtx C) D {
-						gtx.Constraints.Max.X = gtx.Constraints.Max.X * 3 / 5
+						gtx.Constraints.Max.X = gtx.Constraints.Max.X / 2
 						return acct.Layout(gtx)
 					}, func(gtx C) D {
 						return LayoutBalance(gtx, sm.Load, totalBal)

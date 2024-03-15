@@ -261,10 +261,10 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *walletWithBalance) D {
 
 func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalance) D {
 	return layout.Flex{
-		Axis: layout.Horizontal,
+		Alignment: layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Max.X = gtx.Constraints.Max.X * 3 / 5
+			gtx.Constraints.Max.X = gtx.Constraints.Max.X / 2
 			txt := pg.Theme.Label(values.TextSize18, item.wallet.GetWalletName())
 			txt.Color = pg.Theme.Color.Text
 			txt.Font.Weight = font.SemiBold
