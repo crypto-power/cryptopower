@@ -26,7 +26,6 @@ type SyncData struct {
 
 	synced       bool
 	syncing      bool
-	cancelCtx    context.Context
 	cancelSync   context.CancelFunc
 	cancelRescan context.CancelFunc
 	syncCanceled chan struct{}
@@ -90,6 +89,8 @@ type activeSyncData struct {
 	rescanStartTime int64
 
 	totalInactiveSeconds int64
+	isRescanning         bool
+	isAddressDiscovery   bool
 }
 
 const (
@@ -380,6 +381,28 @@ func (asset *Asset) CurrentSyncStage() utils.SyncStage {
 		return asset.syncData.syncStage
 	}
 	return InvalidSyncStage
+}
+
+func (asset *Asset) IsAddressDiscovering() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	if asset.syncData != nil && asset.syncData.syncing {
+		return asset.syncData.isAddressDiscovery
+	}
+
+	return false
+}
+
+func (asset *Asset) IsSycnRescanning() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	if asset.syncData != nil && asset.syncData.syncing {
+		return asset.syncData.isRescanning
+	}
+
+	return false
 }
 
 func (asset *Asset) ConnectedPeers() int32 {

@@ -8,6 +8,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -273,6 +274,12 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 	isRescanning := wsi.wallet.IsRescanning() && !isSyncing
 	isInProgress := isSyncing || isRescanning
 	bestBlock := wsi.wallet.GetBestBlock()
+	isAddDiscovering := false
+	syncIsScanning := false
+	if !isBtcORLtcAsset {
+		isAddDiscovering = wsi.wallet.(*dcr.Asset).IsAddressDiscovering()
+		syncIsScanning = wsi.wallet.(*dcr.Asset).IsSycnRescanning()
+	}
 	dp8 := values.MarginPadding8
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -292,13 +299,13 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 						return wsi.labelTexSize16Layout(values.String(values.StrSyncingProgress), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
+						if !isInProgress || (isRescanning && isBtcORLtcAsset) {
 							return D{}
 						}
 						return wsi.labelTexSize16Layout(values.String(values.StrSyncCompTime), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !(isRescanning && (isBtcORLtcAsset)) {
+						if !(isRescanning && isBtcORLtcAsset) {
 							return D{}
 						}
 						return wsi.labelTexSize16Layout(values.String(values.StrAddressDiscoveryInProgress), dp8, true)(gtx)
@@ -316,7 +323,13 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
 								return D{}
 							}
-							blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, wsi.FetchSyncProgress().HeadersToFetchOrScan)
+							header := wsi.FetchSyncProgress().HeadersToFetchOrScan
+							// When progress's state is rescan header is a header of rescan and not fetch
+							// this is a workaround display block for user
+							if header < bestBlock.Height {
+								header = bestBlock.Height
+							}
+							blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, header)
 							return wsi.labelTexSize16Layout(blockHeightFetched, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
@@ -327,6 +340,13 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							syncProgress := values.String(values.StrWalletNotSynced)
 							if wsi.wallet.IsSyncing() {
 								syncProgress = values.StringF(values.StrSyncingProgressStat, daysBehind)
+								if !isBtcORLtcAsset {
+									if isAddDiscovering {
+										syncProgress = values.String(values.StrAddressDiscovering)
+									} else if syncIsScanning {
+										syncProgress = values.String(values.StrRescanningBlocks)
+									}
+								}
 							} else if wsi.wallet.IsRescanning() {
 								syncProgress = values.String(values.StrRescanningBlocks)
 							} else if wsi.wallet.IsSynced() {
@@ -336,7 +356,7 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return wsi.labelTexSize16Layout(syncProgress, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
+							if !isInProgress || (isRescanning && isBtcORLtcAsset) {
 								return D{}
 							}
 							_, timeLeft := wsi.progressStatusDetails()
