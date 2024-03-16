@@ -29,6 +29,7 @@ const (
 	FeeRateHTTPAPI
 	ExchangeHTTPAPI
 	VspAPI
+	UpdateAPI
 )
 
 type (

@@ -588,14 +588,21 @@ func validatePeerAddressStr(addrs string) (string, bool) {
 			continue
 		}
 
-		if net.ParseIP(addr) != nil {
+		host, _, err := net.SplitHostPort(addr)
+		// If err assume because port was not supplied.
+		if err == nil {
+			host = addr
+		}
+
+		if net.ParseIP(host) != nil {
 			addrMap[addr] = &struct{}{}
 			continue // ok
 		}
 
-		if _, err := url.ParseRequestURI(addr); err != nil {
+		if _, err := url.ParseRequestURI(host); err != nil {
 			return addr, false
 		}
+
 		addrMap[addr] = &struct{}{}
 	}
 

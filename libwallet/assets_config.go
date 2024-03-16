@@ -24,25 +24,48 @@ const (
 
 	walletsMetadataBucketName    = "metadata"
 	walletstartupPassphraseField = "startup-passphrase"
+	appConfigBucketName          = "app_config" // App level bucket.
 )
 
-// setDBInterface extract the assets manager db interface that is available
-// in each wallet by default from one of the validly created wallets.
-func (mgr *AssetsManager) setDBInterface(db sharedW.AssetsManagerDB) {
-	if db != nil {
-		mgr.db = db
+// saveWalletConfigValue method manages all the write operations on the app's config.
+func (mgr *AssetsManager) saveAppConfigValue(key string, value interface{}) {
+	err := mgr.params.DB.Set(appConfigBucketName, key, value)
+	if err != nil {
+		log.Errorf("error setting app config value for key: %s, error: %v", key, err)
 	}
 }
 
-// ReadBoolValue reads a bool value from the wallet's config.
+// ReadWalletConfigValue reads a generic value stored against the provided key
+// at the assets manager level.
+func (mgr *AssetsManager) readAppConfigValue(key string, valueOut interface{}) error {
+	err := mgr.params.DB.Get(appConfigBucketName, key, valueOut)
+	if err != nil && err != storm.ErrNotFound {
+		log.Errorf("error reading app config value for key: %s, error: %v", key, err)
+	}
+
+	return err
+}
+
+// appConfigDelete manages all delete operations on the app's config.
+func (mgr *AssetsManager) appConfigDelete(key string) {
+	err := mgr.params.DB.Delete(appConfigBucketName, key)
+	if err != nil {
+		log.Errorf("error deleting app config value for key: %s, error: %v", key, err)
+	}
+}
+
+// ReadBoolValue reads a bool value from the app's config.
 func (mgr *AssetsManager) ReadBoolValue(key string, value bool) bool {
-	mgr.db.ReadWalletConfigValue(key, &value)
+	err := mgr.params.DB.Get(appConfigBucketName, key, value)
+	if err != nil && err != storm.ErrNotFound {
+		log.Errorf("error reading app config value for key: %s, error: %v", key, err)
+	}
 	return value
 }
 
 // SaveBoolValue saves a bool value to the wallet's config.
 func (mgr *AssetsManager) SetBoolValue(key string, value bool) {
-	mgr.db.SaveWalletConfigValue(key, value)
+	mgr.saveAppConfigValue(key, value)
 }
 
 // SetStartupPassphrase sets the startup passphrase for the wallet.
@@ -53,7 +76,7 @@ func (mgr *AssetsManager) SetStartupPassphrase(passphrase string, passphraseType
 // VerifyStartupPassphrase verifies the startup passphrase for the wallet.
 func (mgr *AssetsManager) VerifyStartupPassphrase(startupPassphrase string) error {
 	var startupPassphraseHash []byte
-	err := mgr.db.ReadWalletConfigValue(walletstartupPassphraseField, &startupPassphraseHash)
+	err := mgr.params.DB.Get(appConfigBucketName, walletstartupPassphraseField, &startupPassphraseHash)
 	if err != nil && err != storm.ErrNotFound {
 		return err
 	}
@@ -91,10 +114,9 @@ func (mgr *AssetsManager) ChangeStartupPassphrase(oldPassphrase, newPassphrase s
 		return err
 	}
 
-	mgr.db.SaveWalletConfigValue(walletstartupPassphraseField, startupPassphraseHash)
-	mgr.db.SaveWalletConfigValue(sharedW.IsStartupSecuritySetConfigKey, true)
-	mgr.db.SaveWalletConfigValue(sharedW.StartupSecurityTypeConfigKey, passphraseType)
-
+	mgr.saveAppConfigValue(walletstartupPassphraseField, startupPassphraseHash)
+	mgr.saveAppConfigValue(sharedW.IsStartupSecuritySetConfigKey, true)
+	mgr.saveAppConfigValue(sharedW.StartupSecurityTypeConfigKey, passphraseType)
 	return nil
 }
 
@@ -105,9 +127,9 @@ func (mgr *AssetsManager) RemoveStartupPassphrase(oldPassphrase string) error {
 		return err
 	}
 
-	mgr.db.DeleteWalletConfigValue(walletstartupPassphraseField)
-	mgr.db.SaveWalletConfigValue(sharedW.IsStartupSecuritySetConfigKey, false)
-	mgr.db.DeleteWalletConfigValue(sharedW.StartupSecurityTypeConfigKey)
+	mgr.appConfigDelete(walletstartupPassphraseField)
+	mgr.saveAppConfigValue(sharedW.IsStartupSecuritySetConfigKey, false)
+	mgr.appConfigDelete(sharedW.StartupSecurityTypeConfigKey)
 
 	return nil
 }
@@ -115,41 +137,38 @@ func (mgr *AssetsManager) RemoveStartupPassphrase(oldPassphrase string) error {
 // IsStartupSecuritySet checks if the startup security is set.
 func (mgr *AssetsManager) IsStartupSecuritySet() bool {
 	var data bool
-	mgr.db.ReadWalletConfigValue(sharedW.IsStartupSecuritySetConfigKey, &data)
+	mgr.readAppConfigValue(sharedW.IsStartupSecuritySetConfigKey, &data)
 	return data
 }
 
 // IsDarkModeOn checks if the dark mode is set.
 func (mgr *AssetsManager) IsDarkModeOn() bool {
 	var data bool
-	if !mgr.IsAssetManagerDB() {
-		return data
-	}
-	mgr.db.ReadWalletConfigValue(sharedW.DarkModeConfigKey, &data)
+	mgr.readAppConfigValue(sharedW.DarkModeConfigKey, &data)
 	return data
 }
 
-// SetDarkMode sets the dark mode for the wallet.
+// SetDarkMode sets the dark mode for the app.
 func (mgr *AssetsManager) SetDarkMode(data bool) {
-	mgr.db.SaveWalletConfigValue(sharedW.DarkModeConfigKey, data)
+	mgr.saveAppConfigValue(sharedW.DarkModeConfigKey, data)
 }
 
 // GetDexServers returns the dex servers.
 func (mgr *AssetsManager) GetDexServers() (map[string][]byte, error) {
 	servers := make(map[string][]byte, 0)
-	err := mgr.db.ReadWalletConfigValue(sharedW.KnownDexServersConfigKey, &servers)
+	err := mgr.readAppConfigValue(sharedW.KnownDexServersConfigKey, &servers)
 	return servers, err
 }
 
 // SaveDexServers saves the dex servers.
 func (mgr *AssetsManager) SaveDexServers(servers map[string][]byte) {
-	mgr.db.SaveWalletConfigValue(sharedW.KnownDexServersConfigKey, servers)
+	mgr.saveAppConfigValue(sharedW.KnownDexServersConfigKey, servers)
 }
 
 // GetCurrencyConversionExchange returns the currency conversion exchange.
 func (mgr *AssetsManager) GetCurrencyConversionExchange() string {
 	var key string
-	mgr.db.ReadWalletConfigValue(sharedW.CurrencyConversionConfigKey, &key)
+	mgr.readAppConfigValue(sharedW.CurrencyConversionConfigKey, &key)
 	if key == "" {
 		return values.DefaultExchangeValue // default exchange value
 	}
@@ -158,7 +177,7 @@ func (mgr *AssetsManager) GetCurrencyConversionExchange() string {
 
 // SetCurrencyConversionExchange sets the currency conversion exchange.
 func (mgr *AssetsManager) SetCurrencyConversionExchange(xc string) {
-	mgr.db.SaveWalletConfigValue(sharedW.CurrencyConversionConfigKey, xc)
+	mgr.saveAppConfigValue(sharedW.CurrencyConversionConfigKey, xc)
 	go func() {
 		err := mgr.RateSource.ToggleSource(xc)
 		if err != nil {
@@ -180,42 +199,42 @@ func (mgr *AssetsManager) ExchangeRateFetchingEnabled() bool {
 // GetLanguagePreference returns the language preference.
 func (mgr *AssetsManager) GetLanguagePreference() string {
 	var lang string
-	mgr.db.ReadWalletConfigValue(sharedW.LanguagePreferenceKey, &lang)
+	mgr.readAppConfigValue(sharedW.LanguagePreferenceKey, &lang)
 	return lang
 }
 
 // SetLanguagePreference sets the language preference.
 func (mgr *AssetsManager) SetLanguagePreference(lang string) {
-	mgr.db.SaveWalletConfigValue(sharedW.LanguagePreferenceKey, lang)
+	mgr.saveAppConfigValue(sharedW.LanguagePreferenceKey, lang)
 }
 
 // GetUserAgent returns the user agent.
 func (mgr *AssetsManager) GetUserAgent() string {
 	var data string
-	mgr.db.ReadWalletConfigValue(sharedW.UserAgentConfigKey, data)
+	mgr.readAppConfigValue(sharedW.UserAgentConfigKey, data)
 	return data
 }
 
 // SetUserAgent sets the user agent.
 func (mgr *AssetsManager) SetUserAgent(data string) {
-	mgr.db.SaveWalletConfigValue(sharedW.UserAgentConfigKey, data)
+	mgr.saveAppConfigValue(sharedW.UserAgentConfigKey, data)
 }
 
 // IsTransactionNotificationsOn checks if the transaction notifications is set.
 func (mgr *AssetsManager) IsTransactionNotificationsOn() bool {
 	var data bool
-	mgr.db.ReadWalletConfigValue(sharedW.TransactionNotificationConfigKey, &data)
+	mgr.readAppConfigValue(sharedW.TransactionNotificationConfigKey, &data)
 	return data && mgr.IsPrivacyModeOn()
 }
 
-// SetTransactionsNotifications sets the transaction notifications for the wallet.
+// SetTransactionsNotifications sets the transaction notifications for the app.
 func (mgr *AssetsManager) SetTransactionsNotifications(data bool) {
-	mgr.db.SaveWalletConfigValue(sharedW.TransactionNotificationConfigKey, data)
+	mgr.saveAppConfigValue(sharedW.TransactionNotificationConfigKey, data)
 }
 
-// SetPrivacyMode sets the privacy mode for the wallet.
+// SetPrivacyMode sets the privacy mode for the app.
 func (mgr *AssetsManager) SetPrivacyMode(isActive bool) {
-	mgr.db.SaveWalletConfigValue(sharedW.PrivacyModeConfigKey, isActive)
+	mgr.saveAppConfigValue(sharedW.PrivacyModeConfigKey, isActive)
 	mgr.RateSource.ToggleStatus(isActive)
 	if !isActive && mgr.GetCurrencyConversionExchange() != values.DefaultExchangeValue {
 		go mgr.RateSource.Refresh(true)
@@ -226,14 +245,14 @@ func (mgr *AssetsManager) SetPrivacyMode(isActive bool) {
 // If Privacy mode is on, no API calls that can be made.
 func (mgr *AssetsManager) IsPrivacyModeOn() bool {
 	var data bool
-	mgr.db.ReadWalletConfigValue(sharedW.PrivacyModeConfigKey, &data)
+	mgr.readAppConfigValue(sharedW.PrivacyModeConfigKey, &data)
 	return data
 }
 
-// SetHTTPAPIPrivacyMode sets Http API the privacy mode for the wallet.
+// SetHTTPAPIPrivacyMode sets Http API the privacy mode for the app.
 func (mgr *AssetsManager) SetHTTPAPIPrivacyMode(apiType utils.HTTPAPIType, isActive bool) {
 	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
-	mgr.db.SaveWalletConfigValue(dataKey, isActive)
+	mgr.saveAppConfigValue(dataKey, isActive)
 }
 
 // IsHTTPAPIPrivacyModeOff returns true if the given API type is enabled and false
@@ -241,14 +260,14 @@ func (mgr *AssetsManager) SetHTTPAPIPrivacyMode(apiType utils.HTTPAPIType, isAct
 func (mgr *AssetsManager) IsHTTPAPIPrivacyModeOff(apiType utils.HTTPAPIType) bool {
 	var data bool
 	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
-	mgr.db.ReadWalletConfigValue(dataKey, &data)
+	mgr.readAppConfigValue(dataKey, &data)
 	return data && !mgr.IsPrivacyModeOn()
 }
 
 // GetLogLevels returns the log levels.
 func (mgr *AssetsManager) GetLogLevels() string {
 	var logLevel string
-	mgr.db.ReadWalletConfigValue(sharedW.LogLevelConfigKey, &logLevel)
+	mgr.readAppConfigValue(sharedW.LogLevelConfigKey, &logLevel)
 	if logLevel == "" {
 		// return default debug level if no option is stored.
 		return utils.DefaultLogLevel
@@ -258,19 +277,19 @@ func (mgr *AssetsManager) GetLogLevels() string {
 
 // SetLogLevels sets the log levels.
 func (mgr *AssetsManager) SetLogLevels(logLevel string) {
-	mgr.db.SaveWalletConfigValue(sharedW.LogLevelConfigKey, logLevel)
+	mgr.saveAppConfigValue(sharedW.LogLevelConfigKey, logLevel)
 	SetLogLevels(logLevel)
 }
 
 // SetExchangeConfig sets the exchange config for the asset.
 func (mgr *AssetsManager) SetExchangeConfig(data sharedW.ExchangeConfig) {
-	mgr.db.SaveWalletConfigValue(sharedW.ExchangeSourceDstnTypeConfigKey, data)
+	mgr.saveAppConfigValue(sharedW.ExchangeSourceDstnTypeConfigKey, data)
 }
 
 // GetExchangeConfig returns the previously set exchange config for the asset.
 func (mgr *AssetsManager) GetExchangeConfig() *sharedW.ExchangeConfig {
 	data := &sharedW.ExchangeConfig{}
-	mgr.db.ReadWalletConfigValue(sharedW.ExchangeSourceDstnTypeConfigKey, data)
+	mgr.readAppConfigValue(sharedW.ExchangeSourceDstnTypeConfigKey, data)
 	return data
 }
 
@@ -281,19 +300,19 @@ func (mgr *AssetsManager) IsExchangeConfigSet() bool {
 
 // ClearExchangeConfig clears the wallet's exchange config.
 func (mgr *AssetsManager) ClearExchangeConfig() {
-	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeSourceDstnTypeConfigKey)
+	mgr.appConfigDelete(sharedW.ExchangeSourceDstnTypeConfigKey)
 }
 
 // IsTotalBalanceVisible checks if the total balance visibility is set.
 func (mgr *AssetsManager) IsTotalBalanceVisible() bool {
 	var data bool
-	mgr.db.ReadWalletConfigValue(sharedW.HideTotalBalanceConfigKey, &data)
+	mgr.readAppConfigValue(sharedW.HideTotalBalanceConfigKey, &data)
 	return data
 }
 
-// SetTotalBalanceVisibility sets the transaction notifications for the wallet.
+// SetTotalBalanceVisibility sets the transaction notifications for the app.
 func (mgr *AssetsManager) SetTotalBalanceVisibility(data bool) {
-	mgr.db.SaveWalletConfigValue(sharedW.HideTotalBalanceConfigKey, data)
+	mgr.saveAppConfigValue(sharedW.HideTotalBalanceConfigKey, data)
 }
 
 func genKey(prefix, identifier interface{}) string {

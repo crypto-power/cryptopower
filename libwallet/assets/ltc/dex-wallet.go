@@ -26,6 +26,7 @@ import (
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	btcwallet "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/wtxmgr"
+	neutrino "github.com/dcrlabs/neutrino-ltc"
 	"github.com/dcrlabs/neutrino-ltc/chain"
 	btcneutrino "github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
@@ -555,12 +556,26 @@ func (s *ltcChainService) BestBlock() (*headerfs.BlockStamp, error) {
 }
 
 func (s *ltcChainService) Peers() []dexbtc.SPVPeer {
-	rawPeers := s.CS.Peers()
-	peers := make([]dexbtc.SPVPeer, len(rawPeers))
-	for i, p := range rawPeers {
-		peers[i] = p
+	// *neutrino.ChainService.Peers() may stall, especially if the wallet hasn't
+	// started sync yet. Call the method in a goroutine and wait below to see if
+	// we get a response. Return an empty slice if we don't get a response after
+	// waiting briefly.
+	rawPeersChan := make(chan []*neutrino.ServerPeer)
+	go func() {
+		rawPeersChan <- s.CS.Peers()
+	}()
+
+	select {
+	case rawPeers := <-rawPeersChan:
+		peers := make([]dexbtc.SPVPeer, 0, len(rawPeers))
+		for _, p := range rawPeers {
+			peers = append(peers, p)
+		}
+		return peers
+
+	case <-time.After(2 * time.Second):
+		return nil // CS.Peers() is taking too long to respond
 	}
-	return peers
 }
 
 func (s *ltcChainService) AddPeer(addr string) error {

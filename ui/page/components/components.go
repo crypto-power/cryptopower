@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"net/http"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -25,6 +26,7 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -35,6 +37,7 @@ const (
 	Uint32Size    = 32 // 32 or 64 ? shifting 32-bit value by 32 bits will always clear it
 	MaxInt32      = 1<<(Uint32Size-1) - 1
 	WalletsPageID = "Wallets"
+	releaseURL    = "https://api.github.com/repos/crypto-power/cryptopower/releases/latest"
 )
 
 type (
@@ -73,6 +76,11 @@ type (
 		Spacing   layout.Spacing
 		Alignment layout.Alignment
 		WeightSum float32
+	}
+
+	ReleaseResponse struct {
+		TagName string `json:"tag_name"`
+		URL     string `json:"html_url"`
 	}
 )
 
@@ -983,4 +991,68 @@ func GetServerIcon(theme *cryptomaterial.Theme, serverName string) *cryptomateri
 	default:
 		return theme.Icons.AddExchange
 	}
+}
+
+// CheckForUpdate checks if a new version of the app is available
+// by comparing the current version with the latest release version
+// available on GitHub.
+func CheckForUpdate(l *load.Load) *ReleaseResponse {
+	req := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HTTPURL: releaseURL,
+	}
+
+	releaseResponse := new(ReleaseResponse)
+	if _, err := utils.HTTPRequest(req, &releaseResponse); err != nil {
+		log.Error("checking for update failed:", err)
+		return nil
+	}
+
+	isUpdateAvaialble := compareVersions(releaseResponse.TagName, l.Version())
+	if !isUpdateAvaialble {
+		return nil
+	}
+
+	return releaseResponse
+}
+
+// compareVersions compares two semantic version strings and returns
+// true if version1 is greater than version2, otherwise returns false.
+func compareVersions(version1, version2 string) bool {
+	// Remove the 'v' prefix, if it exists
+	v1 := strings.TrimPrefix(version1, "v")
+	v2 := strings.TrimPrefix(version2, "v")
+
+	// Split the version strings into their components
+	parts1 := strings.Split(v1, ".")
+	parts2 := strings.Split(v2, ".")
+
+	// Iterate through the version parts and compare
+	for i := 0; i < len(parts1) && i < len(parts2); i++ {
+		// Convert string parts to integers for comparison
+		num1, err1 := strconv.Atoi(parts1[i])
+		num2, err2 := strconv.Atoi(parts2[i])
+
+		// Handle potential errors in conversion
+		if err1 != nil || err2 != nil {
+			log.Error("Error converting version numbers:", err1, err2)
+			return false
+		}
+
+		// Compare the version numbers
+		if num1 > num2 {
+			return true // version1 is greater
+		} else if num1 < num2 {
+			return false // version2 is greater
+		}
+	}
+
+	// If one version has more numbers than the other, compare those
+	if len(parts1) > len(parts2) {
+		return true
+	} else if len(parts1) < len(parts2) {
+		return false
+	}
+
+	return false // versions are equal
 }

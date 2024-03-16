@@ -2,16 +2,20 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	dexdb "decred.org/dcrdex/client/db"
+	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -65,14 +69,19 @@ type HomePage struct {
 	isConnected        *atomic.Bool
 	showNavigationFunc showNavigationFunc
 	startSpvSync       uint32
+
+	updateAvailableBtn *cryptomaterial.Clickable
+	copyRedirectURL    *cryptomaterial.Clickable
+	releaseResponse    *components.ReleaseResponse
 }
 
 func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp := &HomePage{
-		Load:        l,
-		MasterPage:  app.NewMasterPage(HomePageID),
-		isConnected: new(atomic.Bool),
-		dexCtx:      dexCtx,
+		Load:            l,
+		MasterPage:      app.NewMasterPage(HomePageID),
+		isConnected:     new(atomic.Bool),
+		dexCtx:          dexCtx,
+		copyRedirectURL: l.Theme.NewClickable(false),
 	}
 
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
@@ -80,6 +89,7 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp.appNotificationButton = hp.Theme.NewClickable(false)
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
+	hp.updateAvailableBtn = l.Theme.NewClickable(false)
 
 	go func() {
 		hp.isConnected.Store(libutils.IsOnline())
@@ -177,6 +187,10 @@ func (hp *HomePage) OnNavigatedTo() {
 
 	go hp.CalculateAssetsUSDBalance()
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
+
+	if hp.isUpdateAPIAllowed() {
+		go hp.checkForUpdates()
+	}
 }
 
 // initDEX initializes a new dex client if dex is not ready.
@@ -216,98 +230,105 @@ func (hp *HomePage) initDEX() {
 			return // nothing to do
 		}
 
-		dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
-		dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
+		showDEXLoginModal := func() {
+			dexPassEditor := hp.Theme.EditorPassword(new(widget.Editor), values.String(values.StrDexPassword))
+			dexPassEditor.Editor.SingleLine, dexPassEditor.IsRequired = true, true
 
-		loginModal := modal.NewCustomModal(hp.Load).
-			UseCustomWidget(func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrdersOrExpiredBonds)).Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return dexPassEditor.Layout(gtx)
-					}),
-				)
-			}).
-			SetPositiveButtonText(values.String(values.StrLogin)).
-			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-				dexPassEditor.SetError("")
-				err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
-				if err != nil {
-					dexPassEditor.SetError(err.Error())
-					return false
-				}
-
-				// DEX client has active orders or expired bonds, retrieve the
-				// wallets involved and ensure they are synced or syncing.
-				walletsToSyncMap := make(map[uint32]*struct{})
-				for _, orders := range activeOrders {
-					for _, ord := range orders {
-						walletsToSyncMap[ord.BaseID] = &struct{}{}
-						walletsToSyncMap[ord.QuoteID] = &struct{}{}
-					}
-				}
-
-				for _, bond := range expiredBonds {
-					walletsToSyncMap[bond.AssetID] = &struct{}{}
-				}
-
-				var walletsToSync []sharedW.Asset
-				for assetID := range walletsToSyncMap {
-					walletID, err := dexClient.WalletIDForAsset(assetID)
+			loginModal := modal.NewCustomModal(hp.Load).
+				UseCustomWidget(func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, hp.Theme.Body1(values.String(values.StrLoginDEXForActiveOrdersOrExpiredBonds)).Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return dexPassEditor.Layout(gtx)
+						}),
+					)
+				}).
+				SetNegativeButtonText(values.String(values.StrIWillLoginLater)).
+				SetPositiveButtonText(values.String(values.StrLogin)).
+				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+					dexPassEditor.SetError("")
+					err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
 					if err != nil {
-						log.Errorf("dexClient.WalletIDForAsset(%d) error: %w", assetID, err)
-						continue
+						dexPassEditor.SetError(err.Error())
+						return false
 					}
-
-					if walletID == nil {
-						continue // impossible but better safe than sorry
-					}
-
-					wallet := hp.AssetsManager.WalletWithID(*walletID)
-					if wallet == nil { // impossible but better safe than sorry
-						log.Error("dex wallet with ID %d is missing", walletID)
-						continue
-					}
-
-					if wallet.IsSynced() || wallet.IsSyncing() {
-						continue // ok
-					}
-
-					walletsToSync = append(walletsToSync, wallet)
-				}
-
-				if len(walletsToSync) == 0 {
 					return true
+				}).
+				SetCancelable(false)
+			hp.ParentWindow().ShowModal(loginModal)
+		}
+
+		// DEX client has active orders or expired bonds, retrieve the
+		// wallets involved and ensure they are synced or syncing.
+		walletsToSyncMap := make(map[uint32]*struct{})
+		for _, orders := range activeOrders {
+			for _, ord := range orders {
+				walletsToSyncMap[ord.BaseID] = &struct{}{}
+				walletsToSyncMap[ord.QuoteID] = &struct{}{}
+			}
+		}
+
+		for _, bond := range expiredBonds {
+			walletsToSyncMap[bond.AssetID] = &struct{}{}
+		}
+
+		var namesOfWalletsToSync []string
+		var walletsToSync []sharedW.Asset
+		for assetID := range walletsToSyncMap {
+			walletID, err := dexClient.WalletIDForAsset(assetID)
+			if err != nil {
+				log.Errorf("dexClient.WalletIDForAsset(%d) error: %w", assetID, err)
+				continue
+			}
+
+			if walletID == nil {
+				continue // impossible but better safe than sorry
+			}
+
+			wallet := hp.AssetsManager.WalletWithID(*walletID)
+			if wallet == nil { // impossible but better safe than sorry
+				log.Error("dex wallet with ID %d is missing", walletID)
+				continue
+			}
+
+			if wallet.IsSynced() || wallet.IsSyncing() {
+				continue // ok
+			}
+
+			walletsToSync = append(walletsToSync, wallet)
+			namesOfWalletsToSync = append(namesOfWalletsToSync, fmt.Sprintf("%s (%s)", wallet.GetWalletName(), wallet.GetAssetType()))
+		}
+
+		if len(walletsToSync) == 0 {
+			showDEXLoginModal() // Request dex login now.
+			return
+		}
+
+		walletSyncRequestModal := modal.NewCustomModal(hp.Load).
+			Title(values.String(values.StrWalletsNeedToSync)).
+			Body(values.StringF(values.StrWalletsNeedToSyncMsg, strings.Join(namesOfWalletsToSync, ", "))).
+			SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
+			SetNegativeButtonCallback(showDEXLoginModal).
+			SetPositiveButtonText(values.String(values.StrOkaySync)).
+			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				if !hp.isConnected.Load() {
+					hp.Toast.NotifyError(values.String(values.StrNotConnected))
+				} else {
+					for _, w := range walletsToSync {
+						err := w.SpvSync()
+						if err != nil {
+							log.Error(err)
+						}
+					}
 				}
 
-				walletSyncRequestModal := modal.NewCustomModal(hp.Load).
-					Title(values.String(values.StrWalletsNeedToSync)).
-					Body(values.String(values.StrWalletsNeedToSyncMsg)).
-					SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
-					SetPositiveButtonText(values.String(values.StrOkaySync)).
-					SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-						if !hp.isConnected.Load() {
-							// Notify user and return.
-							hp.Toast.NotifyError(values.String(values.StrNotConnected))
-							return false
-						}
-
-						for _, w := range walletsToSync {
-							err := w.SpvSync()
-							if err != nil {
-								log.Error(err)
-							}
-						}
-
-						return true
-					})
-				hp.ParentWindow().ShowModal(walletSyncRequestModal)
+				showDEXLoginModal()
 				return true
-			}).
-			SetCancelable(false)
-		hp.ParentWindow().ShowModal(loginModal)
+			}).SetCancelable(false)
+		hp.ParentWindow().ShowModal(walletSyncRequestModal)
+
 	}()
 }
 
@@ -413,6 +434,52 @@ func (hp *HomePage) HandleUserInteractions() {
 				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, nil))
 			}
 		}
+	}
+
+	if hp.updateAvailableBtn.Clicked() {
+		info := modal.NewCustomModal(hp.Load).
+			Title(fmt.Sprintf(values.String(values.StrNewUpdateText), hp.releaseResponse.TagName)).
+			Body(values.String(values.StrCopyLink)).
+			SetCancelable(true).
+			UseCustomWidget(func(gtx C) D {
+				return layout.Stack{}.Layout(gtx,
+					layout.Stacked(func(gtx C) D {
+						border := widget.Border{Color: hp.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+						wrapper := hp.Theme.Card()
+						wrapper.Color = hp.Theme.Color.Gray4
+						return border.Layout(gtx, func(gtx C) D {
+							return wrapper.Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+									return layout.Flex{}.Layout(gtx,
+										layout.Flexed(0.9, hp.Theme.Body1(hp.releaseResponse.URL).Layout),
+										layout.Flexed(0.1, func(gtx C) D {
+											return layout.E.Layout(gtx, func(gtx C) D {
+												if hp.copyRedirectURL.Clicked() {
+													clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
+													hp.Toast.Notify(values.String(values.StrCopied))
+												}
+												return hp.copyRedirectURL.Layout(gtx, hp.Theme.Icons.CopyIcon.Layout24dp)
+											})
+										}),
+									)
+								})
+							})
+						})
+					}),
+					layout.Stacked(func(gtx C) D {
+						return layout.Inset{
+							Top:  values.MarginPaddingMinus10,
+							Left: values.MarginPadding10,
+						}.Layout(gtx, func(gtx C) D {
+							label := hp.Theme.Body2(values.String(values.StrWebURL))
+							label.Color = hp.Theme.Color.GrayText2
+							return label.Layout(gtx)
+						})
+					}),
+				)
+			}).
+			SetPositiveButtonText(values.String(values.StrGotIt))
+		hp.ParentWindow().ShowModal(info)
 	}
 }
 
@@ -530,6 +597,13 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 					)
 				}),
 				layout.Flexed(1, hp.CurrentPage().Layout),
+				layout.Rigid(func(gtx C) D {
+					if hp.isUpdateAPIAllowed() && hp.releaseResponse != nil {
+						return hp.layoutUpdateAvailable(gtx)
+					}
+
+					return D{}
+				}),
 			)
 		}),
 	)
@@ -597,46 +671,59 @@ func (hp *HomePage) layoutTopBar(gtx C) D {
 }
 
 func (hp *HomePage) initBottomNavItems() {
-	hp.bottomNavigationBar = components.BottomNavigationBar{
-		Load:        hp.Load,
-		CurrentPage: hp.CurrentPageID(),
-		BottomNavigationItems: []components.BottomNavigationBarHandler{
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.OverviewIcon,
-				ImageInactive: hp.Theme.Icons.OverviewIconInactive,
-				Title:         values.String(values.StrOverview),
-				PageID:        OverviewPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.TransactionsIcon,
-				ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
-				Title:         values.String(values.StrTransactions),
-				PageID:        transaction.TransactionsPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.WalletIcon,
-				ImageInactive: hp.Theme.Icons.WalletIconInactive,
-				Title:         values.String(values.StrWallets),
-				PageID:        WalletSelectorPageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.TradeIconActive,
-				ImageInactive: hp.Theme.Icons.TradeIconInactive,
-				Title:         values.String(values.StrTrade),
-				PageID:        exchange.TradePageID,
-			},
-			{
-				Clickable:     hp.Theme.NewClickable(true),
-				Image:         hp.Theme.Icons.GovernanceActiveIcon,
-				ImageInactive: hp.Theme.Icons.GovernanceInactiveIcon,
-				Title:         values.String(values.StrGovernance),
-				PageID:        governance.GovernancePageID,
-			},
+	items := []components.BottomNavigationBarHandler{
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.OverviewIcon,
+			ImageInactive: hp.Theme.Icons.OverviewIconInactive,
+			Title:         values.String(values.StrOverview),
+			PageID:        OverviewPageID,
 		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.TransactionsIcon,
+			ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
+			Title:         values.String(values.StrTransactions),
+			PageID:        transaction.TransactionsPageID,
+		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.WalletIcon,
+			ImageInactive: hp.Theme.Icons.WalletIconInactive,
+			Title:         values.String(values.StrWallets),
+			PageID:        WalletSelectorPageID,
+		},
+		{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.GovernanceActiveIcon,
+			ImageInactive: hp.Theme.Icons.GovernanceInactiveIcon,
+			Title:         values.String(values.StrGovernance),
+			PageID:        governance.GovernancePageID,
+		},
+	}
+
+	// Add the trade tab only if not on mobile
+	if !appos.Current().IsIOS() {
+		tradeTab := components.BottomNavigationBarHandler{
+			Clickable:     hp.Theme.NewClickable(true),
+			Image:         hp.Theme.Icons.TradeIconActive,
+			ImageInactive: hp.Theme.Icons.TradeIconInactive,
+			Title:         values.String(values.StrTrade),
+			PageID:        exchange.TradePageID,
+		}
+		// Determine the insertion point, which is second to last position
+		insertionPoint := len(items) - 1
+		if insertionPoint < 0 {
+			insertionPoint = 0
+		}
+		// Append at the second to last position
+		items = append(items[:insertionPoint], append([]components.BottomNavigationBarHandler{tradeTab}, items[insertionPoint:]...)...)
+	}
+
+	hp.bottomNavigationBar = components.BottomNavigationBar{
+		Load:                  hp.Load,
+		CurrentPage:           hp.CurrentPageID(),
+		BottomNavigationItems: items,
 	}
 
 	hp.floatingActionButton = components.BottomNavigationBar{
@@ -977,4 +1064,45 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 		totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
 		hp.ParentWindow().Reload()
 	}
+}
+
+func (hp *HomePage) layoutUpdateAvailable(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Orientation: layout.Horizontal,
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Background:  hp.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+		Clickable:   hp.updateAvailableBtn,
+		Margin: layout.Inset{
+			Top:    values.MarginPaddingMinus10,
+			Bottom: values.MarginPadding10,
+			Right:  values.MarginPadding40,
+		},
+		Border:    cryptomaterial.Border{Radius: hp.updateAvailableBtn.Radius},
+		Direction: layout.E,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			txt := hp.Theme.Label(values.TextSize14, values.String(values.StrUpdateAvailable))
+			txt.Color = hp.Theme.Color.DefaultThemeColors().Primary
+			txt.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left: values.MarginPadding4,
+			}.Layout(gtx, txt.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			txt := hp.Theme.Label(values.TextSize14, hp.releaseResponse.TagName)
+			txt.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left: values.MarginPadding4,
+			}.Layout(gtx, txt.Layout)
+		}),
+	)
+}
+
+func (hp *HomePage) checkForUpdates() {
+	hp.releaseResponse = components.CheckForUpdate(hp.Load)
+}
+
+func (hp *HomePage) isUpdateAPIAllowed() bool {
+	return hp.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.UpdateAPI)
 }

@@ -85,7 +85,8 @@ func prepareDexSupportForDCRWallet() {
 			return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
 		}
 
-		walletParams := wallet.Internal().DCR.ChainParams()
+		dcrWallet := wallet.Internal().DCR
+		walletParams := dcrWallet.ChainParams()
 		if walletParams.Net != chainParams.Net {
 			return nil, fmt.Errorf("selected wallet is for %s network, expected %s", walletParams.Name, chainParams.Name)
 		}
@@ -111,7 +112,7 @@ func prepareDexSupportForDCRWallet() {
 			return nil, fmt.Errorf("DEX wallet not supported for %s", walletParams.Name)
 		}
 
-		return dcr.NewDEXWallet(dcrAsset, accountNumber, dcrAsset.SyncData()), nil
+		return dcr.NewDEXWallet(dcrWallet, dcrAsset, accountNumber, dcrAsset.SyncData()), nil
 	}
 
 	dexDcr.RegisterCustomWallet(walletMaker, def)

@@ -12,8 +12,7 @@ const (
 	AccountMixerUnmixedAccount = "account_mixer_unmixed_account"
 	AccountMixerMixTxChange    = "account_mixer_mix_tx_change"
 
-	userConfigBucketName      = "user_config" // Asset level bucket.
-	walletsMetadataBucketName = "metadata"    // Wallet level bucket.
+	walletsMetadataBucketName = "metadata" // Wallet level bucket.
 
 	LogLevelConfigKey           = "log_level"
 	PrivacyModeConfigKey        = "privacy_mode"
@@ -62,79 +61,28 @@ const (
 	PassphraseTypePass int32 = 1
 )
 
-// AssetsManagerDB defines the main generic methods required to access and manage
-// the DB at the assets manager level.
-type AssetsManagerDB interface {
-	// DeleteWalletConfigValue deletes a generic value at the assets manager level.
-	DeleteWalletConfigValue(key string)
-	// SaveWalletConfigValue stores a generic value at the assets manager level.
-	SaveWalletConfigValue(key string, value interface{})
-	// ReadWalletConfigValue reads a generic value at the assets manager level.
-	ReadWalletConfigValue(key string, valueOut interface{}) error
-}
-
 // walletConfigSave method manages all the write operations.
-func (wallet *Wallet) walletConfigSave(isAssetsManager bool, key string, value interface{}) error {
-	bucket := walletsMetadataBucketName
-	if !isAssetsManager {
-		bucket = userConfigBucketName
-		key = fmt.Sprintf("%d%s", wallet.ID, key)
-	}
-	return wallet.db.Set(bucket, key, value)
+func (wallet *Wallet) walletConfigSave(key string, value interface{}) error {
+	key = fmt.Sprintf("%d%s", wallet.ID, key)
+	return wallet.db.Set(walletsMetadataBucketName, key, value)
 }
 
 // walletConfigRead manages all the read operations.
-func (wallet *Wallet) walletConfigRead(isAssetsManager bool, key string, valueOut interface{}) error {
-	bucket := walletsMetadataBucketName
-	if !isAssetsManager {
-		bucket = userConfigBucketName
-		key = fmt.Sprintf("%d%s", wallet.ID, key)
-	}
-	return wallet.db.Get(bucket, key, valueOut)
+func (wallet *Wallet) walletConfigRead(key string, valueOut interface{}) error {
+	key = fmt.Sprintf("%d%s", wallet.ID, key)
+	return wallet.db.Get(walletsMetadataBucketName, key, valueOut)
 }
 
 // walletConfigDelete manages all delete operations.
-func (wallet *Wallet) walletConfigDelete(isAssetsManager bool, key string) error {
-	bucket := walletsMetadataBucketName
-	if !isAssetsManager {
-		bucket = userConfigBucketName
-		key = fmt.Sprintf("%d%s", wallet.ID, key)
-	}
-	return wallet.db.Delete(bucket, key)
-}
-
-// SaveWalletConfigValue stores a generic value against the provided key
-// at the assets manager level.
-func (wallet *Wallet) SaveWalletConfigValue(key string, value interface{}) {
-	err := wallet.walletConfigSave(true, key, value)
-	if err != nil {
-		log.Errorf("error setting wallet config value for key: %s, error: %v", key, err)
-	}
-}
-
-// ReadWalletConfigValue reads a generic value stored against the provided key
-// at the assets manager level.
-func (wallet *Wallet) ReadWalletConfigValue(key string, valueOut interface{}) error {
-	err := wallet.walletConfigRead(true, key, valueOut)
-	if err != nil && err != storm.ErrNotFound {
-		log.Errorf("error reading wallet config value for key: %s, error: %v", key, err)
-	}
-	return err
-}
-
-// DeleteWalletConfigValue deletes the value associated with the provided key
-// at the assets manager level.
-func (wallet *Wallet) DeleteWalletConfigValue(key string) {
-	err := wallet.walletConfigDelete(true, key)
-	if err != nil {
-		log.Errorf("error deleting wallet config value for key: %s, error: %v", key, err)
-	}
+func (wallet *Wallet) walletConfigDelete(key string) error {
+	key = fmt.Sprintf("%d%s", wallet.ID, key)
+	return wallet.db.Delete(walletsMetadataBucketName, key)
 }
 
 // SaveUserConfigValue stores the generic value against the provided key
 // at the asset level.
 func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
-	err := wallet.walletConfigSave(false, key, value)
+	err := wallet.walletConfigSave(key, value)
 	if err != nil {
 		log.Errorf("error setting user config value for key: %s, error: %v", key, err)
 	}
@@ -143,7 +91,7 @@ func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
 // ReadUserConfigValue reads the generic value stored against the provided
 // key at the asset level.
 func (wallet *Wallet) ReadUserConfigValue(key string, valueOut interface{}) error {
-	err := wallet.walletConfigRead(false, key, valueOut)
+	err := wallet.walletConfigRead(key, valueOut)
 	if err != nil && err != storm.ErrNotFound {
 		log.Errorf("error reading user config value for key: %s, error: %v", key, err)
 	}
@@ -153,7 +101,7 @@ func (wallet *Wallet) ReadUserConfigValue(key string, valueOut interface{}) erro
 // DeleteUserConfigValueForKey method deletes the value stored against the provided
 // key at the asset level.
 func (wallet *Wallet) DeleteUserConfigValueForKey(key string) {
-	err := wallet.walletConfigDelete(false, key)
+	err := wallet.walletConfigDelete(key)
 	if err != nil {
 		log.Errorf("error deleting user config value for key: %s, error: %v", key, err)
 	}
