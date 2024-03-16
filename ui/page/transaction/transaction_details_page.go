@@ -158,9 +158,12 @@ destinationAddrLoop:
 			var mixedAcc int32 = -1
 			txDestinationAddress := ""
 			if libutils.DCRWalletAsset == pg.wallet.GetAssetType() {
-				mixedAcc = pg.wallet.(*dcr.Asset).UnmixedAccountNumber()
+				mixedAcc = pg.wallet.(*dcr.Asset).MixedAccountNumber()
 			}
 			if pg.transaction.Type == txhelper.TxTypeMixed {
+				if output.AccountNumber == -1 {
+					txDestinationAddress = output.Address
+				}
 				if output.AccountNumber == mixedAcc {
 					accountName, err := pg.wallet.AccountName(output.AccountNumber)
 					if err != nil {
@@ -168,14 +171,14 @@ destinationAddrLoop:
 					} else {
 						txDestinationAddress = accountName
 					}
-				} else {
-					if output.AccountNumber == -1 {
-						txDestinationAddress = output.Address
-					}
 				}
-				pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
-				pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
-				break destinationAddrLoop
+				if txDestinationAddress != "" {
+					pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
+					pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
+					break destinationAddrLoop
+				} else {
+					continue
+				}
 			}
 
 			if output.AccountNumber == -1 {
@@ -204,7 +207,6 @@ destinationAddrLoop:
 				} else {
 					pg.txDestinationAccount = accountName
 				}
-
 				break destinationAddrLoop
 			}
 		}
