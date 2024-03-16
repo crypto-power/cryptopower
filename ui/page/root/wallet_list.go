@@ -290,7 +290,12 @@ func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalanc
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
-				return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, item.totalBalance.String())
+				totalbalanceStr := item.totalBalance.String()
+				// This scope use for btc format
+				if totalbalanceStr == "0 BTC" {
+					totalbalanceStr = "0.00 BTC"
+				}
+				return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, totalbalanceStr)
 			})
 		}),
 	)

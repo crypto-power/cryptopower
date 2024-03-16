@@ -241,7 +241,7 @@ func (pg *WalletSelectorPage) layoutDesktop(gtx C) D {
 }
 
 func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
-	return components.UniformMobile(gtx, false, false, pg.pageContentLayout)
+	return components.HorizontalInset(values.MarginPadding10).Layout(gtx, pg.pageContentLayout)
 }
 
 func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
@@ -250,10 +250,6 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		return pg.Theme.List(pg.assetDropdownContainer).Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
 			top := values.MarginPadding15
 			bottom := values.MarginPadding0
-			if pg.Load.IsMobileView() {
-				top = values.MarginPadding0
-				bottom = values.MarginPadding15
-			}
 			return layout.Inset{Top: top, Bottom: bottom}.Layout(gtx, pg.assetDropdown(supportedAssets[i]))
 		})
 	}
@@ -268,15 +264,12 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		width := values.MarginPadding550
-		if pg.Load.IsMobileView() {
-			width = pg.Load.CurrentAppWidth()
+		if pg.IsMobileView() {
+			width = pg.CurrentAppWidth()
 		}
 		return cryptomaterial.LinearLayout{
-			Width:  gtx.Dp(width),
-			Height: cryptomaterial.MatchParent,
-			Margin: layout.Inset{
-				Bottom: values.MarginPadding30,
-			},
+			Width:   gtx.Dp(width),
+			Height:  cryptomaterial.MatchParent,
 			Padding: components.HorizontalInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)),
 		}.Layout2(gtx, func(gtx C) D {
 			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
@@ -361,7 +354,7 @@ func (pg *WalletSelectorPage) dropdownTitleLayout(gtx C, asset libutils.AssetTyp
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								// check if asset balance is nil
-								if pg.assetsBalance[asset] == nil {
+								if pg.assetsBalance[asset] == nil || pg.assetsBalance[asset].String() == "0 BTC" {
 									txt := pg.Theme.Label(values.TextSize16, "0.00 "+asset.String())
 									txt.Color = pg.Theme.Color.Text
 									txt.Font.Weight = font.SemiBold

@@ -373,7 +373,7 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 				return pageContent[i](gtx)
 			})
 		})
-	})
+	}, true)
 }
 
 func (pg *OverviewPage) initInfoWallets() {
