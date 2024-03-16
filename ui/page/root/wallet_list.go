@@ -261,12 +261,14 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *walletWithBalance) D {
 
 func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalance) D {
 	return layout.Flex{
-		Axis: layout.Horizontal,
+		Alignment: layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Max.X = gtx.Constraints.Max.X / 2
 			txt := pg.Theme.Label(values.TextSize18, item.wallet.GetWalletName())
 			txt.Color = pg.Theme.Color.Text
 			txt.Font.Weight = font.SemiBold
+			txt.MaxLines = 1
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
@@ -274,7 +276,14 @@ func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalanc
 				return layout.Inset{
 					Left: values.MarginPadding8,
 				}.Layout(gtx, func(gtx C) D {
-					return components.WalletHighlightLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
+					if !pg.IsMobileView() {
+						return components.WalletHighlightLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
+					}
+					image := components.CoinImageBySymbol(pg.Load, item.wallet.GetAssetType(), true)
+					if image == nil {
+						return D{}
+					}
+					return image.LayoutTransform(gtx, true, values.MarginPadding24)
 				})
 			}
 			return D{}

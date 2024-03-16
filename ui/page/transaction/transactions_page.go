@@ -393,6 +393,7 @@ func (pg *TransactionsPage) leftDropdown(gtx C) D {
 				return D{}
 			}
 			return layout.W.Layout(gtx, pg.walletDropDown.Layout)
+
 		}),
 		layout.Rigid(func(gtx C) D {
 			icon := pg.Theme.Icons.FilterOffImgIcon
@@ -628,7 +629,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 					fileName := filepath.Join(pg.AssetsManager.RootDir(), "exports", fmt.Sprintf("transaction_export_%d.csv", time.Now().Unix()))
 					err := exportTxs(assets, fileName)
 					if err != nil {
-						errModal := modal.NewErrorModal(pg.Load, fmt.Errorf("Error exporting your wallet(s) transactions: %v", err).Error(), modal.DefaultClickFunc())
+						errModal := modal.NewErrorModal(pg.Load, fmt.Errorf("error exporting your wallet(s) transactions: %v", err).Error(), modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errModal)
 						return
 					}

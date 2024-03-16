@@ -291,16 +291,19 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 					}.Layout(gtx,
 						layout.Rigid(ws.setWalletLogo),
 						layout.Rigid(func(gtx C) D {
+							gtx.Constraints.Max.X = gtx.Constraints.Max.X / 2
 							if ws.accountSelector {
 								if ws.selectedAccount == nil {
 									return ws.Theme.Body1("").Layout(gtx)
 								}
 								lbl := ws.Theme.Body1(ws.SelectedAccount().Name)
+								lbl.MaxLines = 1
 								lbl.TextSize = textSize16
 								return lbl.Layout(gtx)
 							}
 
 							lbl := ws.Theme.SemiBoldLabel(ws.SelectedWallet().GetWalletName())
+							lbl.MaxLines = 1
 							lbl.TextSize = textSize16
 							return lbl.Layout(gtx)
 						}),
@@ -583,38 +586,30 @@ func (sm *selectorModal) Layout(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					if sm.accountSelector {
-						inset := layout.Inset{
-							Top: values.MarginPadding0,
-						}
-						return inset.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											if sm.infoModalOpen {
-												m := op.Record(gtx.Ops)
-												layout.Inset{Top: values.MarginPadding30}.Layout(gtx, func(gtx C) D {
-													card := sm.Theme.Card()
-													card.Color = sm.Theme.Color.Surface
-													return card.Layout(gtx, func(gtx C) D {
-														return layout.UniformInset(values.MarginPadding12).Layout(gtx, renderers.RenderHTML(sm.infoActionText, sm.Theme).Layout)
-													})
-												})
-												op.Defer(gtx.Ops, m.Stop())
-											}
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								if !sm.infoModalOpen {
+									return D{}
+								}
 
-											return D{}
-										}),
-										layout.Rigid(func(gtx C) D {
-											if sm.infoActionText != "" {
-												return sm.infoButton.Layout(gtx)
-											}
-											return D{}
-										}),
-									)
-								}),
-							)
-						})
+								m := op.Record(gtx.Ops)
+								dims := layout.Inset{Top: values.MarginPadding30}.Layout(gtx, func(gtx C) D {
+									card := sm.Theme.Card()
+									card.Color = sm.Theme.Color.Surface
+									return card.Layout(gtx, func(gtx C) D {
+										return layout.UniformInset(values.MarginPadding12).Layout(gtx, renderers.RenderHTML(sm.infoActionText, sm.Theme).Layout)
+									})
+								})
+								op.Defer(gtx.Ops, m.Stop())
+								return dims
+							}),
+							layout.Rigid(func(gtx C) D {
+								if sm.infoActionText == "" {
+									return D{}
+								}
+								return sm.infoButton.Layout(gtx)
+							}),
+						)
 					}
 					return D{}
 				}),
@@ -679,7 +674,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.WrapContent,
 		Margin:    layout.Inset{Bottom: values.MarginPadding4},
-		Padding:   layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8},
+		Padding:   VerticalInset(values.MarginPadding8),
 		Clickable: selectorItem.clickable,
 		Alignment: layout.Middle,
 	}.Layout(gtx,
@@ -700,9 +695,13 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					acct := sm.Theme.Label(values.TextSize18, name)
+					acct.MaxLines = 1
 					acct.Color = sm.Theme.Color.Text
 					acct.Font.Weight = font.Normal
-					return EndToEndRow(gtx, acct.Layout, func(gtx C) D {
+					return EndToEndRow(gtx, func(gtx C) D {
+						gtx.Constraints.Max.X = gtx.Constraints.Max.X / 2
+						return acct.Layout(gtx)
+					}, func(gtx C) D {
 						return LayoutBalance(gtx, sm.Load, totalBal)
 					})
 				}),

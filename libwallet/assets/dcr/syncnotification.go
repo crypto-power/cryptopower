@@ -145,7 +145,6 @@ func (asset *Asset) fetchCFiltersEnded() {
 }
 
 // Fetch Headers Callbacks
-
 func (asset *Asset) fetchHeadersStarted() {
 	if !asset.IsSyncing() {
 		return
@@ -295,6 +294,7 @@ func (asset *Asset) discoverAddressesStarted() {
 	}
 
 	asset.syncData.mu.Lock()
+	asset.syncData.isAddressDiscovery = true
 	asset.syncData.syncStage = AddressDiscoverySyncStage
 	asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime = time.Now().Unix()
 	asset.syncData.addressDiscoveryCompletedOrCanceled = make(chan bool)
@@ -402,6 +402,9 @@ func (asset *Asset) discoverAddressesFinished() {
 	if !asset.IsSyncing() {
 		return
 	}
+	asset.syncData.mu.Lock()
+	asset.syncData.isAddressDiscovery = false
+	asset.syncData.mu.Unlock()
 
 	asset.stopUpdatingAddressDiscoveryProgress()
 }
@@ -417,7 +420,6 @@ func (asset *Asset) stopUpdatingAddressDiscoveryProgress() {
 }
 
 // Blocks Scan Callbacks
-
 func (asset *Asset) rescanStarted() {
 	asset.stopUpdatingAddressDiscoveryProgress()
 
@@ -429,6 +431,7 @@ func (asset *Asset) rescanStarted() {
 		return
 	}
 
+	asset.syncData.isRescanning = true
 	asset.syncData.syncStage = HeadersRescanSyncStage
 	asset.syncData.rescanStartTime = time.Now().Unix()
 
@@ -518,6 +521,7 @@ func (asset *Asset) rescanFinished() {
 	}
 
 	asset.syncData.mu.Lock()
+	asset.syncData.isRescanning = false
 	asset.syncData.headersRescanProgress.TotalTimeRemainingSeconds = 0
 	asset.syncData.headersRescanProgress.TotalSyncProgress = 100
 

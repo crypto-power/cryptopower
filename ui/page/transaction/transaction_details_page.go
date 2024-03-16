@@ -57,7 +57,7 @@ type TxDetailsPage struct {
 	transactionInputsContainer  layout.List
 	transactionOutputsContainer layout.List
 
-	destAddressClickable      *cryptomaterial.Clickable
+	destAddressClickables     []*cryptomaterial.Clickable
 	associatedTicketClickable *cryptomaterial.Clickable
 	hashClickable             *cryptomaterial.Clickable
 	rebroadcastClickable      *cryptomaterial.Clickable
@@ -82,7 +82,7 @@ type TxDetailsPage struct {
 	txnWidgets transactionWdg
 
 	txSourceAccount, txDestinationAccount string
-	txDestinationAddress                  string
+	txDestinationAddresses                []string
 	title                                 string
 	vspHost                               string
 	vspHostFees                           string
@@ -113,15 +113,16 @@ func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *
 
 		associatedTicketClickable: l.Theme.NewClickable(true),
 		hashClickable:             l.Theme.NewClickable(true),
-		destAddressClickable:      l.Theme.NewClickable(true),
+		destAddressClickables:     make([]*cryptomaterial.Clickable, 0),
 		moreOption:                l.Theme.NewClickable(false),
 		shadowBox:                 l.Theme.Shadow(),
 
-		transaction:          transaction,
-		wallet:               wallet,
-		rebroadcast:          rebroadcast,
-		rebroadcastClickable: l.Theme.NewClickable(true),
-		rebroadcastIcon:      l.Theme.Icons.Rebroadcast,
+		transaction:            transaction,
+		wallet:                 wallet,
+		rebroadcast:            rebroadcast,
+		rebroadcastClickable:   l.Theme.NewClickable(true),
+		rebroadcastIcon:        l.Theme.Icons.Rebroadcast,
+		txDestinationAddresses: make([]string, 0),
 	}
 
 	pg.backButton = components.GetBackButton(pg.Load)
@@ -155,22 +156,37 @@ destinationAddrLoop:
 		case txhelper.TxDirectionSent:
 			// mixed account number
 			var mixedAcc int32 = -1
+			txDestinationAddress := ""
 			if libutils.DCRWalletAsset == pg.wallet.GetAssetType() {
-				mixedAcc = pg.wallet.(*dcr.Asset).UnmixedAccountNumber()
+				mixedAcc = pg.wallet.(*dcr.Asset).MixedAccountNumber()
 			}
-			if pg.transaction.Type == txhelper.TxTypeMixed &&
-				output.AccountNumber == mixedAcc {
-				accountName, err := pg.wallet.AccountName(output.AccountNumber)
-				if err != nil {
-					log.Error(err)
-				} else {
-					pg.txDestinationAddress = accountName
+			if pg.transaction.Type == txhelper.TxTypeMixed {
+				if output.AccountNumber == -1 {
+					txDestinationAddress = output.Address
 				}
+				if output.AccountNumber == mixedAcc {
+					accountName, err := pg.wallet.AccountName(output.AccountNumber)
+					if err != nil {
+						log.Error(err)
+					} else {
+						txDestinationAddress = accountName
+					}
+				}
+				if txDestinationAddress == "" {
+					continue
+				}
+				pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
+				pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
 				break destinationAddrLoop
 			}
+
 			if output.AccountNumber == -1 {
-				pg.txDestinationAddress = output.Address
-				break destinationAddrLoop
+				txDestinationAddress = output.Address
+			}
+
+			if txDestinationAddress != "" {
+				pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
+				pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
 			}
 		case txhelper.TxDirectionReceived:
 			if output.AccountNumber != -1 {
@@ -178,7 +194,7 @@ destinationAddrLoop:
 				if err != nil {
 					log.Error(err)
 				} else {
-					pg.txDestinationAddress = accountName
+					pg.txDestinationAddresses = append(pg.txDestinationAddresses, accountName)
 				}
 				break destinationAddrLoop
 			}
@@ -190,7 +206,6 @@ destinationAddrLoop:
 				} else {
 					pg.txDestinationAccount = accountName
 				}
-
 				break destinationAddrLoop
 			}
 		}
@@ -586,30 +601,33 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			if pg.transaction.Type == txhelper.TxTypeRegular || pg.transaction.Type == txhelper.TxTypeMixed {
 				dim := func(gtx C) D {
-					lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(pg.txDestinationAddress, 0))
-
 					if pg.transaction.Direction == txhelper.TxDirectionReceived {
+						lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(pg.txDestinationAddresses[0], 0))
 						return lbl.Layout(gtx)
 					}
-
-					lbl.Color = pg.Theme.Color.Primary
-					// copy destination Address
-					if pg.destAddressClickable.Clicked() {
-						clipboard.WriteOp{Text: pg.txDestinationAddress}.Add(gtx.Ops)
-						pg.Toast.Notify(values.String(values.StrTxHashCopied))
+					flexChilds := make([]layout.FlexChild, 0)
+					for i := range pg.txDestinationAddresses {
+						address := pg.txDestinationAddresses[i]
+						clickable := pg.destAddressClickables[i]
+						flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
+							// copy destination Address
+							if clickable.Clicked() {
+								clipboard.WriteOp{Text: address}.Add(gtx.Ops)
+								pg.Toast.Notify(values.String(values.StrTxHashCopied))
+							}
+							lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(address, 0))
+							lbl.Color = pg.Theme.Color.Primary
+							return clickable.Layout(gtx, lbl.Layout)
+						}))
+						flexChilds = append(flexChilds, layout.Rigid(layout.Spacer{Height: values.MarginPadding5}.Layout))
 					}
-					return pg.destAddressClickable.Layout(gtx, lbl.Layout)
+
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexChilds...)
 				}
 				// if transaction is transferred, show the destination account
 				// without being wrapped in a clickable
 				if pg.transaction.Direction == txhelper.TxDirectionTransferred {
-					dim = func(gtx C) D {
-						// var lbl cryptomaterial.Label
-
-						lbl := pg.Theme.Label(values.TextSize14, pg.txDestinationAccount)
-						// }
-						return lbl.Layout(gtx)
-					}
+					dim = pg.Theme.Label(values.TextSize14, pg.txDestinationAccount).Layout
 				}
 
 				return pg.keyValue(gtx, values.String(values.StrTo), dim)
