@@ -28,7 +28,7 @@ const (
 
 type seedEditors struct {
 	focusIndex int
-	editors    []cryptomaterial.RestoreEditor
+	editors    []*cryptomaterial.RestoreEditor
 }
 
 type seedItemMenu struct {
@@ -134,8 +134,23 @@ func (pg *SeedRestore) SetParentNav(window app.WindowNavigator) {
 }
 
 func (pg *SeedRestore) setEditorFocus() {
-	pg.seedEditors.focusIndex = -1
-	pg.seedEditors.editors[0].Edit.Editor.Focus()
+	if !pg.IsIOS() {
+		pg.seedEditors.focusIndex = -1
+		pg.seedEditors.editors[0].Edit.Editor.Focus()
+	}
+}
+
+func (pg *SeedRestore) seedEditorsHandle(gtx C) {
+	for i := range pg.seedEditors.editors {
+		if pg.seedEditors.editors[i].Edit.FirstPressed() {
+			pg.seedList.ScrollTo(i)
+			if i >= 28 {
+				key.SoftKeyboardOp{Show: true}.Add(gtx.Ops)
+			} else {
+				pg.seedEditors.editors[i].Edit.Editor.Focus()
+			}
+		}
+	}
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -143,9 +158,9 @@ func (pg *SeedRestore) setEditorFocus() {
 // Part of the load.Page interface.
 func (pg *SeedRestore) Layout(gtx C) D {
 	var body D
-
 	if pg.Load.IsMobileView() {
 		body = pg.restoreMobile(gtx)
+		pg.seedEditorsHandle(gtx)
 	} else {
 		body = pg.restore(gtx)
 	}
@@ -287,20 +302,16 @@ func (pg *SeedRestore) inputsGroup(gtx C, l *layout.List, len, startIndex int) D
 }
 
 func (pg *SeedRestore) inputsGroupMobile(gtx layout.Context, l *layout.List, len, startIndex int) layout.Dimensions {
-	return layout.Stack{Alignment: layout.N}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return l.Layout(gtx, len, func(gtx C, i int) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-							pg.layoutSeedMenu(gtx, i*1+startIndex)
-							return pg.seedEditors.editors[i*1+startIndex].Layout(gtx)
-						})
-					}),
-				)
-			})
-		}),
-	)
+	return l.Layout(gtx, len, func(gtx C, i int) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+					pg.layoutSeedMenu(gtx, i*1+startIndex)
+					return pg.seedEditors.editors[i*1+startIndex].Layout(gtx)
+				})
+			}),
+		)
+	})
 }
 
 func (pg *SeedRestore) onSuggestionSeedsClicked() {
@@ -352,7 +363,7 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 	}
 
 	for i := 0; i < len(pg.seedEditors.editors); i++ {
-		editor := &pg.seedEditors.editors[i]
+		editor := pg.seedEditors.editors[i]
 		text := editor.Edit.Editor.Text()
 
 		if editor.Edit.Editor.Focused() {
@@ -515,7 +526,7 @@ func (pg *SeedRestore) resetSeeds() {
 // switchSeedEditors sets focus on the next seed phrase after moving the
 // provided steps either forward or backwards. One the focus get to the last cell
 // it start for the initial cell.
-func switchSeedEditors(editors []cryptomaterial.RestoreEditor, steps int) {
+func switchSeedEditors(editors []*cryptomaterial.RestoreEditor, steps int) {
 	for i := 0; i < len(editors); i++ {
 		if editors[i].Edit.Editor.Focused() {
 			nextOnFocus := i + steps
