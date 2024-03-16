@@ -242,7 +242,6 @@ func (pg *WalletSelectorPage) layoutDesktop(gtx C) D {
 
 func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
 	return components.HorizontalInset(values.MarginPadding10).Layout(gtx, pg.pageContentLayout)
-	// return components.UniformMobile(gtx, false, false, pg.pageContentLayout)
 }
 
 func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
