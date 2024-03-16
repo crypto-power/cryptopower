@@ -172,13 +172,12 @@ destinationAddrLoop:
 						txDestinationAddress = accountName
 					}
 				}
-				if txDestinationAddress != "" {
-					pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
-					pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
-					break destinationAddrLoop
-				} else {
+				if txDestinationAddress == "" {
 					continue
 				}
+				pg.destAddressClickables = append(pg.destAddressClickables, pg.Theme.NewClickable(true))
+				pg.txDestinationAddresses = append(pg.txDestinationAddresses, txDestinationAddress)
+				break destinationAddrLoop
 			}
 
 			if output.AccountNumber == -1 {
