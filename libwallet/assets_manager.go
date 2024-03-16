@@ -796,12 +796,12 @@ func (mgr *AssetsManager) LTCHDPrefix() string {
 	}
 }
 
-func (mgr *AssetsManager) CalculateTotalAssetsBalance() (map[utils.AssetType]sharedW.AssetAmount, error) {
+func (mgr *AssetsManager) CalculateTotalAssetsBalance(includeWatchWallet bool) (map[utils.AssetType]sharedW.AssetAmount, error) {
 	assetsTotalBalance := make(map[utils.AssetType]sharedW.AssetAmount)
 
 	wallets := mgr.AllWallets()
 	for _, wal := range wallets {
-		if wal.IsWatchingOnlyWallet() {
+		if !includeWatchWallet && wal.IsWatchingOnlyWallet() {
 			continue
 		}
 

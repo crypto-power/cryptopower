@@ -327,6 +327,22 @@ func (t *Theme) AssetIcon(asset utils.AssetType) *Image {
 	return icon
 }
 
+// WatchOnlyAssetIcon returns the icon for a watch only wallet.
+func (t *Theme) WatchOnlyAssetIcon(asset utils.AssetType) *Image {
+	var icon *Image
+	switch asset {
+	case utils.DCRWalletAsset:
+		icon = t.Icons.DcrWatchOnly
+	case utils.LTCWalletAsset:
+		icon = t.Icons.LtcWatchOnly
+	case utils.BTCWalletAsset:
+		icon = t.Icons.BtcWatchOnly
+	default:
+		icon = nil
+	}
+	return icon
+}
+
 func (t *Theme) AutoHideSoftKeyBoard(gtx C) {
 	isHide := true
 	for _, e := range t.allEditors {

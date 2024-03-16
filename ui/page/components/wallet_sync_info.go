@@ -143,6 +143,9 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 				Right: values.MarginPadding10,
 			}.Layout(gtx, func(gtx C) D {
 				icon := wsi.Theme.AssetIcon(wsi.wallet.GetAssetType())
+				if wsi.wallet.IsWatchingOnlyWallet() {
+					icon = wsi.Theme.WatchOnlyAssetIcon(wsi.wallet.GetAssetType())
+				}
 				return icon.Layout16dp(gtx)
 			})
 		}))

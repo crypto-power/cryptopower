@@ -556,8 +556,14 @@ func (sp *startPage) settingsOptionsLayout(gtx C) D {
 				item.infoButton.Size = values.MarginPaddingTransform(sp.IsMobileView(), values.MarginPadding20)
 
 				borderWidth := values.MarginPadding2
+				borderColor := sp.Theme.Color.Primary
 				if sp.selectedSettingsOptionIndex != i && !item.clickable.IsHovered() {
 					borderWidth = 0
+					borderColor = sp.Theme.Color.Gray1
+				}
+
+				if item.clickable.IsHovered() {
+					borderColor = sp.Theme.Color.Gray1
 				}
 
 				inset := layout.Inset{}
@@ -578,7 +584,7 @@ func (sp *startPage) settingsOptionsLayout(gtx C) D {
 						Background:  sp.Theme.Color.DefaultThemeColors().White,
 						Border: cryptomaterial.Border{
 							Radius: cryptomaterial.Radius(8),
-							Color:  sp.Theme.Color.Primary,
+							Color:  borderColor,
 							Width:  borderWidth,
 						},
 						Margin: layout.Inset{Bottom: values.MarginPadding15},

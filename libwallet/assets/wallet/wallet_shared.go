@@ -268,6 +268,18 @@ func (wallet *Wallet) GetWalletName() string {
 func (wallet *Wallet) ContainsDiscoveredAccounts() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
+	// Address discovery was previously not marked as completed for watch only wallets.
+	// This caused the receive page to be inaccessible for watch only wallets even after
+	// address discovery was completed.
+	// This is a temporary fix to allow users to continue using their watch-only wallets
+	// (i.e being able to see their receive address).
+	// This fix would also incorrectly report watch-only wallets that have not finished address discovery as
+	// having completed it.
+	// Although this is not a critical issue, becuase until a watch only wallet has finished the syncing
+	// process (including address discovery), the reveive page will not be accessible.
+	if wallet.IsWatchingOnlyWallet() {
+		return true
+	}
 	return wallet.HasDiscoveredAccounts
 }
 

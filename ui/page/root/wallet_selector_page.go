@@ -117,7 +117,7 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 
 	go func() {
 		// calculate total assets balance
-		assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance()
+		assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance(true)
 		if err != nil {
 			log.Error(err)
 		}

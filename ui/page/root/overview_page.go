@@ -379,9 +379,6 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 func (pg *OverviewPage) initInfoWallets() {
 	wallets := pg.AssetsManager.AllWallets()
 	for _, wal := range wallets {
-		if wal.IsWatchingOnlyWallet() {
-			continue
-		}
 		infoSync := components.NewWalletSyncInfo(pg.Load, wal, pg.reload, pg.backup)
 		infoSync.IsSlider = true
 		pg.listInfoWallets = append(pg.listInfoWallets, infoSync)
@@ -1095,7 +1092,7 @@ func (pg *OverviewPage) updateAssetsUSDBalance() {
 }
 
 func (pg *OverviewPage) updateAssetsSliders() {
-	assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance()
+	assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance(true)
 	if err != nil {
 		log.Error(err)
 		return

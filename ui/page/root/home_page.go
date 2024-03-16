@@ -1044,7 +1044,7 @@ func (hp *HomePage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUn
 
 func (hp *HomePage) CalculateAssetsUSDBalance() {
 	if hp.AssetsManager.ExchangeRateFetchingEnabled() {
-		assetsBalance, err := hp.AssetsManager.CalculateTotalAssetsBalance()
+		assetsBalance, err := hp.AssetsManager.CalculateTotalAssetsBalance(true)
 		if err != nil {
 			log.Error(err)
 			return

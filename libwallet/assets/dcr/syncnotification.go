@@ -406,6 +406,11 @@ func (asset *Asset) discoverAddressesFinished() {
 	asset.syncData.isAddressDiscovery = false
 	asset.syncData.mu.Unlock()
 
+	err := asset.MarkWalletAsDiscoveredAccounts() // Mark address discovery as completed.
+	if err != nil {
+		log.Error(err)
+	}
+
 	asset.stopUpdatingAddressDiscoveryProgress()
 }
 
