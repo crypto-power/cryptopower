@@ -36,6 +36,8 @@ type Slider struct {
 	slideAction              *SlideAction
 	clicker                  gesture.Click
 	clicked                  bool
+	disableButtonDirection   bool
+	ControlInset             layout.Inset
 }
 
 var m4 = values.MarginPadding4
@@ -53,6 +55,12 @@ func (t *Theme) Slider() *Slider {
 		slideAction:              NewSlideAction(),
 	}
 
+	sl.ControlInset = layout.Inset{
+		Right:  values.MarginPadding16,
+		Left:   values.MarginPadding16,
+		Bottom: values.MarginPadding16,
+	}
+
 	sl.card = sl.t.Card()
 	sl.card.Radius = Radius(8)
 
@@ -67,6 +75,10 @@ func (t *Theme) Slider() *Slider {
 // GetSelectedIndex returns the index of the current slider item.
 func (s *Slider) GetSelectedIndex() int {
 	return s.selected
+}
+
+func (s *Slider) SetDisableDirectionBtn(disable bool) {
+	s.disableButtonDirection = disable
 }
 
 func (s *Slider) sliderItems(items []layout.Widget) []*sliderItem {
@@ -106,16 +118,15 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 					if len(s.slideItems) == 1 {
 						return D{}
 					}
-					return layout.Inset{
-						Right:  values.MarginPadding16,
-						Left:   values.MarginPadding16,
-						Bottom: values.MarginPadding16,
-					}.Layout(gtx, func(gtx C) D {
+					return s.ControlInset.Layout(gtx, func(gtx C) D {
 						return layout.Flex{
 							Axis: layout.Horizontal,
 						}.Layout(gtx,
 							layout.Rigid(s.selectedItemIndicatorLayout),
 							layout.Flexed(1, func(gtx C) D {
+								if s.disableButtonDirection {
+									return D{}
+								}
 								return layout.E.Layout(gtx, s.buttonLayout)
 							}),
 						)
