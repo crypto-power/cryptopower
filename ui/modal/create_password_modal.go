@@ -76,6 +76,7 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 
 	cm.confirmPasswordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrConfirmSpendingPassword))
 	cm.confirmPasswordEditor.Editor.SingleLine, cm.confirmPasswordEditor.Editor.Submit = true, true
+	cm.confirmPasswordEditor.AllowSpaceError(true)
 
 	// Set the default click functions
 	cm.negativeButtonClicked = func() {}
