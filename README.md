@@ -1,6 +1,33 @@
-# cryptopower
+# Cryptopower Wallet for Mobile and Desktop
 
 A cross-platform desktop wallet built with [gio](https://gioui.org/).
+
+**Links**
+
+* Website: https://cryptopower.dev
+* App Store: https://apps.apple.com/ca/app/cryptopower-wallet/id6472668308
+* Google Play: https://play.google.com/store/apps/details?id=com.dreacotdigital.cryptopower.mainnet
+* APK: https://github.com/crypto-power/cryptopower/releases
+* Linux: https://github.com/crypto-power/cryptopower/releases
+* Windows: https://github.com/crypto-power/cryptopower/releases
+* MacOS: https://github.com/crypto-power/cryptopower/releases
+
+**Features**
+
+- Multi-Coin support - Native SPV wallets for Decred, Bitcoin and Litecoin.
+- Coin Control - It allows users to select exact addresses and outputs to be used in a transaction.
+- CoinShuffle++ - CoinShuffle++ (CSPP) is a mixing protocol used to create Decred CoinJoin transactions.
+- Staking -  This allows users to purchase tickets via DCR’s [PoS (Proof-Of-Stake) consensus](https://docs.decred.org/proof-of-stake/overview/) implementation.
+- Governance - This allows users to vote on Decred Proposals, Consensus changes and Treasury Spendings.
+- Set gap limit - Users can choose a custom gap limit for use with address discovery.
+- Instant Exchange - Instant exchanging between assets using (Flyp.me, Godex, Changenow, Trocador).
+- Fee Rates API - This allows for custom fee selection when sending BTC transactions.
+- Transaction note - This allows for a note/description when sending transactions.
+- DCRDEX has been implemented with current trading pairs; LTC/DCR & DCR/BTC. It is currently under beta testing.
+- Users can now send transactions to multiple recipients at a go.
+- Users can now export transactions for better record keeping.
+- An improved User Interface for easier accessibility and use.
+- Users can switch between mainnet and testnet right from the settings page
 
 **Desktop App**
 | <img src="https://github.com/crypto-power/cryptopower/assets/25265396/0e738538-6a1f-4a96-8f34-dd478c4c878a" width="500">|<img src="https://github.com/crypto-power/cryptopower/assets/25265396/72946cbc-39da-4ff8-90c0-d3975640c25a" width="500"> |
