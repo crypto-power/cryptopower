@@ -129,7 +129,7 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem, hasVotingW
 func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	lb := l.Theme.Body1(values.String(values.StrNoAgendaYet))
-	lb.TextSize = l.ConvertTextSize(values.TextSize16)
+	lb.TextSize = values.TextSize16
 	lb.Color = l.Theme.Color.GrayText3
 	if syncing {
 		lb.Text = values.String(values.StrFetchingAgenda)

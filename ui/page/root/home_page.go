@@ -367,7 +367,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrTrade))
 	}
 
-	for _, item := range hp.sendReceiveNavItems {
+	for i, item := range hp.sendReceiveNavItems {
 		for item.Clickable.Clicked() {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
@@ -386,6 +386,9 @@ func (hp *HomePage) HandleUserInteractions() {
 				}
 				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, nil))
 			}
+
+			// This line fix hover send and receive button
+			hp.sendReceiveNavItems[i].Clickable = hp.Theme.NewClickable(true)
 		}
 	}
 

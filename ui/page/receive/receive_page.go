@@ -316,6 +316,7 @@ func (pg *Page) contentLayout(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								txt := pg.Theme.Body2(values.String(values.StrMyAddress))
+								txt.TextSize = values.TextSize16
 								txt.Color = pg.Theme.Color.GrayText2
 								return txt.Layout(gtx)
 							}),

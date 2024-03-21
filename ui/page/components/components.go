@@ -259,7 +259,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 // determines if the transaction should display additional information about the tx
 // such as the wallet the tx belong to etc. This is useful on pages where
 // the tx is displayed from multi wallets.
-func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, hideTxAssetInfo bool) D {
+func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, hideTxAssetInfo bool, isTruncateWalletName ...bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if wal == nil {
 		return D{}
@@ -269,7 +269,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 	txStatus := TransactionTitleIcon(l, wal, tx)
 	amount := wal.ToAmount(tx.Amount).String()
 	assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
-	walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
+	walName := l.Theme.Label(values.TextSize14, wal.GetWalletName())
 	grayText := l.Theme.Color.GrayText2
 	insetLeft := values.MarginPadding16
 
@@ -326,7 +326,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 								return txMixedTitle(gtx, l, wal, tx)
 							}
 
-							walBalTxt := l.Theme.Label(values.TextSize12, amount)
+							walBalTxt := l.Theme.Label(values.TextSize14, amount)
 							walBalTxt.Color = grayText
 							return walBalTxt.Layout(gtx)
 						}),
@@ -358,7 +358,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 							if amnt > 0 {
 								txt = fmt.Sprintf("+%.2f", amnt)
 							}
-							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, l.Theme.Label(values.TextSize12, txt).Layout)
+							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, l.Theme.Label(values.TextSize14, txt).Layout)
 						}),
 					)
 				}),
@@ -366,9 +366,9 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			txSize := l.ConvertTextSize(values.TextSize16)
-			if !hideTxAssetInfo {
-				txSize = values.TextSize12
-			}
+			// if !hideTxAssetInfo {
+			// 	txSize = values.TextSize14
+			// }
 			status := l.Theme.Label(l.ConvertTextSize(txSize), values.String(values.StrUnknown))
 			var dateTimeLbl cryptomaterial.Label
 			txConfirmations := TxConfirmations(wal, tx)
@@ -449,6 +449,8 @@ func walletIconAndName(gtx C, icon *cryptomaterial.Image, name cryptomaterial.La
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(icon.Layout12dp),
 		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Max.X = gtx.Constraints.Max.X / 2
+			name.MaxLines = 1
 			return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, name.Layout)
 		}),
 	)
@@ -494,7 +496,7 @@ func txStakingStatus(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transac
 
 	durationTxt := TimeAgo(tx.Timestamp)
 	durationTxt = fmt.Sprintf("%s %s", durationPrefix, durationTxt)
-	lbl := l.Theme.Label(values.TextSize12, durationTxt)
+	lbl := l.Theme.Label(values.TextSize14, durationTxt)
 	lbl.Color = l.Theme.Color.GrayText2
 	return lbl.Layout(gtx)
 }
@@ -509,14 +511,14 @@ func txMixedTitle(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transactio
 		layout.Rigid(func(gtx C) D {
 			// mix denomination
 			mixedDenom := wal.ToAmount(tx.MixDenomination).String()
-			txt := l.Theme.Label(values.TextSize12, mixedDenom)
+			txt := l.Theme.Label(values.TextSize14, mixedDenom)
 			txt.Color = l.Theme.Color.GrayText2
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			// Mixed outputs count
 			if tx.MixCount > 1 {
-				label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", tx.MixCount))
+				label := l.Theme.Label(values.TextSize14, fmt.Sprintf("x%d", tx.MixCount))
 				label.Color = l.Theme.Color.GrayText2
 				return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
 			}

@@ -1304,7 +1304,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 					lastUpdatedTimestamp := pg.AssetsManager.RateSource.LastUpdate().Unix()
 					text = values.String(values.StrUpdated) + " " + components.TimeAgo(lastUpdatedTimestamp)
 				}
-				lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+				lastUpdatedInfo := pg.Theme.Label(values.TextSize14, text)
 				lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 				return layout.Inset{Bottom: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
 			}),
