@@ -29,7 +29,7 @@ import (
 const (
 	StartPageID = "start_page"
 	// startupSettingsPageIndex is the index of the settings setup page.
-	startupSettingsPageIndex = 3
+	startupSettingsPageIndex = 1
 	// advancedSettingsOptionIndex is the index of the advanced settings option.
 	advancedSettingsOptionIndex = 1
 )
@@ -55,8 +55,7 @@ type onBoardingScreen struct {
 	title    string
 	subTitle string
 
-	image        *cryptomaterial.Image     // optional
-	indicatorBtn *cryptomaterial.Clickable // optional
+	image *cryptomaterial.Image
 }
 
 type startPage struct {
@@ -84,6 +83,8 @@ type startPage struct {
 
 	currentPageIndex            int
 	selectedSettingsOptionIndex int
+
+	introductionSlider *cryptomaterial.Slider
 }
 
 func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app.Page {
@@ -98,6 +99,15 @@ func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app
 		nextButton:          l.Theme.Button(values.String(values.StrNext)),
 		backButton:          l.Theme.NewClickable(true),
 		networkSwitchButton: l.Theme.NewClickable(true),
+		introductionSlider:  l.Theme.Slider(),
+	}
+
+	sp.introductionSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentWhite, 1)
+	sp.introductionSlider.SelectedIndicatorColor = sp.Theme.Color.Primary
+	sp.introductionSlider.SetDisableDirectionBtn(true)
+	sp.introductionSlider.ControlInset = layout.Inset{
+		Right: values.MarginPadding16,
+		Left:  values.MarginPadding16,
 	}
 
 	if len(isShuttingDown) > 0 {
@@ -155,26 +165,19 @@ func (sp *startPage) initPage() {
 
 	sp.onBoardingScreens = []onBoardingScreen{
 		{
-			title:        values.String(values.StrMultiWalletSupport),
-			subTitle:     values.String(values.StrMultiWalletSupportSubtext),
-			image:        sp.Theme.Icons.MultiWalletIcon,
-			indicatorBtn: sp.Theme.NewClickable(false),
+			title:    values.String(values.StrMultiWalletSupport),
+			subTitle: values.String(values.StrMultiWalletSupportSubtext),
+			image:    sp.Theme.Icons.MultiWalletIcon,
 		},
 		{
-			title:        values.String(values.StrCrossPlatform),
-			subTitle:     values.String(values.StrCrossPlatformSubtext),
-			image:        sp.Theme.Icons.CrossPlatformIcon,
-			indicatorBtn: sp.Theme.NewClickable(false),
+			title:    values.String(values.StrCrossPlatform),
+			subTitle: values.String(values.StrCrossPlatformSubtext),
+			image:    sp.Theme.Icons.CrossPlatformIcon,
 		},
 		{
-			title:        values.String(values.StrIntegratedExchangeFunctionality),
-			subTitle:     values.String(values.StrIntegratedExchangeSubtext),
-			image:        sp.Theme.Icons.IntegratedExchangeIcon,
-			indicatorBtn: sp.Theme.NewClickable(false),
-		},
-		{
-			title:    values.String(values.StrChooseSetupType),
-			subTitle: values.String(values.StrLanguage),
+			title:    values.String(values.StrIntegratedExchangeFunctionality),
+			subTitle: values.String(values.StrIntegratedExchangeSubtext),
+			image:    sp.Theme.Icons.IntegratedExchangeIcon,
 		},
 	}
 
@@ -256,12 +259,11 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	for sp.nextButton.Clicked() {
-		if sp.currentPageIndex == len(sp.onBoardingScreens)-1 { // index starts at 0
-			// save user setting when reached the last sceen
-			sp.updateSettings()
-			sp.currentPageIndex = -1 // we have reached the last screen.
-		} else {
+		if sp.currentPageIndex < startupSettingsPageIndex {
 			sp.currentPageIndex++
+		} else {
+			sp.updateSettings()
+			sp.currentPageIndex = -1
 		}
 	}
 
@@ -296,14 +298,6 @@ func (sp *startPage) HandleUserInteractions() {
 
 	for sp.backButton.Clicked() {
 		sp.currentPageIndex--
-	}
-
-	for i, onBoardingScreen := range sp.onBoardingScreens {
-		if i < startupSettingsPageIndex {
-			if onBoardingScreen.indicatorBtn.Clicked() {
-				sp.currentPageIndex = i
-			}
-		}
 	}
 
 	if sp.displayStartPage {
@@ -430,6 +424,22 @@ func (sp *startPage) loadingSection(gtx C) D {
 	})
 }
 
+func (sp *startPage) introScreenLayout(gtx C) D {
+	sliderWidget := make([]layout.Widget, 0)
+	for i := range sp.onBoardingScreens {
+		onBoardingScreen := sp.onBoardingScreens[i]
+		dims := func(gtx C) D {
+			return layout.Inset{
+				Bottom: values.MarginPadding40,
+			}.Layout(gtx, func(gtx C) D {
+				return sp.pageSections(gtx, onBoardingScreen)
+			})
+		}
+		sliderWidget = append(sliderWidget, dims)
+	}
+	return sp.introductionSlider.Layout(gtx, sliderWidget)
+}
+
 func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -449,12 +459,10 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 						Alignment: layout.Middle,
 						Axis:      layout.Vertical,
 					}.Layout(gtx,
-						layout.Rigid(sp.onBoardingScreenLayout),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
-								Top:    values.MarginPadding30,
 								Bottom: values.MarginPadding30,
-							}.Layout(gtx, sp.currentPageIndicatorLayout)
+							}.Layout(gtx, sp.introScreenLayout)
 						}),
 						layout.Rigid(func(gtx C) D {
 							gtx.Constraints.Min.X = gtx.Dp(values.MarginPaddingTransform(sp.IsMobileView(), values.MarginPadding420))
@@ -495,7 +503,7 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 									return layout.Inset{Top: values.MarginPaddingMinus200}.Layout(gtx, func(gtx C) D {
 										return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
-												titleLabel := sp.Theme.Label(values.TextSize16, sp.onBoardingScreens[sp.currentPageIndex].title)
+												titleLabel := sp.Theme.Label(values.TextSize16, values.String(values.StrChooseSetupType))
 												titleLabel.Font.Weight = font.Bold
 												return layout.Inset{Bottom: values.MarginPadding40}.Layout(gtx, titleLabel.Layout)
 											}),
@@ -522,16 +530,6 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 			})
 		}),
 	)
-}
-
-func (sp *startPage) onBoardingScreenLayout(gtx C) D {
-	list := layout.List{Axis: layout.Horizontal}
-	return list.Layout(gtx, len(sp.onBoardingScreens), func(gtx C, i int) D {
-		if i != sp.currentPageIndex {
-			return D{}
-		}
-		return sp.pageSections(gtx, sp.onBoardingScreens[sp.currentPageIndex])
-	})
 }
 
 func (sp *startPage) settingsOptionsLayout(gtx C) D {
@@ -610,7 +608,7 @@ func (sp *startPage) settingsOptionsLayout(gtx C) D {
 	)
 }
 
-func (sp *startPage) pageHeaderLayout(gtx C) layout.Dimensions {
+func (sp *startPage) pageHeaderLayout(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -651,35 +649,6 @@ func (sp *startPage) pageSections(gtx C, onBoardingScreen onBoardingScreen) D {
 			return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, lblSubTitle.Layout)
 		}),
 	)
-}
-
-func (sp *startPage) currentPageIndicatorLayout(gtx C) D {
-	if sp.currentPageIndex < 0 {
-		return D{}
-	}
-
-	list := &layout.List{Axis: layout.Horizontal}
-	return list.Layout(gtx, len(sp.onBoardingScreens), func(gtx C, i int) D {
-		return layout.Inset{Top: values.MarginPadding35, Bottom: values.MarginPadding35}.Layout(gtx, func(gtx C) D {
-			if i > startupSettingsPageIndex-1 {
-				return D{}
-			}
-
-			ic := cryptomaterial.NewIcon(sp.Theme.Icons.DotIcon)
-			ic.Color = values.TransparentColor(values.TransparentBlack, 0.2)
-			if i == sp.currentPageIndex {
-				ic.Color = sp.Theme.Color.Primary
-			}
-			return layout.Inset{
-				Right: values.MarginPadding4,
-				Left:  values.MarginPadding4,
-			}.Layout(gtx, func(gtx C) D {
-				return sp.onBoardingScreens[i].indicatorBtn.Layout(gtx, func(gtx C) D {
-					return ic.Layout(gtx, values.MarginPadding12)
-				})
-			})
-		})
-	})
 }
 
 func (sp *startPage) setLanguagePref(useExistingUserPreference bool) {

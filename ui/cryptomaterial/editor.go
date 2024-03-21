@@ -71,6 +71,9 @@ type Editor struct {
 	eventKey      int
 	isShowMenu    bool
 	isDisableMenu bool
+
+	// add space for error lable if it is true
+	isSpaceError bool
 }
 
 func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
@@ -253,6 +256,9 @@ func (e *Editor) layout(gtx C) D {
 												Left: e.m5,
 											}
 											return inset.Layout(gtx, e.errorLabel.Layout)
+										}
+										if e.isSpaceError {
+											return layout.Spacer{Height: values.MarginPadding18}.Layout(gtx)
 										}
 										return D{}
 									}),
@@ -489,4 +495,8 @@ func (e *Editor) ClearError() {
 
 func (e *Editor) IsDirty() bool {
 	return e.errorLabel.Text == ""
+}
+
+func (e *Editor) AllowSpaceError(allow bool) {
+	e.isSpaceError = allow
 }
