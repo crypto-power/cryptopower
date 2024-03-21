@@ -259,7 +259,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 // determines if the transaction should display additional information about the tx
 // such as the wallet the tx belong to etc. This is useful on pages where
 // the tx is displayed from multi wallets.
-func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, hideTxAssetInfo bool, isTruncateWalletName ...bool) D {
+func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, hideTxAssetInfo bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if wal == nil {
 		return D{}
@@ -366,9 +366,6 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			txSize := l.ConvertTextSize(values.TextSize16)
-			// if !hideTxAssetInfo {
-			// 	txSize = values.TextSize14
-			// }
 			status := l.Theme.Label(l.ConvertTextSize(txSize), values.String(values.StrUnknown))
 			var dateTimeLbl cryptomaterial.Label
 			txConfirmations := TxConfirmations(wal, tx)
