@@ -216,7 +216,7 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutSendReceive(gtx layout.Con
 
 func (bottomNavigationbar *BottomNavigationBar) OnViewCreated() {
 	bottomNavigationbar.axis = layout.Vertical
-	bottomNavigationbar.textSize = values.TextSize12
+	bottomNavigationbar.textSize = values.TextSize13
 	bottomNavigationbar.bottomInset = values.MarginPadding0
 	bottomNavigationbar.height = bottomNavigationBarHeight
 	bottomNavigationbar.alignment = layout.Middle

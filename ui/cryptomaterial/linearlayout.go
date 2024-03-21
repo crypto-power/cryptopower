@@ -64,7 +64,7 @@ func (ll LinearLayout) Layout(gtx C, children ...layout.FlexChild) D {
 							return fill(gtx, background)
 						}
 
-						if ll.Clickable.Hoverable && ll.Clickable.button.Hovered() {
+						if ll.Clickable.Hoverable && ll.Clickable.IsHovered() {
 							background = ll.Clickable.style.HoverColor
 						}
 						fill(gtx, background)
@@ -73,9 +73,9 @@ func (ll LinearLayout) Layout(gtx C, children ...layout.FlexChild) D {
 							drawInk(gtx, c, ll.Clickable.style.Color)
 						}
 
-						return ll.Clickable.button.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return ll.Clickable.button.Layout(gtx, func(gtx C) D {
 							semantic.Button.Add(gtx.Ops)
-							return layout.Dimensions{Size: gtx.Constraints.Min}
+							return D{Size: gtx.Constraints.Min}
 						})
 					}),
 					layout.Stacked(func(gtx C) D {
@@ -159,7 +159,7 @@ func (ll LinearLayout) GradientLayout(gtx C, assetType utils.AssetType, children
 						paint.PaintOp{}.Add(gtx.Ops)
 
 						if ll.Clickable == nil {
-							return layout.Dimensions{
+							return D{
 								Size: gtx.Constraints.Min,
 							}
 						}
@@ -172,10 +172,10 @@ func (ll LinearLayout) GradientLayout(gtx C, assetType utils.AssetType, children
 							drawInk(gtx, c, ll.Clickable.style.Color)
 						}
 
-						return ll.Clickable.button.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return ll.Clickable.button.Layout(gtx, func(gtx C) D {
 							semantic.Button.Add(gtx.Ops)
 
-							return layout.Dimensions{
+							return D{
 								Size: gtx.Constraints.Min,
 							}
 						})

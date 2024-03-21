@@ -306,15 +306,33 @@ func (rp *recipient) addressAndAmountlayout(gtx C) D {
 		widget = func(gtx C) D {
 			icon := cryptomaterial.NewIcon(rp.Theme.Icons.ActionSwapHoriz)
 			axis := layout.Horizontal
-			var flexChilds []layout.FlexChild
-			flexChilds = []layout.FlexChild{
-				layout.Flexed(0.45, rp.amount.amountEditor.Layout),
+			amountHeight := 0
+			align := layout.Middle
+			if !rp.IsMobileView() {
+				align = layout.Start
+			}
+			flexChilds := []layout.FlexChild{
+				layout.Flexed(0.45, func(gtx C) D {
+					dims := rp.amount.amountEditor.Layout(gtx)
+					amountHeight = dims.Size.Y
+					return dims
+				}),
 				layout.Flexed(0.1, func(gtx C) D {
-					return layout.Center.Layout(gtx, func(gtx C) D {
+					if rp.IsMobileView() {
+						return layout.Center.Layout(gtx, func(gtx C) D {
+							return icon.Layout(gtx, values.MarginPadding16)
+						})
+					}
+					return layout.Inset{Top: values.MarginPadding13}.Layout(gtx, func(gtx C) D {
 						return icon.Layout(gtx, values.MarginPadding16)
 					})
 				}),
-				layout.Flexed(0.45, rp.amount.usdAmountEditor.Layout),
+				layout.Flexed(0.45, func(gtx layout.Context) layout.Dimensions {
+					if rp.amount.amountEditor.HasError() {
+						gtx.Constraints.Min.Y = amountHeight
+					}
+					return rp.amount.usdAmountEditor.Layout(gtx)
+				}),
 			}
 			if rp.IsMobileView() {
 				axis = layout.Vertical
@@ -331,7 +349,7 @@ func (rp *recipient) addressAndAmountlayout(gtx C) D {
 			}
 			return layout.Flex{
 				Axis:      axis,
-				Alignment: layout.Middle,
+				Alignment: align,
 			}.Layout(gtx, flexChilds...)
 		}
 

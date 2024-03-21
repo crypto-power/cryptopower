@@ -119,6 +119,7 @@ var (
 
 	TextSize10   = unit.Sp(10)
 	TextSize12   = unit.Sp(12)
+	TextSize13   = unit.Sp(13)
 	TextSize13_6 = unit.Sp(13.6)
 	TextSize14   = unit.Sp(14)
 	TextSize16   = unit.Sp(16)
@@ -174,11 +175,9 @@ var (
 
 		switch size {
 		case TextSize16, TextSize18:
-			return TextSize14
-		case TextSize14:
-			return TextSize12
-		case TextSize20:
 			return TextSize16
+		case TextSize20:
+			return TextSize18
 		case TextSize22:
 			return TextSize18
 		case TextSize24:

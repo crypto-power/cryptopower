@@ -479,6 +479,10 @@ func (e *Editor) SetError(text string) {
 	e.errorLabel.Text = text
 }
 
+func (e *Editor) HasError() bool {
+	return e.errorLabel.Text != ""
+}
+
 func (e *Editor) ClearError() {
 	e.errorLabel.Text = ""
 }
