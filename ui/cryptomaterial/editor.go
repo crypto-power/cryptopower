@@ -126,7 +126,6 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 	m := material.Editor(t.Base, editor, hint)
 	m.TextSize = t.TextSize
 	m.Color = t.Color.Text
-	// m.Hint = hint
 	m.HintColor = t.Color.GrayText3
 
 	m0 := unit.Dp(0)
