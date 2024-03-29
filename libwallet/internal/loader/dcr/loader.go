@@ -50,6 +50,10 @@ type dcrLoader struct {
 	mixSplitLimit           int
 
 	mu sync.RWMutex
+
+	// dbMutex should be held when db transactions would circle back around
+	// and hold the mu lock to prevent a freeze.
+	dbMutex *sync.Mutex
 }
 
 // StakeOptions contains the various options necessary for stake mining.
@@ -77,6 +81,7 @@ type LoaderConf struct {
 	ManualTickets           bool
 	AccountGapLimit         int
 	MixSplitLimit           int
+	DBMutex                 *sync.Mutex
 }
 
 // NewLoader constructs a DCR Loader.
@@ -91,6 +96,7 @@ func NewLoader(cfg *LoaderConf) loader.AssetLoader {
 		manualTickets:           cfg.ManualTickets,
 		relayFee:                cfg.RelayFee,
 		mixSplitLimit:           cfg.MixSplitLimit,
+		dbMutex:                 cfg.DBMutex,
 
 		Loader: loader.NewLoader(cfg.DBDirPath),
 	}
@@ -341,6 +347,11 @@ func (l *dcrLoader) GetLoadedWallet() (*loader.LoadedWallets, bool) {
 // function returns without error.
 func (l *dcrLoader) UnloadWallet() error {
 	const op errors.Op = "loader.UnloadWallet"
+
+	// Hold the db mutex before holding the loader mutex. This allows
+	// callers to call *dcrLoader methods inside of db transactions.
+	l.dbMutex.Lock()
+	defer l.dbMutex.Unlock()
 
 	defer l.mu.Unlock()
 	l.mu.Lock()

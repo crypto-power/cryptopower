@@ -12,6 +12,9 @@ func (asset *Asset) IndexTransactions() error {
 		return utils.ErrDCRNotInitialized
 	}
 
+	asset.dbMutex.Lock()
+	defer asset.dbMutex.Unlock()
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 
 	var totalIndex int32
