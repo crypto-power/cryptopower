@@ -64,7 +64,6 @@ func (asset *Asset) DeriveAccountXpub(seedMnemonic string, wordSeedType sharedW.
 	} else {
 		seed, err = bip39.EntropyFromMnemonic(seedMnemonic)
 	}
-	// seed, err := walletseed.DecodeUserInput(seedMnemonic)
 	if err != nil {
 		return "", err
 	}

@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,8 +27,7 @@ type Wallet struct {
 	db        *storm.DB
 	logDir    string
 
-	EncryptedSeed []byte
-	// SeedType              WordSeedType
+	EncryptedSeed         []byte
 	IsRestored            bool
 	HasDiscoveredAccounts bool
 	PrivatePassphraseType int32
@@ -331,7 +329,7 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType,
 ) (*Wallet, error) {
 	if pass.WordSeedType.ToInt() == 0 {
-		return nil, errors.New("Please select word seed type.")
+		return nil, errors.New("please select word seed type.")
 	}
 
 	seed, err := generateSeed(assetType, pass.WordSeedType)
@@ -339,22 +337,19 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		return nil, err
 	}
 
-	fmt.Println("-----------generateSeed--------->", seed)
-
 	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seed)
 	if err != nil {
 		return nil, err
 	}
 
 	wallet := &Wallet{
-		Name:          pass.Name,
-		db:            params.DB,
-		dbDriver:      params.DbDriver,
-		rootDir:       params.RootDir,
-		logDir:        params.LogDir,
-		CreatedAt:     time.Now(),
-		EncryptedSeed: encryptedSeed,
-		// SeedType:              pass.WordSeedType,
+		Name:                  pass.Name,
+		db:                    params.DB,
+		dbDriver:              params.DbDriver,
+		rootDir:               params.RootDir,
+		logDir:                params.LogDir,
+		CreatedAt:             time.Now(),
+		EncryptedSeed:         encryptedSeed,
 		PrivatePassphraseType: pass.PrivatePassType,
 		HasDiscoveredAccounts: true,
 		Type:                  assetType,

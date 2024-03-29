@@ -299,37 +299,6 @@ func (pg *SeedRestore) seedEditorViewDesktop(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, columnFlexChilds...)
 }
 
-// func (pg *SeedRestore) seedEditorViewDesktop2(gtx C) D {
-// 	inset := layout.Inset{
-// 		Right: values.MarginPadding5,
-// 	}
-// 	return layout.Flex{}.Layout(gtx,
-// 		layout.Flexed(1, func(gtx C) D {
-// 			return inset.Layout(gtx, func(gtx C) D {
-// 				return pg.inputsGroup(gtx, pg.seedList, 7, 0)
-// 			})
-// 		}),
-// 		layout.Flexed(1, func(gtx C) D {
-// 			return inset.Layout(gtx, func(gtx C) D {
-// 				return pg.inputsGroup(gtx, pg.seedList, 7, 1)
-// 			})
-// 		}),
-// 		layout.Flexed(1, func(gtx C) D {
-// 			return inset.Layout(gtx, func(gtx C) D {
-// 				return pg.inputsGroup(gtx, pg.seedList, 7, 2)
-// 			})
-// 		}),
-// 		layout.Flexed(1, func(gtx C) D {
-// 			return inset.Layout(gtx, func(gtx C) D {
-// 				return pg.inputsGroup(gtx, pg.seedList, 6, 3)
-// 			})
-// 		}),
-// 		layout.Flexed(1, func(gtx C) D {
-// 			return pg.inputsGroup(gtx, pg.seedList, 6, 4)
-// 		}),
-// 	)
-// }
-
 func (pg *SeedRestore) seedEditorViewMobile(gtx layout.Context) layout.Dimensions {
 	inset := layout.Inset{
 		Right: values.MarginPadding5,
@@ -342,19 +311,6 @@ func (pg *SeedRestore) seedEditorViewMobile(gtx layout.Context) layout.Dimension
 		}),
 	)
 }
-
-// func (pg *SeedRestore) inputsGroup(gtx C, l *layout.List, len, startIndex int) D {
-// 	return l.Layout(gtx, len, func(gtx C, i int) D {
-// 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-// 			layout.Rigid(func(gtx C) D {
-// 				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-// 					pg.layoutSeedMenu(gtx, i*5+startIndex)
-// 					return pg.seedEditors.editors[i*5+startIndex].Layout(gtx)
-// 				})
-// 			}),
-// 		)
-// 	})
-// }
 
 func (pg *SeedRestore) inputsGroupMobile(gtx layout.Context, l *layout.List, len, startIndex int) layout.Dimensions {
 	return l.Layout(gtx, len, func(gtx C, i int) D {

@@ -123,8 +123,6 @@ func (wallet *Wallet) DecryptSeed(privatePassphrase string) (string, error) {
 		return "", errors.New(utils.ErrInvalid)
 	}
 
-	fmt.Println("-------EncryptedSeed------>", string(wallet.EncryptedSeed))
-
 	return decryptWalletSeed([]byte(privatePassphrase), wallet.EncryptedSeed)
 }
 
@@ -204,36 +202,17 @@ func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v strin
 		}
 	}
 
-	// Tạo entropy với 128 bits cho 12 từ seed phrase
-	// entropy, err := bip39.NewEntropy(128)
-	// if err != nil {
-	// 	fmt.Println("-----NewEntropy------error---->", err)
-	// 	return "", err
-	// }
-
-	// Create Seed phrase from entropy
-	// seedPhrase, err := bip39.NewMnemonic(entropy)
-	// if err != nil {
-	// 	fmt.Println("-----NewMnemonic------error---->", err)
-	// 	return "", err
-	// }
-
-	// fmt.Println("12 từ seed phrase:", seedPhrase)
-
 	if len(entropy) > 0 {
 		//Use bip39 for 12-word seeds and 24-word seeds
 		if wordSeedType == WordSeed33 {
 			return walletseed.EncodeMnemonic(entropy), nil
-		} else {
-			// Create Seed phrase from entropy
-			seedPhrase, err := bip39.NewMnemonic(entropy)
-			if err != nil {
-				fmt.Println("-----NewMnemonic------error---->", err)
-				return "", err
-			}
-			fmt.Println("12 từ seed phrase:", seedPhrase)
-			return seedPhrase, nil
 		}
+		// Create Seed phrase from entropy
+		seedPhrase, err := bip39.NewMnemonic(entropy)
+		if err != nil {
+			return "", err
+		}
+		return seedPhrase, nil
 	}
 
 	// Execution should never get here but error added as a safeguard to
@@ -246,16 +225,6 @@ func VerifySeed(seedMnemonic string, assetType utils.AssetType, seedType WordSee
 	_, err := DecodeSeedMnemonic(seedMnemonic, assetType, seedType)
 	return err == nil
 }
-
-// func DecodeSeedMnemonic1(seedMnemonic string, assetType utils.AssetType) (hashedSeed []byte, err error) {
-// 	switch assetType {
-// 	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
-// 		hashedSeed, err = bip39.EntropyFromMnemonic(seedMnemonic)
-// 	default:
-// 		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
-// 	}
-// 	return
-// }
 
 func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) (hashedSeed []byte, err error) {
 	switch assetType {
