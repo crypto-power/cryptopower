@@ -13,7 +13,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -62,9 +62,10 @@ func RetryFunc(retryAttempts int, sleepDur time.Duration, funcDesc string, errFu
 	return retryAttempts, fmt.Errorf("last error: %s", err)
 }
 
-func SeedWordsToHex(seedWords string) (string, error) {
+// seedtest
+func SeedWordsToHex(seedWords string, wordSeedType sharedW.WordSeedType) (string, error) {
 	var seedHex string
-	wordList := dcr.PGPWordList()
+	wordList := wordSeedType.AllSeeds()
 	wordIndexes := make(map[string]uint16, len(wordList))
 	for i, word := range wordList {
 		wordIndexes[strings.ToLower(word)] = uint16(i)
@@ -158,4 +159,25 @@ func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D 
 	}
 
 	return l.Theme.Label(l.ConvertTextSize(values.TextSize16), convertedAmountStr).Layout(gtx)
+}
+
+func GetWordSeedTypeDropdownItem() []cryptomaterial.DropDownItem {
+	return []cryptomaterial.DropDownItem{
+		{Text: values.String(values.Str12WordSeed)},
+		{Text: values.String(values.Str24WordSeed)},
+		{Text: values.String(values.Str33WordSeed)},
+	}
+}
+
+func GetWordSeedType(val string) sharedW.WordSeedType {
+	switch val {
+	case values.String(values.Str12WordSeed):
+		return sharedW.WordSeed12
+	case values.String(values.Str24WordSeed):
+		return sharedW.WordSeed24
+	case values.String(values.Str33WordSeed):
+		return sharedW.WordSeed33
+	default:
+		return 0
+	}
 }

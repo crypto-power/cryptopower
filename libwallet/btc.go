@@ -22,11 +22,12 @@ func initializeBTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 }
 
 // CreateNewBTCWallet creates a new BTC wallet and returns it.
-func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
+func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32, wordSeedType sharedW.WordSeedType) (sharedW.Asset, error) {
 	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
+		WordSeedType:    wordSeedType,
 	}
 	wallet, err := btc.CreateNewWallet(pass, mgr.params)
 	if err != nil {
@@ -51,11 +52,12 @@ func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublic
 }
 
 // RestoreBTCWallet restores a BTC wallet from a seed and returns it.
-func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
+func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, wordSeedType sharedW.WordSeedType, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
+		WordSeedType:    wordSeedType,
 	}
 	wallet, err := btc.RestoreWallet(seedMnemonic, pass, mgr.params)
 	if err != nil {
@@ -100,7 +102,7 @@ func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
 // BTCWalletWithSeed returns the ID of the BTC wallet that was created or restored
 // using the same seed as the one provided. Returns -1 if no wallet uses the
 // provided seed.
-func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
+func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string, wordSeedType sharedW.WordSeedType) (int, error) {
 	if len(seedMnemonic) == 0 {
 		return -1, errors.New(utils.ErrEmptySeed)
 	}
@@ -124,7 +126,7 @@ func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
 			if accs.AccountNumber == waddrmgr.ImportedAddrAccount {
 				continue
 			}
-			xpub, err := asset.DeriveAccountXpub(seedMnemonic,
+			xpub, err := asset.DeriveAccountXpub(seedMnemonic, wordSeedType,
 				accs.AccountNumber, wallet.Internal().BTC.ChainParams())
 			if err != nil {
 				return -1, err

@@ -3,6 +3,7 @@ package components
 import (
 	"errors"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -51,6 +52,7 @@ type CreateWallet struct {
 	confirmPasswordEditor cryptomaterial.Editor
 	watchOnlyCheckBox     cryptomaterial.CheckBoxStyle
 	materialLoader        material.LoaderStyle
+	seedTypeDropdown      *cryptomaterial.DropDown
 
 	continueBtn cryptomaterial.Button
 	restoreBtn  cryptomaterial.Button
@@ -120,10 +122,25 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
+	defaultIndex := &cryptomaterial.DropDownItem{
+		Text: values.String(values.Str33WordSeed),
+	}
+
+	pg.seedTypeDropdown = pg.Theme.DropDown(GetWordSeedTypeDropdownItem(), defaultIndex, values.TxDropdownGroup, false)
+	pg.seedTypeDropdown.SetConvertTextSize(pg.ConvertTextSize)
+	pg.seedTypeDropdown.FontWeight = font.SemiBold
+	pg.seedTypeDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
+	pg.seedTypeDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
+	pg.seedTypeDropdown.Background = &pg.Theme.Color.White
+
 	pg.backButton = GetBackButton(l)
 
 	return pg
 }
+
+// func (pg *CreateWallet) getWordSeedType() sharedW.WordSeedType {
+// 	return GetWordSeedType(pg.seedTypeDropdown.Selected())
+// }
 
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
@@ -320,26 +337,41 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 }
 
 func (pg *CreateWallet) createNewWallet(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(layout.Spacer{Height: values.MarginPadding14}.Layout),
-		layout.Rigid(pg.walletName.Layout),
-		layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-		layout.Rigid(pg.passwordEditor.Layout),
-		layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-		layout.Rigid(pg.confirmPasswordEditor.Layout),
-		layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{}.Layout(gtx,
-				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						if pg.isLoading {
-							gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
-							gtx.Constraints.Min.X = gtx.Constraints.Max.X
-							return pg.materialLoader.Layout(gtx)
-						}
-						return pg.continueBtn.Layout(gtx)
-					})
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding50}.Layout),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding14}.Layout),
+				layout.Rigid(pg.walletName.Layout),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+				layout.Rigid(pg.passwordEditor.Layout),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+				layout.Rigid(pg.confirmPasswordEditor.Layout),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{}.Layout(gtx,
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, func(gtx C) D {
+								if pg.isLoading {
+									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.materialLoader.Layout(gtx)
+								}
+								return pg.continueBtn.Layout(gtx)
+							})
+						}),
+					)
 				}),
+			)
+		}),
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+			return layout.Flex{Alignment: layout.Middle,
+				Spacing: layout.SpaceBetween}.Layout(gtx,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, pg.Theme.Label(textSize16, values.String(values.StrWordSeedType)).Layout)
+				}),
+				layout.Rigid(pg.seedTypeDropdown.Layout),
 			)
 		}),
 	)
@@ -429,13 +461,15 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				pg.isLoading = false
 			}()
 			pg.isLoading = true
-
+			walletName := pg.walletName.Editor.Text()
+			pass := pg.passwordEditor.Editor.Text()
+			seedType := GetWordSeedType(pg.seedTypeDropdown.Selected())
 			switch *pg.assetTypeSelector.SelectedAssetType() {
 			case libutils.DCRWalletAsset:
-				_, err := pg.AssetsManager.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				_, err := pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
-						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+						pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
 						return
 					}
 
@@ -445,10 +479,10 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				}
 
 			case libutils.BTCWalletAsset:
-				_, err := pg.AssetsManager.CreateNewBTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				_, err := pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
-						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+						pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
 						return
 					}
 
@@ -458,10 +492,10 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				}
 
 			case libutils.LTCWalletAsset:
-				_, err := pg.AssetsManager.CreateNewLTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				_, err := pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
-						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+						pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
 						return
 					}
 

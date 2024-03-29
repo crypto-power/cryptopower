@@ -8,6 +8,7 @@ import (
 
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/hdkeychain/v3"
+	"github.com/tyler-smith/go-bip39"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -25,11 +26,12 @@ func initializeDCRWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 }
 
 // CreateNewDCRWallet creates a new DCR wallet and returns it.
-func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
+func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32, wordSeedType sharedW.WordSeedType) (sharedW.Asset, error) {
 	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
+		WordSeedType:    wordSeedType,
 	}
 	wallet, err := dcr.CreateNewWallet(pass, mgr.params)
 	if err != nil {
@@ -60,11 +62,12 @@ func (mgr *AssetsManager) CreateNewDCRWatchOnlyWallet(walletName, extendedPublic
 }
 
 // RestoreDCRWallet restores a DCR wallet from a seed and returns it.
-func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
+func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, wordSeedType sharedW.WordSeedType, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
+		WordSeedType:    wordSeedType,
 	}
 	wallet, err := dcr.RestoreWallet(seedMnemonic, pass, mgr.params)
 	if err != nil {
@@ -112,12 +115,12 @@ func (mgr *AssetsManager) DCRWalletWithXPub(xpub string) (int, error) {
 // DCRWalletWithSeed returns the ID of the DCR wallet that was created or restored
 // using the same seed as the one provided. Returns -1 if no wallet uses the
 // provided seed.
-func (mgr *AssetsManager) DCRWalletWithSeed(seedMnemonic string) (int, error) {
+func (mgr *AssetsManager) DCRWalletWithSeed(seedMnemonic string, wordSeedType sharedW.WordSeedType) (int, error) {
 	if len(seedMnemonic) == 0 {
 		return -1, errors.New(utils.ErrEmptySeed)
 	}
 
-	newSeedLegacyXPUb, newSeedSLIP0044XPUb, err := deriveBIP44AccountXPubsForDCR(seedMnemonic,
+	newSeedLegacyXPUb, newSeedSLIP0044XPUb, err := deriveBIP44AccountXPubsForDCR(seedMnemonic, wordSeedType,
 		dcr.DefaultAccountNum, mgr.chainsParams.DCR)
 	if err != nil {
 		return -1, err
@@ -149,8 +152,15 @@ func (mgr *AssetsManager) DCRWalletWithSeed(seedMnemonic string) (int, error) {
 
 // deriveBIP44AccountXPubForDCR derives and returns the legacy and SLIP0044 account
 // xpubs using the BIP44 HD path for accounts: m/44'/<coin type>'/<account>'.
-func deriveBIP44AccountXPubsForDCR(seedMnemonic string, account uint32, params *chaincfg.Params) (string, string, error) {
-	seed, err := walletseed.DecodeUserInput(seedMnemonic)
+func deriveBIP44AccountXPubsForDCR(seedMnemonic string, wordSeedType sharedW.WordSeedType, account uint32, params *chaincfg.Params) (string, string, error) {
+	var seed []byte
+	var err error
+	if wordSeedType == sharedW.WordSeed33 {
+		seed, err = walletseed.DecodeUserInput(seedMnemonic)
+	} else {
+		seed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+	}
+	// seed, err := walletseed.DecodeUserInput(seedMnemonic)
 	if err != nil {
 		return "", "", err
 	}

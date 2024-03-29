@@ -44,13 +44,13 @@ type Restore struct {
 	seedInputEditor   cryptomaterial.Editor
 	confirmSeedButton cryptomaterial.Button
 	restoreInProgress bool
+	seedTypeDropdown  *cryptomaterial.DropDown
 }
 
 func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func()) *Restore {
 	pg := &Restore{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateRestorePageID),
-		seedRestorePage:  NewSeedRestorePage(l, walletName, walletType, onRestoreComplete),
 		tabIndex:         0,
 		restoreComplete:  onRestoreComplete,
 		walletName:       walletName,
@@ -75,7 +75,23 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 	pg.tabs.DisableUniform(true)
 	pg.tabs.SetDisableAnimation(true)
 
+	defaultIndex := &cryptomaterial.DropDownItem{
+		Text: values.String(values.Str33WordSeed),
+	}
+
+	pg.seedTypeDropdown = pg.Theme.DropDown(GetWordSeedTypeDropdownItem(), defaultIndex, values.TxDropdownGroup, false)
+	pg.seedTypeDropdown.SetConvertTextSize(pg.ConvertTextSize)
+	pg.seedTypeDropdown.FontWeight = font.SemiBold
+	pg.seedTypeDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
+	pg.seedTypeDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
+
+	pg.seedRestorePage = NewSeedRestorePage(l, walletName, walletType, onRestoreComplete, pg.getWordSeedType)
+
 	return pg
+}
+
+func (pg *Restore) getWordSeedType() sharedW.WordSeedType {
+	return GetWordSeedType(pg.seedTypeDropdown.Selected())
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -120,22 +136,30 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 
 func (pg *Restore) seedWordsLayout(gtx C) D {
 	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
-					}),
-					layout.Rigid(pg.Theme.Label(textSize16, values.String(values.StrPasteSeedWords)).Layout),
-				)
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: values.MarginPadding50}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				if pg.toggleSeedInput.IsChecked() || pg.tabIndex == 1 {
+					return pg.seedInputLayout(gtx)
+				}
+				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
 			})
 		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			if pg.toggleSeedInput.IsChecked() || pg.tabIndex == 1 {
-				return pg.seedInputLayout(gtx)
-			}
-			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					inset := layout.Inset{Top: values.MarginPadding8}
+					return inset.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return layout.Flex{}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
+							}),
+							layout.Rigid(pg.Theme.Label(textSize16, values.String(values.StrPasteSeedWords)).Layout),
+						)
+					})
+				}),
+				layout.Rigid(pg.seedTypeDropdown.Layout),
+			)
 		}),
 	)
 }
@@ -210,6 +234,10 @@ func (pg *Restore) HandleUserInteractions() {
 			go pg.restoreFromSeedEditor()
 		}
 	}
+
+	if pg.seedTypeDropdown.Changed() {
+		pg.seedRestorePage.resetSeeds()
+	}
 }
 
 // KeysToHandle returns an expression that describes a set of key combinations
@@ -247,7 +275,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		pg.tabIndex = 1
 	}
 
-	if !sharedW.VerifySeed(seedOrHex, pg.walletType) {
+	if !sharedW.VerifySeed(seedOrHex, pg.walletType, pg.getWordSeedType()) {
 		errMsg := values.String(values.StrInvalidHex)
 		if pg.tabIndex == 0 {
 			errMsg = values.String(values.StrInvalidSeedPhrase)
@@ -258,7 +286,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		return
 	}
 
-	walletWithSameSeed, err := pg.AssetsManager.WalletWithSeed(pg.walletType, seedOrHex)
+	walletWithSameSeed, err := pg.AssetsManager.WalletWithSeed(pg.walletType, seedOrHex, pg.getWordSeedType())
 	if err != nil {
 		log.Error(err)
 		errMsg := values.String(values.StrInvalidHex)
@@ -284,7 +312,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		ShowWalletInfoTip(true).
 		SetParent(pg).
 		SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-			_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass)
+			_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
 			if err != nil {
 				errString := err.Error()
 				if err.Error() == libutils.ErrExist {

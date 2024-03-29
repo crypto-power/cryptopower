@@ -936,4 +936,8 @@ const EN = `
 "updateAPI" = "Check for Update API"
 "newUpdateText" = "A new update, %s, is available"
 "updateAvailable" = "Update Available"
+"12WordSeed" = "12-word seed"
+"24WordSeed" = "24-word seed"
+"33WordSeed" = "33-word seed"
+"wordSeedType" = "Word Seed Type:"
 `

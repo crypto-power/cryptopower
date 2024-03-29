@@ -10,7 +10,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -49,9 +48,10 @@ type VerifySeedPage struct {
 	toggleSeedInput  *cryptomaterial.Switch
 	seedInputEditor  cryptomaterial.Editor
 	verifySeedButton cryptomaterial.Button
+	wordSeedType     sharedW.WordSeedType
 }
 
-func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, wordSeedType sharedW.WordSeedType, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
@@ -62,6 +62,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 
 		redirectCallback: redirect,
 		toggleSeedInput:  l.Theme.Switch(),
+		wordSeedType:     wordSeedType,
 	}
 	pg.list = &widget.List{
 		List: layout.List{
@@ -90,7 +91,8 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
-	allSeeds := dcr.PGPWordList()
+	// allSeeds := wordlist.PGPWordList() //seedtest
+	allSeeds := pg.wordSeedType.AllSeeds()
 
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
@@ -99,7 +101,7 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
-		shuffledSeed := pg.getMultiSeed(index, dcr.PGPWordList()) // using allSeeds here modifies the slice
+		shuffledSeed := pg.getMultiSeed(index, allSeeds) // using allSeeds here modifies the slice
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 

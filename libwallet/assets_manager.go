@@ -611,28 +611,28 @@ func (mgr *AssetsManager) RootDirFileSizeInBytes(dataDir string) (int64, error) 
 
 // WalletWithSeed returns the ID of the wallet with the given seed. If a wallet
 // with the given seed does not exist, it returns -1.
-func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemonic string) (int, error) {
+func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemonic string, wordSeedType sharedW.WordSeedType) (int, error) {
 	switch walletType {
 	case utils.BTCWalletAsset:
-		return mgr.BTCWalletWithSeed(seedMnemonic)
+		return mgr.BTCWalletWithSeed(seedMnemonic, wordSeedType)
 	case utils.DCRWalletAsset:
-		return mgr.DCRWalletWithSeed(seedMnemonic)
+		return mgr.DCRWalletWithSeed(seedMnemonic, wordSeedType)
 	case utils.LTCWalletAsset:
-		return mgr.LTCWalletWithSeed(seedMnemonic)
+		return mgr.LTCWalletWithSeed(seedMnemonic, wordSeedType)
 	default:
 		return -1, utils.ErrAssetUnknown
 	}
 }
 
 // RestoreWallet restores a wallet from the given seed.
-func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
+func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32, wordSeedType sharedW.WordSeedType) (sharedW.Asset, error) {
 	switch walletType {
 	case utils.BTCWalletAsset:
-		return mgr.RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+		return mgr.RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase, wordSeedType, privatePassphraseType)
 	case utils.DCRWalletAsset:
-		return mgr.RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+		return mgr.RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase, wordSeedType, privatePassphraseType)
 	case utils.LTCWalletAsset:
-		return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+		return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, wordSeedType, privatePassphraseType)
 	default:
 		return nil, utils.ErrAssetUnknown
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
 	"github.com/ltcsuite/ltcwallet/waddrmgr"
+	"github.com/tyler-smith/go-bip39"
 )
 
 const (
@@ -56,8 +57,14 @@ func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 }
 
 // DeriveAccountXpub derives the xpub for the given account.
-func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
-	seed, err := walletseed.DecodeUserInput(seedMnemonic)
+func (asset *Asset) DeriveAccountXpub(seedMnemonic string, wordSeedType sharedW.WordSeedType, account uint32, params *chaincfg.Params) (xpub string, err error) {
+	var seed []byte
+	if wordSeedType == sharedW.WordSeed33 {
+		seed, err = walletseed.DecodeUserInput(seedMnemonic)
+	} else {
+		seed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+	}
+	// seed, err := walletseed.DecodeUserInput(seedMnemonic)
 	if err != nil {
 		return "", err
 	}

@@ -56,8 +56,8 @@ type SaveSeedPage struct {
 	seed     string
 	rows     []saveSeedRow
 
-	redirectCallback Redirectfunc
-
+	redirectCallback     Redirectfunc
+	wordSeedType         sharedW.WordSeedType
 	seedFormatRadioGroup *widget.Enum
 }
 
@@ -98,6 +98,17 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 	return pg
 }
 
+func (pg *SaveSeedPage) setWordSeedType(words string) {
+	switch len(words) {
+	case 12:
+		pg.wordSeedType = sharedW.WordSeed12
+	case 24:
+		pg.wordSeedType = sharedW.WordSeed24
+	case 33:
+		pg.wordSeedType = sharedW.WordSeed33
+	}
+}
+
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
@@ -119,40 +130,15 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			}
 			m.Dismiss()
 			pg.seed = seed
+			pg.setWordSeedType(seed)
 
 			wordList := strings.Split(seed, " ")
-			row1 := wordList[:11]
-			row2 := wordList[11:22]
-			row3 := wordList[22:]
-
-			// for mobile
-			rowMobile1 := wordList[:17]
-			rowMobile2 := wordList[17:]
-			rows := make([]saveSeedRow, 0)
-
 			if pg.IsMobileView() {
-				for i := range rowMobile1 {
-					r2 := ""
-					if i < len(rowMobile2) {
-						r2 = rowMobile2[i]
-					}
-					rows = append(rows, saveSeedRow{
-						rowIndex: i + 1,
-						word1:    rowMobile1[i],
-						word2:    r2,
-					})
-				}
+				pg.rows = divideWordsIntoRows(wordList, 2)
 			} else {
-				for i := range row1 {
-					rows = append(rows, saveSeedRow{
-						rowIndex: i + 1,
-						word1:    row1[i],
-						word2:    row2[i],
-						word3:    row3[i],
-					})
-				}
+				pg.rows = divideWordsIntoRows(wordList, 3)
 			}
-			pg.rows = rows
+
 			return true
 		}).
 		SetNegativeButtonCallback(func() {
@@ -162,6 +148,37 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
+func divideWordsIntoRows(words []string, numColumns int) []saveSeedRow {
+	var rows []saveSeedRow
+
+	numRows := len(words) / numColumns
+	if len(words)%numColumns != 0 {
+		numRows++
+	}
+
+	for i := 0; i < numRows; i++ {
+		var row saveSeedRow
+		row.rowIndex = i
+
+		idx := i
+		if idx < len(words) {
+			row.word1 = words[idx]
+		}
+		idx += numRows
+		if idx < len(words) {
+			row.word2 = words[idx]
+		}
+		idx += numRows
+		if idx < len(words) && numColumns == 3 {
+			row.word3 = words[idx]
+		}
+
+		rows = append(rows, row)
+	}
+
+	return rows
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -169,7 +186,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) HandleUserInteractions() {
 	for pg.actionButton.Clicked() {
-		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.wallet, pg.seed, pg.redirectCallback))
+		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.wallet, pg.seed, pg.wordSeedType, pg.redirectCallback))
 	}
 }
 
@@ -292,7 +309,7 @@ func (pg *SaveSeedPage) hexLayout(gtx C) D {
 							if seedString != "" {
 								switch pg.seedFormatRadioGroup.Value {
 								case seedHexFormat:
-									hexString, _ := components.SeedWordsToHex(pg.seed)
+									hexString, _ := components.SeedWordsToHex(pg.seed, pg.wordSeedType)
 									pg.hexLabel.Text = hexString
 								case seedWordFormat:
 									pg.hexLabel.Text = pg.seed[:117] + "..."
