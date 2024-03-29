@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"os"
@@ -203,11 +204,11 @@ func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v strin
 	}
 
 	if len(entropy) > 0 {
-		//Use bip39 for 12-word seeds and 24-word seeds
 		if wordSeedType == WordSeed33 {
 			return walletseed.EncodeMnemonic(entropy), nil
 		}
 		// Create Seed phrase from entropy
+		// Use bip39 for 12-word seeds and 24-word seeds
 		seedPhrase, err := bip39.NewMnemonic(entropy)
 		if err != nil {
 			return "", err
@@ -232,7 +233,16 @@ func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType
 		if seedType == WordSeed33 {
 			hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
 		} else {
-			hashedSeed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+			words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
+			if len(words) == 1 {
+				var err error
+				hashedSeed, err = hex.DecodeString(words[0])
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				hashedSeed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+			}
 		}
 	default:
 		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)

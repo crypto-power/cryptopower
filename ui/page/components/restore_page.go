@@ -172,24 +172,31 @@ func (pg *Restore) seedInputLayout(gtx C) D {
 		pg.seedInputEditor.Hint = values.String(values.StrEnterWalletHex)
 		pg.confirmSeedButton.Text = values.String(values.StrValidateWalHex)
 	}
-	return layout.Inset{
-		Top: values.MarginPadding16,
-	}.Layout(gtx, func(gtx C) D {
-		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-					layout.Rigid(pg.seedInputEditor.Layout),
-					layout.Rigid(func(gtx C) D {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return layout.E.Layout(gtx, func(gtx C) D {
-							return VerticalInset(values.MarginPadding16).Layout(gtx, pg.confirmSeedButton.Layout)
-						})
-					}),
-				)
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{
+				Top: values.MarginPadding56,
+			}.Layout(gtx, func(gtx C) D {
+				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+					return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+							layout.Rigid(pg.seedInputEditor.Layout),
+							layout.Rigid(func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return layout.E.Layout(gtx, func(gtx C) D {
+									return VerticalInset(values.MarginPadding16).Layout(gtx, pg.confirmSeedButton.Layout)
+								})
+							}),
+						)
+					})
+				})
 			})
-		})
-	})
+		}),
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			return layout.E.Layout(gtx, pg.seedTypeDropdown.Layout)
+		}),
+	)
 }
 
 func (pg *Restore) indexLayout(gtx C) D {

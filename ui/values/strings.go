@@ -880,7 +880,7 @@ const (
 	StrWhatToCallWallet                      = "whatToCallWallet"
 	StrWord                                  = "word"
 	StrWouldTradeCex                         = "wouldTradeCex"
-	StrWriteDownAll33Words                   = "writeDownAll33Words"
+	StrWriteDownAllXWords                    = "writeDownAllXWords"
 	StrWriteDownSeed                         = "writeDownSeed"
 	StrWroteAllWords                         = "wroteAllWords"
 	StrXInputsConsumed                       = "xInputsConsumed"

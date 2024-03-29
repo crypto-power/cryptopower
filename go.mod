@@ -58,6 +58,7 @@ require (
 	github.com/nxadm/tail v1.4.8
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
+	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/yeqown/go-qrcode v1.5.1
 	go.etcd.io/bbolt v1.3.8
 	golang.org/x/crypto v0.11.0
@@ -197,7 +198,6 @@ require (
 	github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
-	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
