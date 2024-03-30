@@ -142,6 +142,9 @@ func (pg *SeedRestore) setEditorFocus() {
 }
 
 func (pg *SeedRestore) seedEditorsHandle(gtx C) {
+	if !pg.Load.IsMobileView() {
+		return
+	}
 	for i := range pg.seedEditors.editors {
 		if pg.seedEditors.editors[i].Edit.FirstPressed() {
 			pg.seedList.ScrollTo(i)
@@ -158,14 +161,8 @@ func (pg *SeedRestore) seedEditorsHandle(gtx C) {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SeedRestore) Layout(gtx C) D {
-	var body D
-	if pg.Load.IsMobileView() {
-		body = pg.restoreMobile(gtx)
-		pg.seedEditorsHandle(gtx)
-	} else {
-		body = pg.restore(gtx)
-	}
-
+	body := pg.restore(gtx)
+	pg.seedEditorsHandle(gtx)
 	pg.resetSeedFields.SetEnabled(pg.updateSeedResetBtn())
 	seedValid, _ := pg.validateSeeds()
 	pg.validateSeed.SetEnabled(seedValid)
@@ -198,45 +195,6 @@ func (pg *SeedRestore) restore(gtx C) D {
 	)
 }
 
-func (pg *SeedRestore) restoreMobile(gtx C) D {
-	dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Stack{Alignment: layout.N}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Orientation: layout.Vertical,
-						Width:       cryptomaterial.MatchParent,
-						Height:      cryptomaterial.WrapContent,
-						Background:  pg.Theme.Color.Surface,
-						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-						Padding:     layout.UniformInset(values.MarginPadding15),
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Bottom: values.MarginPadding10,
-							}.Layout(gtx, pg.Theme.Body1(values.String(values.StrEnterSeedPhrase)).Layout)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Flexed(1, func(gtx C) D {
-									return pg.seedEditorViewMobile(gtx)
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.resetSeedFields.Layout(gtx)
-								}),
-							)
-						}),
-					)
-				}),
-			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding1, Top: values.MarginPadding20}.Layout(gtx, pg.restoreButtonSection)
-		}),
-	)
-	return dims
-}
-
 func (pg *SeedRestore) restoreButtonSection(gtx C) D {
 	card := pg.Theme.Card()
 	card.Radius = cryptomaterial.Radius(0)
@@ -256,6 +214,8 @@ func (pg *SeedRestore) divideIntoColumns(eidtors []*cryptomaterial.RestoreEditor
 	numRows := lenEditors / numColumns
 	if remainCount != 0 {
 		numRows++
+	} else {
+		remainCount = 1
 	}
 
 	// Create a 2D slice to hold the columns
@@ -283,7 +243,11 @@ func (pg *SeedRestore) divideIntoColumns(eidtors []*cryptomaterial.RestoreEditor
 }
 
 func (pg *SeedRestore) seedEditorViewDesktop(gtx C) D {
-	rows := pg.divideIntoColumns(pg.seedEditors.editors, 5, pg.getWordSeedType().ToInt())
+	numberOfColumn := 5
+	if pg.IsMobileView() {
+		numberOfColumn = 1
+	}
+	rows := pg.divideIntoColumns(pg.seedEditors.editors, numberOfColumn, pg.getWordSeedType().ToInt())
 	columnFlexChilds := make([]layout.FlexChild, 0)
 	for i := range rows {
 		j := i
@@ -297,32 +261,6 @@ func (pg *SeedRestore) seedEditorViewDesktop(gtx C) D {
 	}
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, columnFlexChilds...)
-}
-
-func (pg *SeedRestore) seedEditorViewMobile(gtx layout.Context) layout.Dimensions {
-	inset := layout.Inset{
-		Right: values.MarginPadding5,
-	}
-	return layout.Flex{}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return inset.Layout(gtx, func(gtx C) D {
-				return pg.inputsGroupMobile(gtx, pg.seedList, 33, 0)
-			})
-		}),
-	)
-}
-
-func (pg *SeedRestore) inputsGroupMobile(gtx layout.Context, l *layout.List, len, startIndex int) layout.Dimensions {
-	return l.Layout(gtx, len, func(gtx C, i int) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					pg.layoutSeedMenu(gtx, i*1+startIndex)
-					return pg.seedEditors.editors[i*1+startIndex].Layout(gtx)
-				})
-			}),
-		)
-	})
 }
 
 func (pg *SeedRestore) onSuggestionSeedsClicked() {
