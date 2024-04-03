@@ -314,7 +314,11 @@ func (pg *SaveSeedPage) hexLayout(gtx C) D {
 									hexString, _ := components.SeedWordsToHex(pg.seed, pg.wordSeedType)
 									pg.hexLabel.Text = hexString
 								case seedWordFormat:
-									pg.hexLabel.Text = pg.seed[:117] + "..."
+									if len(pg.seed) >= 117 {
+										pg.hexLabel.Text = pg.seed[:117] + "..."
+									} else {
+										pg.hexLabel.Text = pg.seed
+									}
 								}
 							}
 							return pg.hexLabel.Layout(gtx)

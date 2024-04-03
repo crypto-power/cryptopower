@@ -138,10 +138,6 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 	return pg
 }
 
-// func (pg *CreateWallet) getWordSeedType() sharedW.WordSeedType {
-// 	return GetWordSeedType(pg.seedTypeDropdown.Selected())
-// }
-
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
