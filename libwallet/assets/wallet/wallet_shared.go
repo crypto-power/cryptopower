@@ -329,7 +329,7 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType,
 ) (*Wallet, error) {
 	if pass.WordSeedType.ToInt() == 0 {
-		return nil, errors.New("please select word seed type.")
+		return nil, errors.New("please select word seed type")
 	}
 
 	seed, err := generateSeed(assetType, pass.WordSeedType)
