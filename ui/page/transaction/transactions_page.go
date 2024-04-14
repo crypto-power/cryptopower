@@ -31,7 +31,7 @@ const (
 	TransactionsPageID = "Transactions"
 
 	// pageSize defines the number of transactions that can be fetched at ago.
-	pageSize = int32(20)
+	pageSize = int32(30)
 )
 
 type (
