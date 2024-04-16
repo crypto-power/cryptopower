@@ -130,6 +130,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 	tempSize := s.pageSize
 	//Scroll up and down without load more
 	if s.data != nil {
+		temStartIdx := s.data.idxStart
 		if isScrollUp {
 			if s.data.idxStart <= 0 {
 				s.mu.Unlock()
@@ -145,7 +146,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 			}
 			s.data.idxEnd = s.data.idxEnd - int(s.pageSize)
 			s.itemsCount = len(s.data.items)
-			if s.data.idxStart > 0 {
+			if temStartIdx > 0 {
 				s.list.Position.Offset = s.list.Position.Length / len(s.data.items) * (int(s.pageSize) - 4)
 			}
 			s.mu.Unlock()
@@ -158,7 +159,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 				s.data.idxStart = s.data.idxStart + int(s.pageSize)
 				s.data.idxEnd = s.data.idxEnd + int(s.pageSize)
 				s.itemsCount = len(s.data.items)
-				if s.data.idxStart > 0 {
+				if temStartIdx > 0 {
 					s.list.Position.Offset = s.list.Position.Length / len(s.data.items) * (int(s.pageSize) - 4)
 				}
 				s.mu.Unlock()
