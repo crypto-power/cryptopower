@@ -92,8 +92,6 @@ func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator,
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
 		s.isLoadingItems = false
-		// offset will be added back so that the earlier page is recreated.
-		// s.offset -= s.pageSize
 	}
 
 	if isResetList {
@@ -105,8 +103,9 @@ func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator,
 		s.cacheData = nil
 	}
 	s.mu.Unlock()
-
-	s.fetchScrollData(isScrollUp, window)
+	if s.data == nil {
+		s.fetchScrollData(isScrollUp, window)
+	}
 }
 
 // fetchScrollData fetchs the scroll data and manages data returned depending on
@@ -210,7 +209,9 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 	s.data.idxEnd += itemCount
 	s.offset += int32(itemCount)
 	s.itemsCount = len(s.data.items)
-	s.list.Position.Offset = s.list.Position.Length / len(s.data.items) * (int(s.pageSize) - 4)
+	if s.data.idxStart > 0 {
+		s.list.Position.Offset = s.list.Position.Length / len(s.data.items) * (int(s.pageSize) - 4)
+	}
 	if itemCount < int(s.pageSize) {
 		s.loadedAllItems = true
 	}
