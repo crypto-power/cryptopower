@@ -139,7 +139,7 @@ func (pg *Restore) seedWordsLayout(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{Top: values.MarginPadding50}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-				if pg.toggleSeedInput.IsChecked() || pg.tabIndex == 1 {
+				if pg.toggleSeedInput.IsChecked() {
 					return pg.seedInputLayout(gtx)
 				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
@@ -172,10 +172,15 @@ func (pg *Restore) seedInputLayout(gtx C) D {
 		pg.seedInputEditor.Hint = values.String(values.StrEnterWalletHex)
 		pg.confirmSeedButton.Text = values.String(values.StrValidateWalHex)
 	}
+	mt := values.MarginPadding56
+	isHideDropdown := pg.toggleSeedInput.IsChecked() && pg.tabIndex == 0
+	if isHideDropdown {
+		mt = values.MarginPadding5
+	}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
-				Top: values.MarginPadding56,
+				Top: mt,
 			}.Layout(gtx, func(gtx C) D {
 				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 					return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
@@ -194,6 +199,9 @@ func (pg *Restore) seedInputLayout(gtx C) D {
 			})
 		}),
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			if isHideDropdown {
+				return D{}
+			}
 			return layout.E.Layout(gtx, pg.seedTypeDropdown.Layout)
 		}),
 	)

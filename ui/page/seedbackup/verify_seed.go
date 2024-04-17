@@ -91,7 +91,6 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, wordSeed
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
-	// allSeeds := wordlist.PGPWordList() //seedtest
 	allSeeds := pg.wordSeedType.AllSeeds()
 
 	listGroupSeed := make([]*layout.List, 0)
