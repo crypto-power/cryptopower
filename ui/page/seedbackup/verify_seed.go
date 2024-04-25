@@ -1,7 +1,6 @@
 package seedbackup
 
 import (
-	"fmt"
 	"math/rand"
 	"strings"
 
@@ -97,8 +96,8 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	seedWords := strings.Split(pg.seed, " ")
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
-		index := seedPosition(strings.TrimSpace(word), allSeeds)
-		shuffledSeed := pg.getMultiSeed(index, allSeeds) // using allSeeds here modifies the slice
+		index := seedPosition(word, allSeeds)
+		shuffledSeed := pg.getMultiSeed(index, pg.wordSeedType.AllSeeds()) // using allSeeds here modifies the slice
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 
@@ -141,11 +140,10 @@ func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shu
 
 func seedPosition(seed string, allSeeds []string) int {
 	for i := range allSeeds {
-		if strings.TrimSpace(allSeeds[i]) == strings.TrimSpace(seed) {
+		if allSeeds[i] == seed {
 			return i
 		}
 	}
-	fmt.Println("NOT FOUND====>", seed)
 	return -1
 }
 
