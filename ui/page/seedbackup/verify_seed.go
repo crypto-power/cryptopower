@@ -1,9 +1,9 @@
 package seedbackup
 
 import (
+	"fmt"
 	"math/rand"
 	"strings"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -92,14 +92,12 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, wordSeed
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
 	allSeeds := pg.wordSeedType.AllSeeds()
-
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
 	seedWords := strings.Split(pg.seed, " ")
-	rand.Seed(time.Now().UnixNano())
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
-		index := seedPosition(word, allSeeds)
+		index := seedPosition(strings.TrimSpace(word), allSeeds)
 		shuffledSeed := pg.getMultiSeed(index, allSeeds) // using allSeeds here modifies the slice
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
@@ -143,10 +141,11 @@ func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shu
 
 func seedPosition(seed string, allSeeds []string) int {
 	for i := range allSeeds {
-		if allSeeds[i] == seed {
+		if strings.TrimSpace(allSeeds[i]) == strings.TrimSpace(seed) {
 			return i
 		}
 	}
+	fmt.Println("NOT FOUND====>", seed)
 	return -1
 }
 

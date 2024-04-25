@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/asdine/storm"
@@ -440,8 +441,12 @@ func (s WordSeedType) ToInt() int {
 func (s WordSeedType) AllSeeds() []string {
 	switch s {
 	case WordSeed24, WordSeed12:
+		fmt.Println("-------BIP39WordList--------")
 		return wordlist.BIP39WordList()
-	default:
+	case WordSeed33:
+		fmt.Println("--------PGPWordList-------")
 		return wordlist.PGPWordList()
+	default:
+		return []string{}
 	}
 }
