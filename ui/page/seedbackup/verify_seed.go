@@ -97,7 +97,8 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
-		shuffledSeed := pg.getMultiSeed(index, pg.wordSeedType.AllSeeds()) // using allSeeds here modifies the slice
+		//use pg.wordSeedType.AllSeeds() instead of allSeeds because getMultiSeed() will change the slice
+		shuffledSeed := pg.getMultiSeed(index, pg.wordSeedType.AllSeeds())
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 
