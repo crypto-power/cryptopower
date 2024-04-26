@@ -144,21 +144,21 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 			}
 			s.mu.Unlock()
 			return
-		} else {
-			if s.data.idxEnd < len(s.cacheData)-1 {
-				itemsDown := s.cacheData[s.data.idxEnd+1 : s.data.idxEnd+int(s.pageSize)]
-				s.data.items = s.data.items[int(s.pageSize):]
-				s.data.items = append(s.data.items, itemsDown...)
-				s.data.idxStart = s.data.idxStart + int(s.pageSize)
-				s.data.idxEnd = s.data.idxEnd + int(s.pageSize)
-				s.itemsCount = len(s.data.items)
-				if temStartIdx > 0 {
-					s.list.Position.Offset = s.list.Position.Length / len(s.data.items) * (int(s.pageSize) - 4)
-				}
-				s.mu.Unlock()
-				return
-			}
 		}
+		if s.data.idxEnd < len(s.cacheData)-1 {
+			itemsDown := s.cacheData[s.data.idxEnd+1 : s.data.idxEnd+int(s.pageSize)]
+			s.data.items = s.data.items[int(s.pageSize):]
+			s.data.items = append(s.data.items, itemsDown...)
+			s.data.idxStart = s.data.idxStart + int(s.pageSize)
+			s.data.idxEnd = s.data.idxEnd + int(s.pageSize)
+			s.itemsCount = len(s.data.items)
+			if temStartIdx > 0 {
+				s.list.Position.Offset = s.list.Position.Length / len(s.data.items) * (int(s.pageSize) - 4)
+			}
+			s.mu.Unlock()
+			return
+		}
+
 	}
 
 	// handle when need to load more items.
