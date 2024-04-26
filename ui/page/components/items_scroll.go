@@ -24,11 +24,6 @@ const (
 	up   scrollDerection = 2
 )
 
-type scrollItemCache[T any] struct {
-	item  T
-	index int
-}
-
 type dataList[T any] struct {
 	items    []T
 	idxStart int
@@ -120,12 +115,11 @@ func (s *Scroll[T]) IsLoadingData() bool {
 }
 
 func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
-	s.mu.Lock()
 	if s.isLoadingItems || s.queryFunc == nil {
-		s.mu.Unlock()
 		return
 	}
 
+	s.mu.Lock()
 	tempSize := s.pageSize
 	//Scroll up and down without load more
 	if s.data != nil {
@@ -167,7 +161,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 		}
 	}
 
-	// Logic for first load
+	// handle when need to load more items.
 	if s.data == nil {
 		s.data = &dataList[T]{
 			idxEnd: -1,
@@ -185,6 +179,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 		s.isLoadingItems = false
 		return
 	}
+
 	s.mu.Lock()
 	s.isLoadingItems = false
 	if err != nil {
@@ -216,79 +211,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 		s.loadedAllItems = true
 	}
 	s.mu.Unlock()
-
 }
-
-// func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
-// 	temDirection := down
-// 	if isScrollUp {
-// 		s.direction = up
-// 	}
-// 	if s.loadedAllItems && temDirection != s.direction {
-// 		s.loadedAllItems = false
-// 	}
-
-// 	s.direction = temDirection
-// 	s.mu.Lock()
-// 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
-// 		s.mu.Unlock()
-// 		return
-// 	}
-
-// 	if isScrollUp {
-// 		s.list.Position.Offset = s.scrollView*-1 + 1
-// 		s.list.Position.OffsetLast = 1
-// 		s.offset -= s.pageSize
-// 	} else {
-// 		s.list.Position.Offset = 1
-// 		s.list.Position.OffsetLast = s.scrollView*-1 + 1
-// 		if s.data != nil {
-// 			s.offset += s.pageSize
-// 		}
-// 	}
-
-// 	s.isLoadingItems = true
-// 	itemsCountTemp := s.itemsCount
-// 	if s.itemsCount == -1 {
-// 		itemsCountTemp = 0
-// 	}
-// 	s.itemsCount = -1 // should trigger loading icon
-// 	offset := s.offset
-// 	tempSize := s.pageSize
-
-// 	s.mu.Unlock()
-
-// 	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize)
-
-// 	s.mu.Lock()
-
-// 	if err != nil {
-// 		errModal := modal.NewErrorModal(s.load, err.Error(), modal.DefaultClickFunc())
-// 		window.ShowModal(errModal)
-// 		s.isLoadingItems = false
-// 		s.mu.Unlock()
-// 		return
-// 	}
-
-// 	if itemsLen < int(tempSize) || itemsLen == 0 {
-// 		// Since this is the last page set of items, prevent further scroll down queries.
-// 		s.loadedAllItems = true
-// 	}
-
-// 	if itemsLen > 0 {
-// 		s.data = items
-// 		s.itemsCount = itemsLen
-// 	} else {
-// 		s.itemsCount = itemsCountTemp
-// 	}
-// 	s.isLoadingItems = false
-// 	s.mu.Unlock()
-
-// 	if isReset {
-// 		// resets the values for use on the next iteration.
-// 		s.resetList()
-// 	}
-// }
 
 // FetchedData returns the latest queried data.
 func (s *Scroll[T]) FetchedData() []T {
@@ -317,16 +240,6 @@ func (s *Scroll[T]) List() *cryptomaterial.ListStyle {
 	return s.listStyle
 }
 
-func (s *Scroll[T]) resetList() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.offset = 0
-	s.loadedAllItems = false
-}
-
-var offset = 0
-
 // OnScrollChangeListener listens for the scroll bar movement and update the items
 // list view accordingly. FetchScrollData needs to be invoked first before calling
 // this function.
@@ -339,17 +252,7 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 		return
 	}
 
-	if offset != s.list.Position.Offset {
-		offset = s.list.Position.Offset
-	}
-
 	scrollPos := s.list.Position
-	// Ignore if the query hasn't been invoked to fetch list items.
-
-	// if s.itemsCount < int(s.pageSize) && s.itemsCount != -1 {
-	// 	s.mu.Unlock()
-	// 	return
-	// }
 
 	// Ignore if the query is in theprocess of fetching the list items.
 	if s.itemsCount == -1 && s.isLoadingItems {
