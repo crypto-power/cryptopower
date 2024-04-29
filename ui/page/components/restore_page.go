@@ -125,7 +125,7 @@ func (pg *Restore) Layout(gtx C) D {
 	return cryptomaterial.UniformPadding(gtx, body, pg.IsMobileView())
 }
 
-func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
+func (pg *Restore) restoreLayout(gtx C) D {
 	return pg.tabs.Layout(gtx, func(gtx C) D {
 		if pg.tabs.SelectedIndex() == 0 {
 			return pg.seedWordsLayout(gtx)
@@ -137,19 +137,19 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 func (pg *Restore) seedWordsLayout(gtx C) D {
 	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: values.MarginPadding50}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		layout.Expanded(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding50}.Layout(gtx, func(gtx C) D {
 				if pg.toggleSeedInput.IsChecked() {
 					return pg.seedInputLayout(gtx)
 				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
 			})
 		}),
-		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+		layout.Expanded(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					inset := layout.Inset{Top: values.MarginPadding8}
-					return inset.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+					return inset.Layout(gtx, func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
@@ -172,39 +172,20 @@ func (pg *Restore) seedInputLayout(gtx C) D {
 		pg.seedInputEditor.Hint = values.String(values.StrEnterWalletHex)
 		pg.confirmSeedButton.Text = values.String(values.StrValidateWalHex)
 	}
-	mt := values.MarginPadding56
-	isHideDropdown := pg.toggleSeedInput.IsChecked() && pg.tabIndex == 0
-	if isHideDropdown {
-		mt = values.MarginPadding5
-	}
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{
-				Top: mt,
-			}.Layout(gtx, func(gtx C) D {
-				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-					return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-							layout.Rigid(pg.seedInputEditor.Layout),
-							layout.Rigid(func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return layout.E.Layout(gtx, func(gtx C) D {
-									return VerticalInset(values.MarginPadding16).Layout(gtx, pg.confirmSeedButton.Layout)
-								})
-							}),
-						)
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+				layout.Rigid(pg.seedInputEditor.Layout),
+				layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return VerticalInset(values.MarginPadding16).Layout(gtx, pg.confirmSeedButton.Layout)
 					})
-				})
-			})
-		}),
-		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-			if isHideDropdown {
-				return D{}
-			}
-			return layout.E.Layout(gtx, pg.seedTypeDropdown.Layout)
-		}),
-	)
+				}),
+			)
+		})
+	})
 }
 
 func (pg *Restore) indexLayout(gtx C) D {

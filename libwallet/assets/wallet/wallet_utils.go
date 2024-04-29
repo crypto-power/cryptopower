@@ -230,19 +230,19 @@ func VerifySeed(seedMnemonic string, assetType utils.AssetType, seedType WordSee
 func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) (hashedSeed []byte, err error) {
 	switch assetType {
 	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
+		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
+		if len(words) == 1 {
+			var err error
+			hashedSeed, err = hex.DecodeString(words[0])
+			if err != nil {
+				return nil, err
+			}
+			return hashedSeed, err
+		}
 		if seedType == WordSeed33 {
 			hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
 		} else {
-			words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
-			if len(words) == 1 {
-				var err error
-				hashedSeed, err = hex.DecodeString(words[0])
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				hashedSeed, err = bip39.EntropyFromMnemonic(seedMnemonic)
-			}
+			hashedSeed, err = bip39.EntropyFromMnemonic(seedMnemonic)
 		}
 	default:
 		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
