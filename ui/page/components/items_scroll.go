@@ -121,7 +121,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 
 	s.mu.Lock()
 	tempSize := s.pageSize
-	//Scroll up and down without load more
+	// Scroll up and down without load more
 	if s.data != nil {
 		temStartIdx := s.data.idxStart
 		if isScrollUp {
@@ -161,7 +161,7 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 
 	}
 
-	// handle when need to load more items.
+	// handle when there is a need to load more items.
 	if s.data == nil {
 		s.data = &dataList[T]{
 			idxEnd: -1,
