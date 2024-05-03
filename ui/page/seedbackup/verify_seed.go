@@ -97,8 +97,7 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
-		// use pg.wordSeedType.AllSeeds() instead of allSeeds because getMultiSeed() will change the slice
-		shuffledSeed := pg.getMultiSeed(index, pg.wordSeedType.AllSeeds())
+		shuffledSeed := pg.getMultiSeed(index, allSeeds)
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 
@@ -108,6 +107,8 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 }
 
 func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shuffledSeedWords {
+	tempAllSeeds := make([]string, len(allSeeds))
+	_ = copy(tempAllSeeds, allSeeds)
 	shuffledSeed := shuffledSeedWords{
 		selectedIndex: -1,
 		words:         make([]string, 0),
@@ -120,16 +121,16 @@ func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shu
 		return cl
 	}
 
-	shuffledSeed.words = append(shuffledSeed.words, allSeeds[realSeedIndex])
+	shuffledSeed.words = append(shuffledSeed.words, tempAllSeeds[realSeedIndex])
 	shuffledSeed.clickables = append(shuffledSeed.clickables, clickable())
-	allSeeds = removeSeed(allSeeds, realSeedIndex)
+	tempAllSeeds = removeSeed(tempAllSeeds, realSeedIndex)
 
 	for i := 0; i < 3; i++ {
-		randomSeed := rand.Intn(len(allSeeds))
+		randomSeed := rand.Intn(len(tempAllSeeds))
 
-		shuffledSeed.words = append(shuffledSeed.words, allSeeds[randomSeed])
+		shuffledSeed.words = append(shuffledSeed.words, tempAllSeeds[randomSeed])
 		shuffledSeed.clickables = append(shuffledSeed.clickables, clickable())
-		allSeeds = removeSeed(allSeeds, randomSeed)
+		tempAllSeeds = removeSeed(tempAllSeeds, randomSeed)
 	}
 
 	rand.Shuffle(len(shuffledSeed.words), func(i, j int) {
