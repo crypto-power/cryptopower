@@ -17,6 +17,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -875,6 +876,7 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, title, su
 		lbl := l.Theme.Label(values.TextSize20, title)
 		lbl.Font.Weight = font.SemiBold
 		lbl.Color = l.Theme.Color.PageNavText
+		lbl.Alignment = text.Middle
 		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
 	}
 
