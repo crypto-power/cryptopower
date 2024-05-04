@@ -91,10 +91,11 @@ func (tm *TextInputModal) SetTextWithTemplate(template string, walletName ...str
 	case AllowUnmixedSpendingTemplate:
 		tm.textCustomTemplate = allowUnspendUnmixedAcct(tm.Load)
 	case RemoveWalletInfoTemplate:
-		if walletName == nil {
-			walletName[0] = ""
+		var walletNameStr string
+		if walletName != nil {
+			walletNameStr = walletName[0]
 		}
-		tm.textCustomTemplate = removeWalletInfo(tm.Load, walletName[0])
+		tm.textCustomTemplate = removeWalletInfo(tm.Load, walletNameStr)
 	case SetGapLimitTemplate:
 		tm.textCustomTemplate = setGapLimitText(tm.Load)
 	}
