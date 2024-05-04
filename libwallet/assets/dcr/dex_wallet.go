@@ -33,6 +33,7 @@ import (
 
 // DEXWallet wraps *Asset and implements dexdcr.Wallet.
 type DEXWallet struct {
+	ctx                  context.Context
 	w                    *dcrwallet.Wallet
 	helper               WalletHelper
 	tradingAccountNumber int32
@@ -60,7 +61,8 @@ func NewDEXWallet(w *dcrwallet.Wallet, helper WalletHelper, tradingAccountNumber
 
 // Connect establishes a connection to the wallet.
 // Part of the Wallet interface.
-func (dw *DEXWallet) Connect(_ context.Context) error {
+func (dw *DEXWallet) Connect(ctx context.Context) error {
+	dw.ctx = ctx
 	return nil
 }
 
@@ -78,7 +80,7 @@ func (dw *DEXWallet) SpvMode() bool {
 // Accounts returns the names of the accounts for use by the exchange wallet.
 func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 	var accts dexdcr.XCWalletAccounts
-	accountName, err := dw.w.AccountName(context.Background(), uint32(dw.tradingAccountNumber))
+	accountName, err := dw.w.AccountName(dw.ctx, uint32(dw.tradingAccountNumber))
 	if err == nil {
 		accts.PrimaryAccount = accountName
 	} else {
@@ -91,13 +93,13 @@ func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 
 	unMixedAcctNum := dw.helper.UnmixedAccountNumber()
 	mixedAcctNum := dw.helper.MixedAccountNumber()
-	unMixedAcctName, err := dw.w.AccountName(context.Background(), uint32(unMixedAcctNum))
+	unMixedAcctName, err := dw.w.AccountName(dw.ctx, uint32(unMixedAcctNum))
 	if err != nil {
 		log.Errorf("error retrieving unmixed account name: %v", err)
 		return accts
 	}
 
-	mixedAcctName, err := dw.w.AccountName(context.Background(), uint32(mixedAcctNum))
+	mixedAcctName, err := dw.w.AccountName(dw.ctx, uint32(mixedAcctNum))
 	if err != nil {
 		log.Errorf("error retrieving mixed account name: %v", err)
 		return accts
