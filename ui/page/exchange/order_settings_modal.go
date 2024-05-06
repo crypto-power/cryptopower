@@ -139,7 +139,7 @@ func (osm *orderSettingsModal) OnResume() {
 	go osm.feeRateSelector.UpdatedFeeRate(osm.sourceWalletSelector.SelectedWallet())
 }
 
-func (osm *orderSettingsModal) SetLoading(loading bool) {
+func (osm *orderSettingsModal) setLoading(loading bool) {
 	osm.Modal.SetDisabled(loading)
 }
 

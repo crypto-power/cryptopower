@@ -78,12 +78,10 @@ func (avm *agendaVoteModal) sendVotes(_, password string, _ *modal.CreatePasswor
 	err := avm.dcrImpl.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", password)
 	if err != nil {
 		avm.CreatePasswordModal.SetError(err.Error())
-		avm.CreatePasswordModal.SetLoading(false)
 		return false
 	}
 	successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), modal.DefaultClickFunc())
 	avm.ParentWindow().ShowModal(successModal)
-	avm.Dismiss()
 	avm.onPreferenceUpdated()
 	return true
 }

@@ -214,7 +214,6 @@ func (sp *startPage) unlock() {
 			err := sp.openWalletsAndDisplayHomePage(password)
 			if err != nil {
 				m.SetError(err.Error())
-				m.SetLoading(false)
 				return false
 			}
 

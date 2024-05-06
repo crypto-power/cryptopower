@@ -379,7 +379,6 @@ func (pg *BTCAcctDetailsPage) HandleUserInteractions() {
 				err := pg.wallet.RenameAccount(int32(pg.account.AccountNumber), newName)
 				if err != nil {
 					tim.SetError(err.Error())
-					tim.SetLoading(false)
 					return false
 				}
 				pg.account.AccountName = newName

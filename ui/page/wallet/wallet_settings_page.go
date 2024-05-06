@@ -374,7 +374,6 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 				newPassword, sharedW.PassphraseTypePass)
 			if err != nil {
 				m.SetError(err.Error())
-				m.SetLoading(false)
 				return false
 			}
 
@@ -383,7 +382,6 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 				err := pg.AssetsManager.DexClient().SetWalletPassword([]byte(dexPass), assetID, []byte(newPassword))
 				if err != nil {
 					m.SetError(fmt.Errorf("Failed to update your dex wallet password, try again: %v", err).Error())
-					m.SetLoading(false)
 
 					// Undo password change.
 					if err = pg.wallet.ChangePrivatePassphraseForWallet(newPassword, currentPassword, sharedW.PassphraseTypePass); err != nil {
@@ -410,7 +408,6 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 			err := pg.AssetsManager.DexClient().Login([]byte(password))
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 
@@ -430,7 +427,6 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 			err := pg.wallet.UnlockWallet(password)
 			if err != nil {
 				pm.SetError(err.Error())
-				pm.SetLoading(false)
 				return false
 			}
 			pg.wallet.LockWallet()
@@ -469,7 +465,6 @@ func (pg *SettingsPage) deleteWalletModal() {
 		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
 			if walletName != pg.wallet.GetWalletName() {
 				m.SetError(values.String(values.StrWalletNameMismatch))
-				m.SetLoading(false)
 				return false
 			}
 
@@ -487,7 +482,6 @@ func (pg *SettingsPage) deleteWalletModal() {
 				err := pg.AssetsManager.DeleteWallet(pg.wallet.GetWalletID(), "")
 				if err != nil {
 					m.SetError(err.Error())
-					m.SetLoading(false)
 				} else {
 					walletDeleted()
 				}
@@ -498,14 +492,10 @@ func (pg *SettingsPage) deleteWalletModal() {
 				EnableName(false).
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmToRemove)).
-				SetNegativeButtonCallback(func() {
-					m.SetLoading(false)
-				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 					err := pg.AssetsManager.DeleteWallet(pg.wallet.GetWalletID(), password)
 					if err != nil {
 						pm.SetError(err.Error())
-						pm.SetLoading(false)
 						return false
 					}
 
@@ -530,14 +520,12 @@ func (pg *SettingsPage) renameWalletModal() {
 			name := strings.TrimSpace(newName)
 			if !utils.ValidateLengthName(name) {
 				tm.SetError(values.String(values.StrWalletNameLengthError))
-				tm.SetLoading(false)
 				return false
 			}
 
 			err := pg.wallet.RenameWallet(name)
 			if err != nil {
 				tm.SetError(err.Error())
-				tm.SetLoading(false)
 				return false
 			}
 			info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrWalletRenamed), modal.DefaultClickFunc())
@@ -557,7 +545,6 @@ func (pg *SettingsPage) showSPVPeerDialog() {
 			addrs, ok := validatePeerAddressStr(ipAddress)
 			if !ok {
 				tim.SetError(values.StringF(values.StrValidateHostErr, addrs))
-				tim.SetLoading(false)
 				return false
 			}
 			pg.wallet.SetSpecificPeer(addrs)
@@ -678,7 +665,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 						errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errorModal)
 						im.Dismiss()
-
 						return false
 					}
 
@@ -726,7 +712,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				SetPositiveButtonCallback(func(textInput string, tim *modal.TextInputModal) bool {
 					if textInput != values.String(values.StrAwareOfRisk) {
 						tim.SetError(values.String(values.StrConfirmPending))
-						tim.SetLoading(false)
 					} else {
 						pg.wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
 						tim.Dismiss()
@@ -799,7 +784,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				_, err := pg.wallet.CreateNewAccount(accountName, password)
 				if err != nil {
 					m.SetError(err.Error())
-					m.SetLoading(false)
 					return false
 				}
 				pg.loadWalletAccount()
@@ -826,25 +810,21 @@ func (pg *SettingsPage) gapLimitModal() {
 			val, err := strconv.ParseUint(gapLimit, 10, 32)
 			if err != nil {
 				tm.SetError(values.String(values.StrGapLimitInputErr))
-				tm.SetLoading(false)
 				return false
 			}
 
 			if val < 1 || val > 1000 {
 				tm.SetError(values.String(values.StrGapLimitInputErr))
-				tm.SetLoading(false)
 				return false
 			}
 			gLimit := uint32(val)
-			tm.SetLoading(true)
 
 			err = pg.wallet.(*dcr.Asset).DiscoverUsage(gLimit)
 			if err != nil {
 				tm.SetError(err.Error())
-				tm.SetLoading(false)
 				return false
 			}
-			tm.SetLoading(false)
+
 			info := modal.NewSuccessModal(pg.Load, values.String(values.StrAddressDiscoveryStarted), modal.DefaultClickFunc()).
 				Body(values.String(values.StrAddressDiscoveryStartedBody))
 			pg.ParentWindow().ShowModal(info)

@@ -469,7 +469,6 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 				err := pg.dcrWallet.StartAccountMixer(password)
 				if err != nil {
 					pg.Toast.NotifyError(err.Error())
-					pm.SetLoading(false)
 					return
 				}
 				pm.Dismiss()

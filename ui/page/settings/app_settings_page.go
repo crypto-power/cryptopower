@@ -627,13 +627,11 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 				if !utils.StringNotEmpty(password) {
 					pm.SetError(values.String(values.StrErrPassEmpty))
-					pm.SetLoading(false)
 					return false
 				}
 				err := pg.AssetsManager.VerifyStartupPassphrase(password)
 				if err != nil {
 					pm.SetError(err.Error())
-					pm.SetLoading(false)
 					return false
 				}
 				pm.Dismiss()
@@ -647,13 +645,11 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
 						if !utils.StringNotEmpty(newPassword) {
 							m.SetError(values.String(values.StrErrPassEmpty))
-							m.SetLoading(false)
 							return false
 						}
 						err := pg.AssetsManager.ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
-							m.SetLoading(false)
 							return false
 						}
 						pg.showNoticeSuccess(values.String(values.StrStartupPassConfirm))
@@ -678,13 +674,11 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
 					if !utils.StringNotEmpty(password) {
 						m.SetError(values.String(values.StrErrPassEmpty))
-						m.SetLoading(false)
 						return false
 					}
 					err := pg.AssetsManager.SetStartupPassphrase(password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
-						m.SetLoading(false)
 						return false
 					}
 					pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrEnabled)))
@@ -707,7 +701,6 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 					err := pg.AssetsManager.RemoveStartupPassphrase(password)
 					if err != nil {
 						pm.SetError(err.Error())
-						pm.SetLoading(false)
 						return false
 					}
 					pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrDisabled)))
@@ -732,7 +725,6 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 				dexSeed, err := pg.AssetsManager.DexClient().ExportSeed([]byte(password))
 				if err != nil {
 					pm.SetError(err.Error())
-					pm.SetLoading(false)
 					return false
 				}
 
