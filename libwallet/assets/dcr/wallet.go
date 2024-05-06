@@ -40,13 +40,17 @@ type Asset struct {
 	accountMixerNotificationListeners map[string]*AccountMixerNotificationListener
 	txAndBlockNotificationListeners   map[string]*sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener      *sharedW.BlocksRescanProgressListener
+
+	// dbMutex should be held when db transactions would circle back around
+	// and hold the mu lock to prevent a freeze.
+	dbMutex *sync.Mutex
 }
 
 // Verify that DCR implements the shared assets interface.
 var _ sharedW.Asset = (*Asset)(nil)
 
 // initWalletLoader setups the loader.
-func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {
+func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string, dbMutex *sync.Mutex) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
 	cfg := &sharedW.WConfig{
 		GapLimit:                20,
@@ -82,6 +86,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 		ManualTickets:           cfg.ManualTickets,
 		AccountGapLimit:         cfg.AccountGapLimit,
 		MixSplitLimit:           cfg.MixSplitLimit,
+		DBMutex:                 dbMutex,
 	}
 	walletLoader := dcr.NewLoader(loaderCfg)
 
@@ -105,7 +110,8 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	var dbMutex sync.Mutex
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver, &dbMutex)
 
 	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.DCRWalletAsset)
 	if err != nil {
@@ -121,6 +127,7 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
 		vspClients:                        make(map[string]*vsp.Client),
+		dbMutex:                           &dbMutex,
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
@@ -142,7 +149,8 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	var dbMutex sync.Mutex
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver, &dbMutex)
 	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
 		ldr, params, utils.DCRWalletAsset)
 	if err != nil {
@@ -157,6 +165,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		},
 		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
+		dbMutex:                           &dbMutex,
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
@@ -177,7 +186,8 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	var dbMutex sync.Mutex
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver, &dbMutex)
 	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, err
@@ -192,6 +202,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.
 		vspClients:                        make(map[string]*vsp.Client),
 		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
+		dbMutex:                           &dbMutex,
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
@@ -212,7 +223,8 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	var dbMutex sync.Mutex
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver, &dbMutex)
 	dcrWallet := &Asset{
 		Wallet:      w,
 		vspClients:  make(map[string]*vsp.Client),
@@ -222,6 +234,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		},
 		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
+		dbMutex:                           &dbMutex,
 	}
 
 	err = dcrWallet.Prepare(ldr, params)
