@@ -131,16 +131,16 @@ func (wallet *Wallet) VerifySeedForWallet(seedMnemonic, privpass string) (bool, 
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 
-	if wallet.IsBackedUp {
-		return true, nil // return early
-	}
-
 	decryptedSeed, err := decryptWalletSeed([]byte(privpass), wallet.EncryptedSeed)
 	if err != nil {
 		return false, err
 	}
 
 	if decryptedSeed == seedMnemonic {
+		if wallet.IsBackedUp {
+			return true, nil // return early
+		}
+
 		wallet.IsBackedUp = true
 		return true, utils.TranslateError(wallet.db.Save(wallet))
 	}
