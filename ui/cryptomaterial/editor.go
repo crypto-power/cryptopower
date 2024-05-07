@@ -3,6 +3,7 @@
 package cryptomaterial
 
 import (
+	"fmt"
 	"image/color"
 
 	"gioui.org/io/clipboard"
@@ -179,6 +180,11 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 	newEditor.paste.Color = t.Color.Primary
 	newEditor.paste.Inset = layout.UniformInset(values.MarginPadding5)
 	t.allEditors = append(t.allEditors, &newEditor)
+	tem := ""
+	for _, e := range t.allEditors {
+		tem += fmt.Sprintf("--%p", e)
+	}
+	fmt.Println("---------->", tem)
 
 	return newEditor
 }
@@ -201,6 +207,7 @@ func (e *Editor) Layout(gtx C) D {
 		}
 		if clk.NumClicks == 1 {
 			e.Editor.Focus()
+			fmt.Printf("-------%p-------->\n", e)
 		}
 		if clk.NumClicks != 2 && clk.NumClicks > 0 {
 			e.isShowMenu = false

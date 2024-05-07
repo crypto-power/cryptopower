@@ -344,8 +344,11 @@ func (pg *VerifySeedPage) seedListRow(gtx C, index int, multiSeed shuffledSeedWo
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			widgets := []layout.Widget{
 				func(gtx C) D { return pg.seedButton(gtx, 0, multiSeed) },
+				layout.Spacer{Width: values.MarginPadding5}.Layout,
 				func(gtx C) D { return pg.seedButton(gtx, 1, multiSeed) },
+				layout.Spacer{Width: values.MarginPadding5}.Layout,
 				func(gtx C) D { return pg.seedButton(gtx, 2, multiSeed) },
+				layout.Spacer{Width: values.MarginPadding5}.Layout,
 				func(gtx C) D { return pg.seedButton(gtx, 3, multiSeed) },
 			}
 			return pg.listGroupSeed[index].Layout(gtx, len(widgets), func(gtx C, i int) D {

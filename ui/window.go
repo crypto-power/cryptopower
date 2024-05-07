@@ -11,7 +11,6 @@ import (
 	giouiApp "gioui.org/app"
 	"gioui.org/gesture"
 	"gioui.org/io/key"
-	"gioui.org/io/pointer"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -361,8 +360,8 @@ func (win *Window) handleEvents(gtx C) {
 // handleUserClick listen touch action of user for mobile.
 func (win *Window) handleUserClick(gtx C) {
 	for _, evt := range win.clicker.Events(gtx) {
-		if evt.Type == gesture.TypePress && evt.Source == pointer.Touch {
-			win.load.Theme.AutoHideSoftKeyBoard(gtx)
+		if evt.Type == gesture.TypePress { //&& evt.Source == pointer.Touch {
+			win.load.Theme.AutoHideSoftKeyBoardAndMenuButton(gtx)
 		}
 	}
 }
@@ -381,9 +380,8 @@ func (win *Window) handleShortKeys(gtx C) {
 }
 
 func (win *Window) addEvents(gtx C) {
-	if win.load.IsMobileView() {
-		win.clicker.Add(gtx.Ops)
-	}
+	// clicker use for show and hide soft keyboard and menu button on editor
+	win.clicker.Add(gtx.Ops)
 
 	if runtime.GOOS == "android" {
 		key.InputOp{
