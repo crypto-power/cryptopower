@@ -437,7 +437,7 @@ func (s WordSeedType) ToInt() int {
 	return int(s)
 }
 
-func (s WordSeedType) AllSeeds() []string {
+func (s WordSeedType) AllWords() []string {
 	switch s {
 	case WordSeed24, WordSeed12:
 		return wordlist.BIP39WordList()

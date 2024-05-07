@@ -90,7 +90,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, wordSeed
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
-	allSeeds := pg.wordSeedType.AllSeeds()
+	allSeeds := pg.wordSeedType.AllWords()
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
 	seedWords := strings.Split(pg.seed, " ")

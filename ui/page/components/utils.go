@@ -64,7 +64,6 @@ func RetryFunc(retryAttempts int, sleepDur time.Duration, funcDesc string, errFu
 	return retryAttempts, fmt.Errorf("last error: %s", err)
 }
 
-// seedtest
 func SeedWordsToHex(seedWords string, wordSeedType sharedW.WordSeedType) (string, error) {
 	var seedHex string
 	var seedByte []byte
@@ -148,7 +147,7 @@ func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D 
 	return l.Theme.Label(l.ConvertTextSize(values.TextSize16), convertedAmountStr).Layout(gtx)
 }
 
-func GetWordSeedTypeDropdownItem() []cryptomaterial.DropDownItem {
+func GetWordSeedTypeDropdownItems() []cryptomaterial.DropDownItem {
 	return []cryptomaterial.DropDownItem{
 		{Text: values.String(values.Str12WordSeed)},
 		{Text: values.String(values.Str24WordSeed)},

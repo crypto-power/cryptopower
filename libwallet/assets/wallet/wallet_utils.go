@@ -181,9 +181,10 @@ func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
 // doesn't support the alternative `GenerateSeed` function because it returns more than 2 types.
 func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v string, err error) {
 	var entropy []byte
-	var length uint8 = 32
+	//33-word seeds and 24-word seeds both use length 32 (256 bits) while 12-word seed uses length 16 (128 bits).
+	var length uint8 = dcrhdkeychain.RecommendedSeedLen
 	if wordSeedType == WordSeed12 {
-		length = 16
+		length = dcrhdkeychain.MinSeedBytes
 	}
 	switch assetType {
 	case utils.BTCWalletAsset:
@@ -232,12 +233,7 @@ func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType
 	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
 		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
 		if len(words) == 1 {
-			var err error
-			hashedSeed, err = hex.DecodeString(words[0])
-			if err != nil {
-				return nil, err
-			}
-			return hashedSeed, err
+			return hex.DecodeString(words[0])
 		}
 		if seedType == WordSeed33 {
 			hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)

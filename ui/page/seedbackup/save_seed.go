@@ -147,11 +147,11 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
-func divideWordsIntoRows(words []string, numColumns int) []saveSeedRow {
+func divideWordsIntoRows(words []string, numberOfColumns int) []saveSeedRow {
 	var rows []saveSeedRow
 
-	numRows := len(words) / numColumns
-	if len(words)%numColumns != 0 {
+	numRows := len(words) / numberOfColumns
+	if len(words)%numberOfColumns != 0 {
 		numRows++
 	}
 
@@ -168,7 +168,7 @@ func divideWordsIntoRows(words []string, numColumns int) []saveSeedRow {
 			row.word2 = words[idx]
 		}
 		idx += numRows
-		if idx < len(words) && numColumns == 3 {
+		if idx < len(words) && numberOfColumns == 3 {
 			row.word3 = words[idx]
 		}
 

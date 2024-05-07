@@ -110,7 +110,7 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 	pg.initSeedMenu()
 
 	// set suggestions
-	pg.allSuggestions = getWordSeedType().AllSeeds()
+	pg.allSuggestions = getWordSeedType().AllWords()
 
 	return pg
 }
@@ -204,18 +204,18 @@ func (pg *SeedRestore) restoreButtonSection(gtx C) D {
 	})
 }
 
-func (pg *SeedRestore) divideIntoColumns(eidtors []*cryptomaterial.RestoreEditor, numColumns, limit int) [][]layout.FlexChild {
+func (pg *SeedRestore) divideIntoColumns(editors []*cryptomaterial.RestoreEditor, numberOfColumns, limit int) [][]layout.FlexChild {
 	// Calculate the number of rows needed
-	lenEditors := len(eidtors)
+	lenEditors := len(editors)
 	if limit != 0 {
 		lenEditors = limit
 	}
-	remainCount := lenEditors % numColumns
-	numRows := lenEditors / numColumns
-	if remainCount != 0 {
+	remainingCount := lenEditors % numberOfColumns
+	numRows := lenEditors / numberOfColumns
+	if remainingCount != 0 {
 		numRows++
 	} else {
-		remainCount = 1
+		remainingCount = 1
 	}
 
 	// Create a 2D slice to hold the columns
@@ -224,17 +224,17 @@ func (pg *SeedRestore) divideIntoColumns(eidtors []*cryptomaterial.RestoreEditor
 	// Distribute the words among the columns
 	for i := 0; i < lenEditors; i++ {
 		editorIndex := i
-		rowIndex := editorIndex / numColumns
-		editor := eidtors[editorIndex]
+		rowIndex := editorIndex / numberOfColumns
+		editor := editors[editorIndex]
 		flexChild := layout.Flexed(1, func(gtx C) D {
 			if rowIndex == numRows-1 {
-				gtx.Constraints.Max.X = (gtx.Constraints.Max.X * remainCount / numColumns)
+				gtx.Constraints.Max.X = (gtx.Constraints.Max.X * remainingCount / numberOfColumns)
 			}
 			pg.layoutSeedMenu(gtx, editorIndex)
 			return editor.Layout(gtx)
 		})
 		columns[rowIndex] = append(columns[rowIndex], flexChild)
-		if len(columns[rowIndex]) < numColumns*2-1 {
+		if len(columns[rowIndex]) < numberOfColumns*2-1 {
 			columns[rowIndex] = append(columns[rowIndex], layout.Rigid(layout.Spacer{Width: values.MarginPadding5}.Layout))
 		}
 	}
@@ -423,13 +423,13 @@ func (pg *SeedRestore) updateSeedResetBtn() bool {
 
 func (pg *SeedRestore) validateSeeds() (bool, string) {
 	seedPhrase := ""
-	allSuggesString := strings.Join(pg.allSuggestions, " ")
-	numberofSeed := pg.getWordSeedType().ToInt()
+	allSuggestedWords := strings.Join(pg.allSuggestions, " ")
+	numberOfSeed := pg.getWordSeedType().ToInt()
 	for i, editor := range pg.seedEditors.editors {
-		if i >= numberofSeed {
+		if i >= numberOfSeed {
 			break
 		}
-		if editor.Edit.Editor.Text() == "" || !strings.Contains(allSuggesString, editor.Edit.Editor.Text()) {
+		if editor.Edit.Editor.Text() == "" || !strings.Contains(allSuggestedWords, editor.Edit.Editor.Text()) {
 			pg.seedEditors.editors[i].Edit.HintColor = pg.Theme.Color.Danger
 			return false, ""
 		}
@@ -470,7 +470,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 }
 
 func (pg *SeedRestore) resetSeeds() {
-	pg.allSuggestions = pg.getWordSeedType().AllSeeds()
+	pg.allSuggestions = pg.getWordSeedType().AllWords()
 	pg.seedEditors.focusIndex = -1
 	for i := 0; i < len(pg.seedEditors.editors); i++ {
 		pg.seedEditors.editors[i].Edit.Editor.SetText("")
