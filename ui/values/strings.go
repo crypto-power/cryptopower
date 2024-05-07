@@ -1045,4 +1045,5 @@ const (
 	StrUpdateAPI                             = "updateAPI"
 	StrNewUpdateText                         = "newUpdateText"
 	StrUpdateAvailable                       = "updateAvailable"
+	StrExportWalletSeed                      = "exportWalletSeed"
 )

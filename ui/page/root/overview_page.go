@@ -1208,6 +1208,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 	}
 
 	// Reload the window whenever there is an exchange rate update.
+	pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 	rateListener := &ext.RateListener{
 		OnRateUpdated: func() {
 			go pg.updateAssetsUSDBalance()
