@@ -372,6 +372,9 @@ func (pg *SeedRestore) layoutSeedMenu(gtx C, optionsSeedMenuIndex int) {
 		pg.isLastEditor {
 		return
 	}
+	if len(pg.seedMenu) == 0 {
+		return
+	}
 
 	inset := layout.Inset{
 		Top:  values.MarginPadding35,
