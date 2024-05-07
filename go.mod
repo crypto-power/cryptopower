@@ -40,7 +40,7 @@ require (
 	github.com/decred/slog v1.2.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/gen2brain/beeep v0.0.0-20220402123239-6a3042f4b71a
-	github.com/gomarkdown/markdown v0.0.0-20220817224203-2206187d3406
+	github.com/gomarkdown/markdown v0.0.0-20230922105210-14b16010c2ee
 	github.com/gorilla/websocket v1.5.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0
@@ -63,7 +63,7 @@ require (
 	go.etcd.io/bbolt v1.3.8
 	golang.org/x/crypto v0.11.0
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
-	golang.org/x/image v0.5.0
+	golang.org/x/image v0.10.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.11.0
 )
@@ -203,11 +203,11 @@ require (
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
 	github.com/zquestz/grab v0.0.0-20190224022517-abcee96e61b1 // indirect
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.13.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.29.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect

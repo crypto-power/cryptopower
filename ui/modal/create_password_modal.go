@@ -154,7 +154,7 @@ func (cm *CreatePasswordModal) SetNegativeButtonCallback(callback func()) *Creat
 	return cm
 }
 
-func (cm *CreatePasswordModal) SetLoading(loading bool) {
+func (cm *CreatePasswordModal) setLoading(loading bool) {
 	cm.isLoading = loading
 	cm.Modal.SetDisabled(loading)
 }
@@ -236,11 +236,13 @@ func (cm *CreatePasswordModal) Handle() {
 				return
 			}
 		}
-		cm.SetLoading(true)
+		cm.setLoading(true)
 		go func() {
 			if cm.positiveButtonClicked(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
 				cm.Dismiss()
+				return
 			}
+			cm.setLoading(false)
 		}()
 	}
 

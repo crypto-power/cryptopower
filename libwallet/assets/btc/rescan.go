@@ -8,7 +8,6 @@ import (
 
 	"decred.org/dcrwallet/v3/errors"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
@@ -333,17 +332,17 @@ func (asset *Asset) getBirthdayBlock() (int32, bool, error) {
 	return birthdayblock, isverified, err
 }
 
-func (asset *Asset) updateRescanProgress(progress *chain.RescanProgress) {
+func (asset *Asset) updateRescanProgress(height int32) {
 	if asset.syncData.rescanStartHeight == nil {
-		asset.syncData.rescanStartHeight = &progress.Height
+		asset.syncData.rescanStartHeight = &height
 	}
 
-	headersFetchedSoFar := float64(progress.Height - *asset.syncData.rescanStartHeight)
+	headersFetchedSoFar := float64(height - *asset.syncData.rescanStartHeight)
 	if headersFetchedSoFar < 1 {
 		headersFetchedSoFar = 1
 	}
 
-	remainingHeaders := float64(asset.GetBestBlockHeight() - progress.Height)
+	remainingHeaders := float64(asset.GetBestBlockHeight() - height)
 	if remainingHeaders < 1 {
 		remainingHeaders = 1
 	}
@@ -351,7 +350,7 @@ func (asset *Asset) updateRescanProgress(progress *chain.RescanProgress) {
 	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
 
 	rescanProgressReport := &sharedW.HeadersRescanProgressReport{
-		CurrentRescanHeight: progress.Height,
+		CurrentRescanHeight: height,
 		TotalHeadersToScan:  int32(allHeadersToFetch),
 		WalletID:            asset.ID,
 	}
@@ -389,29 +388,4 @@ func (asset *Asset) getblockStamp(height int32) (*waddrmgr.BlockStamp, error) {
 		Height:    height,
 		Timestamp: block.Header.Timestamp,
 	}, nil
-}
-
-// updateSyncedToBlock is used to update syncedTo block. Sometimes btcwallet might
-// miss the trigger event to update syncedTo block so the update is done here
-// regardless thus avoid handling the possible scenario where btcwallet might miss
-// the syncedto store trigger event.
-func (asset *Asset) updateSyncedToBlock(height int32) {
-	// Ignore blocks notifications received during the wallet recovery phase.
-	if !asset.IsSynced() || asset.IsRescanning() {
-		return
-	}
-
-	err := walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
-		addrmgrNs := dbtx.ReadWriteBucket(wAddrMgrBkt)
-
-		bs, err := asset.getblockStamp(height)
-		if err != nil {
-			return err
-		}
-
-		return asset.Internal().BTC.Manager.SetSyncedTo(addrmgrNs, bs)
-	})
-	if err != nil {
-		log.Errorf("updating syncedTo block failed: Error: %v", err)
-	}
 }

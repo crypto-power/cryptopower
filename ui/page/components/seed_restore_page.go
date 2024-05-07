@@ -535,7 +535,6 @@ func (pg *SeedRestore) HandleUserInteractions() {
 						errString = values.StringF(values.StrWalletExist, pg.walletName)
 					}
 					m.SetError(errString)
-					m.SetLoading(false)
 					pg.isRestoring = false
 					return false
 				}

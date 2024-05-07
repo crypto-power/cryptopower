@@ -138,7 +138,7 @@ func (osm *orderSchedulerModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
 }
 
-func (osm *orderSchedulerModal) SetLoading(loading bool) {
+func (osm *orderSchedulerModal) setLoading(loading bool) {
 	osm.isStarting = loading
 	osm.Modal.SetDisabled(loading)
 }
@@ -460,14 +460,12 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 }
 
 func (osm *orderSchedulerModal) startOrderScheduler() {
-	// osm.SetLoading(true)
-
 	go func() {
-		osm.SetLoading(true)
+		osm.setLoading(true)
 		err := osm.sourceWalletSelector.SelectedWallet().UnlockWallet(osm.passwordEditor.Editor.Text())
 		if err != nil {
 			osm.SetError(err.Error())
-			osm.SetLoading(false)
+			osm.setLoading(false)
 			return
 		}
 

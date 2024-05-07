@@ -53,7 +53,7 @@ func (tm *TextInputModal) Hint(hint string) *TextInputModal {
 	return tm
 }
 
-func (tm *TextInputModal) SetLoading(loading bool) {
+func (tm *TextInputModal) setLoading(loading bool) {
 	tm.isLoading = loading
 	tm.Modal.SetDisabled(loading)
 }
@@ -91,10 +91,11 @@ func (tm *TextInputModal) SetTextWithTemplate(template string, walletName ...str
 	case AllowUnmixedSpendingTemplate:
 		tm.textCustomTemplate = allowUnspendUnmixedAcct(tm.Load)
 	case RemoveWalletInfoTemplate:
-		if walletName == nil {
-			walletName[0] = ""
+		var walletNameStr string
+		if walletName != nil {
+			walletNameStr = walletName[0]
 		}
-		tm.textCustomTemplate = removeWalletInfo(tm.Load, walletName[0])
+		tm.textCustomTemplate = removeWalletInfo(tm.Load, walletNameStr)
 	case SetGapLimitTemplate:
 		tm.textCustomTemplate = setGapLimitText(tm.Load)
 	}
@@ -115,11 +116,15 @@ func (tm *TextInputModal) Handle() {
 			return
 		}
 
-		tm.SetLoading(true)
+		tm.setLoading(true)
 		tm.SetError("")
-		if tm.callback(tm.textInput.Editor.Text(), tm) {
-			tm.Dismiss()
-		}
+		go func() {
+			if tm.callback(tm.textInput.Editor.Text(), tm) {
+				tm.Dismiss()
+				return
+			}
+			tm.setLoading(false)
+		}()
 	}
 
 	for tm.btnNegative.Clicked() {

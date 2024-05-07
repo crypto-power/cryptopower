@@ -127,7 +127,6 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 	m := material.Editor(t.Base, editor, hint)
 	m.TextSize = t.TextSize
 	m.Color = t.Color.Text
-	m.Hint = hint
 	m.HintColor = t.Color.GrayText3
 
 	m0 := unit.Dp(0)
@@ -217,11 +216,14 @@ func (e *Editor) Layout(gtx C) D {
 }
 
 func (e *Editor) layout(gtx C) D {
-	if e.Editor.Len() > 0 {
+	e.LineColor, e.TitleLabel.Color = e.t.Color.Gray2, e.t.Color.GrayText3
+	if e.Editor.Len() > 0 && len(e.Hint) > 0 {
 		e.TitleLabel.Text = e.Hint
+	} else if e.Hint == "" {
+		e.Hint = e.TitleLabel.Text
+		e.TitleLabel.Text = ""
 	}
 
-	e.LineColor, e.TitleLabel.Color = e.t.Color.Gray2, e.t.Color.GrayText3
 	if e.Editor.Focused() {
 		e.TitleLabel.Text = e.Hint
 		e.TitleLabel.Color, e.LineColor = e.t.Color.Primary, e.t.Color.Primary
@@ -319,6 +321,7 @@ func (e *Editor) editorLayout(gtx C) D {
 }
 
 func (e *Editor) editorMenusLayout(gtx C, editorHeight int) {
+	e.isShowMenu = e.isShowMenu && (e.Editor.Focused() || e.copy.Hovered() || e.paste.Hovered())
 	if e.isShowMenu {
 		flexChilds := make([]layout.FlexChild, 0)
 		if len(e.Editor.Text()) > 0 {
@@ -440,9 +443,7 @@ func (e *Editor) handleEvents(gtx C) {
 	}
 
 	if e.paste.Clicked() {
-		if e.eventKey > 0 {
-			clipboard.ReadOp{Tag: &e.eventKey}.Add(gtx.Ops)
-		}
+		clipboard.ReadOp{Tag: &e.eventKey}.Add(gtx.Ops)
 		e.isShowMenu = false
 	}
 }

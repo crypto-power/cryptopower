@@ -124,7 +124,6 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			seed, err := pg.wallet.DecryptSeed(password)
 			if err != nil {
-				m.SetLoading(false)
 				m.SetError(err.Error())
 				return false
 			}
