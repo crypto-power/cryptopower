@@ -165,7 +165,7 @@ func UniformPaddingWithTopInset(topInset unit.Dp, gtx layout.Context, body layou
 }
 
 func UniformPadding(gtx layout.Context, body layout.Widget, isMobileView ...bool) D {
-	return UniformPaddingWithTopInset(values.MarginPadding0, gtx, body, isMobileView...)
+	return UniformPaddingWithTopInset(values.MarginPadding5, gtx, body, isMobileView...)
 }
 
 func DisableLayout(currentPage app.Page, gtx C, titleLayout, subtitleLayout func(gtx C) D, transparency uint8, color color.NRGBA, actionButton *Button) D {
