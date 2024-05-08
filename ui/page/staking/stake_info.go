@@ -46,7 +46,7 @@ func (pg *Page) pageHead(gtx C) D {
 						}.Layout(gtx, pg.stake.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						icon := pg.Theme.Icons.HeaderSettingsIcon
+						icon := pg.Theme.Icons.SettingsIcon
 						return pg.stakeSettings.Layout(gtx, func(gtx C) D {
 							return icon.LayoutTransform(gtx, isMobile, values.MarginPadding24)
 						})
