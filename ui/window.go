@@ -360,7 +360,7 @@ func (win *Window) handleEvents(gtx C) {
 // handleUserClick listen touch action of user for mobile.
 func (win *Window) handleUserClick(gtx C) {
 	for _, evt := range win.clicker.Events(gtx) {
-		if evt.Type == gesture.TypePress { //&& evt.Source == pointer.Touch {
+		if evt.Type == gesture.TypePress {
 			win.load.Theme.AutoHideSoftKeyBoardAndMenuButton(gtx)
 		}
 	}
