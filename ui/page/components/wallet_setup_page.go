@@ -484,7 +484,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			pg.walletCreationSuccessCallback()
 		}
 		ast := pg.assetTypeSelector.SelectedAssetType()
-		pg.ParentNavigator().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
+		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
 	}
 
 	// imported wallet click action control
