@@ -77,6 +77,7 @@ func (c *Color) DarkThemeColors() {
 	c.Primary = rgb(0x57B6FF)
 
 	// text colors
+	c.PageNavText = argb(0x99FFFFFF)
 	c.Text = argb(0x99FFFFFF)
 	c.GrayText1 = argb(0xDEFFFFFF)
 	c.GrayText2 = argb(0x99FFFFFF)
@@ -91,6 +92,7 @@ func (c *Color) DarkThemeColors() {
 	c.Gray4 = rgb(0x121212)
 	c.Gray5 = rgb(0x363636)
 	c.Surface = rgb(0x252525)
+	c.LightGray = rgb(0x2B2B2B)
 }
 
 func (c *Color) DefaultThemeColors() *Color {

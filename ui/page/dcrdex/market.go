@@ -563,7 +563,7 @@ func (pg *DEXMarketPage) Layout(gtx C) D {
 	}
 
 	return cryptomaterial.LinearLayout{
-		Width:  gtx.Dp(values.AppWidth - 50 /* allow for left and right margin */),
+		Width:  cryptomaterial.MatchParent,
 		Height: cryptomaterial.MatchParent,
 		Margin: layout.Inset{
 			Bottom: values.MarginPadding30,
@@ -749,15 +749,19 @@ func (pg *DEXMarketPage) semiBoldLabelSize14(txt string) cryptomaterial.Label {
 }
 
 func (pg *DEXMarketPage) orderFormAndOrderBook(gtx C) D {
+	elementWidth := (gtx.Constraints.Max.X - 20) / 2
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: horizontal,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Max.X = elementWidth
 			return layout.W.Layout(gtx, pg.orderForm)
 		}),
-		layout.Flexed(1, func(gtx C) D {
+		layout.Rigid(layout.Spacer{Width: values.MarginPadding20}.Layout),
+		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Max.X = elementWidth
 			return layout.E.Layout(gtx, pg.orderbook)
 		}),
 	)
@@ -822,7 +826,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	balStr = fmt.Sprintf("%f %s", availableAssetBal, baseOrQuoteAssetSym)
 	totalSubText, lotsOrAmountSubtext := pg.orderFormEditorSubtext()
 	return cryptomaterial.LinearLayout{
-		Width:      gtx.Dp(orderFormAndOrderBookWidth),
+		Width:      cryptomaterial.MatchParent,
 		Height:     gtx.Dp(orderFormAndOrderBookHeight),
 		Background: pg.Theme.Color.Surface,
 		Margin:     layout.Inset{Top: dp5, Bottom: dp5},
@@ -1123,7 +1127,7 @@ func (pg *DEXMarketPage) orderbook(gtx C) D {
 
 	baseAsset, quoteAsset := convertAssetIDToAssetType(pg.selectedMarketOrderBook.base), convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)
 	return cryptomaterial.LinearLayout{
-		Width:       gtx.Dp(orderFormAndOrderBookWidth),
+		Width:       cryptomaterial.MatchParent,
 		Height:      gtx.Dp(orderFormAndOrderBookHeight),
 		Background:  pg.Theme.Color.Surface,
 		Margin:      layout.Inset{Top: dp5, Bottom: dp5},
