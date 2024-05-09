@@ -760,19 +760,17 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			Orientation: layout.Vertical,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				if hp.Load.IsMobileView() {
-					// Hide the total balance text, settings and notfication icons
-					// while on mobile view and on the SingleWalletMasterPage.
-					if hp.CurrentPageID() == wallet.MainPageID {
-						return D{}
-					}
-
+				// Check if exchange rate fetching is enabled and total balance is available
+				if hp.AssetsManager.ExchangeRateFetchingEnabled() && totalBalanceUSD != "" {
+					// Render total balance text and icon button
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(hp.totalBalanceTextAndIconButtonLayout),
-						layout.Rigid(hp.notificationSettingsLayout),
+						layout.Rigid(hp.notificationSettingsLayout), // Include notification layout here
 					)
 				}
-				return hp.totalBalanceTextAndIconButtonLayout(gtx)
+
+				// Render notification settings icon
+				return hp.notificationSettingsLayout(gtx)
 			}),
 			layout.Rigid(hp.balanceLayout),
 			layout.Rigid(func(gtx C) D {
@@ -889,8 +887,7 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 		)
 	}
 
-	lblText := hp.Theme.Label(values.TextSize30, "--")
-	return lblText.Layout(gtx)
+	return D{}
 }
 
 // TODO: use real values
