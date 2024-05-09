@@ -69,7 +69,7 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 		hexLabel:         l.Theme.Label(values.TextSize12, ""),
 		copy:             l.Theme.Button(values.String(values.StrCopy)),
 		infoText:         values.String(values.StrAskedEnterSeedWords),
-		actionButton:     l.Theme.Button(values.String(values.StrWroteAllWords)),
+		actionButton:     l.Theme.Button(""),
 		seedList: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -246,6 +246,7 @@ func (pg *SaveSeedPage) Layout(gtx C) D {
 	layout := func(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
+	pg.actionButton.Text = values.StringF(values.String(values.StrWroteAllWords), pg.wordSeedType.ToInt())
 	return container(gtx, pg.IsMobileView(), *pg.Theme, layout, pg.infoText, pg.actionButton, true)
 }
 
