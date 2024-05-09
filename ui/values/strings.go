@@ -880,7 +880,7 @@ const (
 	StrWhatToCallWallet                      = "whatToCallWallet"
 	StrWord                                  = "word"
 	StrWouldTradeCex                         = "wouldTradeCex"
-	StrWriteDownAll33Words                   = "writeDownAll33Words"
+	StrWriteDownAllXWords                    = "writeDownAllXWords"
 	StrWriteDownSeed                         = "writeDownSeed"
 	StrWroteAllWords                         = "wroteAllWords"
 	StrXInputsConsumed                       = "xInputsConsumed"
@@ -1045,5 +1045,9 @@ const (
 	StrUpdateAPI                             = "updateAPI"
 	StrNewUpdateText                         = "newUpdateText"
 	StrUpdateAvailable                       = "updateAvailable"
+	Str12WordSeed                            = "12WordSeed"
+	Str24WordSeed                            = "24WordSeed"
+	Str33WordSeed                            = "33WordSeed"
+	StrWordSeedType                          = "wordSeedType"
 	StrExportWalletSeed                      = "exportWalletSeed"
 )

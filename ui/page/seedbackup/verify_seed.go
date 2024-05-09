@@ -3,14 +3,12 @@ package seedbackup
 import (
 	"math/rand"
 	"strings"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -49,9 +47,10 @@ type VerifySeedPage struct {
 	toggleSeedInput  *cryptomaterial.Switch
 	seedInputEditor  cryptomaterial.Editor
 	verifySeedButton cryptomaterial.Button
+	wordSeedType     sharedW.WordSeedType
 }
 
-func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, wordSeedType sharedW.WordSeedType, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
@@ -62,6 +61,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 
 		redirectCallback: redirect,
 		toggleSeedInput:  l.Theme.Switch(),
+		wordSeedType:     wordSeedType,
 	}
 	pg.list = &widget.List{
 		List: layout.List{
@@ -90,16 +90,14 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
-	allSeeds := dcr.PGPWordList()
-
+	allSeeds := pg.wordSeedType.AllWords()
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
 	seedWords := strings.Split(pg.seed, " ")
-	rand.Seed(time.Now().UnixNano())
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
-		shuffledSeed := pg.getMultiSeed(index, dcr.PGPWordList()) // using allSeeds here modifies the slice
+		shuffledSeed := pg.getMultiSeed(index, allSeeds)
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 
@@ -109,6 +107,8 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 }
 
 func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shuffledSeedWords {
+	tempAllSeeds := make([]string, len(allSeeds))
+	_ = copy(tempAllSeeds, allSeeds)
 	shuffledSeed := shuffledSeedWords{
 		selectedIndex: -1,
 		words:         make([]string, 0),
@@ -121,16 +121,16 @@ func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shu
 		return cl
 	}
 
-	shuffledSeed.words = append(shuffledSeed.words, allSeeds[realSeedIndex])
+	shuffledSeed.words = append(shuffledSeed.words, tempAllSeeds[realSeedIndex])
 	shuffledSeed.clickables = append(shuffledSeed.clickables, clickable())
-	allSeeds = removeSeed(allSeeds, realSeedIndex)
+	tempAllSeeds = removeSeed(tempAllSeeds, realSeedIndex)
 
 	for i := 0; i < 3; i++ {
-		randomSeed := rand.Intn(len(allSeeds))
+		randomSeed := rand.Intn(len(tempAllSeeds))
 
-		shuffledSeed.words = append(shuffledSeed.words, allSeeds[randomSeed])
+		shuffledSeed.words = append(shuffledSeed.words, tempAllSeeds[randomSeed])
 		shuffledSeed.clickables = append(shuffledSeed.clickables, clickable())
-		allSeeds = removeSeed(allSeeds, randomSeed)
+		tempAllSeeds = removeSeed(tempAllSeeds, randomSeed)
 	}
 
 	rand.Shuffle(len(shuffledSeed.words), func(i, j int) {
@@ -342,8 +342,11 @@ func (pg *VerifySeedPage) seedListRow(gtx C, index int, multiSeed shuffledSeedWo
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			widgets := []layout.Widget{
 				func(gtx C) D { return pg.seedButton(gtx, 0, multiSeed) },
+				layout.Spacer{Width: values.MarginPadding5}.Layout,
 				func(gtx C) D { return pg.seedButton(gtx, 1, multiSeed) },
+				layout.Spacer{Width: values.MarginPadding5}.Layout,
 				func(gtx C) D { return pg.seedButton(gtx, 2, multiSeed) },
+				layout.Spacer{Width: values.MarginPadding5}.Layout,
 				func(gtx C) D { return pg.seedButton(gtx, 3, multiSeed) },
 			}
 			return pg.listGroupSeed[index].Layout(gtx, len(widgets), func(gtx C, i int) D {

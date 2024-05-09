@@ -9,17 +9,19 @@ import (
 	"strings"
 	"time"
 
+	"decred.org/dcrwallet/v3/pgpwordlist"
 	"gioui.org/layout"
 	"gioui.org/unit"
 
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/ltcsuite/ltcd/ltcutil"
+	"github.com/tyler-smith/go-bip39"
 )
 
 const (
@@ -62,42 +64,27 @@ func RetryFunc(retryAttempts int, sleepDur time.Duration, funcDesc string, errFu
 	return retryAttempts, fmt.Errorf("last error: %s", err)
 }
 
-func SeedWordsToHex(seedWords string) (string, error) {
+func SeedWordsToHex(seedWords string, wordSeedType sharedW.WordSeedType) (string, error) {
 	var seedHex string
-	wordList := dcr.PGPWordList()
-	wordIndexes := make(map[string]uint16, len(wordList))
-	for i, word := range wordList {
-		wordIndexes[strings.ToLower(word)] = uint16(i)
+	var seedByte []byte
+	var err error
+	if wordSeedType == sharedW.WordSeed33 {
+		words := strings.Split(strings.TrimSpace(seedWords), " ")
+		seedByte, err = pgpwordlist.DecodeMnemonics(words)
+		if checksumByte(seedByte[:len(seedByte)-1]) != seedByte[len(seedByte)-1] {
+			return seedHex, fmt.Errorf("seed checksum mismatch")
+		}
+		seedByte = seedByte[:len(seedByte)-1]
+
+		if len(seedByte) < MinSeedBytes || len(seedByte) > MaxSeedBytes {
+			return seedHex, fmt.Errorf("invalid seed bytes length")
+		}
+	} else {
+		seedByte, err = bip39.EntropyFromMnemonic(seedWords)
 	}
 
-	words := strings.Split(strings.TrimSpace(seedWords), " ")
-	seedByte := make([]byte, len(words))
-	idx := 0
-	for _, w := range words {
-		w = strings.TrimSpace(w)
-		if w == "" {
-			continue
-		}
-		b, ok := wordIndexes[strings.ToLower(w)]
-		if !ok {
-			return seedHex, fmt.Errorf("word %v is not in the PGP word list", w)
-		}
-		if int(b%2) != idx%2 {
-			return seedHex, fmt.Errorf("word %v is not valid at position %v, "+
-				"check for missing words", w, idx)
-		}
-		seedByte[idx] = byte(b / 2)
-		idx++
-	}
-
-	seedByte = seedByte[:idx]
-	if checksumByte(seedByte[:len(seedByte)-1]) != seedByte[len(seedByte)-1] {
-		return seedHex, fmt.Errorf("seed checksum mismatch")
-	}
-	seedByte = seedByte[:len(seedByte)-1]
-
-	if len(seedByte) < MinSeedBytes || len(seedByte) > MaxSeedBytes {
-		return seedHex, fmt.Errorf("invalid seed bytes length")
+	if err != nil {
+		return "", err
 	}
 
 	seedHex = hex.EncodeToString(seedByte)
@@ -158,4 +145,25 @@ func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D 
 	}
 
 	return l.Theme.Label(l.ConvertTextSize(values.TextSize16), convertedAmountStr).Layout(gtx)
+}
+
+func GetWordSeedTypeDropdownItems() []cryptomaterial.DropDownItem {
+	return []cryptomaterial.DropDownItem{
+		{Text: values.String(values.Str12WordSeed)},
+		{Text: values.String(values.Str24WordSeed)},
+		{Text: values.String(values.Str33WordSeed)},
+	}
+}
+
+func GetWordSeedType(val string) sharedW.WordSeedType {
+	switch val {
+	case values.String(values.Str12WordSeed):
+		return sharedW.WordSeed12
+	case values.String(values.Str24WordSeed):
+		return sharedW.WordSeed24
+	case values.String(values.Str33WordSeed):
+		return sharedW.WordSeed33
+	default:
+		return 0
+	}
 }

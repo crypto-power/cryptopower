@@ -60,8 +60,8 @@ func hardenedKey(key uint32) uint32 {
 }
 
 // DeriveAccountXpub derives the xpub for the given account.
-func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
-	seed, err := sharedW.DecodeSeedMnemonic(seedMnemonic, asset.Type)
+func (asset *Asset) DeriveAccountXpub(seedMnemonic string, wordSeedType sharedW.WordSeedType, account uint32, params *chaincfg.Params) (xpub string, err error) {
+	seed, err := sharedW.DecodeSeedMnemonic(seedMnemonic, asset.Type, wordSeedType)
 	if err != nil {
 		return "", err
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
+	"github.com/crypto-power/cryptopower/libwallet/assets/wallet/wordlist"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
@@ -52,6 +53,7 @@ type AuthInfo struct {
 	Name            string
 	PrivatePass     string
 	PrivatePassType int32
+	WordSeedType    WordSeedType
 }
 
 type BlockInfo struct {
@@ -421,4 +423,27 @@ type UnspentOutput struct {
 	Spendable     bool
 	ReceiveTime   time.Time
 	Tree          int8
+}
+
+type WordSeedType int
+
+const (
+	WordSeed12 WordSeedType = 12
+	WordSeed24 WordSeedType = 24
+	WordSeed33 WordSeedType = 33
+)
+
+func (s WordSeedType) ToInt() int {
+	return int(s)
+}
+
+func (s WordSeedType) AllWords() []string {
+	switch s {
+	case WordSeed24, WordSeed12:
+		return wordlist.BIP39WordList()
+	case WordSeed33:
+		return wordlist.PGPWordList()
+	default:
+		return []string{}
+	}
 }

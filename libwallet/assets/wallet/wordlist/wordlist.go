@@ -14,9 +14,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package dcr
+package wordlist
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/tyler-smith/go-bip39/wordlists"
+)
+
+func BIP39WordList() []string {
+	return wordlists.English
+}
 
 func PGPWordList() []string {
 	return strings.Split(AlternatingWords, "\n")

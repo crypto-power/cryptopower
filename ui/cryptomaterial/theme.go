@@ -343,9 +343,10 @@ func (t *Theme) WatchOnlyAssetIcon(asset utils.AssetType) *Image {
 	return icon
 }
 
-func (t *Theme) AutoHideSoftKeyBoard(gtx C) {
+func (t *Theme) AutoHideSoftKeyBoardAndMenuButton(gtx C) {
 	isHide := true
 	for _, e := range t.allEditors {
+		e.isShowMenu = false
 		isHide = isHide && !e.Pressed()
 	}
 	if isHide {

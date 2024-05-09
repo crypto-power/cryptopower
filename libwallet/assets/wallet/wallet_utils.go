@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
 	ltchdkeychain "github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
+	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -185,28 +187,42 @@ func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
 
 // For use with gomobile bind,
 // doesn't support the alternative `GenerateSeed` function because it returns more than 2 types.
-func generateSeed(assetType utils.AssetType) (v string, err error) {
-	var seed []byte
+func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v string, err error) {
+	var entropy []byte
+	//33-word seeds and 24-word seeds both use length 32 (256 bits) while 12-word seed uses length 16 (128 bits).
+	var length uint8 = dcrhdkeychain.RecommendedSeedLen
+	if wordSeedType == WordSeed12 {
+		length = dcrhdkeychain.MinSeedBytes
+	}
 	switch assetType {
 	case utils.BTCWalletAsset:
-		seed, err = btchdkeychain.GenerateSeed(btchdkeychain.RecommendedSeedLen)
+		entropy, err = btchdkeychain.GenerateSeed(length)
 		if err != nil {
 			return "", err
 		}
 	case utils.DCRWalletAsset:
-		seed, err = dcrhdkeychain.GenerateSeed(dcrhdkeychain.RecommendedSeedLen)
+		entropy, err = dcrhdkeychain.GenerateSeed(length)
 		if err != nil {
 			return "", err
 		}
 	case utils.LTCWalletAsset:
-		seed, err = ltchdkeychain.GenerateSeed(ltchdkeychain.RecommendedSeedLen)
+		entropy, err = ltchdkeychain.GenerateSeed(length)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	if len(seed) > 0 {
-		return walletseed.EncodeMnemonic(seed), nil
+	if len(entropy) > 0 {
+		if wordSeedType == WordSeed33 {
+			return walletseed.EncodeMnemonic(entropy), nil
+		}
+		// Create Seed phrase from entropy
+		// Use bip39 for 12-word seeds and 24-word seeds
+		seedPhrase, err := bip39.NewMnemonic(entropy)
+		if err != nil {
+			return "", err
+		}
+		return seedPhrase, nil
 	}
 
 	// Execution should never get here but error added as a safeguard to
@@ -215,15 +231,23 @@ func generateSeed(assetType utils.AssetType) (v string, err error) {
 	return "", fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
 }
 
-func VerifySeed(seedMnemonic string, assetType utils.AssetType) bool {
-	_, err := DecodeSeedMnemonic(seedMnemonic, assetType)
+func VerifySeed(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) bool {
+	_, err := DecodeSeedMnemonic(seedMnemonic, assetType, seedType)
 	return err == nil
 }
 
-func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType) (hashedSeed []byte, err error) {
+func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) (hashedSeed []byte, err error) {
 	switch assetType {
 	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
-		hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
+		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
+		if len(words) == 1 {
+			return hex.DecodeString(words[0])
+		}
+		if seedType == WordSeed33 {
+			hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
+		} else {
+			hashedSeed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+		}
 	default:
 		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
 	}

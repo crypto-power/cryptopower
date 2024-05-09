@@ -12,7 +12,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -22,8 +21,8 @@ import (
 )
 
 const (
-	SeedRestorePageID = "seed_restore"
-	numberOfSeeds     = 32
+	SeedRestorePageID    = "seed_restore"
+	defaultNumberOfSeeds = 32
 )
 
 type seedEditors struct {
@@ -74,10 +73,11 @@ type SeedRestore struct {
 	currentCaretPosition     int // current caret position
 	selectedSeedEditor       int // stores the current focus index of seed editors
 
-	walletType libutils.AssetType
+	walletType      libutils.AssetType
+	getWordSeedType func() sharedW.WordSeedType
 }
 
-func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func()) *SeedRestore {
+func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func(), getWordSeedType func() sharedW.WordSeedType) *SeedRestore {
 	pg := &SeedRestore{
 		Load:            l,
 		restoreComplete: onRestoreComplete,
@@ -86,6 +86,7 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 		openPopupIndex:  -1,
 		walletName:      walletName,
 		walletType:      walletType,
+		getWordSeedType: getWordSeedType,
 	}
 
 	pg.optionsMenuCard = cryptomaterial.Card{Color: pg.Theme.Color.Surface}
@@ -97,7 +98,7 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 	pg.resetSeedFields = l.Theme.OutlineButton(values.String(values.StrClearAll))
 	pg.resetSeedFields.Font.Weight = font.Medium
 
-	for i := 0; i <= numberOfSeeds; i++ {
+	for i := 0; i <= defaultNumberOfSeeds; i++ {
 		widgetEditor := new(widget.Editor)
 		widgetEditor.SingleLine, widgetEditor.Submit = true, true
 		pg.seedEditors.editors = append(pg.seedEditors.editors, l.Theme.RestoreEditor(widgetEditor, "", fmt.Sprintf("%d", i+1)))
@@ -109,7 +110,7 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 	pg.initSeedMenu()
 
 	// set suggestions
-	pg.allSuggestions = dcr.PGPWordList()
+	pg.allSuggestions = getWordSeedType().AllWords()
 
 	return pg
 }
@@ -141,6 +142,9 @@ func (pg *SeedRestore) setEditorFocus() {
 }
 
 func (pg *SeedRestore) seedEditorsHandle(gtx C) {
+	if !pg.Load.IsMobileView() {
+		return
+	}
 	for i := range pg.seedEditors.editors {
 		if pg.seedEditors.editors[i].Edit.FirstPressed() {
 			pg.seedList.ScrollTo(i)
@@ -157,14 +161,8 @@ func (pg *SeedRestore) seedEditorsHandle(gtx C) {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SeedRestore) Layout(gtx C) D {
-	var body D
-	if pg.Load.IsMobileView() {
-		body = pg.restoreMobile(gtx)
-		pg.seedEditorsHandle(gtx)
-	} else {
-		body = pg.restore(gtx)
-	}
-
+	body := pg.restore(gtx)
+	pg.seedEditorsHandle(gtx)
 	pg.resetSeedFields.SetEnabled(pg.updateSeedResetBtn())
 	seedValid, _ := pg.validateSeeds()
 	pg.validateSeed.SetEnabled(seedValid)
@@ -184,6 +182,7 @@ func (pg *SeedRestore) restore(gtx C) D {
 				Padding:     layout.UniformInset(values.MarginPadding15),
 			}.Layout(gtx,
 				layout.Rigid(pg.seedEditorViewDesktop),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding5}.Layout),
 				layout.Rigid(pg.resetSeedFields.Layout),
 			)
 		}),
@@ -196,45 +195,6 @@ func (pg *SeedRestore) restore(gtx C) D {
 	)
 }
 
-func (pg *SeedRestore) restoreMobile(gtx C) D {
-	dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Stack{Alignment: layout.N}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Orientation: layout.Vertical,
-						Width:       cryptomaterial.MatchParent,
-						Height:      cryptomaterial.WrapContent,
-						Background:  pg.Theme.Color.Surface,
-						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-						Padding:     layout.UniformInset(values.MarginPadding15),
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Bottom: values.MarginPadding10,
-							}.Layout(gtx, pg.Theme.Body1(values.String(values.StrEnterSeedPhrase)).Layout)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Flexed(1, func(gtx C) D {
-									return pg.seedEditorViewMobile(gtx)
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.resetSeedFields.Layout(gtx)
-								}),
-							)
-						}),
-					)
-				}),
-			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding1, Top: values.MarginPadding20}.Layout(gtx, pg.restoreButtonSection)
-		}),
-	)
-	return dims
-}
-
 func (pg *SeedRestore) restoreButtonSection(gtx C) D {
 	card := pg.Theme.Card()
 	card.Radius = cryptomaterial.Radius(0)
@@ -244,74 +204,63 @@ func (pg *SeedRestore) restoreButtonSection(gtx C) D {
 	})
 }
 
+func (pg *SeedRestore) divideIntoColumns(editors []*cryptomaterial.RestoreEditor, numberOfColumns, limit int) [][]layout.FlexChild {
+	// Calculate the number of rows needed
+	lenEditors := len(editors)
+	if limit != 0 {
+		lenEditors = limit
+	}
+	remainingCount := lenEditors % numberOfColumns
+	numRows := lenEditors / numberOfColumns
+	if remainingCount != 0 {
+		numRows++
+	} else {
+		remainingCount = 1
+	}
+
+	// Create a 2D slice to hold the columns
+	columns := make([][]layout.FlexChild, numRows)
+
+	// Distribute the words among the columns
+	for i := 0; i < lenEditors; i++ {
+		editorIndex := i
+		rowIndex := editorIndex / numberOfColumns
+		editor := editors[editorIndex]
+		flexChild := layout.Flexed(1, func(gtx C) D {
+			if rowIndex == numRows-1 {
+				gtx.Constraints.Max.X = (gtx.Constraints.Max.X * remainingCount / numberOfColumns)
+			}
+			pg.layoutSeedMenu(gtx, editorIndex)
+			return editor.Layout(gtx)
+		})
+		columns[rowIndex] = append(columns[rowIndex], flexChild)
+		if len(columns[rowIndex]) < numberOfColumns*2-1 {
+			columns[rowIndex] = append(columns[rowIndex], layout.Rigid(layout.Spacer{Width: values.MarginPadding5}.Layout))
+		}
+	}
+
+	return columns
+}
+
 func (pg *SeedRestore) seedEditorViewDesktop(gtx C) D {
-	inset := layout.Inset{
-		Right: values.MarginPadding5,
+	numberOfColumn := 5
+	if pg.IsMobileView() {
+		numberOfColumn = 1
 	}
-	return layout.Flex{}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return inset.Layout(gtx, func(gtx C) D {
-				return pg.inputsGroup(gtx, pg.seedList, 7, 0)
-			})
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return inset.Layout(gtx, func(gtx C) D {
-				return pg.inputsGroup(gtx, pg.seedList, 7, 1)
-			})
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return inset.Layout(gtx, func(gtx C) D {
-				return pg.inputsGroup(gtx, pg.seedList, 7, 2)
-			})
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return inset.Layout(gtx, func(gtx C) D {
-				return pg.inputsGroup(gtx, pg.seedList, 6, 3)
-			})
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return pg.inputsGroup(gtx, pg.seedList, 6, 4)
-		}),
-	)
-}
-
-func (pg *SeedRestore) seedEditorViewMobile(gtx layout.Context) layout.Dimensions {
-	inset := layout.Inset{
-		Right: values.MarginPadding5,
+	rows := pg.divideIntoColumns(pg.seedEditors.editors, numberOfColumn, pg.getWordSeedType().ToInt())
+	columnFlexChilds := make([]layout.FlexChild, 0)
+	for i := range rows {
+		j := i
+		row := rows[j]
+		columnFlexChilds = append(columnFlexChilds, layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{}.Layout(gtx, row...)
+		}))
+		if len(rows)-1 != j {
+			columnFlexChilds = append(columnFlexChilds, layout.Rigid(layout.Spacer{Height: values.MarginPadding5}.Layout))
+		}
 	}
-	return layout.Flex{}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return inset.Layout(gtx, func(gtx C) D {
-				return pg.inputsGroupMobile(gtx, pg.seedList, 33, 0)
-			})
-		}),
-	)
-}
 
-func (pg *SeedRestore) inputsGroup(gtx C, l *layout.List, len, startIndex int) D {
-	return l.Layout(gtx, len, func(gtx C, i int) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					pg.layoutSeedMenu(gtx, i*5+startIndex)
-					return pg.seedEditors.editors[i*5+startIndex].Layout(gtx)
-				})
-			}),
-		)
-	})
-}
-
-func (pg *SeedRestore) inputsGroupMobile(gtx layout.Context, l *layout.List, len, startIndex int) layout.Dimensions {
-	return l.Layout(gtx, len, func(gtx C, i int) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					pg.layoutSeedMenu(gtx, i*1+startIndex)
-					return pg.seedEditors.editors[i*1+startIndex].Layout(gtx)
-				})
-			}),
-		)
-	})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, columnFlexChilds...)
 }
 
 func (pg *SeedRestore) onSuggestionSeedsClicked() {
@@ -322,11 +271,11 @@ func (pg *SeedRestore) onSuggestionSeedsClicked() {
 				pg.seedEditors.editors[index].Edit.Editor.SetText(b.text)
 				pg.seedEditors.editors[index].Edit.Editor.MoveCaret(len(b.text), 0)
 				pg.seedClicked = true
-				if index != numberOfSeeds {
+				if index != defaultNumberOfSeeds {
 					pg.seedEditors.editors[index+1].Edit.Editor.Focus()
 				}
 
-				if index == numberOfSeeds {
+				if index == defaultNumberOfSeeds {
 					pg.isLastEditor = true
 				}
 			}
@@ -357,7 +306,7 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 			pg.openPopupIndex = i
 		}
 
-		if i != numberOfSeeds {
+		if i != defaultNumberOfSeeds {
 			pg.isLastEditor = false
 		}
 	}
@@ -383,12 +332,12 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 				}
 
 				//  Handles Enter and Return keyboard events.
-				if i != numberOfSeeds {
+				if i != defaultNumberOfSeeds {
 					pg.seedEditors.editors[i+1].Edit.Editor.Focus()
 					pg.selected = 0
 				}
 
-				if i == numberOfSeeds {
+				if i == defaultNumberOfSeeds {
 					pg.selected = 0
 					pg.isLastEditor = true
 				}
@@ -421,6 +370,9 @@ func (pg *SeedRestore) suggestionSeedEffect() {
 func (pg *SeedRestore) layoutSeedMenu(gtx C, optionsSeedMenuIndex int) {
 	if pg.openPopupIndex != optionsSeedMenuIndex || pg.openPopupIndex != pg.seedEditors.focusIndex ||
 		pg.isLastEditor {
+		return
+	}
+	if len(pg.seedMenu) == 0 {
 		return
 	}
 
@@ -474,10 +426,13 @@ func (pg *SeedRestore) updateSeedResetBtn() bool {
 
 func (pg *SeedRestore) validateSeeds() (bool, string) {
 	seedPhrase := ""
-	allSuggesString := strings.Join(pg.allSuggestions, " ")
-
+	allSuggestedWords := strings.Join(pg.allSuggestions, " ")
+	numberOfSeed := pg.getWordSeedType().ToInt()
 	for i, editor := range pg.seedEditors.editors {
-		if editor.Edit.Editor.Text() == "" || !strings.Contains(allSuggesString, editor.Edit.Editor.Text()) {
+		if i >= numberOfSeed {
+			break
+		}
+		if editor.Edit.Editor.Text() == "" || !strings.Contains(allSuggestedWords, editor.Edit.Editor.Text()) {
 			pg.seedEditors.editors[i].Edit.HintColor = pg.Theme.Color.Danger
 			return false, ""
 		}
@@ -493,7 +448,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	if isValid {
 		pg.seedPhrase = seedphrase
-		if !sharedW.VerifySeed(pg.seedPhrase, pg.walletType) {
+		if !sharedW.VerifySeed(pg.seedPhrase, pg.walletType, pg.getWordSeedType()) {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 			pg.window.ShowModal(errModal)
 			return false
@@ -502,7 +457,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	// Compare seed with existing wallets seed. On positive match abort import
 	// to prevent duplicate wallet. walletWithSameSeed >= 0 if there is a match.
-	walletWithSameSeed, err := pg.AssetsManager.WalletWithSeed(pg.walletType, pg.seedPhrase)
+	walletWithSameSeed, err := pg.AssetsManager.WalletWithSeed(pg.walletType, pg.seedPhrase, pg.getWordSeedType())
 	if err != nil {
 		log.Error(err)
 		return false
@@ -518,6 +473,8 @@ func (pg *SeedRestore) verifySeeds() bool {
 }
 
 func (pg *SeedRestore) resetSeeds() {
+	pg.allSuggestions = pg.getWordSeedType().AllWords()
+	pg.seedEditors.focusIndex = -1
 	for i := 0; i < len(pg.seedEditors.editors); i++ {
 		pg.seedEditors.editors[i].Edit.Editor.SetText("")
 	}
@@ -574,7 +531,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass)
+				_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
 				if err != nil {
 					errString := err.Error()
 					if err.Error() == libutils.ErrExist {
@@ -601,7 +558,6 @@ func (pg *SeedRestore) HandleUserInteractions() {
 
 	for pg.resetSeedFields.Clicked() {
 		pg.resetSeeds()
-		pg.seedEditors.focusIndex = -1
 	}
 
 	pg.editorSeedsEventsHandler()
