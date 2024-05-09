@@ -177,6 +177,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	}
 
 	// Reload the window whenever there is an exchange rate update.
+	hp.AssetsManager.RateSource.RemoveRateListener(HomePageID)
 	rateListener := &ext.RateListener{
 		OnRateUpdated: hp.CalculateAssetsUSDBalance,
 	}

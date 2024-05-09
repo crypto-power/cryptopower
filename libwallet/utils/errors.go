@@ -46,6 +46,7 @@ const (
 	ErrNoMixableOutput              = "err_no_mixable_output"
 	ErrInvalidVoteBit               = "err_invalid_vote_bit"
 	ErrNotSynced                    = "err_not_synced"
+	ErrNoSeed                       = "no_seed"
 )
 
 var (

@@ -132,7 +132,7 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 	// reset the checkbox
 	swmp.checkBox.CheckBox.Value = false
 
-	needBackup := swmp.selectedWallet.GetEncryptedSeed() != ""
+	needBackup := !swmp.selectedWallet.IsWalletBackedUp()
 
 	if swmp.CurrentPage() == nil {
 		swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet)) // TODO: Should pagestack have a start page? YES!
@@ -410,7 +410,7 @@ func (swmp *SingleWalletMasterPage) OnNavigatedFrom() {
 	// The encrypted seed exists by default and is cleared after wallet is backed up.
 	// Activate the modal requesting the user to backup their current wallet on
 	// every wallet open request until the encrypted seed is cleared (backup happens).
-	if swmp.selectedWallet.GetEncryptedSeed() != "" {
+	if !swmp.selectedWallet.IsWalletBackedUp() {
 		swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 

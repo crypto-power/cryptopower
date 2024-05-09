@@ -2,6 +2,7 @@ package dcr
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"sync"
 
@@ -235,6 +236,17 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
 		dbMutex:                           &dbMutex,
+	}
+
+	// w.EncryptedSeed was previously deleted after verification. Existing
+	// wallets created before the change to allow viewing wallet seed in-app
+	// should still behave normal but they can no longer view their seed.
+	if len(w.EncryptedSeed) == 0 && !w.IsBackedUp {
+		w.IsBackedUp = true
+		if err := params.DB.Save(w); err != nil {
+			log.Errorf("DB.Save error: %v", err)
+			return nil, errors.New("failed to update wallet back up state")
+		}
 	}
 
 	err = dcrWallet.Prepare(ldr, params)

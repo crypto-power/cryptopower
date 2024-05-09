@@ -21,6 +21,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/security"
+	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	s "github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -52,7 +53,7 @@ type SettingsPage struct {
 
 	pageContainer *widget.List
 
-	changePass, rescan                         *cryptomaterial.Clickable
+	changePass, viewSeed, rescan               *cryptomaterial.Clickable
 	changeAccount, checklog, checkStats        *cryptomaterial.Clickable
 	changeWalletName, addAccount, deleteWallet *cryptomaterial.Clickable
 	verifyMessage, validateAddr, signMessage   *cryptomaterial.Clickable
@@ -76,6 +77,7 @@ func NewSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func
 		GenericPageModal:    app.NewGenericPageModal(WalletSettingsPageID),
 		wallet:              wallet,
 		changePass:          l.Theme.NewClickable(false),
+		viewSeed:            l.Theme.NewClickable(false),
 		rescan:              l.Theme.NewClickable(false),
 		setGapLimit:         l.Theme.NewClickable(false),
 		changeAccount:       l.Theme.NewClickable(false),
@@ -180,6 +182,12 @@ func (pg *SettingsPage) generalSection() layout.Widget {
 				return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword)))
 			}),
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
+			layout.Rigid(func(gtx C) D {
+				if !pg.wallet.IsWalletBackedUp() || !pg.wallet.HasWalletSeed() {
+					return D{}
+				}
+				return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.viewSeed, values.String(values.StrExportWalletSeed)))
+			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
 					return pg.subSection(gtx, values.String(values.StrUnconfirmedFunds), pg.spendUnconfirmed.Layout)
@@ -649,6 +657,13 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	for pg.changePass.Clicked() {
 		pg.changeSpendingPasswordModal()
 		break
+	}
+
+	for pg.viewSeed.Clicked() {
+		currentPage := pg.ParentWindow().CurrentPageID()
+		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(load *load.Load, navigator app.WindowNavigator) {
+			navigator.ClosePagesAfter(currentPage)
+		}))
 	}
 
 	if pg.rescan.Clicked() {

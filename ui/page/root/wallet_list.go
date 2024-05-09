@@ -325,7 +325,7 @@ func (pg *WalletSelectorPage) layoutSyncStatus(gtx C, item *walletWithBalance) D
 		}),
 	}
 
-	if len(item.wallet.GetEncryptedSeed()) > 0 {
+	if !item.wallet.IsWalletBackedUp() {
 		widgets = append(widgets,
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{

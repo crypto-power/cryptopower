@@ -90,7 +90,7 @@ func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
 			layout.Rigid(wsi.syncStatusSection),
 		}
 
-		if len(wsi.wallet.GetEncryptedSeed()) > 0 {
+		if !wsi.wallet.IsWalletBackedUp() {
 			items = append(items, layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.E.Layout(gtx, wsi.toBackup.Layout)
@@ -160,7 +160,7 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 		})
 	}))
 
-	if len(wsi.wallet.GetEncryptedSeed()) > 0 {
+	if !wsi.wallet.IsWalletBackedUp() {
 		items = append(items, layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(wsi.Theme.Icons.RedAlert.Layout20dp),

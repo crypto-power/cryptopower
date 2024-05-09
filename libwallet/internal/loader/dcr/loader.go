@@ -195,6 +195,12 @@ func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
+	defer func() {
+		for i := range params.Seed {
+			params.Seed[i] = 0
+		}
+	}()
+
 	if l.wallet != nil {
 		return nil, errors.E(op, errors.Exist, "wallet already opened")
 	}
