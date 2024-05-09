@@ -28,6 +28,7 @@ type Wallet struct {
 	logDir    string
 
 	EncryptedSeed         []byte
+	IsBackedUp            bool
 	IsRestored            bool
 	HasDiscoveredAccounts bool
 	PrivatePassphraseType int32
@@ -211,7 +212,7 @@ func (wallet *Wallet) RootDir() string {
 }
 
 // SetNetType is used to set the net type if it doesn't exist. This method is
-// used before the actual wallet is loaded otherwise once loaded the nettype
+// used before the actual wallet is loaded otherwise once loaded the netType
 // can't be altered. This method help create the full method with the unique
 // path for the folder structure for the testnet data dirs.
 func (wallet *Wallet) SetNetType(netType utils.NetworkType) {
@@ -247,10 +248,16 @@ func (wallet *Wallet) Internal() *loader.LoadedWallets {
 	return lw
 }
 
-func (wallet *Wallet) GetEncryptedSeed() string {
+func (wallet *Wallet) IsWalletBackedUp() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
-	return string(wallet.EncryptedSeed)
+	return wallet.IsBackedUp
+}
+
+func (wallet *Wallet) HasWalletSeed() bool {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return len(wallet.EncryptedSeed) > 0
 }
 
 func (wallet *Wallet) GetWalletID() int {
@@ -465,6 +472,14 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType,
 ) (*Wallet, error) {
+	// Ensure the encrypted seeds are available before creating wallet so we can
+	// return early.
+	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seedMnemonic)
+	if err != nil {
+		log.Errorf("wallet.createWallet: error encrypting wallet seed: %v", err)
+		return nil, err
+	}
+
 	wallet := &Wallet{
 		Name:                  pass.Name,
 		PrivatePassphraseType: pass.PrivatePassType,
@@ -473,6 +488,7 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 		rootDir:               params.RootDir,
 		logDir:                params.LogDir,
 
+		EncryptedSeed:         encryptedSeed,
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
 		Type:                  assetType,

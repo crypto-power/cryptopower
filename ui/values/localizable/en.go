@@ -940,4 +940,5 @@ const EN = `
 "24WordSeed" = "24-word seed"
 "33WordSeed" = "33-word seed"
 "wordSeedType" = "Word Seed Type:"
+"exportWalletSeed" = "Export wallet seed"
 `

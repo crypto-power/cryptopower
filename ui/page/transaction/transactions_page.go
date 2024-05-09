@@ -13,6 +13,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -382,6 +383,7 @@ func (pg *TransactionsPage) dropdownLayout(gtx C) D {
 }
 
 func (pg *TransactionsPage) leftDropdown(gtx C) D {
+	showOverlay := pg.walletNotReady() && pg.multiWalletLayout
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.isShowTitle && pg.IsMobileView() {
@@ -396,6 +398,9 @@ func (pg *TransactionsPage) leftDropdown(gtx C) D {
 
 		}),
 		layout.Rigid(func(gtx C) D {
+			if showOverlay {
+				return D{}
+			}
 			icon := pg.Theme.Icons.FilterOffImgIcon
 			if pg.isFilterOpen {
 				icon = pg.Theme.Icons.FilterImgIcon
@@ -550,6 +555,7 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 			lbl := pg.Theme.Label(pg.ConvertTextSize(values.TextSize20), values.String(values.StrFunctionUnavailable))
 			lbl.Font.Weight = font.SemiBold
 			lbl.Color = pg.Theme.Color.PageNavText
+			lbl.Alignment = text.Middle
 			return cryptomaterial.CentralizeWidget(gtx, lbl.Layout)
 		}),
 	)

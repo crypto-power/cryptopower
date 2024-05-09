@@ -121,21 +121,29 @@ func (wallet *Wallet) batchDbTransaction(dbOp func(node storm.Node) error) (err 
 // DecryptSeed decrypts wallet.EncryptedSeed using privatePassphrase
 func (wallet *Wallet) DecryptSeed(privatePassphrase string) (string, error) {
 	if wallet.EncryptedSeed == nil {
-		return "", errors.New(utils.ErrInvalid)
+		return "", errors.New(utils.ErrNoSeed)
 	}
 
 	return decryptWalletSeed([]byte(privatePassphrase), wallet.EncryptedSeed)
 }
 
-// VerifySeedForWallet compares seedMnemonic with the decrypted wallet.EncryptedSeed and clears wallet.EncryptedSeed if they match.
+// VerifySeedForWallet compares seedMnemonic with the decrypted
+// wallet.EncryptedSeed.
 func (wallet *Wallet) VerifySeedForWallet(seedMnemonic, privpass string) (bool, error) {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+
 	decryptedSeed, err := decryptWalletSeed([]byte(privpass), wallet.EncryptedSeed)
 	if err != nil {
 		return false, err
 	}
 
 	if decryptedSeed == seedMnemonic {
-		wallet.EncryptedSeed = nil
+		if wallet.IsBackedUp {
+			return true, nil // return early
+		}
+
+		wallet.IsBackedUp = true
 		return true, utils.TranslateError(wallet.db.Save(wallet))
 	}
 

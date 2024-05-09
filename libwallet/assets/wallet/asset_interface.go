@@ -40,7 +40,8 @@ type Asset interface {
 
 	RootDir() string
 	DataDir() string
-	GetEncryptedSeed() string
+	HasWalletSeed() bool
+	IsWalletBackedUp() bool
 	IsConnectedToNetwork() bool
 	NetType() utils.NetworkType
 	ToAmount(v int64) AssetAmount

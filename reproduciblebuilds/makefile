@@ -1,7 +1,7 @@
 # This how we want to name the binary output
 BUILDNAME=cryptopower
 
-VERSION="v1.0.0"
+VERSION="v1.1.3"
 # dev or prod
 BuildEnv="prod" 
 

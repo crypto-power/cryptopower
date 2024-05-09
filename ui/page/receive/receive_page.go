@@ -10,6 +10,7 @@ import (
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -290,6 +291,7 @@ func (pg *Page) contentLayout(gtx C) D {
 									func(gtx C) D {
 										warning := pg.Theme.Label(textSize16, values.String(values.StrFunctionUnavailable))
 										warning.Color = pg.Theme.Color.Danger
+										warning.Alignment = text.Middle
 										return warning.Layout(gtx)
 
 									},

@@ -216,7 +216,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the BTC asset. It then generates the BTC loader interface
 // that is passed to be used upstream while loading the existing the wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
 func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -236,6 +236,17 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
 		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
+	}
+
+	// w.EncryptedSeed was previously deleted after verification. Existing
+	// wallets created before the change to allow viewing wallet seed in-app
+	// should still behave normal but they can no longer view their seed.
+	if len(w.EncryptedSeed) == 0 && !w.IsBackedUp {
+		w.IsBackedUp = true
+		if err := params.DB.Save(w); err != nil {
+			log.Errorf("DB.Save error: %v", err)
+			return nil, errors.New("failed to update wallet back up state")
+		}
 	}
 
 	err = btcWallet.Prepare(ldr, params)

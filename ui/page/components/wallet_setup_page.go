@@ -211,15 +211,17 @@ func (pg *CreateWallet) Layout(gtx C) D {
 			}.Layout2(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(pg.backButton.Layout),
-							layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout),
-							layout.Rigid(func(gtx C) D {
-								lbl := pg.Theme.H6(values.String(values.StrCreateWallet))
-								lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
-								return lbl.Layout(gtx)
-							}),
-						)
+						return layout.Inset{Top: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(pg.backButton.Layout),
+								layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout),
+								layout.Rigid(func(gtx C) D {
+									lbl := pg.Theme.H6(values.String(values.StrCreateWallet))
+									lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
+									return lbl.Layout(gtx)
+								}),
+							)
+						})
 					}),
 					layout.Rigid(func(gtx C) D {
 						return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
@@ -512,7 +514,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			pg.walletCreationSuccessCallback()
 		}
 		ast := pg.assetTypeSelector.SelectedAssetType()
-		pg.ParentNavigator().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
+		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
 	}
 
 	// imported wallet click action control
