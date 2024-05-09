@@ -251,6 +251,9 @@ func (wallet *Wallet) Internal() *loader.LoadedWallets {
 func (wallet *Wallet) IsWalletBackedUp() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
+	if wallet.IsRestored || wallet.IsWatchingOnlyWallet() {
+		return true
+	}
 	return wallet.IsBackedUp
 }
 
@@ -335,11 +338,7 @@ func (wallet *Wallet) SetBirthday(birthday time.Time) {
 func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType,
 ) (*Wallet, error) {
-	if pass.WordSeedType.ToInt() == 0 {
-		return nil, errors.New("please select word seed type")
-	}
-
-	seed, err := generateSeed(assetType, pass.WordSeedType)
+	seed, err := generateSeed(assetType)
 	if err != nil {
 		return nil, err
 	}
@@ -350,13 +349,14 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 	}
 
 	wallet := &Wallet{
-		Name:                  pass.Name,
-		db:                    params.DB,
-		dbDriver:              params.DbDriver,
-		rootDir:               params.RootDir,
-		logDir:                params.LogDir,
-		CreatedAt:             time.Now(),
-		EncryptedSeed:         encryptedSeed,
+		Name:          pass.Name,
+		db:            params.DB,
+		dbDriver:      params.DbDriver,
+		rootDir:       params.RootDir,
+		logDir:        params.LogDir,
+		CreatedAt:     time.Now(),
+		EncryptedSeed: encryptedSeed,
+
 		PrivatePassphraseType: pass.PrivatePassType,
 		HasDiscoveredAccounts: true,
 		Type:                  assetType,
@@ -369,7 +369,7 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		if err != nil {
 			return err
 		}
-		return wallet.createWallet(pass.PrivatePass, seed, pass.WordSeedType)
+		return wallet.createWallet(pass.PrivatePass, seed)
 	}); err != nil {
 		return nil, err
 	}
@@ -383,13 +383,13 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 	return wallet, nil
 }
 
-func (wallet *Wallet) createWallet(privatePassphrase, seedMnemonic string, wordSeedType WordSeedType) error {
+func (wallet *Wallet) createWallet(privatePassphrase, seedMnemonic string) error {
 	log.Info("Creating Wallet")
 	if len(seedMnemonic) == 0 {
 		return errors.New(utils.ErrEmptySeed)
 	}
 
-	seed, err := DecodeSeedMnemonic(seedMnemonic, wallet.Type, wordSeedType)
+	seed, err := DecodeSeedMnemonic(seedMnemonic, wallet.Type)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -501,7 +501,7 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 		if err != nil {
 			return err
 		}
-		return wallet.createWallet(pass.PrivatePass, seedMnemonic, pass.WordSeedType)
+		return wallet.createWallet(pass.PrivatePass, seedMnemonic)
 	}); err != nil {
 		return nil, err
 	}
@@ -714,7 +714,6 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 	oldPassphrase := []byte(oldPrivatePassphrase)
 	newPassphrase := []byte(newPrivatePassphrase)
 	encryptedSeed := wallet.EncryptedSeed
-
 	if encryptedSeed != nil {
 		decryptedSeed, err := decryptWalletSeed(oldPassphrase, encryptedSeed)
 		if err != nil {
