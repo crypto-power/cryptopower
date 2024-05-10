@@ -546,9 +546,8 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				pg.window.ShowModal(infoModal)
 				pg.resetSeeds()
 				m.Dismiss()
-				if pg.restoreComplete == nil {
-					pg.ParentNavigator().CloseCurrentPage()
-				} else {
+				pg.ParentNavigator().CloseCurrentPage()
+				if pg.restoreComplete != nil {
 					pg.restoreComplete()
 				}
 				return true

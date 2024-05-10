@@ -322,9 +322,8 @@ func (pg *Restore) restoreFromSeedEditor() {
 			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(infoModal)
 			m.Dismiss()
-			if pg.restoreComplete == nil {
-				pg.ParentNavigator().CloseCurrentPage()
-			} else {
+			pg.ParentNavigator().CloseCurrentPage()
+			if pg.restoreComplete != nil {
 				pg.restoreComplete()
 			}
 			clearEditor()
