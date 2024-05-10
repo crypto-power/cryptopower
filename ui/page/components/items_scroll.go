@@ -98,7 +98,7 @@ func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator,
 		s.cacheData = nil
 	}
 	s.mu.Unlock()
-	if s.data == nil {
+	if s.data == nil || len(s.data.items) == 0 {
 		s.fetchScrollData(isScrollUp, window)
 	}
 }
@@ -118,7 +118,6 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 	if s.isLoadingItems || s.queryFunc == nil {
 		return
 	}
-
 	s.mu.Lock()
 	tempSize := s.pageSize
 	// Scroll up and down without load more
@@ -177,6 +176,9 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 	items, _, _, err := s.queryFunc(s.offset, tempSize)
 	if len(items) <= 0 {
 		s.isLoadingItems = false
+		if s.itemsCount == -1 {
+			s.itemsCount = 0
+		}
 		return
 	}
 
