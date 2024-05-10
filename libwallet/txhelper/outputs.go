@@ -8,6 +8,8 @@ import (
 	"github.com/decred/dcrd/wire"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	ltcWire "github.com/ltcsuite/ltcd/wire"
+	bchchaincfg "github.com/gcash/bchd/chaincfg"
+	bchWire "github.com/gcash/bchd/wire"
 )
 
 func MakeTxOutput(address string, amountInAtom int64, net dcrutil.AddressParams) (output *wire.TxOut, err error) {
@@ -45,6 +47,19 @@ func MakeLTCTxOutput(address string, amountInLitoshi int64, net *ltcchaincfg.Par
 
 	output = &ltcWire.TxOut{
 		Value:    amountInLitoshi,
+		PkScript: pkScript,
+	}
+	return
+}
+
+func MakeBCHTxOutput(address string, amountInSatoshi int64, net *bchchaincfg.Params) (output *bchWire.TxOut, err error) {
+	pkScript, err := addresshelper.BCHPkScript(address, net)
+	if err != nil {
+		return
+	}
+
+	output = &bchWire.TxOut{
+		Value:    amountInSatoshi,
 		PkScript: pkScript,
 	}
 	return

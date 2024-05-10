@@ -104,6 +104,8 @@ func (wallet *Wallet) prepare() (err error) {
 		dbName = walletdata.BTCDBName
 	case utils.LTCWalletAsset:
 		dbName = walletdata.LTCDBName
+	case utils.BCHWalletAsset:
+		dbName = walletdata.BCHDBName
 	}
 
 	walletDataDBPath := filepath.Join(wallet.dataDir(), dbName)
@@ -169,10 +171,16 @@ func (wallet *Wallet) Shutdown() {
 }
 
 func (wallet *Wallet) TargetTimePerBlockMinutes() float64 {
-	if wallet.Type == utils.BTCWalletAsset {
+	switch wallet.Type {
+	case utils.BTCWalletAsset:
 		return wallet.chainsParams.BTC.TargetTimePerBlock.Minutes()
+	case utils.LTCWalletAsset:
+		return wallet.chainsParams.LTC.TargetTimePerBlock.Minutes()
+	case utils.BCHWalletAsset:
+		return wallet.chainsParams.BCH.TargetTimePerBlock.Minutes()
+	default:
+		return wallet.chainsParams.DCR.TargetTimePerBlock.Minutes()
 	}
-	return wallet.chainsParams.DCR.TargetTimePerBlock.Minutes()
 }
 
 // WalletCreationTimeInMillis returns the wallet creation time for new

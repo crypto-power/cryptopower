@@ -6,6 +6,7 @@ import (
 
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	dcrcfg "github.com/decred/dcrd/chaincfg/v3"
+	bchcfg "github.com/gcash/bchd/chaincfg"
 	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -52,6 +53,7 @@ type ChainsParams struct {
 	DCR *dcrcfg.Params
 	BTC *btccfg.Params
 	LTC *ltccfg.Params
+	BCH *bchcfg.Params
 }
 
 var (
@@ -67,6 +69,10 @@ var (
 	LTCtestnetParams      = &ltccfg.TestNet4Params
 	LTCSimnetParams       = &ltccfg.SimNetParams
 	LTCRegnetParamsVal    = ltccfg.RegressionNetParams
+	BCHmainnetParams      = &bchcfg.MainNetParams
+	BCHtestnetParams      = &bchcfg.TestNet3Params
+	BCHSimnetParams       = &bchcfg.SimNetParams
+	BCHRegnetParamsVal    = bchcfg.RegressionNetParams
 	DCRDEXSimnetParams    = dcrcfg.SimNetParams()
 	BTCDEXRegnetParamsVal = btccfg.RegressionNetParams
 	LTCDEXRegnetParamsVal = ltccfg.RegressionNetParams
@@ -94,6 +100,8 @@ func NetDir(assetType AssetType, netType NetworkType) string {
 		dirName = params.DCR.Name
 	case LTCWalletAsset:
 		dirName = params.LTC.Name
+	case BCHWalletAsset:
+		dirName = params.BCH.Name
 	}
 
 	return strings.ToLower(dirName)
@@ -156,6 +164,23 @@ func LTCChainParams(netType NetworkType) (*ltccfg.Params, error) {
 	}
 }
 
+// BCHChainParams returns the network parameters from the BCH chain provided
+// a network type is given.
+func BCHChainParams(netType NetworkType) (*bchcfg.Params, error) {
+	switch netType {
+	case Mainnet:
+		return BCHmainnetParams, nil
+	case Testnet:
+		return BCHtestnetParams, nil
+	case Simulation:
+		return BCHSimnetParams, nil
+	case Regression:
+		return &BCHRegnetParamsVal, nil
+	default:
+		return nil, fmt.Errorf("%v: (%v)", ErrInvalidNet, netType)
+	}
+}
+
 // GetChainParams returns the network parameters of a chain provided its
 // asset type and network type.
 func GetChainParams(assetType AssetType, netType NetworkType) (*ChainsParams, error) {
@@ -178,6 +203,12 @@ func GetChainParams(assetType AssetType, netType NetworkType) (*ChainsParams, er
 			return nil, err
 		}
 		return &ChainsParams{LTC: params}, nil
+	case BCHWalletAsset:
+		params, err := BCHChainParams(netType)
+		if err != nil {
+			return nil, err
+		}
+		return &ChainsParams{BCH: params}, nil
 	default:
 		return nil, fmt.Errorf("%v: (%v)", ErrAssetUnknown, assetType)
 	}

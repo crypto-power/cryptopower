@@ -26,6 +26,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/bch"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 
@@ -44,6 +45,10 @@ type Assets struct {
 		BadWallets map[int]*sharedW.Wallet
 	}
 	LTC struct {
+		Wallets    map[int]sharedW.Asset
+		BadWallets map[int]*sharedW.Wallet
+	}
+	BCH struct {
 		Wallets    map[int]sharedW.Asset
 		BadWallets map[int]*sharedW.Wallet
 	}
@@ -91,6 +96,12 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 		return nil, errors.Errorf("error initializing LTC parameters: %s", err.Error())
 	}
 
+	bchChainParams, err := initializeBCHWalletParameters(netType)
+	if err != nil {
+		log.Errorf("error initializing BCH parameters: %s", err.Error())
+		return nil, errors.Errorf("error initializing BCH parameters: %s", err.Error())
+	}
+
 	params := &sharedW.InitParams{
 		DbDriver:    dbDriver,
 		RootDir:     rootDir,
@@ -107,14 +118,17 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 	mgr.Assets.BTC.Wallets = make(map[int]sharedW.Asset)
 	mgr.Assets.DCR.Wallets = make(map[int]sharedW.Asset)
 	mgr.Assets.LTC.Wallets = make(map[int]sharedW.Asset)
+	mgr.Assets.BCH.Wallets = make(map[int]sharedW.Asset)
 
 	mgr.Assets.BTC.BadWallets = make(map[int]*sharedW.Wallet)
 	mgr.Assets.DCR.BadWallets = make(map[int]*sharedW.Wallet)
 	mgr.Assets.LTC.BadWallets = make(map[int]*sharedW.Wallet)
+	mgr.Assets.BCH.BadWallets = make(map[int]*sharedW.Wallet)
 
 	mgr.chainsParams.DCR = dcrChainParams
 	mgr.chainsParams.BTC = btcChainParams
 	mgr.chainsParams.LTC = ltcChainParams
+	mgr.chainsParams.BCH = bchChainParams
 	return mgr, nil
 }
 
@@ -288,6 +302,15 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 				mgr.Assets.LTC.Wallets[wallet.ID] = w
 			}
 
+		case utils.BCHWalletAsset:
+			w, err := bch.LoadExisting(wallet, mgr.params)
+			if err != nil {
+				mgr.Assets.BCH.BadWallets[wallet.ID] = wallet
+				log.Warnf("Ignored bch wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			} else {
+				mgr.Assets.BCH.Wallets[wallet.ID] = w
+			}
+
 		default:
 			// Classify all wallets with missing AssetTypes as DCR badwallets.
 			mgr.Assets.DCR.BadWallets[wallet.ID] = wallet
@@ -410,6 +433,11 @@ func (mgr *AssetsManager) LTCBadWallets() map[int]*sharedW.Wallet {
 	return mgr.Assets.LTC.BadWallets
 }
 
+// BCHBadWallets returns a map of all bad BCH wallets.
+func (mgr *AssetsManager) BCHBadWallets() map[int]*sharedW.Wallet {
+	return mgr.Assets.BCH.BadWallets
+}
+
 // LoadedWalletsCount returns the number of wallets loaded in the assets manager.
 func (mgr *AssetsManager) LoadedWalletsCount() int32 {
 	return int32(len(mgr.AllWallets()))
@@ -450,6 +478,8 @@ func (mgr *AssetsManager) sortWallets(assetType utils.AssetType) []sharedW.Asset
 		unsortedWallets = mgr.Assets.BTC.Wallets
 	case utils.LTCWalletAsset:
 		unsortedWallets = mgr.Assets.LTC.Wallets
+	case utils.BCHWalletAsset:
+		unsortedWallets = mgr.Assets.BCH.Wallets
 	}
 
 	for _, wallet := range unsortedWallets {
@@ -486,11 +516,17 @@ func (mgr *AssetsManager) AllLTCWallets() (wallets []sharedW.Asset) {
 	return mgr.sortWallets(utils.LTCWalletAsset)
 }
 
+// AllBCHWallets returns all BCH wallets in the assets manager.
+func (mgr *AssetsManager) AllBCHWallets() (wallets []sharedW.Asset) {
+	return mgr.sortWallets(utils.BCHWalletAsset)
+}
+
 // AllWallets returns all wallets in the assets manager.
 func (mgr *AssetsManager) AllWallets() (wallets []sharedW.Asset) {
 	wallets = mgr.AllDCRWallets()
 	wallets = append(wallets, mgr.AllBTCWallets()...)
 	wallets = append(wallets, mgr.AllLTCWallets()...)
+	wallets = append(wallets, mgr.AllBCHWallets()...)
 	return wallets
 }
 
@@ -512,6 +548,8 @@ func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
 		delete(mgr.Assets.DCR.Wallets, walletID)
 	case utils.LTCWalletAsset:
 		delete(mgr.Assets.LTC.Wallets, walletID)
+	case utils.BCHWalletAsset:
+		delete(mgr.Assets.BCH.Wallets, walletID)
 	}
 
 	return nil
@@ -528,6 +566,9 @@ func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
 	if wallet, ok := mgr.Assets.LTC.Wallets[walletID]; ok {
 		return wallet
 	}
+	if wallet, ok := mgr.Assets.BCH.Wallets[walletID]; ok {
+		return wallet
+	}
 	return nil
 }
 
@@ -542,6 +583,8 @@ func (mgr *AssetsManager) AssetWallets(assetTypes ...utils.AssetType) []sharedW.
 			wallets = append(wallets, mgr.AllDCRWallets()...)
 		case utils.LTCWalletAsset:
 			wallets = append(wallets, mgr.AllLTCWallets()...)
+		case utils.BCHWalletAsset:
+			wallets = append(wallets, mgr.AllBCHWallets()...)
 		}
 	}
 
@@ -560,6 +603,9 @@ func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
 		return badWallet
 	}
 	if badWallet, ok := mgr.Assets.LTC.BadWallets[walletID]; ok {
+		return badWallet
+	}
+	if badWallet, ok := mgr.Assets.BCH.BadWallets[walletID]; ok {
 		return badWallet
 	}
 	return nil
@@ -588,6 +634,8 @@ func (mgr *AssetsManager) DeleteBadWallet(walletID int) error {
 		delete(mgr.Assets.DCR.BadWallets, walletID)
 	case utils.LTCWalletAsset:
 		delete(mgr.Assets.LTC.BadWallets, walletID)
+	case utils.BCHWalletAsset:
+		delete(mgr.Assets.BCH.BadWallets, walletID)
 	}
 
 	return nil
@@ -618,7 +666,9 @@ func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemoni
 	case utils.DCRWalletAsset:
 		return mgr.DCRWalletWithSeed(seedMnemonic, wordSeedType)
 	case utils.LTCWalletAsset:
-		return mgr.LTCWalletWithSeed(seedMnemonic, wordSeedType)
+		return mgr.LTCWalletWithSeed(seedMnemonic)
+	case utils.BCHWalletAsset:
+		return mgr.BCHWalletWithSeed(seedMnemonic)
 	default:
 		return -1, utils.ErrAssetUnknown
 	}
@@ -632,7 +682,9 @@ func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, 
 	case utils.DCRWalletAsset:
 		return mgr.RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase, wordSeedType, privatePassphraseType)
 	case utils.LTCWalletAsset:
-		return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, wordSeedType, privatePassphraseType)
+		return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+	case utils.BCHWalletAsset:
+		return mgr.RestoreBCHWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
 	default:
 		return nil, utils.ErrAssetUnknown
 	}
@@ -648,6 +700,8 @@ func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string
 		return mgr.BTCWalletWithXPub(xPub)
 	case utils.LTCWalletAsset:
 		return mgr.LTCWalletWithXPub(xPub)
+	case utils.BCHWalletAsset:
+		return mgr.BCHWalletWithXPub(xPub)
 	default:
 		return -1, utils.ErrAssetUnknown
 	}
@@ -719,6 +773,7 @@ func (mgr *AssetsManager) AllAssetTypes() []utils.AssetType {
 		utils.DCRWalletAsset,
 		utils.BTCWalletAsset,
 		utils.LTCWalletAsset,
+		utils.BCHWalletAsset,
 	}
 }
 
@@ -753,6 +808,12 @@ func (mgr *AssetsManager) BlockExplorerURLForTx(assetType utils.AssetType, txHas
 			return "https://chain.so/tx/LTC/" + txHash
 		}
 		return "https://chain.so/tx/LTCTEST/" + txHash
+
+	case utils.BCHWalletAsset:
+		if isMainnet {
+			return "https://chain.so/tx/BCH/" + txHash
+		}
+		return "https://chain.so/tx/BCHTEST/" + txHash
 	}
 
 	return ""
@@ -791,6 +852,18 @@ func (mgr *AssetsManager) LTCHDPrefix() string {
 		return ltc.TestnetHDPath
 	case utils.Mainnet:
 		return ltc.MainnetHDPath
+	default:
+		return ""
+	}
+}
+
+// BCH HDPrefix returns the HD path prefix for the Bitcoin Cash wallet network.
+func (mgr *AssetsManager) BCHHDPrefix() string {
+	switch mgr.NetType() {
+	case utils.Testnet:
+		return bch.TestnetHDPath
+	case utils.Mainnet:
+		return bch.MainnetHDPath
 	default:
 		return ""
 	}
