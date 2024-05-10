@@ -251,6 +251,9 @@ func (wallet *Wallet) Internal() *loader.LoadedWallets {
 func (wallet *Wallet) IsWalletBackedUp() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
+	if wallet.IsRestored || wallet.IsWatchingOnlyWallet() {
+		return true
+	}
 	return wallet.IsBackedUp
 }
 
