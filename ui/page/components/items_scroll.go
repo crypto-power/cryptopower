@@ -96,6 +96,7 @@ func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator,
 		s.itemsCount = 0
 		s.data = nil
 		s.cacheData = nil
+		s.list.Position.Offset = 0
 	}
 	s.mu.Unlock()
 	if s.data == nil || len(s.data.items) == 0 {
@@ -157,7 +158,6 @@ func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator)
 			s.mu.Unlock()
 			return
 		}
-
 	}
 
 	// handle when there is a need to load more items.
@@ -291,22 +291,12 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 	s.prevScrollView = s.scrollView
 
 	if isScrollingDown {
-		// Enforce the first item to be at the list top.
-		s.list.ScrollToEnd = false
-		s.list.Position.BeforeEnd = false
-
 		s.mu.Unlock()
-
 		go s.fetchScrollData(false, window)
 	}
 
 	if isScrollingUp {
-		// Enforce the first item to be at the list bottom.
-		s.list.ScrollToEnd = true
-		s.list.Position.BeforeEnd = true
-
 		s.mu.Unlock()
-
 		go s.fetchScrollData(true, window)
 	}
 

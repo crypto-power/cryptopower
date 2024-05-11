@@ -167,15 +167,6 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 	}
 
 	orderNewest := pg.orderDropDown.Selected() != values.String(values.StrOldest)
-
-	isReset := proposalFilter != pg.previousFilter.TypeFilter || orderNewest == pg.previousFilter.OrderNewest
-	if isReset {
-		// reset the offset to zero
-		offset = 0
-		pg.previousFilter.TypeFilter = proposalFilter
-		pg.previousFilter.OrderNewest = orderNewest
-	}
-
 	searchKey := pg.searchEditor.Editor.Text()
 	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, orderNewest, strings.TrimSpace(searchKey))
 	listItems := make([]*components.ProposalItem, 0)
@@ -192,7 +183,7 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 		listItems = proposalItems
 	}
 
-	return listItems, len(listItems), isReset, nil
+	return listItems, len(listItems), true, nil
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -483,7 +474,6 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 		if status == libutils.ProposalStatusSynced {
 			pg.syncCompleted = true
 			pg.isSyncing = false
-
 			go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		}
