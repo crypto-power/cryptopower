@@ -368,8 +368,10 @@ func (pg *DEXMarketPage) setServerMarkets() {
 			serverIsDisconnected = xc.ConnectionStatus != comms.Connected
 			for _, m := range xc.Markets {
 				base, quote := convertAssetIDToAssetType(m.BaseID), convertAssetIDToAssetType(m.QuoteID)
-				if base == "" || quote == "" {
-					continue // market asset not supported by cryptopower. TODO: Should we support just displaying stats for unsupported markets?
+				if base == assetTypeNoAsset || quote == assetTypeNoAsset {
+					// market asset not supported by cryptopower. TODO: Should
+					// we support just displaying stats for unsupported markets?
+					continue
 				}
 
 				marketItem := cryptomaterial.DropDownItem{
