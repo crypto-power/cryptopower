@@ -1783,7 +1783,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 	// Show modal to select DEX wallet and then prompt user for DEX password.
 	walletSelectModal := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrSelectWallet)).
-		SetCancelable(false).
+		SetCancelable(true).
 		UseCustomWidget(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
