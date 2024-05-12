@@ -790,7 +790,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 		} else {
 			overlayMsg = values.String(values.StrNoSupportedMarketMsg)
 		}
-	} else if hasZeroEffectiveTier { // Need to post bond to trade.
+	} else if hasZeroEffectiveTier && dexClient.HasWallet(int32(xc.Auth.BondAssetID)) { // Need to post bond to trade, but be sure the wallet exists in dex client.
 		overlaySet = true
 		overlayMsg = values.String(values.StrPostBondMsg)
 		targetTier := xc.Auth.TargetTier
@@ -798,9 +798,12 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 			bondAssetID := xc.Auth.BondAssetID
 			setting, err := dexClient.WalletSettings(bondAssetID)
 			if err != nil {
-				pg.notifyError(err.Error())
+				// Wallet is said to exist in the if check, just log an error
+				// here.
+				log.Errorf("Error retrieving bond asset asset settings: %w", err)
 			} else {
-				// Wallet is being used by the dex client so it exists, can ignore errors.
+				// Wallet is being used by the dex client so it exists, can
+				// ignore errors.
 				walletID, _ := strconv.Atoi(setting[dexc.WalletIDConfigKey])
 				accountNumber, _ := strconv.Atoi(setting[dexc.WalletAccountNumberConfigKey])
 				asset := pg.AssetsManager.WalletWithID(walletID)
