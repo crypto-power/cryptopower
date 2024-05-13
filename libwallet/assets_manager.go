@@ -668,7 +668,7 @@ func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemoni
 	case utils.LTCWalletAsset:
 		return mgr.LTCWalletWithSeed(seedMnemonic, wordSeedType)
 	case utils.BCHWalletAsset:
-		return mgr.BCHWalletWithSeed(seedMnemonic)
+		return mgr.BCHWalletWithSeed(seedMnemonic, wordSeedType)
 	default:
 		return -1, utils.ErrAssetUnknown
 	}
