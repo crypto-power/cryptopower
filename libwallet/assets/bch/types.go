@@ -5,15 +5,15 @@ import (
 	"github.com/gcash/bchutil"
 )
 
-// Amount implements the Asset amount interface for the LTC asset
+// Amount implements the Asset amount interface for the BCH asset
 type Amount bchutil.Amount
 
-// ToCoin returns the float64 version of the LTC formatted asset amount.
+// ToCoin returns the float64 version of the BCH formatted asset amount.
 func (a Amount) ToCoin() float64 {
 	return bchutil.Amount(a).ToBCH()
 }
 
-// String returns the string version of the LTC formatted asset amount.
+// String returns the string version of the BCH formatted asset amount.
 func (a Amount) String() string {
 	return bchutil.Amount(a).String()
 }

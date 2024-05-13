@@ -9,11 +9,11 @@ import (
 	"decred.org/dcrwallet/v3/errors"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/gcash/bchutil"
 	"github.com/dcrlabs/bchwallet/chain"
 	"github.com/dcrlabs/bchwallet/waddrmgr"
 	bchwallet "github.com/dcrlabs/bchwallet/wallet"
 	"github.com/dcrlabs/bchwallet/walletdb"
+	"github.com/gcash/bchutil"
 )
 
 // SetBlocksRescanProgressListener sets the blocks rescan progress listener.

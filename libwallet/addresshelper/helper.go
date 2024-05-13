@@ -10,12 +10,12 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/txscript/v4/stdscript"
-	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
-	"github.com/ltcsuite/ltcd/ltcutil"
-	ltctxscript "github.com/ltcsuite/ltcd/txscript"
 	bchcfg "github.com/gcash/bchd/chaincfg"
 	bchtxscript "github.com/gcash/bchd/txscript"
 	"github.com/gcash/bchutil"
+	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ltcsuite/ltcd/ltcutil"
+	ltctxscript "github.com/ltcsuite/ltcd/txscript"
 )
 
 const scriptVersion = 0

@@ -23,10 +23,10 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 	bolt "go.etcd.io/bbolt"
 
+	"github.com/crypto-power/cryptopower/libwallet/assets/bch"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
-	"github.com/crypto-power/cryptopower/libwallet/assets/bch"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 

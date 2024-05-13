@@ -1,18 +1,18 @@
 package bch
 
 import (
-	"github.com/gcash/bchlog"
+	"github.com/btcsuite/btclog"
 )
 
-var log = bchlog.Disabled
+var log = btclog.Disabled
 
 // DisableLog disables all library log output.  Logging output is disabled
 // by default until UseLogger is called.
 func DisableLog() {
-	log = bchlog.Disabled
+	log = btclog.Disabled
 }
 
 // UseLogger sets the subsystem logs to use the provided loggers.
-func UseLogger(sLogger bchlog.Logger) {
+func UseLogger(sLogger btclog.Logger) {
 	log = sLogger
 }

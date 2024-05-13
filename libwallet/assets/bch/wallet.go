@@ -14,6 +14,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/bch"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+
 	// btcneutrino "github.com/lightninglabs/neutrino"
 	neutrino "github.com/dcrlabs/neutrino-bch"
 	// labschain "github.com/dcrlabs/neutrino-bch/chain"
@@ -24,15 +25,18 @@ import (
 	"github.com/dcrlabs/bchwallet/chain"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"
+
 	// btcchainhash "github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/dcrlabs/bchwallet/waddrmgr"
 	// "github.com/btcsuite/btcd/btcutil"
 	"github.com/gcash/bchutil"
 	// "github.com/btcsuite/btcd/btcutil/gcs"
+	"github.com/dcrlabs/bchwallet/wallet"
 	"github.com/gcash/bchutil/gcs"
+
 	// btcwire "github.com/btcsuite/btcd/wire"
-	"github.com/gcash/bchd/wire"
 	_ "github.com/dcrlabs/bchwallet/walletdb/bdb" // bdb init() registers a driver
+	"github.com/gcash/bchd/wire"
 )
 
 // Asset confirm that BCH implements that shared assets interface.
@@ -572,4 +576,56 @@ func (asset *Asset) GetWalletBalance() (*sharedW.Balance, error) {
 		ImmatureReward: Amount(totalImmatureReward),
 		Locked:         Amount(totalLocked),
 	}, nil
+}
+
+// secretSource is used to locate keys and redemption scripts while signing a
+// transaction. secretSource satisfies the txauthor.SecretsSource interface.
+type secretSource struct {
+	w           *wallet.Wallet
+	chainParams *chaincfg.Params
+}
+
+// ChainParams returns the chain parameters.
+func (s *secretSource) ChainParams() *chaincfg.Params {
+	return s.chainParams
+}
+
+// GetKey fetches a private key for the specified address.
+func (s *secretSource) GetKey(addr bchutil.Address) (*bchec.PrivateKey, bool, error) {
+	ma, err := s.w.AddressInfo(addr)
+	if err != nil {
+		return nil, false, err
+	}
+
+	mpka, ok := ma.(waddrmgr.ManagedPubKeyAddress)
+	if !ok {
+		e := fmt.Errorf("managed address type for %v is `%T` but "+
+			"want waddrmgr.ManagedPubKeyAddress", addr, ma)
+		return nil, false, e
+	}
+
+	privKey, err := mpka.PrivKey()
+	if err != nil {
+		return nil, false, err
+	}
+
+	k, _ /* pub */ := bchec.PrivKeyFromBytes(bchec.S256(), privKey.Serialize())
+
+	return k, ma.Compressed(), nil
+}
+
+// GetScript fetches the redemption script for the specified p2sh/p2wsh address.
+func (s *secretSource) GetScript(addr bchutil.Address) ([]byte, error) {
+	ma, err := s.w.AddressInfo(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	msa, ok := ma.(waddrmgr.ManagedScriptAddress)
+	if !ok {
+		e := fmt.Errorf("managed address type for %v is `%T` but "+
+			"want waddrmgr.ManagedScriptAddress", addr, ma)
+		return nil, e
+	}
+	return msa.Script()
 }

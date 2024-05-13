@@ -13,10 +13,14 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 
+	"github.com/btcsuite/btcd/btcutil/psbt"
+	btcwallet "github.com/btcsuite/btcwallet/wallet"
+	"github.com/dcrlabs/bchwallet/wallet"
+	"github.com/dcrlabs/bchwallet/wtxmgr"
 	"github.com/gcash/bchd/chaincfg/chainhash"
-	"github.com/gcash/bchutil"
 	"github.com/gcash/bchd/txscript"
 	"github.com/gcash/bchd/wire"
+	"github.com/gcash/bchutil"
 	"github.com/gcash/bchwallet/wallet/txauthor"
 	"github.com/gcash/bchwallet/wallet/txrules"
 	"github.com/gcash/bchwallet/wallet/txsizes"
@@ -289,8 +293,13 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	// https://bitcoin.stackexchange.com/questions/48384/why-bitcoin-core-creates-time-locked-transactions-by-default
 	msgTx.LockTime = uint32(asset.GetBestBlockHeight())
 
+	err = txauthor.AddAllInputScripts(msgTx, unsignedTx.PrevScripts, asset.TxAuthoredInfo.inputValues, &secretSource{asset.Internal().BCH, asset.chainParams})
+	if err != nil {
+		log.Errorf("generating input signatures failed: %v", err)
+		return nil, err
+	}
 	for index, txIn := range msgTx.TxIn {
-		_, previousTXout, _, _, err := asset.Internal().BCH.FetchInputInfo(&txIn.PreviousOutPoint)
+		_, previousTXout, _, _, err := asset.FetchInputInfo(&txIn.PreviousOutPoint)
 		if err != nil {
 			log.Errorf("fetch previous outpoint txout failed: %v", err)
 			return nil, err
@@ -299,24 +308,25 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 		// prevOutScript := unsignedTx.PrevScripts[index]
 		prevOutAmount := int64(asset.TxAuthoredInfo.inputValues[index])
 		// prevOutFetcher := txscript.NewCannedPrevOutputFetcher(prevOutScript, prevOutAmount)
-		sigHashes := txscript.NewTxSigHashes(msgTx)
+		// sigHashes := txscript.NewTxSigHashes(msgTx)
 
-		_, signature, err := asset.Internal().BCH.ComputeInputScript(
-			msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
-		)
-		if err != nil {
-			log.Errorf("generating input signatures failed: %v", err)
-			return nil, err
-		}
+		// _, signature, err := asset.Internal().BCH.ComputeInputScript(
+		// 	msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
+		// )
+		// err = txauthor.AddAllInputScripts(msgTx, unsignedTx.PrevScripts, asset.TxAuthoredInfo.inputValues, &txauthor.SecretsSource{asset.Internal().BCH, asset.chainParams})
+		// if err != nil {
+		// 	log.Errorf("generating input signatures failed: %v", err)
+		// 	return nil, err
+		// }
 
 		// msgTx.TxIn[index].Witness = witness
-		msgTx.TxIn[index].SignatureScript = signature
+		msgTx.TxIn[index].SignatureScript = msgTx.TxIn[index].SignatureScript
 
 		// Prove that the transaction has been validly signed by executing the
 		// script pair.
 		flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
 			txscript.ScriptStrictMultiSig | txscript.ScriptDiscourageUpgradableNops
-		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0, flags, nil, nil, nil, 
+		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0, flags, nil, nil, nil,
 			prevOutAmount)
 		if err != nil {
 			log.Errorf("creating validation engine failed: %v", err)
@@ -619,4 +629,54 @@ func parseOutPoint(input *sharedW.UnspentOutput) (*wire.OutPoint, error) {
 		return nil, err
 	}
 	return wire.NewOutPoint(txHash, input.Vout), nil
+}
+
+// FetchInputInfo is not actually implemented in bchwallet. This is based on the
+// btcwallet implementation. As this is used by btc.spvWallet, we really only
+// need the TxOut, and to show ownership.
+func (asset *Asset) FetchInputInfo(prevOut *wire.OutPoint) (*wire.MsgTx, *wire.TxOut, *psbt.Bip32Derivation, int64, error) {
+
+	td, err := asset.txDetails((*chainhash.Hash)(&prevOut.Hash))
+	if err != nil {
+		return nil, nil, nil, 0, err
+	}
+
+	if prevOut.Index >= uint32(len(td.TxRecord.MsgTx.TxOut)) {
+		return nil, nil, nil, 0, fmt.Errorf("not enough outputs")
+	}
+
+	bchTxOut := td.TxRecord.MsgTx.TxOut[prevOut.Index]
+
+	// Verify we own at least one parsed address.
+	_, addrs, _, err := txscript.ExtractPkScriptAddrs(bchTxOut.PkScript, asset.chainParams)
+	if err != nil {
+		return nil, nil, nil, 0, err
+	}
+	notOurs := true
+	for i := 0; notOurs && i < len(addrs); i++ {
+		_, err := asset.Internal().BCH.AddressInfo(addrs[i])
+		notOurs = err != nil
+	}
+	if notOurs {
+		return nil, nil, nil, 0, btcwallet.ErrNotMine
+	}
+
+	btcTxOut := &wire.TxOut{
+		Value:    bchTxOut.Value,
+		PkScript: bchTxOut.PkScript,
+	}
+
+	return nil, btcTxOut, nil, 0, nil
+}
+
+func (asset *Asset) txDetails(txHash *chainhash.Hash) (*wtxmgr.TxDetails, error) {
+	details, err := wallet.UnstableAPI(asset.Internal().BCH).TxDetails(txHash)
+	if err != nil {
+		return nil, err
+	}
+	if details == nil {
+		return nil, errors.New("wallet transaction not found")
+	}
+
+	return details, nil
 }

@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"decred.org/dcrwallet/v3/errors"
-	// "github.com/btcsuite/btcwallet/chain"
-	"github.com/dcrlabs/bchwallet/chain"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	// "github.com/lightninglabs/neutrino"
+	"github.com/dcrlabs/bchwallet/chain"
 	neutrino "github.com/dcrlabs/neutrino-bch"
+	"github.com/gcash/bchd/wire"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -371,6 +370,7 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		ConnectPeers:  validPeerAddresses,
+		AddPeers:      asset.setSeedPeers(),
 		// Dialer function helps to better control the dialer functionality.
 		Dialer: utils.DialerFunc(asset.dailerCtx),
 		// WARNING: PublishTransaction currently uses the entire duration
@@ -509,7 +509,7 @@ func (asset *Asset) startSync() error {
 
 	select {
 	// Wait for 5 seconds so that all goroutines initialized in SynchronizeRPC()
-	// can startup successfully. To be specific, btcwallet's handleChainNotifications()
+	// can startup successfully. To be specific, bchwallet's handleChainNotifications()
 	// should have completed setting up by the time asset.handleNotifications() starts up.
 	// This 5 seconds delay is arbitrary chosen, and if found inadequate in future,
 	// it could be increased.
@@ -536,7 +536,7 @@ func (asset *Asset) IsConnectedToBitcoinCashNetwork() bool {
 	return isSyncing || asset.syncData.isRescan
 }
 
-// startWallet initializes the *btcwallet.Wallet and its supporting players and
+// startWallet initializes the *bchwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *Asset) startWallet() (err error) {
 	// If this is an imported wallet and address discovery has not been performed,
@@ -565,7 +565,7 @@ func (asset *Asset) waitForSyncCompletion() {
 				asset.syncData.syncing = false
 				asset.syncData.mu.Unlock()
 
-				// Trigger UI update showing btc address recovery is in progress.
+				// Trigger UI update showing bch address recovery is in progress.
 				asset.handleSyncUIUpdate()
 				return
 			}
@@ -622,7 +622,7 @@ func (asset *Asset) SpvSync() (err error) {
 }
 
 // reloadChainService loads a new instance of chain service to be used
-// for sync. It restarts sync if the wallet was previously connected to the btc newtork
+// for sync. It restarts sync if the wallet was previously connected to the bch newtork
 // before the function call.
 func (asset *Asset) reloadChainService() error {
 	if !asset.WalletOpened() {
@@ -647,4 +647,16 @@ func (asset *Asset) reloadChainService() error {
 		return asset.SpvSync()
 	}
 	return nil
+}
+
+// setSeedPeers sets the supported default DNS Seed peers.
+func (asset *Asset) setSeedPeers() []string {
+	var defaultPeers []string
+	switch asset.chainParams.Net {
+	case wire.TestNet4:
+		defaultPeers = []string{}
+	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
+		defaultPeers = []string{"127.0.0.1:21577"}
+	}
+	return defaultPeers
 }

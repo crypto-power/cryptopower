@@ -6,10 +6,10 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/addresshelper"
 	dcrutil "github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
-	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
-	ltcWire "github.com/ltcsuite/ltcd/wire"
 	bchchaincfg "github.com/gcash/bchd/chaincfg"
 	bchWire "github.com/gcash/bchd/wire"
+	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
+	ltcWire "github.com/ltcsuite/ltcd/wire"
 )
 
 func MakeTxOutput(address string, amountInAtom int64, net dcrutil.AddressParams) (output *wire.TxOut, err error) {

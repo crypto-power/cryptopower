@@ -649,6 +649,8 @@ func (wallet *Wallet) WalletOpened() bool {
 		return wallet.Internal().DCR != nil
 	case utils.LTCWalletAsset:
 		return wallet.Internal().LTC != nil
+	case utils.BCHWalletAsset:
+		return wallet.Internal().BCH != nil
 	default:
 		return false
 	}

@@ -10,9 +10,9 @@ import (
 
 	"github.com/gcash/bchd/chaincfg"
 	// "github.com/gcash/bchutil/hdkeychain"
+	btcwallet "github.com/btcsuite/btcwallet/wallet"
 	"github.com/dcrlabs/bchwallet/waddrmgr"
 	"github.com/dcrlabs/bchwallet/wallet"
-	btcwallet "github.com/btcsuite/btcwallet/wallet"
 	_ "github.com/dcrlabs/bchwallet/walletdb/bdb" // bdb init() registers a driver
 
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
@@ -183,17 +183,24 @@ func (l *bchLoader) CreateWatchingOnlyWallet(_ context.Context, params *loader.W
 func (l *bchLoader) OpenExistingWallet(_ context.Context, walletID string, pubPassphrase []byte) (*loader.LoadedWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
+	fmt.Println("LOADER  Wallet 1")
 
 	ldr, err := l.getWalletLoader(walletID, false)
 	if err != nil {
+		fmt.Println("LOADER  Wallet 2")
+
 		return nil, err
 	}
+	fmt.Println("LOADER  Wallet 3")
 
 	wal, err := ldr.OpenExistingWallet(pubPassphrase, false)
 	if err != nil {
+		fmt.Println("LOADER  Wallet 4")
+
 		log.Errorf("Failed to open existing bch wallet: %v", err)
 		return nil, err
 	}
+	fmt.Println("LOADER  Wallet 5")
 
 	l.wallet = wal
 

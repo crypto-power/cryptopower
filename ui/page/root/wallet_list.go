@@ -40,6 +40,7 @@ func (pg *WalletSelectorPage) loadWallets() {
 	pg.walletsList[libutils.DCRWalletAsset] = walletsList[libutils.DCRWalletAsset]
 	pg.walletsList[libutils.BTCWalletAsset] = walletsList[libutils.BTCWalletAsset]
 	pg.walletsList[libutils.LTCWalletAsset] = walletsList[libutils.LTCWalletAsset]
+	pg.walletsList[libutils.BCHWalletAsset] = walletsList[libutils.BCHWalletAsset]
 	pg.listLock.Unlock()
 }
 
@@ -49,6 +50,7 @@ func (pg *WalletSelectorPage) loadBadWallets() {
 	dcrBadWallets := pg.AssetsManager.DCRBadWallets()
 	btcBadWallets := pg.AssetsManager.BTCBadWallets()
 	ltcBadWallets := pg.AssetsManager.LTCBadWallets()
+	bchBadWallets := pg.AssetsManager.BCHBadWallets()
 
 	populateBadWallets := func(assetType libutils.AssetType, badWallets map[int]*sharedW.Wallet) {
 		for _, badWallet := range badWallets {
@@ -65,6 +67,7 @@ func (pg *WalletSelectorPage) loadBadWallets() {
 	populateBadWallets(libutils.DCRWalletAsset, dcrBadWallets) // dcr bad wallets
 	populateBadWallets(libutils.BTCWalletAsset, btcBadWallets) // btc bad wallets
 	populateBadWallets(libutils.LTCWalletAsset, ltcBadWallets) // ltc bad wallets
+	populateBadWallets(libutils.BCHWalletAsset, bchBadWallets) // bch bad wallets
 }
 
 func (pg *WalletSelectorPage) deleteBadWallet(badWalletID int) {

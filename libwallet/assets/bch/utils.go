@@ -4,15 +4,15 @@ import (
 	"encoding/binary"
 
 	"decred.org/dcrwallet/v3/walletseed"
+	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
-	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	// "github.com/gcash/bchutil/hdkeychain"
+	btcchaincfg "github.com/btcsuite/btcd/chaincfg"
 	btcwaddrmgr "github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/dcrlabs/bchwallet/waddrmgr"
-	btcchaincfg "github.com/btcsuite/btcd/chaincfg"
 )
 
 const (

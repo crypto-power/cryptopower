@@ -10,9 +10,9 @@ import (
 	"decred.org/dcrwallet/v3/errors"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/dcrlabs/bchwallet/waddrmgr"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
-	"github.com/dcrlabs/bchwallet/waddrmgr"
 )
 
 const (
@@ -172,7 +172,7 @@ func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, err
 
 	// Only return UTXOs with the required number of confirmations.
 	unspents, err := asset.Internal().BCH.ListUnspent(asset.RequiredConfirmations(),
-    math.MaxInt32, map[string]struct{}{accountName: struct{}{}})
+		math.MaxInt32, map[string]struct{}{accountName: struct{}{}})
 	if err != nil {
 		return nil, err
 	}

@@ -9,6 +9,7 @@ const (
 	LTCUSDTMarket = "LTC-USDT"
 	DCRBTCMarket  = "DCR-BTC"
 	LTCBTCMarket  = "LTC-BTC"
+	BCHUSDTMarket = "BCH-USDT"
 )
 
 // These are a list of supported rate sources.
@@ -23,4 +24,5 @@ var AssetExchangeMarketValue = map[utils.AssetType]string{
 	utils.DCRWalletAsset: DCRUSDTMarket,
 	utils.BTCWalletAsset: BTCUSDTMarket,
 	utils.LTCWalletAsset: LTCUSDTMarket,
+	utils.BCHWalletAsset: BCHUSDTMarket,
 }

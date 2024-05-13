@@ -112,6 +112,8 @@ func getIndexUnit(amount string) int {
 		return strings.Index(amount, " "+string(utils.DCRWalletAsset))
 	} else if strings.Contains(amount, string(utils.LTCWalletAsset)) {
 		return strings.Index(amount, " "+string(utils.LTCWalletAsset))
+	} else if strings.Contains(amount, string(utils.BCHWalletAsset)) {
+		return strings.Index(amount, " "+string(utils.BCHWalletAsset))
 	}
 	return -1
 }

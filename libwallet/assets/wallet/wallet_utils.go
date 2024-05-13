@@ -16,6 +16,7 @@ import (
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
+	bchhdkeychain "github.com/gcash/bchutil/hdkeychain"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
 	ltchdkeychain "github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
@@ -46,6 +47,9 @@ const (
 
 	// ltcLogFilename defines the ltc log file name
 	ltcLogFilename = "ltc.log"
+
+	// bchLogFilename defines the bch log file name
+	bchLogFilename = "bch.log"
 )
 
 // InvalidBlock defines invalid height and timestamp returned in case of an error.
@@ -210,6 +214,11 @@ func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v strin
 		if err != nil {
 			return "", err
 		}
+	case utils.BCHWalletAsset:
+		entropy, err = bchhdkeychain.GenerateSeed(length)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	if len(entropy) > 0 {
@@ -238,7 +247,7 @@ func VerifySeed(seedMnemonic string, assetType utils.AssetType, seedType WordSee
 
 func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) (hashedSeed []byte, err error) {
 	switch assetType {
-	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
+	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset, utils.BCHWalletAsset:
 		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
 		if len(words) == 1 {
 			return hex.DecodeString(words[0])

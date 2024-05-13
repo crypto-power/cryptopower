@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/crypto-power/cryptopower/libwallet"
+	"github.com/crypto-power/cryptopower/libwallet/assets/bch"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
@@ -45,10 +46,15 @@ import (
 	btcC "github.com/btcsuite/btcwallet/chain"
 	btcw "github.com/btcsuite/btcwallet/wallet"
 	btcWtx "github.com/btcsuite/btcwallet/wtxmgr"
+	bchC "github.com/dcrlabs/bchwallet/chain"
+	bchw "github.com/dcrlabs/bchwallet/wallet"
+	bchWtx "github.com/dcrlabs/bchwallet/wtxmgr"
+	bchN "github.com/dcrlabs/neutrino-bch"
 	ltcN "github.com/dcrlabs/neutrino-ltc"
 	"github.com/decred/dcrd/addrmgr/v2"
 	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
+	"github.com/gcash/bchlog"
 	"github.com/jrick/logrotate/rotator"
 	btcN "github.com/lightninglabs/neutrino"
 	ltcC "github.com/ltcsuite/ltcwallet/chain"
@@ -79,13 +85,15 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 var (
 	// dcrLogger, btcLogger, mainLogger identifies the respective loggers.
 	dcrLogger, btcLogger, mainLogger = "dcr.log", "btc.log", libwallet.LogFilename
-	ltcLogger                        = "ltc.log"
+	ltcLogger, bchLogger             = "ltc.log", "bch.log"
 	// backendLog is the logging backend used to create all subsystem loggers.
 	// The backend must not be used before the log rotator has been initialized,
 	// or data races and/or nil pointer dereferences will occur.
 	dcrBackendLog = slog.NewBackend(logWriter{dcrLogger})
 	btcBackendLog = btclog.NewBackend(logWriter{btcLogger})
 	ltcBackendLog = btclog.NewBackend(logWriter{ltcLogger})
+	// bchBackendLog = btclog.NewBackend(logWriter{bchLogger})
+	bchBackendLog = bchlog.NewBackend(logWriter{bchLogger})
 	backendLog    = slog.NewBackend(logWriter{mainLogger})
 
 	// logRotator is one of the logging outputs.
@@ -109,8 +117,10 @@ var (
 	dcrSpv       = dcrBackendLog.Logger("DCR-S")
 	btcNtrn      = btcBackendLog.Logger("B-NTR")
 	ltcNtrn      = btcBackendLog.Logger("L-NTR")
+	bchNtrn      = bchBackendLog.Logger("BCH-N")
 	btcLog       = btcBackendLog.Logger("BTC")
 	ltcLog       = ltcBackendLog.Logger("LTC")
+	bchLog       = bchBackendLog.Logger("BCH")
 )
 
 // Initialize package-global logger variables.
@@ -132,6 +142,7 @@ func init() {
 	modal.UseLogger(winLog)
 	btc.UseLogger(btcLog)
 	ltc.UseLogger(ltcLog)
+	bch.UseLogger(btcLog)
 	ext.UseLogger(extLog)
 	exchange.UseLogger(sharedWLog)
 	addrmgr.UseLogger(dcrLog)
@@ -141,12 +152,16 @@ func init() {
 	udb.UseLogger(dcrWalletLog)
 	btcN.UseLogger(btcNtrn)
 	ltcN.UseLogger(ltcNtrn)
+	bchN.UseLogger(bchNtrn)
 	ltcWtx.UseLogger(ltcLog)
 	btcWtx.UseLogger(btcLog)
 	ltcC.UseLogger(ltcLog)
 	btcC.UseLogger(btcLog)
+	bchWtx.UseLogger(bchLog)
+	bchC.UseLogger(bchLog)
 	btcw.UseLogger(btcLog)
 	ltcw.UseLogger(ltcLog)
+	bchw.UseLogger(bchLog)
 	dcrw.UseLogger(dcrLog)
 	spv.UseLogger(dcrSpv)
 	instantswap.UseLogger(sharedWLog)
@@ -159,6 +174,7 @@ func init() {
 	// Neutrino loglevel will always be set to error to control excessive logging.
 	ltcNtrn.SetLevel(btclog.LevelError)
 	btcNtrn.SetLevel(btclog.LevelError)
+	bchNtrn.SetLevel(bchlog.LevelError)
 
 	// Similar to BTC and LTC, excessive loggings of dcr spv has been capped to errors.
 	dcrSpv.SetLevel(slog.LevelError)
@@ -182,6 +198,7 @@ var subsystemSLoggers = map[string]slog.Logger{
 var subsystemBLoggers = map[string]btclog.Logger{
 	"BTC": btcLog,
 	"LTC": ltcLog,
+	"BCH": btcLog,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -199,6 +216,7 @@ func initLogRotator(logDir string, maxRolls int) {
 		btcLogger:  nil,
 		dcrLogger:  nil,
 		ltcLogger:  nil,
+		bchLogger:  nil,
 		mainLogger: nil,
 	}
 

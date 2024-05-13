@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"decred.org/dcrwallet/v3/errors"
-	"github.com/gcash/bchd/chaincfg"
 	"github.com/dcrlabs/bchwallet/waddrmgr"
+	"github.com/gcash/bchd/chaincfg"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/bch"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
