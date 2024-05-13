@@ -368,8 +368,10 @@ func (pg *DEXMarketPage) setServerMarkets() {
 			serverIsDisconnected = xc.ConnectionStatus != comms.Connected
 			for _, m := range xc.Markets {
 				base, quote := convertAssetIDToAssetType(m.BaseID), convertAssetIDToAssetType(m.QuoteID)
-				if base == "" || quote == "" {
-					continue // market asset not supported by cryptopower. TODO: Should we support just displaying stats for unsupported markets?
+				if base == assetTypeNoAsset || quote == assetTypeNoAsset {
+					// market asset not supported by cryptopower. TODO: Should
+					// we support just displaying stats for unsupported markets?
+					continue
 				}
 
 				marketItem := cryptomaterial.DropDownItem{
@@ -788,7 +790,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 		} else {
 			overlayMsg = values.String(values.StrNoSupportedMarketMsg)
 		}
-	} else if hasZeroEffectiveTier { // Need to post bond to trade.
+	} else if hasZeroEffectiveTier && dexClient.HasWallet(int32(xc.Auth.BondAssetID)) { // Need to post bond to trade, but be sure the wallet exists in dex client.
 		overlaySet = true
 		overlayMsg = values.String(values.StrPostBondMsg)
 		targetTier := xc.Auth.TargetTier
@@ -796,9 +798,12 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 			bondAssetID := xc.Auth.BondAssetID
 			setting, err := dexClient.WalletSettings(bondAssetID)
 			if err != nil {
-				pg.notifyError(err.Error())
+				// Wallet is said to exist in the if check, just log an error
+				// here.
+				log.Errorf("Error retrieving bond asset asset settings: %w", err)
 			} else {
-				// Wallet is being used by the dex client so it exists, can ignore errors.
+				// Wallet is being used by the dex client so it exists, can
+				// ignore errors.
 				walletID, _ := strconv.Atoi(setting[dexc.WalletIDConfigKey])
 				accountNumber, _ := strconv.Atoi(setting[dexc.WalletAccountNumberConfigKey])
 				asset := pg.AssetsManager.WalletWithID(walletID)
@@ -1783,7 +1788,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 	// Show modal to select DEX wallet and then prompt user for DEX password.
 	walletSelectModal := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrSelectWallet)).
-		SetCancelable(false).
+		SetCancelable(true).
 		UseCustomWidget(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {

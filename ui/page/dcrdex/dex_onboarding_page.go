@@ -58,6 +58,8 @@ var (
 	dp2  = values.MarginPadding2
 	dp10 = values.MarginPadding10
 	dp12 = values.MarginPadding12
+
+	assetTypeNoAsset libutils.AssetType = "NoAsset"
 )
 
 // onboardingStep is each step of the flow required for a user to create a DEX
@@ -1147,7 +1149,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	var supportedBondAssets []libutils.AssetType
 	for _, asset := range xc.BondAssets {
 		assetType := convertAssetIDToAssetType(asset.ID)
-		if assetType == "" {
+		if assetType == assetTypeNoAsset {
 			continue
 		}
 		supportedBondAssets = append(supportedBondAssets, assetType)
@@ -1508,6 +1510,6 @@ func convertAssetIDToAssetType(assetID uint32) libutils.AssetType {
 	case strings.EqualFold(assetSym, libutils.LTCWalletAsset.String()):
 		return libutils.LTCWalletAsset
 	default:
-		return "NoAsset"
+		return assetTypeNoAsset
 	}
 }
