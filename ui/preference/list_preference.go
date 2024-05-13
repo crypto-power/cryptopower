@@ -193,6 +193,7 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(lp.btnCancel.Layout),
+					layout.Rigid(layout.Spacer{Width: values.MarginPadding5}.Layout),
 					layout.Rigid(lp.btnSave.Layout),
 				)
 			})
