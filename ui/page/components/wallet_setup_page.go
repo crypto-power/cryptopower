@@ -131,7 +131,7 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 	pg.seedTypeDropdown.FontWeight = font.SemiBold
 	pg.seedTypeDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
 	pg.seedTypeDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
-	pg.seedTypeDropdown.Background = &pg.Theme.Color.White
+	pg.seedTypeDropdown.Background = &pg.Theme.Color.Surface
 
 	pg.backButton = GetBackButton(l)
 

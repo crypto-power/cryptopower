@@ -896,7 +896,7 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, title, su
 
 func WalletHighlightLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
 	indexLabel := theme.Label(textSize, content)
-	indexLabel.Color = theme.Color.PageNavText
+	indexLabel.Color = theme.Color.DeepBlueOrigin
 	indexLabel.Font.Weight = font.Medium
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,

@@ -65,7 +65,7 @@ func (sp *SubPage) Layout(window app.WindowNavigator, gtx C) D {
 				return sp.Header(window, gtx)
 			})
 		}),
-		layout.Rigid(sp.Body),
+		layout.Flexed(1, sp.Body),
 	)
 }
 
