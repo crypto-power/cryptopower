@@ -48,7 +48,7 @@ func GradientColorSchemes() map[AssetType]GradientColorScheme {
 			Blend2: 65.88,                                       // 65.88 %
 		},
 		BCHWalletAsset: {
-			Color1: ColorScheme{R: 224, G: 224, B: 224, O: 0.3}, // rgba(247, 147, 26, 0.3)
+			Color1: ColorScheme{R: 24, G: 171, B: 89, O: 0.3}, // rgba(247, 147, 26, 0.3)
 			Blend1: 34.76,                                       // 34.76%
 			Color2: ColorScheme{R: 54, G: 115, B: 36, O: 0.3},   // rgba(54, 115, 36, 0.3)
 			Blend2: 65.88,                                       // 65.88 %
