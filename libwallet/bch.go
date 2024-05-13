@@ -100,7 +100,7 @@ func (mgr *AssetsManager) BCHWalletWithXPub(xpub string) (int, error) {
 // BCHWalletWithSeed returns the ID of the BCH wallet that was created or restored
 // using the same seed as the one provided. Returns -1 if no wallet uses the
 // provided seed.
-func (mgr *AssetsManager) BCHWalletWithSeed(seedMnemonic string) (int, error) {
+func (mgr *AssetsManager) BCHWalletWithSeed(seedMnemonic string, wordSeedType sharedW.WordSeedType) (int, error) {
 	if len(seedMnemonic) == 0 {
 		return -1, errors.New(utils.ErrEmptySeed)
 	}
@@ -124,7 +124,7 @@ func (mgr *AssetsManager) BCHWalletWithSeed(seedMnemonic string) (int, error) {
 			if accs.AccountNumber == waddrmgr.ImportedAddrAccount {
 				continue
 			}
-			xpub, err := asset.DeriveAccountXpub(seedMnemonic,
+			xpub, err := asset.DeriveAccountXpub(seedMnemonic, wordSeedType,
 				accs.AccountNumber, wallet.Internal().BTC.ChainParams())
 			if err != nil {
 				return -1, err

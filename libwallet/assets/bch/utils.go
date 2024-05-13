@@ -9,7 +9,9 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchutil"
-	// "github.com/gcash/bchutil/hdkeychain"
+	"github.com/tyler-smith/go-bip39"
+
+	"github.com/gcash/bchutil/hdkeychain"
 	btcchaincfg "github.com/btcsuite/btcd/chaincfg"
 	btcwaddrmgr "github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/dcrlabs/bchwallet/waddrmgr"
@@ -59,8 +61,13 @@ func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 }
 
 // DeriveAccountXpub derives the xpub for the given account.
-func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, params *btcchaincfg.Params) (xpub string, err error) {
-	seed, err := walletseed.DecodeUserInput(seedMnemonic)
+func (asset *Asset) DeriveAccountXpub(seedMnemonic string, wordSeedType sharedW.WordSeedType, account uint32, params *btcchaincfg.Params) (xpub string, err error) {
+	var seed []byte
+	if wordSeedType == sharedW.WordSeed33 {
+		seed, err = walletseed.DecodeUserInput(seedMnemonic)
+	} else {
+		seed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -128,5 +135,5 @@ func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, param
 }
 
 func hardenedKey(key uint32) uint32 {
-	return key + btchdkeychain.HardenedKeyStart
+	return key + hdkeychain.HardenedKeyStart
 }

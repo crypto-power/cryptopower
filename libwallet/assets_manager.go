@@ -666,7 +666,7 @@ func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemoni
 	case utils.DCRWalletAsset:
 		return mgr.DCRWalletWithSeed(seedMnemonic, wordSeedType)
 	case utils.LTCWalletAsset:
-		return mgr.LTCWalletWithSeed(seedMnemonic)
+		return mgr.LTCWalletWithSeed(seedMnemonic, wordSeedType)
 	case utils.BCHWalletAsset:
 		return mgr.BCHWalletWithSeed(seedMnemonic)
 	default:
@@ -682,7 +682,7 @@ func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, 
 	case utils.DCRWalletAsset:
 		return mgr.RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase, wordSeedType, privatePassphraseType)
 	case utils.LTCWalletAsset:
-		return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+		return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, wordSeedType, privatePassphraseType)
 	case utils.BCHWalletAsset:
 		return mgr.RestoreBCHWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
 	default:
