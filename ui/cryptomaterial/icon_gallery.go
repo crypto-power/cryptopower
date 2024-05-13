@@ -265,5 +265,7 @@ func (i *Icons) DarkModeIcons() *Icons {
 	i.ChevronLeft = NewImage(decredIcons["chevron_left"])
 	i.Notification = NewImage(decredIcons["dm_notification"])
 	i.TradeExchangeIcon = NewImage(decredIcons["dm_trade_exchange_icon"])
+	i.WebsiteIcon = NewImage(decredIcons["dm_www_icon"])
+	i.MatrixIcon = NewImage(decredIcons["dm_matrix"])
 	return i
 }

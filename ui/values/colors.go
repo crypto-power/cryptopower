@@ -15,7 +15,6 @@ const (
 
 type Color struct {
 	Primary          color.NRGBA
-	Primary50        color.NRGBA
 	PrimaryHighlight color.NRGBA
 
 	// text colors
@@ -34,6 +33,7 @@ type Color struct {
 	BlueProgressTint color.NRGBA
 	Danger           color.NRGBA
 	DeepBlue         color.NRGBA
+	DeepBlueOrigin   color.NRGBA
 	NavyBlue         color.NRGBA
 	LightBlue        color.NRGBA
 	LightBlue2       color.NRGBA
@@ -98,7 +98,6 @@ func (c *Color) DarkThemeColors() {
 func (c *Color) DefaultThemeColors() *Color {
 	cl := Color{
 		Primary:          rgb(0x2970ff),
-		Primary50:        rgb(0xE3F2FF),
 		PrimaryHighlight: rgb(0x1B41B3),
 
 		// text colors
@@ -117,6 +116,7 @@ func (c *Color) DefaultThemeColors() *Color {
 		BlueProgressTint: rgb(0x73d7ff),
 		Danger:           rgb(0xed6d47),
 		DeepBlue:         rgb(0x091440),
+		DeepBlueOrigin:   rgb(0x091440),
 		NavyBlue:         rgb(0x1F45B0),
 		LightBlue:        rgb(0xe4f6ff),
 		LightBlue2:       rgb(0x75D8FF),
