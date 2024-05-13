@@ -451,10 +451,6 @@ func (p *Politeia) ProposalVoteDetailsRaw(ctx context.Context, wallet *wallet.Wa
 		hashes = append(hashes, hash)
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	ticketHashes, addresses, err := wallet.CommittedTickets(ctx, hashes)
 	if err != nil {
 		return nil, err
