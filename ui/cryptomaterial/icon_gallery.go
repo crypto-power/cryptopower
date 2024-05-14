@@ -29,7 +29,7 @@ type Icons struct {
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, TrocadorIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
 	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon, FilterImgIcon, FilterOffImgIcon, ShareIcon, DeleteIcon,
-	CircleBTC, CircleLTC, CircleDCR, TelegramIcon, MatrixIcon, WebsiteIcon, TwitterIcon *Image
+	CircleBTC, CircleLTC, CircleDCR, TelegramIcon, MatrixIcon, WebsiteIcon, TwitterIcon, OrangeAlert *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -171,6 +171,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.DarkmodeIcon = NewImage(decredIcons["darkmodeIcon"])
 	i.MixerInactive = NewImage(decredIcons["mixer_inactive"])
 	i.RedAlert = NewImage(decredIcons["red_alert"])
+	i.OrangeAlert = NewImage(decredIcons["orange_alert"])
 	i.ChevronExpand = NewImage(decredIcons["chevron_expand"])
 	i.ChevronCollapse = NewImage(decredIcons["coll_half"])
 	i.ChevronRight = NewImage(decredIcons["chevron_coll"])

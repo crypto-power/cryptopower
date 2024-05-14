@@ -54,6 +54,8 @@ var (
 		ws:    "wss://stream.binance.com:9443/stream?streams=%s",
 	}
 
+	binanceProhibitedCountries = "https://www.binance.com/en/legal/list-of-prohibited-countries"
+
 	// supportedMarkets is a map of markets supported by rate sources
 	// implemented (Binance, Bittrex).
 	supportedMarkets = map[string]*struct{}{
