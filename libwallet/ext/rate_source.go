@@ -54,8 +54,6 @@ var (
 		ws:    "wss://stream.binance.com:9443/stream?streams=%s",
 	}
 
-	binanceProhibitedCountries = "https://www.binance.com/en/legal/list-of-prohibited-countries"
-
 	// supportedMarkets is a map of markets supported by rate sources
 	// implemented (Binance, Bittrex).
 	supportedMarkets = map[string]*struct{}{
@@ -152,6 +150,8 @@ type CommonRateSource struct {
 
 	rateListenersMtx sync.RWMutex
 	rateListeners    map[string]*RateListener
+
+	disableConversionExchange func()
 }
 
 // Name is the string associated with the rate source for display.
@@ -520,7 +520,7 @@ func (cs *CommonRateSource) Refresh(force bool) {
 			continue
 		}
 
-		ticker, err := cs.getTicker(market)
+		ticker, err := cs.retryGetTicker(market)
 		if err != nil {
 			cs.fail("Error fetching ticker", err)
 			continue
@@ -578,9 +578,30 @@ func (cs *CommonRateSource) Refresh(force bool) {
 	}
 }
 
+func (cs *CommonRateSource) retryGetTicker(market string) (*Ticker, error) {
+	var newTicker *Ticker
+	var err error
+	backoff := 1 * time.Second
+	for i := 0; i < 3; i++ {
+		newTicker, err = cs.getTicker(market)
+		if err == nil {
+			return newTicker, nil
+		}
+
+		fmt.Printf("fetching ticker %d failed: %v. Retrying in %v\n", i+1, err, backoff)
+
+		time.Sleep(backoff)
+		backoff *= 2 // Exponential backoff
+	}
+	if cs.disableConversionExchange != nil {
+		cs.disableConversionExchange()
+	}
+	return nil, err
+}
+
 // fetchRate retrieves new ticker information via the rate source's HTTP API.
 func (cs *CommonRateSource) fetchRate(market string) *Ticker {
-	newTicker, err := cs.getTicker(market)
+	newTicker, err := cs.retryGetTicker(market)
 	if err != nil {
 		cs.fail("Error fetching ticker", err)
 		return nil
@@ -626,7 +647,7 @@ func (cs *CommonRateSource) GetTicker(market string, cacheOnly bool) *Ticker {
 }
 
 // Used to initialize a rate source.
-func NewCommonRateSource(ctx context.Context, source string) (*CommonRateSource, error) {
+func NewCommonRateSource(ctx context.Context, source string, disableConversionExchange func()) (*CommonRateSource, error) {
 	if source != binance && source != bittrex && source != none {
 		return nil, fmt.Errorf("New rate source %s is not supported", source)
 	}
@@ -643,13 +664,14 @@ func NewCommonRateSource(ctx context.Context, source string) (*CommonRateSource,
 	}
 
 	s := &CommonRateSource{
-		ctx:           ctx,
-		source:        source,
-		tickers:       make(map[string]*Ticker),
-		getTicker:     getTickerFunc,
-		wsProcessor:   wsProcessor,
-		rateListeners: make(map[string]*RateListener),
-		sourceChanged: make(chan *struct{}),
+		ctx:                       ctx,
+		source:                    source,
+		tickers:                   make(map[string]*Ticker),
+		getTicker:                 getTickerFunc,
+		wsProcessor:               wsProcessor,
+		rateListeners:             make(map[string]*RateListener),
+		sourceChanged:             make(chan *struct{}),
+		disableConversionExchange: disableConversionExchange,
 	}
 	s.cond = sync.NewCond(&s.mtx)
 

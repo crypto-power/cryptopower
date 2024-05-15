@@ -71,6 +71,7 @@ type Color struct {
 	Yellow           color.NRGBA
 	OrangeYellow     color.NRGBA
 	White            color.NRGBA
+	Warning          color.NRGBA
 }
 
 func (c *Color) DarkThemeColors() {
@@ -153,6 +154,7 @@ func (c *Color) DefaultThemeColors() *Color {
 		Yellow:           rgb(0xFEE3AA),
 		OrangeYellow:     rgb(0xd8a93e),
 		White:            rgb(0xffffff),
+		Warning:          rgb(0xff9966),
 	}
 
 	return &cl

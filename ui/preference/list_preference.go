@@ -2,6 +2,7 @@ package preference
 
 import (
 	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -9,8 +10,14 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/crypto-power/cryptopower/ui/values/localizable"
+)
+
+const (
+	binanceProhibitedCountries = "https://www.binance.com/en/legal/list-of-prohibited-countries"
+	bittrexProhibitedCountries = "https://bittrex.zendesk.com/hc/en-us/articles/360034965072-Important-information-for-Bittrex-customers"
 )
 
 type (
@@ -26,8 +33,8 @@ var (
 
 	// ExchOptions holds the configurable options for exchange servers.
 	ExchOptions = []ItemPreference{
-		{Key: values.BinanceExchange, Value: values.StrUsdBinance},
-		{Key: values.BittrexExchange, Value: values.StrUsdBittrex},
+		{Key: values.BinanceExchange, Value: values.StrUsdBinance, Warning: values.String(values.StrRateBinanceWarning), WarningLink: binanceProhibitedCountries},
+		{Key: values.BittrexExchange, Value: values.StrUsdBittrex, Warning: values.String(values.StrRateBittrexWarning), WarningLink: bittrexProhibitedCountries},
 		{Key: values.DefaultExchangeValue, Value: values.StrNone},
 	}
 
@@ -68,6 +75,11 @@ type ListPreferenceModal struct {
 	preferenceItems []ItemPreference
 
 	updateButtonClicked func(string)
+
+	// use for warning link
+	viewWarningAction *cryptomaterial.Clickable
+	copyRedirectURL   *cryptomaterial.Clickable
+	redirectIcon      *cryptomaterial.Image
 }
 
 // ItemPreference models the options shown by the list
@@ -75,6 +87,10 @@ type ListPreferenceModal struct {
 type ItemPreference struct {
 	Key   string // option's key
 	Value string // option's value
+
+	// use when need to show warning for option
+	Warning     string // option's value
+	WarningLink string // option's value
 }
 
 func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items []ItemPreference) *ListPreferenceModal {
@@ -89,6 +105,9 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items [
 		preferenceItems:   items,
 		optionsRadioGroup: new(widget.Enum),
 		Modal:             l.Theme.ModalFloatTitle("list_preference", l.IsMobileView()),
+		redirectIcon:      l.Theme.Icons.RedirectIcon,
+		viewWarningAction: l.Theme.NewClickable(true),
+		copyRedirectURL:   l.Theme.NewClickable(false),
 	}
 
 	lp.btnSave.Font.Weight = font.Medium
@@ -212,19 +231,104 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 		w = append(w, items[i])
 	}
 
+	for lp.viewWarningAction.Clicked() {
+		host := ""
+		currentValue := lp.optionsRadioGroup.Value
+		for _, v := range lp.preferenceItems {
+			if currentValue == v.Key {
+				host = v.WarningLink
+			}
+		}
+		info := modal.NewCustomModal(lp.Load).
+			Title(values.String(values.StrRestrictedDetail)).
+			Body(values.String(values.StrCopyLink)).
+			SetCancelable(true).
+			UseCustomWidget(func(gtx C) D {
+				return layout.Stack{}.Layout(gtx,
+					layout.Stacked(func(gtx C) D {
+						border := widget.Border{Color: lp.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+						wrapper := lp.Theme.Card()
+						wrapper.Color = lp.Theme.Color.Gray4
+						return border.Layout(gtx, func(gtx C) D {
+							return wrapper.Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+									return layout.Flex{}.Layout(gtx,
+										layout.Flexed(0.9, lp.Theme.Body1(host).Layout),
+										layout.Flexed(0.1, func(gtx C) D {
+											return layout.E.Layout(gtx, func(gtx C) D {
+												if lp.copyRedirectURL.Clicked() {
+													clipboard.WriteOp{Text: host}.Add(gtx.Ops)
+													lp.Toast.Notify(values.String(values.StrCopied))
+												}
+												return lp.copyRedirectURL.Layout(gtx, lp.Theme.Icons.CopyIcon.Layout24dp)
+											})
+										}),
+									)
+								})
+							})
+						})
+					}),
+					layout.Stacked(func(gtx C) D {
+						return layout.Inset{
+							Top:  values.MarginPaddingMinus10,
+							Left: values.MarginPadding10,
+						}.Layout(gtx, func(gtx C) D {
+							label := lp.Theme.Body2(values.String(values.StrWebURL))
+							label.Color = lp.Theme.Color.GrayText2
+							return label.Layout(gtx)
+						})
+					}),
+				)
+			}).
+			SetPositiveButtonText(values.String(values.StrGotIt))
+		lp.ParentWindow().ShowModal(info)
+	}
+
 	return lp.Modal.Layout(gtx, w)
+}
+
+func (lp *ListPreferenceModal) warningLayout(gtx C, text string) D {
+	return lp.viewWarningAction.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Alignment: layout.Middle, Spacing: layout.SpaceBetween}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Max.X = gtx.Constraints.Max.X - 60
+				lbl := lp.Theme.Body2(text)
+				lbl.Color = lp.Theme.Color.Warning
+				lbl.Font.Style = font.Italic
+				return lbl.Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Right: values.MarginPadding10,
+				}.Layout(gtx, lp.redirectIcon.Layout24dp)
+			}),
+		)
+	})
 }
 
 func (lp *ListPreferenceModal) layoutItems() []layout.FlexChild {
 	items := make([]layout.FlexChild, 0)
+	warningText := ""
+	currentValue := lp.optionsRadioGroup.Value
 	for _, v := range lp.preferenceItems {
 		text := values.String(v.Value)
 		if lp.isWalletAccount {
 			text = v.Value
 		}
 
+		if currentValue == v.Key {
+			warningText = v.Warning
+		}
+
 		radioItem := layout.Rigid(lp.Theme.RadioButton(lp.optionsRadioGroup, v.Key, text, lp.Theme.Color.DeepBlue, lp.Theme.Color.Primary).Layout)
 		items = append(items, radioItem)
+	}
+	if warningText != "" {
+		warningChild := layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return lp.warningLayout(gtx, warningText)
+		})
+
+		items = append(items, warningChild)
 	}
 
 	return items

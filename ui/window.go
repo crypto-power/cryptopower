@@ -129,6 +129,8 @@ func (win *Window) NewLoad(appInfo *load.AppInfo) (*load.Load, error) {
 		Printer: message.NewPrinter(language.English),
 	}
 
+	appInfo.AssetsManager.SetToast(l.Toast)
+
 	// DarkModeSettingChanged checks if any page or any
 	// modal implements the AppSettingsChangeHandler
 	l.DarkModeSettingChanged = func(isDarkModeOn bool) {

@@ -1050,4 +1050,8 @@ const (
 	Str33WordSeed                            = "33WordSeed"
 	StrWordSeedType                          = "wordSeedType"
 	StrExportWalletSeed                      = "exportWalletSeed"
+	StrRateBinanceWarning                    = "rateBinanceWarning"
+	StrRateBittrexWarning                    = "rateBittrexWarning"
+	StrRestrictedDetail                      = "restrictedDetail"
+	StrRateUnavailable                       = "rateUnavailable"
 )
