@@ -432,6 +432,11 @@ func (asset *Asset) SpvSync() (err error) {
 	asset.cancelSync = cancel
 	asset.notificationListenersMu.Unlock()
 
+	asset.syncData.mu.Lock()
+	asset.syncData.syncing = true
+	asset.syncData.synced = false
+	asset.syncData.mu.Unlock()
+
 	// Initialize all progress report data.
 	asset.initSyncProgressData()
 
@@ -439,13 +444,10 @@ func (asset *Asset) SpvSync() (err error) {
 	// as synced with the network.
 	go asset.waitForSyncCompletion()
 
-	asset.syncData.mu.Lock()
-	asset.syncData.syncing = true
-	asset.syncData.synced = false
-	asset.syncData.mu.Unlock()
-
 	for _, listener := range asset.syncData.syncProgressListeners {
-		listener.OnSyncStarted()
+		if listener.OnSyncStarted != nil {
+			listener.OnSyncStarted()
+		}
 	}
 
 	go func() {
