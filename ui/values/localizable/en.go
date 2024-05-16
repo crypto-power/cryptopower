@@ -943,6 +943,6 @@ const EN = `
 "exportWalletSeed" = "Export wallet seed"
 "rateBinanceWarning" = "*Some countries are restricted on Binance and may not be able to fetch rate."
 "rateBittrexWarning" = "*Some countries are restricted on Bittrex and may not be able to fetch rate."
-"restrictedDetail" = "Restricted Detail"
+"restrictDetail" = "Restriction Detail"
 "rateUnavailable" = "The rate unavailable this time, please reset it later in settings."
 `

@@ -1052,6 +1052,6 @@ const (
 	StrExportWalletSeed                      = "exportWalletSeed"
 	StrRateBinanceWarning                    = "rateBinanceWarning"
 	StrRateBittrexWarning                    = "rateBittrexWarning"
-	StrRestrictedDetail                      = "restrictedDetail"
+	StrRestrictedDetail                      = "restrictDetail"
 	StrRateUnavailable                       = "rateUnavailable"
 )

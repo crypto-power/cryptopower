@@ -211,7 +211,7 @@ func (mgr *AssetsManager) SetToast(toast *notification.Toast) {
 }
 
 func (mgr *AssetsManager) disableConversionExchange() {
-	mgr.SetCurrencyConversionExchange("none")
+	mgr.SetCurrencyConversionExchange(values.DefaultExchangeValue)
 	if mgr.toast != nil {
 		mgr.toast.NotifyError(values.String(values.StrRateUnavailable))
 	}
