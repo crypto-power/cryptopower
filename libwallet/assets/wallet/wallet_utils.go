@@ -217,9 +217,16 @@ func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v strin
 		if err != nil {
 			return "", err
 		}
+	case utils.ETHWalletAsset:
+		// This the max entropy that supports a max of 24 seed words.
+		entropy, err = bip39.NewEntropy(int(length))
+		if err != nil {
+			return "", err
+		}
 	}
 
 	if len(entropy) > 0 {
+		//TODO: CHECK IF ETH CAN SUPPORT 33 WORDS
 		if wordSeedType == WordSeed33 {
 			return walletseed.EncodeMnemonic(entropy), nil
 		}
@@ -245,7 +252,7 @@ func VerifySeed(seedMnemonic string, assetType utils.AssetType, seedType WordSee
 
 func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) (hashedSeed []byte, err error) {
 	switch assetType {
-	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
+	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset, utils.ETHWalletAsset:
 		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
 		if len(words) == 1 {
 			return hex.DecodeString(words[0])
