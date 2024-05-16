@@ -51,7 +51,6 @@ const (
 	ProposalNotificationConfigKey    = "proposal_notification_key"
 	TransactionNotificationConfigKey = "transaction_notification_key"
 	SpendUnmixedFundsKey             = "spend_unmixed_funds"
-	KnownDexServersConfigKey         = "known_dex_servers"
 	LanguagePreferenceKey            = "app_language"
 	DarkModeConfigKey                = "dark_mode"
 	HideTotalBalanceConfigKey        = "hideTotalUSDBalance"
