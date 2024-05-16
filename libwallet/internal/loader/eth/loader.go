@@ -11,6 +11,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+
 	// "github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -80,10 +81,7 @@ func (l *ethLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		return nil, err
 	}
 
-	// generates a private key using the provided hashed seed. Params.Seeds has
-	// a length of 64 bytes but only 32 are required to generate an ECDSA private
-	// key.
-	privKey, err := crypto.ToECDSA(params.Seed[:32])
+	privKey, err := crypto.ToECDSA(params.Seed[:len(params.Seed)])
 	if err != nil {
 		return nil, fmt.Errorf("generating the private key from seed failed: %v", err)
 	}

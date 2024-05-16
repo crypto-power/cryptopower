@@ -36,7 +36,7 @@ func ToNetworkType(str string) NetworkType {
 	switch strings.ToLower(str) {
 	case "mainnet":
 		return Mainnet
-	case "testnet", "testnet3", "test", "testnet4":
+	case "testnet", "testnet3", "test", "testnet4", "sepolia":
 		return Testnet
 	case "regression", "reg", "regnet":
 		return Regression

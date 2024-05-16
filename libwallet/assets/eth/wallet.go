@@ -2,6 +2,7 @@ package eth
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"sync"
 
@@ -88,6 +89,10 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
 	}
 
+	// if err := ethWallet.prepareChain(); err != nil {
+	// 	return nil, err
+	// }
+
 	ethWallet.SetNetworkCancelCallback(ethWallet.SafelyCancelSync)
 
 	return ethWallet, nil
@@ -129,8 +134,23 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
 	}
 
+	// w.EncryptedSeed was previously deleted after verification. Existing
+	// wallets created before the change to allow viewing wallet seed in-app
+	// should still behave normal but they can no longer view their seed.
+	if len(w.EncryptedSeed) == 0 && !w.IsBackedUp {
+		w.IsBackedUp = true
+		if err := params.DB.Save(w); err != nil {
+			log.Errorf("DB.Save error: %v", err)
+			return nil, errors.New("failed to update wallet back up state")
+		}
+	}
+
 	err = ethWallet.Prepare(ldr, params)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := ethWallet.prepareChain(); err != nil {
 		return nil, err
 	}
 
@@ -221,5 +241,11 @@ func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (boo
 
 // GetWalletBalance returns the total balance across all accounts.
 func (asset *Asset) GetWalletBalance() (*sharedW.Balance, error) {
-	return nil, utils.ErrETHMethodNotImplemented("GetWalletBalance")
+	balance := &sharedW.Balance{
+		Total:          Amount(0),
+		Spendable:      Amount(0),
+		ImmatureReward: Amount(0),
+		Locked:         Amount(0),
+	}
+	return balance, nil
 }

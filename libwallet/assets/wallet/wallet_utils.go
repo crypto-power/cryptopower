@@ -13,6 +13,7 @@ import (
 	"decred.org/dcrwallet/v3/errors"
 	"decred.org/dcrwallet/v3/walletseed"
 	"github.com/asdine/storm"
+
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
@@ -39,6 +40,9 @@ const (
 
 	// UnminedTxHeight defines the block height of the txs in the mempool
 	UnminedTxHeight int32 = -1
+
+	// // RecommendedETHSeedBytes is the recommended ETH seed byte
+	// RecommendedETHSeedBytes = 32 // 256 bits
 
 	// btcLogFilename defines the btc log file name
 	btcLogFilename = "btc.log"
@@ -218,15 +222,21 @@ func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v strin
 			return "", err
 		}
 	case utils.ETHWalletAsset:
-		// This the max entropy that supports a max of 24 seed words.
-		entropy, err = bip39.NewEntropy(int(length))
+		// ETH can support a maximim of 32 bytes seed (256 bits),
+		// which is 24 seed words max.
+		if wordSeedType == WordSeed33 {
+			return "", fmt.Errorf("ETH does not support 33-word seeds")
+		}
+		// TODO: CAN ETH SUPPORT 12 WORDS?
+		bitSize := ByteLengthtoBitSize(length)
+		fmt.Println("ETH seed bit size: ", bitSize)
+		entropy, err = bip39.NewEntropy(bitSize)
 		if err != nil {
 			return "", err
 		}
 	}
 
 	if len(entropy) > 0 {
-		//TODO: CHECK IF ETH CAN SUPPORT 33 WORDS
 		if wordSeedType == WordSeed33 {
 			return walletseed.EncodeMnemonic(entropy), nil
 		}
@@ -354,4 +364,12 @@ func ParseWalletPeers(peerAddresses string, port string) ([]string, []error) {
 	}
 
 	return persistentPeers, errs
+}
+
+// BytetoBitSize converts the length of a seed byte to the corresponding bit size.
+// you can use the formula: Bit size = Seed byte length × 8
+// This formula assumes that each byte consists of 8 bits.
+func ByteLengthtoBitSize(byteLength uint8) int {
+	bitSize := int(byteLength) * 8
+	return bitSize
 }
