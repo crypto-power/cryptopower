@@ -35,6 +35,8 @@ const (
 
 	defaultLTCRequiredConfirmations = 6
 
+	defaultETHRequiredConfirmations = 14
+
 	// UnminedTxHeight defines the block height of the txs in the mempool
 	UnminedTxHeight int32 = -1
 
@@ -46,6 +48,9 @@ const (
 
 	// ltcLogFilename defines the ltc log file name
 	ltcLogFilename = "ltc.log"
+
+	// ethLogFilename defines the ltc log file name
+	ethLogFilename = "eth.log"
 )
 
 // InvalidBlock defines invalid height and timestamp returned in case of an error.
@@ -70,6 +75,8 @@ func (wallet *Wallet) RequiredConfirmations() int32 {
 		return defaultDCRRequiredConfirmations
 	case utils.LTCWalletAsset:
 		return defaultLTCRequiredConfirmations
+	case utils.ETHWalletAsset:
+		return defaultETHRequiredConfirmations
 	}
 	return -1 // Not supposed to happen
 }

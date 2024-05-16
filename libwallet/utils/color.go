@@ -47,5 +47,11 @@ func GradientColorSchemes() map[AssetType]GradientColorScheme {
 			Color2: ColorScheme{R: 56, G: 115, B: 223, O: 0.3},  // rgba(56, 115, 223, 0.3)
 			Blend2: 65.88,                                       // 65.88 %
 		},
+		ETHWalletAsset: {
+			Color1: ColorScheme{R: 245, G: 232, B: 253, O: 0.3}, // rgba(245, 232 253), 0.3)
+			Blend1: 34.76,                                       // 34.76%
+			Color2: ColorScheme{R: 33, G: 0, B: 51, O: 0.3},     // rgba(33, 0, 51, 0.3)
+			Blend2: 65.88,                                       // 65.88 %
+		},
 	}
 }

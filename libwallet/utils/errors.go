@@ -55,6 +55,7 @@ var (
 	ErrBTCNotInitialized = errors.New("btc asset not initialized")
 	ErrDCRNotInitialized = errors.New("dcr asset not initialized")
 	ErrLTCNotInitialized = errors.New("ltc asset not initialized")
+	ErrETHNotInitialized = errors.New("eth asset not initialized")
 
 	ErrUnsupporttedIPV6Address = errors.New("IPv6 addresses unsupportted by the current network")
 	ErrNetConnectionTimeout    = errors.New("Timeout on network connection")
@@ -88,6 +89,10 @@ func ErrDCRMethodNotImplemented(method string) error {
 
 func ErrLTCMethodNotImplemented(method string) error {
 	return fmt.Errorf("%v not implemented for the %v Asset", method, LTCWalletAsset)
+}
+
+func ErrETHMethodNotImplemented(method string) error {
+	return fmt.Errorf("%v not implemented for the %v Asset", method, ETHWalletAsset)
 }
 
 func TranslateNetworkError(host string, errMsg error) error {
