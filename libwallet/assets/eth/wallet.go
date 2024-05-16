@@ -150,9 +150,9 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		return nil, err
 	}
 
-	if err := ethWallet.prepareChain(); err != nil {
-		return nil, err
-	}
+	// if err := ethWallet.prepareChain(); err != nil {
+	// 	return nil, err
+	// }
 
 	ethWallet.SetNetworkCancelCallback(ethWallet.SafelyCancelSync)
 
