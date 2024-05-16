@@ -11,10 +11,10 @@ import (
 	"github.com/gcash/bchutil"
 	"github.com/tyler-smith/go-bip39"
 
-	"github.com/gcash/bchutil/hdkeychain"
 	btcchaincfg "github.com/btcsuite/btcd/chaincfg"
 	btcwaddrmgr "github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/dcrlabs/bchwallet/waddrmgr"
+	"github.com/gcash/bchutil/hdkeychain"
 )
 
 const (

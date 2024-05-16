@@ -36,6 +36,8 @@ const (
 
 	defaultLTCRequiredConfirmations = 6
 
+	defaultBCHRequiredConfirmations = 6
+
 	// UnminedTxHeight defines the block height of the txs in the mempool
 	UnminedTxHeight int32 = -1
 
@@ -74,6 +76,8 @@ func (wallet *Wallet) RequiredConfirmations() int32 {
 		return defaultDCRRequiredConfirmations
 	case utils.LTCWalletAsset:
 		return defaultLTCRequiredConfirmations
+	case utils.BCHWalletAsset:
+		return defaultBCHRequiredConfirmations
 	}
 	return -1 // Not supposed to happen
 }
