@@ -16,6 +16,10 @@ const (
 	DefaultExchangeValue = "none"
 	BittrexExchange      = "bittrex"
 	BinanceExchange      = "binance"
+	BinanceUSExchange    = "binanceus"
+	Coinpaprika          = "coinpaprika"
+	Messari              = "messari"
+	KucoinExchange       = "kucoin"
 )
 
 // initialize an asset market value map

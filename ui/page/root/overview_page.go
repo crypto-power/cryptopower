@@ -1208,16 +1208,16 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 	}
 
 	// Reload the window whenever there is an exchange rate update.
-	pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
-	rateListener := &ext.RateListener{
-		OnRateUpdated: func() {
-			go pg.updateAssetsUSDBalance()
-		},
-	}
-	err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
-	if err != nil {
-		log.Error("RateSource.AddRateListener error: %v", err)
-	}
+	// pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
+	// rateListener := &ext.RateListener{
+	// 	OnRateUpdated: func() {
+	// 		go pg.updateAssetsUSDBalance()
+	// 	},
+	// }
+	// err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
+	// if err != nil {
+	// 	log.Error("RateSource.AddRateListener error: %v", err)
+	// }
 
 	pg.sortedMixerSlideKeys = make([]int, 0)
 	pg.mixerSliderData = make(map[int]*mixerData)
@@ -1254,7 +1254,7 @@ func (pg *OverviewPage) stopNtfnListeners() {
 		}
 		wal.RemoveTxAndBlockNotificationListener(OverviewPageID)
 	}
-	pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
+	// pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 }
 
 func (pg *OverviewPage) setUnMixedBalance(id int) {

@@ -171,6 +171,6 @@ type (
 	}
 
 	sourceURLs struct {
-		price, stats, ws string
+		price, stats string
 	}
 )
