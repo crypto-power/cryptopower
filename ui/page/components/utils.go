@@ -64,30 +64,31 @@ func RetryFunc(retryAttempts int, sleepDur time.Duration, funcDesc string, errFu
 	return retryAttempts, fmt.Errorf("last error: %s", err)
 }
 
+// SeedWordsToHex will convert seedWords from list of words to hex string
 func SeedWordsToHex(seedWords string, wordSeedType sharedW.WordSeedType) (string, error) {
 	var seedHex string
-	var seedByte []byte
+	var entropy []byte
 	var err error
 	if wordSeedType == sharedW.WordSeed33 {
 		words := strings.Split(strings.TrimSpace(seedWords), " ")
-		seedByte, err = pgpwordlist.DecodeMnemonics(words)
-		if checksumByte(seedByte[:len(seedByte)-1]) != seedByte[len(seedByte)-1] {
+		entropy, err = pgpwordlist.DecodeMnemonics(words)
+		if checksumByte(entropy[:len(entropy)-1]) != entropy[len(entropy)-1] {
 			return seedHex, fmt.Errorf("seed checksum mismatch")
 		}
-		seedByte = seedByte[:len(seedByte)-1]
+		entropy = entropy[:len(entropy)-1]
 
-		if len(seedByte) < MinSeedBytes || len(seedByte) > MaxSeedBytes {
+		if len(entropy) < MinSeedBytes || len(entropy) > MaxSeedBytes {
 			return seedHex, fmt.Errorf("invalid seed bytes length")
 		}
 	} else {
-		seedByte, err = bip39.EntropyFromMnemonic(seedWords)
+		entropy, err = bip39.EntropyFromMnemonic(seedWords)
 	}
 
 	if err != nil {
 		return "", err
 	}
 
-	seedHex = hex.EncodeToString(seedByte)
+	seedHex = hex.EncodeToString(entropy)
 	return seedHex, nil
 }
 

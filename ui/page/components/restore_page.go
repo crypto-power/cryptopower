@@ -1,6 +1,7 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 
 	"gioui.org/font"
@@ -158,7 +159,12 @@ func (pg *Restore) seedWordsLayout(gtx C) D {
 						)
 					})
 				}),
-				layout.Rigid(pg.seedTypeDropdown.Layout),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					if pg.toggleSeedInput.IsChecked() {
+						return D{}
+					}
+					return pg.seedTypeDropdown.Layout(gtx)
+				}),
 			)
 		}),
 	)
@@ -172,20 +178,39 @@ func (pg *Restore) seedInputLayout(gtx C) D {
 		pg.seedInputEditor.Hint = values.String(values.StrEnterWalletHex)
 		pg.confirmSeedButton.Text = values.String(values.StrValidateWalHex)
 	}
-	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-				layout.Rigid(pg.seedInputEditor.Layout),
-				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return VerticalInset(values.MarginPadding16).Layout(gtx, pg.confirmSeedButton.Layout)
+	mt := values.MarginPadding56
+	isHideDropdown := pg.toggleSeedInput.IsChecked() && pg.tabIndex == 0
+	if isHideDropdown {
+		mt = values.MarginPadding5
+	}
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{
+				Top: mt,
+			}.Layout(gtx, func(gtx C) D {
+				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+					return HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+							layout.Rigid(pg.seedInputEditor.Layout),
+							layout.Rigid(func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return layout.E.Layout(gtx, func(gtx C) D {
+									return VerticalInset(values.MarginPadding16).Layout(gtx, pg.confirmSeedButton.Layout)
+								})
+							}),
+						)
 					})
-				}),
-			)
-		})
-	})
+				})
+			})
+		}),
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			if isHideDropdown {
+				return D{}
+			}
+			return layout.E.Layout(gtx, pg.seedTypeDropdown.Layout)
+		}),
+	)
 }
 
 func (pg *Restore) indexLayout(gtx C) D {
@@ -270,8 +295,21 @@ func (pg *Restore) restoreFromSeedEditor() {
 	} else {
 		pg.tabIndex = 1
 	}
+	slideWords := strings.Split(seedOrHex, " ")
+	wordSeedType := pg.getWordSeedType()
+	var err error
+	// Get Word seed type from string seedOrHex when user paste Seed words
+	if len(slideWords) > 1 {
+		wordSeedType, err = getWordSeedTypeFromSeed(slideWords)
+		if err != nil {
+			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
+			clearEditor()
+			return
+		}
+	}
 
-	if !sharedW.VerifySeed(seedOrHex, pg.walletType, pg.getWordSeedType()) {
+	if !sharedW.VerifyMnemonic(seedOrHex, pg.walletType, wordSeedType) {
 		errMsg := values.String(values.StrInvalidHex)
 		if pg.tabIndex == 0 {
 			errMsg = values.String(values.StrInvalidSeedPhrase)
@@ -330,4 +368,22 @@ func (pg *Restore) restoreFromSeedEditor() {
 			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
+}
+
+func getWordSeedTypeFromSeed(slideWords []string) (sharedW.WordSeedType, error) {
+	wordsLen := len(slideWords)
+	if wordsLen == 12 || wordsLen == 24 || wordsLen == 33 {
+		switch wordsLen {
+		case 12:
+			return sharedW.WordSeed12, nil
+		case 24:
+			return sharedW.WordSeed24, nil
+		case 33:
+			return sharedW.WordSeed33, nil
+		default:
+			return sharedW.NoneWordSeed, nil
+		}
+	}
+
+	return sharedW.NoneWordSeed, fmt.Errorf("invalid word seed")
 }

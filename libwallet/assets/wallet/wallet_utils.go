@@ -18,7 +18,6 @@ import (
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
-	ltchdkeychain "github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
 	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/scrypt"
 )
@@ -124,7 +123,7 @@ func (wallet *Wallet) DecryptSeed(privatePassphrase string) (string, error) {
 		return "", errors.New(utils.ErrNoSeed)
 	}
 
-	return decryptWalletSeed([]byte(privatePassphrase), wallet.EncryptedSeed)
+	return decryptWalletMnemonic([]byte(privatePassphrase), wallet.EncryptedSeed)
 }
 
 // VerifySeedForWallet compares seedMnemonic with the decrypted
@@ -133,7 +132,7 @@ func (wallet *Wallet) VerifySeedForWallet(seedMnemonic, privpass string) (bool, 
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 
-	decryptedSeed, err := decryptWalletSeed([]byte(privpass), wallet.EncryptedSeed)
+	decryptedSeed, err := decryptWalletMnemonic([]byte(privpass), wallet.EncryptedSeed)
 	if err != nil {
 		return false, err
 	}
@@ -161,23 +160,23 @@ func naclLoadFromPass(pass []byte) (nacl.Key, error) {
 	return nacl.Load(utils.EncodeHex(hash))
 }
 
-// encryptWalletSeed encrypts the seed with secretbox.EasySeal using pass.
-func encryptWalletSeed(pass []byte, seed string) ([]byte, error) {
+// encryptWalletMnemonic encrypts the mnemonic with secretbox.EasySeal using pass.
+func encryptWalletMnemonic(pass []byte, mnemonic string) ([]byte, error) {
 	key, err := naclLoadFromPass(pass)
 	if err != nil {
 		return nil, err
 	}
-	return secretbox.EasySeal([]byte(seed), key), nil
+	return secretbox.EasySeal([]byte(mnemonic), key), nil
 }
 
-// decryptWalletSeed decrypts the encryptedSeed with secretbox.EasyOpen using pass.
-func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
+// decryptWalletMnemonic decrypts the encryptedMnemonic with secretbox.EasyOpen using pass.
+func decryptWalletMnemonic(pass []byte, encryptedMnemonic []byte) (string, error) {
 	key, err := naclLoadFromPass(pass)
 	if err != nil {
 		return "", err
 	}
 
-	decryptedSeed, err := secretbox.EasyOpen(encryptedSeed, key)
+	decryptedSeed, err := secretbox.EasyOpen(encryptedMnemonic, key)
 	if err != nil {
 		return "", errors.New(utils.ErrInvalidPassphrase)
 	}
@@ -187,37 +186,26 @@ func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
 
 // For use with gomobile bind,
 // doesn't support the alternative `GenerateSeed` function because it returns more than 2 types.
-func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v string, err error) {
+func generateMnemonic(wordSeedType WordSeedType) (v string, err error) {
 	var entropy []byte
 	//33-word seeds and 24-word seeds both use length 32 (256 bits) while 12-word seed uses length 16 (128 bits).
 	var length uint8 = dcrhdkeychain.RecommendedSeedLen
 	if wordSeedType == WordSeed12 {
 		length = dcrhdkeychain.MinSeedBytes
 	}
-	switch assetType {
-	case utils.BTCWalletAsset:
-		entropy, err = btchdkeychain.GenerateSeed(length)
-		if err != nil {
-			return "", err
-		}
-	case utils.DCRWalletAsset:
-		entropy, err = dcrhdkeychain.GenerateSeed(length)
-		if err != nil {
-			return "", err
-		}
-	case utils.LTCWalletAsset:
-		entropy, err = ltchdkeychain.GenerateSeed(length)
-		if err != nil {
-			return "", err
-		}
+
+	entropy, err = btchdkeychain.GenerateSeed(length)
+	if err != nil {
+		return "", err
 	}
 
 	if len(entropy) > 0 {
 		if wordSeedType == WordSeed33 {
+			// Generate 33-word seeds from PGWord list
 			return walletseed.EncodeMnemonic(entropy), nil
 		}
 		// Create Seed phrase from entropy
-		// Use bip39 for 12-word seeds and 24-word seeds
+		// Use bip39 for generate 12-word seeds and 24-word seeds
 		seedPhrase, err := bip39.NewMnemonic(entropy)
 		if err != nil {
 			return "", err
@@ -225,13 +213,10 @@ func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v strin
 		return seedPhrase, nil
 	}
 
-	// Execution should never get here but error added as a safeguard to
-	// ensure any new asset added must add its own custom way to generate wallet
-	// seed added above, if need be.
-	return "", fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
+	return "", fmt.Errorf("entropy is empty")
 }
 
-func VerifySeed(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) bool {
+func VerifyMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) bool {
 	_, err := DecodeSeedMnemonic(seedMnemonic, assetType, seedType)
 	return err == nil
 }
@@ -240,13 +225,24 @@ func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType
 	switch assetType {
 	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
 		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
+		var entropy []byte
+		// seedMnemonic is hex string
 		if len(words) == 1 {
-			return hex.DecodeString(words[0])
+			entropy, err = hex.DecodeString(words[0])
+			if seedType == WordSeed33 {
+				return entropy, err
+			}
+			seedMnemonic, err = bip39.NewMnemonic(entropy)
+			if err != nil {
+				return nil, err
+			}
 		}
+
+		// seedMnemonic is list of words
 		if seedType == WordSeed33 {
 			hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
 		} else {
-			hashedSeed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+			hashedSeed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
 		}
 	default:
 		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)

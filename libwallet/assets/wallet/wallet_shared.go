@@ -339,12 +339,12 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		return nil, errors.New("please select word seed type")
 	}
 
-	seed, err := generateSeed(assetType, pass.WordSeedType)
+	mnemonic, err := generateMnemonic(pass.WordSeedType)
 	if err != nil {
 		return nil, err
 	}
 
-	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seed)
+	encryptedSeed, err := encryptWalletMnemonic([]byte(pass.PrivatePass), mnemonic)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		if err != nil {
 			return err
 		}
-		return wallet.createWallet(pass.PrivatePass, seed, pass.WordSeedType)
+		return wallet.createWallet(pass.PrivatePass, mnemonic, pass.WordSeedType)
 	}); err != nil {
 		return nil, err
 	}
@@ -474,7 +474,7 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 ) (*Wallet, error) {
 	// Ensure the encrypted seeds are available before creating wallet so we can
 	// return early.
-	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seedMnemonic)
+	encryptedSeed, err := encryptWalletMnemonic([]byte(pass.PrivatePass), seedMnemonic)
 	if err != nil {
 		log.Errorf("wallet.createWallet: error encrypting wallet seed: %v", err)
 		return nil, err
@@ -716,12 +716,12 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 	encryptedSeed := wallet.EncryptedSeed
 
 	if encryptedSeed != nil {
-		decryptedSeed, err := decryptWalletSeed(oldPassphrase, encryptedSeed)
+		decryptedSeed, err := decryptWalletMnemonic(oldPassphrase, encryptedSeed)
 		if err != nil {
 			return err
 		}
 
-		encryptedSeed, err = encryptWalletSeed(newPassphrase, decryptedSeed)
+		encryptedSeed, err = encryptWalletMnemonic(newPassphrase, decryptedSeed)
 		if err != nil {
 			return err
 		}

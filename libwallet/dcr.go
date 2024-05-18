@@ -158,7 +158,7 @@ func deriveBIP44AccountXPubsForDCR(seedMnemonic string, wordSeedType sharedW.Wor
 	if wordSeedType == sharedW.WordSeed33 {
 		seed, err = walletseed.DecodeUserInput(seedMnemonic)
 	} else {
-		seed, err = bip39.EntropyFromMnemonic(seedMnemonic)
+		seed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
 	}
 	if err != nil {
 		return "", "", err
