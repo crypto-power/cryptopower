@@ -138,7 +138,7 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 				break
 			}
 
-			rate := pg.AssetsManager.RateSource.GetTicker(marketValue, false) // okay to fetch latest rate, this is a goroutine
+			rate := pg.AssetsManager.RateSource.GetTicker(marketValue, true)
 			if err != nil {
 				log.Error(err)
 				break

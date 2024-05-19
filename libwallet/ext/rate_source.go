@@ -17,9 +17,12 @@ import (
 
 const (
 	// These are constants used to represent various rate sources supported.
-	bittrex = values.BittrexExchange
-	binance = values.BinanceExchange
-	none    = values.DefaultExchangeValue
+	bittrex        = values.BittrexExchange
+	binance        = values.BinanceExchange
+	coinpaprika    = values.Coinpaprika
+	messari        = values.Messari
+	kucoinExchange = values.KucoinExchange
+	none           = values.DefaultExchangeValue
 
 	// These are method names for expected bittrex specific websocket messages.
 	BittrexMsgHeartbeat  = "heartbeat"
@@ -98,11 +101,9 @@ var (
 	// supportedMarkets is a map of markets supported by rate sources
 	// implemented (Binance, Bittrex).
 	supportedMarkets = map[string]*struct{}{
-		values.BTCUSDTMarket: {},
-		values.DCRUSDTMarket: {},
-		values.LTCUSDTMarket: {},
-		values.DCRBTCMarket:  {},
-		values.LTCBTCMarket:  {},
+		// values.BTCUSDTMarket: {},
+		// values.DCRUSDTMarket: {},
+		// values.LTCUSDTMarket: {},
 	}
 
 	// binanceMarkets is a map of Binance formatted market to the repo's format,
@@ -136,7 +137,7 @@ type RateSource interface {
 	Refresh(force bool)
 	Refreshing() bool
 	LastUpdate() time.Time
-	GetTicker(market string, cacheOnly bool) *Ticker
+	GetTicker(market values.Market, cacheOnly bool) *Ticker
 	ToggleStatus(disable bool)
 	ToggleSource(newSource string) error
 }
@@ -165,6 +166,33 @@ type CommonRateSource struct {
 	disableConversionExchange func()
 }
 
+// Used to initialize a rate source.
+func NewCommonRateSource(ctx context.Context, source string, disableConversionExchange func()) (*CommonRateSource, error) {
+	if source != binance && source != bittrex && source != none {
+		return nil, fmt.Errorf("new rate source %s is not supported", source)
+	}
+
+	getTickerFunc := dummyGetTickerFunc
+	switch source {
+	case binance:
+		getTickerFunc = binanceGetTicker
+	case bittrex:
+		getTickerFunc = bittrexGetTicker
+	}
+
+	s := &CommonRateSource{
+		ctx:                       ctx,
+		source:                    source,
+		tickers:                   make(map[string]*Ticker),
+		getTicker:                 getTickerFunc,
+		sourceChanged:             make(chan *struct{}),
+		disableConversionExchange: disableConversionExchange,
+	}
+	s.cond = sync.NewCond(&s.mtx)
+
+	return s, nil
+}
+
 // Name is the string associated with the rate source for display.
 func (cs *CommonRateSource) Name() string {
 	src := cs.source
@@ -187,12 +215,6 @@ func (cs *CommonRateSource) Refreshing() bool {
 	return cs.refreshing
 }
 
-func (cs *CommonRateSource) ratesUpdated(t time.Time) {
-	cs.mtx.Lock()
-	defer cs.mtx.Unlock()
-	cs.lastUpdate = t
-}
-
 func (cs *CommonRateSource) ToggleStatus(disable bool) {
 	if cs.isDisabled() != disable {
 		return
@@ -201,6 +223,12 @@ func (cs *CommonRateSource) ToggleStatus(disable bool) {
 	cs.mtx.Lock()
 	cs.disabled = disable
 	cs.mtx.Unlock()
+}
+
+func (cs *CommonRateSource) ratesUpdated(t time.Time) {
+	cs.mtx.Lock()
+	defer cs.mtx.Unlock()
+	cs.lastUpdate = t
 }
 
 func (cs *CommonRateSource) isDisabled() bool {
@@ -224,7 +252,7 @@ func (cs *CommonRateSource) ToggleSource(newSource string) error {
 	case binance:
 		getTickerFn = binanceGetTicker
 	case bittrex:
-		getTickerFn = binanceGetTicker
+		getTickerFn = bittrexGetTicker
 	default:
 		return fmt.Errorf("new rate source %s is not supported", newSource)
 	}
@@ -259,7 +287,7 @@ func (cs *CommonRateSource) copyRates() map[string]*Ticker {
 	return tickers
 }
 
-// Refresh refreshes all expired rates and reconnects the rates websocket if it
+// Refresh refreshes all expired rates if it
 // was previously disconnect. This method takes some time to refresh the rates
 // and should be executed a a goroutine.
 func (cs *CommonRateSource) Refresh(force bool) {
@@ -283,7 +311,6 @@ func (cs *CommonRateSource) Refresh(force bool) {
 	}()
 
 	defer cs.ratesUpdated(time.Now())
-	// defer cs.notifyRateListeners()
 
 	tickers := make(map[string]*Ticker)
 	if !force {
@@ -310,6 +337,55 @@ func (cs *CommonRateSource) Refresh(force bool) {
 	cs.mtx.Unlock()
 }
 
+// GetTicker retrieves ticker information for the provided market. Data will be
+// retrieved from cache if its available and still valid. Returns nil if valid,
+// cached isn't available and cacheOnly is true. If cacheOnly is false and no
+// valid, cached data is available, a network call will be made to fetch the
+// latest ticker information and update the cache.
+func (cs *CommonRateSource) GetTicker(market values.Market, cacheOnly bool) *Ticker {
+	marketName, ok := isSupportedMarket(market.String(), cs.source)
+	if !ok {
+		return nil
+	}
+
+	cs.mtx.RLock()
+	ticker, ok := cs.tickers[marketName]
+	cs.mtx.RUnlock()
+
+	// Get rate if market ticker not exist
+	if !ok {
+		if cacheOnly {
+			return nil
+		}
+		return cs.fetchRate(marketName)
+	}
+
+	t := *ticker
+	if !cacheOnly && time.Since(t.lastUpdate) > rateExpiry {
+		if ticker := cs.fetchRate(marketName); ticker != nil {
+			return ticker
+		}
+	}
+
+	return &t
+}
+
+// fetchRate retrieves new ticker information via the rate source's HTTP API.
+func (cs *CommonRateSource) fetchRate(market string) *Ticker {
+	newTicker, err := cs.retryGetTicker(market)
+	if err != nil {
+		cs.fail("Error fetching ticker", err)
+		return nil
+	}
+
+	cs.mtx.Lock()
+	cs.tickers[market] = newTicker
+	cs.mtx.Unlock()
+
+	t := *newTicker
+	return &t
+}
+
 func (cs *CommonRateSource) retryGetTicker(market string) (*Ticker, error) {
 	var newTicker *Ticker
 	var err error
@@ -329,80 +405,6 @@ func (cs *CommonRateSource) retryGetTicker(market string) (*Ticker, error) {
 		cs.disableConversionExchange()
 	}
 	return nil, err
-}
-
-// fetchRate retrieves new ticker information via the rate source's HTTP API.
-func (cs *CommonRateSource) fetchRate(market string) *Ticker {
-	newTicker, err := cs.retryGetTicker(market)
-	if err != nil {
-		cs.fail("Error fetching ticker", err)
-		return nil
-	}
-
-	cs.mtx.Lock()
-	cs.tickers[market] = newTicker
-	cs.mtx.Unlock()
-
-	t := *newTicker
-	return &t
-}
-
-// GetTicker retrieves ticker information for the provided market. Data will be
-// retrieved from cache if its available and still valid. Returns nil if valid,
-// cached isn't available and cacheOnly is true. If cacheOnly is false and no
-// valid, cached data is available, a network call will be made to fetch the
-// latest ticker information and update the cache.
-func (cs *CommonRateSource) GetTicker(market string, cacheOnly bool) *Ticker {
-	marketName, ok := isSupportedMarket(market, cs.source)
-	if !ok {
-		return nil
-	}
-
-	cs.mtx.RLock()
-	ticker, ok := cs.tickers[marketName]
-	cs.mtx.RUnlock()
-	if !ok {
-		if cacheOnly {
-			return nil
-		}
-		return cs.fetchRate(marketName)
-	}
-
-	t := *ticker
-	if !cacheOnly && time.Since(t.lastUpdate) > rateExpiry {
-		if ticker := cs.fetchRate(marketName); ticker != nil {
-			return ticker
-		}
-	}
-
-	return &t
-}
-
-// Used to initialize a rate source.
-func NewCommonRateSource(ctx context.Context, source string, disableConversionExchange func()) (*CommonRateSource, error) {
-	if source != binance && source != bittrex && source != none {
-		return nil, fmt.Errorf("new rate source %s is not supported", source)
-	}
-
-	getTickerFunc := dummyGetTickerFunc
-	switch source {
-	case binance:
-		getTickerFunc = binanceGetTicker
-	case bittrex:
-		getTickerFunc = bittrexGetTicker
-	}
-
-	s := &CommonRateSource{
-		ctx:                       ctx,
-		source:                    source,
-		tickers:                   make(map[string]*Ticker),
-		getTicker:                 getTickerFunc,
-		sourceChanged:             make(chan *struct{}),
-		disableConversionExchange: disableConversionExchange,
-	}
-	s.cond = sync.NewCond(&s.mtx)
-
-	return s, nil
 }
 
 func binanceGetTicker(market string) (*Ticker, error) {
@@ -462,6 +464,108 @@ func bittrexGetTicker(market string) (*Ticker, error) {
 	percentChange := res.PercentChange
 	ticker.PriceChangePercent = &percentChange
 	ticker.lastUpdate = time.Now()
+	return ticker, nil
+}
+
+func coinpaprikaGetTicker() (map[string]*Ticker, error) {
+	reqCfg := &utils.ReqConfig{
+		HTTPURL: coinpaprikaURLs.price,
+		Method:  "GET",
+	}
+
+	var res []*struct {
+		Symbol string `json:"symbol"`
+		Quotes struct {
+			USD struct {
+				Price         float64 `json:"price"`
+				PercentChange float64 `json:"percent_change_24h"`
+			} `json:"USD"`
+		} `json:"quotes"`
+	}
+	_, err := utils.HTTPRequest(reqCfg, &res)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to fetch ticker: %w", coinpaprika, err)
+	}
+
+	var tickers map[string]*Ticker
+	for _, coinInfo := range res {
+		market := fmt.Sprintf("%s-USDT", coinInfo.Symbol)
+		_, found := supportedMarkets[market]
+		if !found {
+			continue
+		}
+
+		price := coinInfo.Quotes.USD.Price
+		if price == 0 {
+			log.Errorf("zero-price returned from coinpaprika for asset with ticker %s", coinInfo.Symbol)
+			continue
+		}
+		ticker := &Ticker{
+			Market:             market, // Ok: e.g BTC-USDT
+			LastTradePrice:     price,
+			lastUpdate:         time.Now(),
+			PriceChangePercent: &coinInfo.Quotes.USD.PercentChange,
+		}
+		tickers[market] = ticker
+	}
+	return tickers, nil
+}
+
+func messariGetTicker(market values.Market) (*Ticker, error) {
+	reqCfg := &utils.ReqConfig{
+		HTTPURL: fmt.Sprintf(messariURLs.price, market.AssetString()),
+		Method:  "GET",
+	}
+	var res struct {
+		Data struct {
+			MarketData struct {
+				Price         float64 `json:"price_usd"`
+				PercentChange float64 `json:"percent_change_usd_last_24_hours"`
+			} `json:"market_data"`
+		} `json:"data"`
+	}
+
+	_, err := utils.HTTPRequest(reqCfg, &res)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", bittrex, market, err)
+	}
+
+	ticker := &Ticker{
+		Market:             market.String(), // Ok: e.g BTC-USDT
+		LastTradePrice:     res.Data.MarketData.Price,
+		lastUpdate:         time.Now(),
+		PriceChangePercent: &res.Data.MarketData.PercentChange,
+	}
+
+	return ticker, nil
+}
+
+func kucoinGetTicker(market values.Market) (*Ticker, error) {
+	reqCfg := &utils.ReqConfig{
+		HTTPURL: fmt.Sprintf(messariURLs.price, market.AssetString()),
+		Method:  "GET",
+	}
+	var res struct {
+		Data struct {
+			MarketData struct {
+				Price         float64 `json:"price_usd"`
+				PercentChange float64 `json:"percent_change_usd_last_24_hours"`
+			} `json:"market_data"`
+		} `json:"data"`
+	}
+
+	_, err := utils.HTTPRequest(reqCfg, &res)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", bittrex, market, err)
+	}
+
+	ticker := &Ticker{
+		Market:             market.String(), // Ok: e.g BTC-USDT
+		LastTradePrice:     res.Data.MarketData.Price,
+		lastUpdate:         time.Now(),
+		PriceChangePercent: &res.Data.MarketData.PercentChange,
+	}
+
 	return ticker, nil
 }
 
