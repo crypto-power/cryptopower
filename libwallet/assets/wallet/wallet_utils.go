@@ -117,27 +117,27 @@ func (wallet *Wallet) batchDbTransaction(dbOp func(node storm.Node) error) (err 
 	return err
 }
 
-// DecryptSeed decrypts wallet.EncryptedSeed using privatePassphrase
+// DecryptSeed decrypts wallet.EncryptedMnemonic using privatePassphrase
 func (wallet *Wallet) DecryptSeed(privatePassphrase string) (string, error) {
-	if wallet.EncryptedSeed == nil {
+	if wallet.EncryptedMnemonic == nil {
 		return "", errors.New(utils.ErrNoSeed)
 	}
 
-	return decryptWalletMnemonic([]byte(privatePassphrase), wallet.EncryptedSeed)
+	return decryptWalletMnemonic([]byte(privatePassphrase), wallet.EncryptedMnemonic)
 }
 
 // VerifySeedForWallet compares seedMnemonic with the decrypted
-// wallet.EncryptedSeed.
+// wallet.EncryptedMnemonic.
 func (wallet *Wallet) VerifySeedForWallet(seedMnemonic, privpass string) (bool, error) {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 
-	decryptedSeed, err := decryptWalletMnemonic([]byte(privpass), wallet.EncryptedSeed)
+	decryptedMnemonic, err := decryptWalletMnemonic([]byte(privpass), wallet.EncryptedMnemonic)
 	if err != nil {
 		return false, err
 	}
 
-	if decryptedSeed == seedMnemonic {
+	if decryptedMnemonic == seedMnemonic {
 		if wallet.IsBackedUp {
 			return true, nil // return early
 		}
@@ -176,12 +176,12 @@ func decryptWalletMnemonic(pass []byte, encryptedMnemonic []byte) (string, error
 		return "", err
 	}
 
-	decryptedSeed, err := secretbox.EasyOpen(encryptedMnemonic, key)
+	decryptedMnemonic, err := secretbox.EasyOpen(encryptedMnemonic, key)
 	if err != nil {
 		return "", errors.New(utils.ErrInvalidPassphrase)
 	}
 
-	return string(decryptedSeed), nil
+	return string(decryptedMnemonic), nil
 }
 
 // For use with gomobile bind,
@@ -204,13 +204,13 @@ func generateMnemonic(wordSeedType WordSeedType) (v string, err error) {
 			// Generate 33-word seeds from PGWord list
 			return walletseed.EncodeMnemonic(entropy), nil
 		}
-		// Create Seed phrase from entropy
-		// Use bip39 for generate 12-word seeds and 24-word seeds
-		seedPhrase, err := bip39.NewMnemonic(entropy)
+		// Create mnemonic from entropy
+		// Use bip39 to generate 12-word seeds and 24-word seeds
+		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
 			return "", err
 		}
-		return seedPhrase, nil
+		return mnemonic, nil
 	}
 
 	return "", fmt.Errorf("entropy is empty")
