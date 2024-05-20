@@ -226,15 +226,22 @@ func (swmp *SingleWalletMasterPage) fetchExchangeRate() {
 	}
 
 	swmp.isFetchingExchangeRate = true
-	var market string
-	switch swmp.selectedWallet.GetAssetType() {
-	case libutils.DCRWalletAsset:
-		market = values.DCRUSDTMarket
-	case libutils.BTCWalletAsset:
-		market = values.BTCUSDTMarket
-	case libutils.LTCWalletAsset:
-		market = values.LTCUSDTMarket
-	default:
+	// var market string
+	// switch swmp.selectedWallet.GetAssetType() {
+	// case libutils.DCRWalletAsset:
+	// 	market = values.DCRUSDTMarket
+	// case libutils.BTCWalletAsset:
+	// 	market = values.BTCUSDTMarket
+	// case libutils.LTCWalletAsset:
+	// 	market = values.LTCUSDTMarket
+	// default:
+	// 	log.Errorf("Asset type %q is not supported for exchange rate fetching", swmp.selectedWallet.GetAssetType())
+	// 	swmp.isFetchingExchangeRate = false
+	// 	return
+	// }
+
+	market, err := utils.MarketFromAsset(swmp.selectedWallet.GetAssetType())
+	if err != nil {
 		log.Errorf("Asset type %q is not supported for exchange rate fetching", swmp.selectedWallet.GetAssetType())
 		swmp.isFetchingExchangeRate = false
 		return

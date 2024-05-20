@@ -24,8 +24,8 @@ const (
 )
 
 // initialize an asset market value map
-var AssetExchangeMarketValue = map[utils.AssetType]string{
-	utils.DCRWalletAsset: DCRUSDTMarket.String(),
-	utils.BTCWalletAsset: BTCUSDTMarket.String(),
-	utils.LTCWalletAsset: LTCUSDTMarket.String(),
+var AssetExchangeMarketValue = map[utils.AssetType]Market{
+	utils.DCRWalletAsset: DCRUSDTMarket,
+	utils.BTCWalletAsset: BTCUSDTMarket,
+	utils.LTCWalletAsset: LTCUSDTMarket,
 }

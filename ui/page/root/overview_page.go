@@ -100,7 +100,7 @@ type assetBalanceSliderItem struct {
 
 type assetMarketData struct {
 	assetType libutils.AssetType
-	market    string
+	market    values.Market
 	image     *cryptomaterial.Image
 }
 
@@ -605,7 +605,7 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 					return pg.marketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
 						asset := pg.mktValues[i]
-						rate, ok := rates[asset.market]
+						rate, ok := rates[asset.market.String()]
 						if !ok {
 							return D{}
 						}
@@ -677,7 +677,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return pg.mobileMarketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
 						asset := pg.mktValues[i]
-						rate, ok := rates[asset.market]
+						rate, ok := rates[asset.market.String()]
 						if !ok {
 							return D{}
 						}
@@ -814,7 +814,7 @@ func (pg *OverviewPage) marketRates() map[string]*ext.Ticker {
 		if rate == nil || rate.LastTradePrice <= 0 {
 			continue
 		}
-		marketRates[asset.market] = rate
+		marketRates[asset.market.String()] = rate
 	}
 
 	return marketRates

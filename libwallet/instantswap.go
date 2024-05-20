@@ -124,7 +124,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			params.MaxDeviationRate = DefaultMarketDeviation // default 5%
 		}
 
-		market := fromCur + "-" + toCur
+		market := values.NewMarket(fromCur, toCur)
 		source := mgr.RateSource.Name()
 		ticker := mgr.RateSource.GetTicker(market, false) // TODO: (@ukane-philemon) Can we proceed if there is no rate information from rate source? I think we should.
 		if ticker == nil {

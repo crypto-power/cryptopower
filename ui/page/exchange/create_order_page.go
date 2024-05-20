@@ -14,7 +14,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -973,7 +972,8 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 									return txt.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
-									ticker := pg.AssetsManager.RateSource.GetTicker(fromCur+ext.MktSep+toCur, true)
+									market := values.NewMarket(fromCur, toCur)
+									ticker := pg.AssetsManager.RateSource.GetTicker(market, true)
 									if ticker == nil || ticker.LastTradePrice <= 0 {
 										return D{}
 									}

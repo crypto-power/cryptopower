@@ -2015,7 +2015,7 @@ func isChangeEvent(evt widget.EditorEvent) bool {
 
 // rateSourceMarketName converts the provided marketPair to the expected market
 // name for fiat rate fetching.
-func rateSourceMarketName(marketPair string) string {
+func rateSourceMarketName(marketPair string) values.Market {
 	base, quote, _ := strings.Cut(marketPair, "/")
 	_, baseSymOk := dex.BipSymbolID(strings.ToLower(base))
 	_, quoteSymOk := dex.BipSymbolID(strings.ToLower(quote))

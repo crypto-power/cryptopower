@@ -18,6 +18,7 @@ import (
 const (
 	binanceProhibitedCountries = "https://www.binance.com/en/legal/list-of-prohibited-countries"
 	bittrexProhibitedCountries = "https://bittrex.zendesk.com/hc/en-us/articles/360034965072-Important-information-for-Bittrex-customers"
+	kucoinProhibitedCountries  = "https://www.kucoin.com/vi/legal/terms-of-use"
 )
 
 type (
@@ -34,7 +35,11 @@ var (
 	// ExchOptions holds the configurable options for exchange servers.
 	ExchOptions = []ItemPreference{
 		{Key: values.BinanceExchange, Value: values.StrUsdBinance, Warning: values.String(values.StrRateBinanceWarning), WarningLink: binanceProhibitedCountries},
+		{Key: values.BinanceUSExchange, Value: values.StrUsdBinanceUS},
 		{Key: values.BittrexExchange, Value: values.StrUsdBittrex, Warning: values.String(values.StrRateBittrexWarning), WarningLink: bittrexProhibitedCountries},
+		{Key: values.Coinpaprika, Value: values.StrUsdCoinpaprika},
+		{Key: values.Messari, Value: values.StrUsdMessari},
+		{Key: values.KucoinExchange, Value: values.StrUsdKucoin, Warning: values.String(values.StrRateKucoinWarning), WarningLink: kucoinProhibitedCountries},
 		{Key: values.DefaultExchangeValue, Value: values.StrNone},
 	}
 
