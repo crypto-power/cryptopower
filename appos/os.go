@@ -5,6 +5,7 @@ package appos
 type AppOS struct {
 	isAndroid bool
 	isIOS     bool
+	isDarwin  bool
 }
 
 // Default AppOS value. Updated in OS-specific files for each OS.
@@ -25,4 +26,8 @@ func (os *AppOS) IsIOS() bool {
 
 func (os *AppOS) IsMobile() bool {
 	return os.isAndroid || os.isIOS
+}
+
+func (os *AppOS) IsDarwin() bool {
+	return os.isDarwin
 }

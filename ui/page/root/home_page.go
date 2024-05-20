@@ -123,9 +123,20 @@ func (hp *HomePage) initPageItems() {
 		values.String(values.StrOverview),
 		values.String(values.StrTransactions),
 		values.String(values.StrWallets),
-		values.String(values.StrTrade),
 		values.String(values.StrGovernance),
 	}
+
+	// Add trade tab only if not on macOS
+	if !appos.Current().IsDarwin() {
+		// Determine the insertion point, which is second to last position
+		insertionPoint := len(navigationTabTitles) - 1
+		if insertionPoint < 0 {
+			insertionPoint = 0
+		}
+		// Append at the second to last position
+		navigationTabTitles = append(navigationTabTitles[:insertionPoint], append([]string{values.String(values.StrTrade)}, navigationTabTitles[insertionPoint:]...)...)
+	}
+
 	hp.navigationTab = hp.Theme.Tab(layout.Horizontal, false, navigationTabTitles)
 
 	hp.sendReceiveNavItems = []components.NavBarItem{
@@ -706,7 +717,7 @@ func (hp *HomePage) initBottomNavItems() {
 		},
 	}
 
-	// Add the trade tab only if not on mobile
+	// Add the trade tab only if not on iOS
 	if !appos.Current().IsIOS() {
 		tradeTab := components.BottomNavigationBarHandler{
 			Clickable:     hp.Theme.NewClickable(true),
