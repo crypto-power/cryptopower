@@ -106,11 +106,6 @@ var (
 		values.LTCUSDTMarket: {},
 	}
 
-	// binanceMarkets is a map of Binance formatted market to the repo's format,
-	// e.g BTCUSDT : BTC-USDT. This is to facilitate quick lookup and to/fro
-	// market name formatting.
-	// binanceMarkets = make(map[string]string)
-
 	// Rates exceeding rateExpiry are expired and should be removed unless there
 	// was an error fetching a new rate.
 	rateExpiry = 30 * time.Minute
@@ -119,14 +114,6 @@ var (
 	// expired rates and reconnect websocket if need be.
 	RateRefreshDuration = 60 * time.Minute
 )
-
-// Add source.
-func init() {
-	// for market := range supportedMarkets {
-	// 	binanceMarketName := strings.ReplaceAll(market, MktSep, "")
-	// 	binanceMarkets[binanceMarketName] = market
-	// }
-}
 
 // RateSource is the interface that binds different rate sources. Most of the
 // methods are implemented by CommonRateSource, but Refresh is implemented in

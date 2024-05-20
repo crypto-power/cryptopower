@@ -291,20 +291,6 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 	pg.isFetchingExchangeRate = true
-	// var market string
-	// switch pg.selectedWallet.GetAssetType() {
-	// case libUtil.DCRWalletAsset:
-	// 	market = values.DCRUSDTMarket
-	// case libUtil.BTCWalletAsset:
-	// 	market = values.BTCUSDTMarket
-	// case libUtil.LTCWalletAsset:
-	// 	market = values.LTCUSDTMarket
-	// default:
-	// 	log.Errorf("Unsupported asset type: %s", pg.selectedWallet.GetAssetType())
-	// 	pg.isFetchingExchangeRate = false
-	// 	return
-	// }
-
 	market, err := utils.MarketFromAsset(pg.selectedWallet.GetAssetType())
 	if err != nil {
 		log.Errorf("Unsupported asset type: %s", pg.selectedWallet.GetAssetType())

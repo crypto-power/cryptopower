@@ -176,16 +176,6 @@ func (hp *HomePage) OnNavigatedTo() {
 	}
 
 	if hp.AssetsManager.ExchangeRateFetchingEnabled() {
-		// Reload the window whenever there is an exchange rate update.
-		// hp.AssetsManager.RateSource.RemoveRateListener(HomePageID)
-		// rateListener := &ext.RateListener{
-		// 	OnRateUpdated: hp.CalculateAssetsUSDBalance,
-		// }
-		// err := hp.AssetsManager.RateSource.AddRateListener(rateListener, HomePageID)
-		// if err != nil {
-		// 	log.Error("RateSource.AddRateListener error: %v", err)
-		// }
-
 		go hp.CalculateAssetsUSDBalance()
 	}
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
@@ -562,8 +552,6 @@ func (hp *HomePage) OnNavigatedFrom() {
 	if activeTab := hp.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedFrom()
 	}
-
-	// hp.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 
 	hp.ctxCancel()
 }

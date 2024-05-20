@@ -103,19 +103,6 @@ func (pg *Page) OnNavigatedTo() {
 func (pg *Page) OnNavigatedFrom() {}
 
 func (pg *Page) fetchExchangeRate() {
-	// var market string
-	// switch pg.wallet.GetAssetType() {
-	// case libutils.DCRWalletAsset:
-	// 	market = values.DCRUSDTMarket
-	// case libutils.BTCWalletAsset:
-	// 	market = values.BTCUSDTMarket
-	// case libutils.LTCWalletAsset:
-	// 	market = values.LTCUSDTMarket
-	// default:
-	// 	log.Errorf("Unsupported asset type: %s", pg.wallet.GetAssetType())
-	// 	return
-	// }
-
 	market, err := utils.MarketFromAsset(pg.wallet.GetAssetType())
 	if err != nil {
 		log.Errorf("Unsupported asset type: %s", pg.wallet.GetAssetType())
