@@ -356,7 +356,8 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 		pg.recentProposal,
 	}
 
-	if !appos.Current().IsIOS() {
+	// Do not show recent trades on iOS and macOS
+	if !appos.Current().IsIOS() || !appos.Current().IsDarwin() {
 		// Determine the insertion point, which is second to last position
 		insertionPoint := len(pageContent) - 1
 		if insertionPoint < 0 {
