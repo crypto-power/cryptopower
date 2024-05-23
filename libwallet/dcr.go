@@ -2,6 +2,7 @@ package libwallet
 
 import (
 	"context"
+	"fmt"
 
 	"decred.org/dcrwallet/v3/errors"
 	"decred.org/dcrwallet/v3/walletseed"
@@ -155,10 +156,13 @@ func (mgr *AssetsManager) DCRWalletWithSeed(seedMnemonic string, wordSeedType sh
 func deriveBIP44AccountXPubsForDCR(seedMnemonic string, wordSeedType sharedW.WordSeedType, account uint32, params *chaincfg.Params) (string, string, error) {
 	var seed []byte
 	var err error
+	fmt.Println("-------deriveBIP44AccountXPubsForDCR-----wordSeedType--->", wordSeedType)
 	if wordSeedType == sharedW.WordSeed33 {
 		seed, err = walletseed.DecodeUserInput(seedMnemonic)
 	} else {
+		fmt.Println("-------deriveBIP44AccountXPubsForDCR-----seed--->", seedMnemonic)
 		seed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
+		fmt.Println("-------deriveBIP44AccountXPubsForDCR-----err--->", err)
 	}
 	if err != nil {
 		return "", "", err

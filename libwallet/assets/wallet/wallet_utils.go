@@ -222,6 +222,7 @@ func VerifyMnemonic(seedMnemonic string, assetType utils.AssetType, seedType Wor
 }
 
 func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) (hashedSeed []byte, err error) {
+	seedMnemonic = strings.TrimSpace(seedMnemonic)
 	switch assetType {
 	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
 		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
@@ -237,12 +238,13 @@ func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType
 				return nil, err
 			}
 		}
-
 		// seedMnemonic is list of words
 		if seedType == WordSeed33 {
 			hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
 		} else {
+			fmt.Println("-------DecodeSeedMnemonic-----22222--->", seedMnemonic)
 			hashedSeed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
+			fmt.Println("------DecodeSeedMnemonic--22222--->", err)
 		}
 	default:
 		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
