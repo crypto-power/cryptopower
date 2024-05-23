@@ -117,6 +117,11 @@ type orderData struct {
 }
 
 func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
+	// isFirstVisit is true by default, unless the user has previously visited
+	// this page.
+	isFirstVisit := true
+	l.AssetsManager.ReadAppConfigValue(sharedW.IsCEXFirstVisitConfigKey, &isFirstVisit)
+
 	pg := &CreateOrderPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateOrderPageID),
@@ -133,7 +138,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 			Axis:      layout.Vertical,
 		}},
 		startTradingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
-		isFirstVisit:    l.AssetsManager.ReadBoolValue(sharedW.IsCEXFirstVisitConfigKey, true),
+		isFirstVisit:    isFirstVisit,
 	}
 
 	// Init splash page more info widget
@@ -373,8 +378,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.startTradingBtn.Clicked() {
-		pg.AssetsManager.SetBoolValue(sharedW.IsCEXFirstVisitConfigKey, false)
 		pg.isFirstVisit = false
+		pg.AssetsManager.SaveAppConfigValue(sharedW.IsCEXFirstVisitConfigKey, pg.isFirstVisit)
 	}
 
 	if pg.fromAmountEditor.Edit.CustomButton.Button.Clicked() {
