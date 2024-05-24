@@ -4,11 +4,9 @@ import (
 	"context"
 
 	"decred.org/dcrwallet/v3/errors"
-	"decred.org/dcrwallet/v3/walletseed"
 
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/hdkeychain/v3"
-	"github.com/tyler-smith/go-bip39"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -153,13 +151,7 @@ func (mgr *AssetsManager) DCRWalletWithSeed(seedMnemonic string, wordSeedType sh
 // deriveBIP44AccountXPubForDCR derives and returns the legacy and SLIP0044 account
 // xpubs using the BIP44 HD path for accounts: m/44'/<coin type>'/<account>'.
 func deriveBIP44AccountXPubsForDCR(seedMnemonic string, wordSeedType sharedW.WordSeedType, account uint32, params *chaincfg.Params) (string, string, error) {
-	var seed []byte
-	var err error
-	if wordSeedType == sharedW.WordSeed33 {
-		seed, err = walletseed.DecodeUserInput(seedMnemonic)
-	} else {
-		seed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
-	}
+	seed, err := sharedW.DecodeSeedMnemonic(seedMnemonic, utils.DCRWalletAsset, wordSeedType)
 	if err != nil {
 		return "", "", err
 	}

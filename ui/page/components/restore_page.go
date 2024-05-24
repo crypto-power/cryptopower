@@ -298,6 +298,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 	slideWords := strings.Split(seedOrHex, " ")
 	wordSeedType := pg.getWordSeedType()
 	var err error
+
 	// Get Word seed type from string seedOrHex when user paste Seed words
 	if len(slideWords) > 1 {
 		wordSeedType, err = getWordSeedTypeFromSeed(slideWords)
@@ -346,7 +347,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		ShowWalletInfoTip(true).
 		SetParent(pg).
 		SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-			_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
+			_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass, wordSeedType)
 			if err != nil {
 				errString := err.Error()
 				if err.Error() == libutils.ErrExist {

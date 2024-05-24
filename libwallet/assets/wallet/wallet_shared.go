@@ -474,7 +474,7 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 ) (*Wallet, error) {
 	// Ensure the encrypted seeds are available before creating wallet so we can
 	// return early.
-	EncryptedMnemonic, err := encryptWalletMnemonic([]byte(pass.PrivatePass), seedMnemonic)
+	encryptedMnemonic, err := encryptWalletMnemonic([]byte(pass.PrivatePass), seedMnemonic)
 	if err != nil {
 		log.Errorf("wallet.createWallet: error encrypting wallet seed: %v", err)
 		return nil, err
@@ -488,7 +488,7 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 		rootDir:               params.RootDir,
 		logDir:                params.LogDir,
 
-		EncryptedMnemonic:     EncryptedMnemonic,
+		EncryptedMnemonic:     encryptedMnemonic,
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
 		Type:                  assetType,
@@ -713,15 +713,15 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 
 	oldPassphrase := []byte(oldPrivatePassphrase)
 	newPassphrase := []byte(newPrivatePassphrase)
-	EncryptedMnemonic := wallet.EncryptedMnemonic
+	encryptedMnemonic := wallet.EncryptedMnemonic
 
-	if EncryptedMnemonic != nil {
-		decryptedSeed, err := decryptWalletMnemonic(oldPassphrase, EncryptedMnemonic)
+	if encryptedMnemonic != nil {
+		decryptedSeed, err := decryptWalletMnemonic(oldPassphrase, encryptedMnemonic)
 		if err != nil {
 			return err
 		}
 
-		EncryptedMnemonic, err = encryptWalletMnemonic(newPassphrase, decryptedSeed)
+		encryptedMnemonic, err = encryptWalletMnemonic(newPassphrase, decryptedSeed)
 		if err != nil {
 			return err
 		}
@@ -732,7 +732,7 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 		return utils.TranslateError(err)
 	}
 
-	wallet.EncryptedMnemonic = EncryptedMnemonic
+	wallet.EncryptedMnemonic = encryptedMnemonic
 	wallet.PrivatePassphraseType = privatePassphraseType
 	err = wallet.db.Save(wallet)
 	if err != nil {

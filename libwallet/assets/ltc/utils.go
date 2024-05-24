@@ -3,14 +3,12 @@ package ltc
 import (
 	"encoding/binary"
 
-	"decred.org/dcrwallet/v3/walletseed"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
 	"github.com/ltcsuite/ltcwallet/waddrmgr"
-	"github.com/tyler-smith/go-bip39"
 )
 
 const (
@@ -58,12 +56,7 @@ func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 
 // DeriveAccountXpub derives the xpub for the given account.
 func (asset *Asset) DeriveAccountXpub(seedMnemonic string, wordSeedType sharedW.WordSeedType, account uint32, params *chaincfg.Params) (xpub string, err error) {
-	var seed []byte
-	if wordSeedType == sharedW.WordSeed33 {
-		seed, err = walletseed.DecodeUserInput(seedMnemonic)
-	} else {
-		seed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
-	}
+	seed, err := sharedW.DecodeSeedMnemonic(seedMnemonic, asset.Type, wordSeedType)
 	if err != nil {
 		return "", err
 	}
