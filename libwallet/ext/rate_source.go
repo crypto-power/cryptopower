@@ -155,11 +155,9 @@ type CommonRateSource struct {
 
 // Used to initialize a rate source.
 func NewCommonRateSource(ctx context.Context, source string, disableConversionExchange func()) (*CommonRateSource, error) {
-	if !isValidateSource(source) {
+	if !isValidSource(source) {
 		return nil, fmt.Errorf("new rate source %s is not supported", source)
 	}
-
-	getTickerFunc := dummyGetTickerFunc
 
 	s := &CommonRateSource{
 		ctx:                       ctx,
@@ -168,19 +166,7 @@ func NewCommonRateSource(ctx context.Context, source string, disableConversionEx
 		sourceChanged:             make(chan *struct{}),
 		disableConversionExchange: disableConversionExchange,
 	}
-	switch source {
-	case binance:
-		getTickerFunc = s.binanceGetTicker
-	case bittrex:
-		getTickerFunc = bittrexGetTicker
-	case coinpaprika:
-		getTickerFunc = s.coinpaprikaGetTicker
-	case messari:
-		getTickerFunc = messariGetTicker
-	case kucoinExchange:
-		getTickerFunc = kucoinGetTicker
-	}
-	s.getTicker = getTickerFunc
+	s.getTicker = s.getFuncSource(source)
 	s.cond = sync.NewCond(&s.mtx)
 
 	return s, nil
@@ -236,23 +222,13 @@ func (cs *CommonRateSource) ToggleSource(newSource string) error {
 	if newSource == cs.source {
 		return nil // nothing to do
 	}
-
-	getTickerFn := dummyGetTickerFunc
 	refresh := true
-	switch newSource {
-	case none: /* none is the dummy rate source for when user disables rates */
-		refresh = false
-	case binance, binanceUS:
-		getTickerFn = cs.binanceGetTicker
-	case bittrex:
-		getTickerFn = bittrexGetTicker
-	case messari:
-		getTickerFn = messariGetTicker
-	case kucoinExchange:
-		getTickerFn = kucoinGetTicker
-	case coinpaprika:
-		getTickerFn = cs.coinpaprikaGetTicker
-	default:
+	if newSource == none {
+		refresh = false /* none is the dummy rate source for when user disables rates */
+	}
+
+	getTickerFn := cs.getFuncSource(newSource)
+	if getTickerFn == nil {
 		return fmt.Errorf("new rate source %s is not supported", newSource)
 	}
 
@@ -351,7 +327,7 @@ func (cs *CommonRateSource) GetTicker(market values.Market, cacheOnly bool) *Tic
 	ticker, ok := cs.tickers[marketName]
 	cs.mtx.RUnlock()
 
-	// Get rate if market ticker not exist
+	// Get rate if market ticker does not exist
 	if !ok {
 		if cacheOnly {
 			return nil
@@ -395,8 +371,7 @@ func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error
 			return newTicker, nil
 		}
 
-		fmt.Printf("fetching ticker %d failed: %v. Retrying in %v\n", i+1, err, backoff)
-
+		log.Errorf("fetching ticker %d failed: %v. Retrying in %v\n", i+1, err, backoff)
 		time.Sleep(backoff)
 		backoff *= 2 // Exponential backoff
 	}
@@ -619,15 +594,28 @@ func isSupportedMarket(market values.Market, rateSource string) (values.Market, 
 	return marketName, true
 }
 
-func dummyGetTickerFunc(values.Market) (*Ticker, error) {
-	return &Ticker{}, nil
-}
-
-func isValidateSource(source string) bool {
+func isValidSource(source string) bool {
 	switch source {
 	case bittrex, binance, binanceUS, coinpaprika, messari, kucoinExchange, none:
 		return true
 	default:
 		return false
+	}
+}
+
+func (cs *CommonRateSource) getFuncSource(source string) func(values.Market) (*Ticker, error) {
+	switch source {
+	case binance, binanceUS:
+		return cs.binanceGetTicker
+	case bittrex:
+		return bittrexGetTicker
+	case messari:
+		return messariGetTicker
+	case kucoinExchange:
+		return kucoinGetTicker
+	case coinpaprika:
+		return cs.coinpaprikaGetTicker
+	default:
+		return nil
 	}
 }

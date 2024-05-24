@@ -159,12 +159,13 @@ func (hp *HomePage) ID() string {
 // Part of the load.Page interface.
 func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
-
 	hp.initPageItems()
 	hp.initDEX()
 
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
+	} else {
+		hp.CurrentPage().OnNavigatedTo()
 	}
 
 	// Initiate the auto sync for all wallets with autosync set.
