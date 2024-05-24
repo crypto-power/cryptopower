@@ -439,14 +439,13 @@ func (pg *SeedRestore) validateSeeds() (bool, string) {
 
 		seedPhrase += editor.Edit.Editor.Text() + " "
 	}
+
+	seedPhrase = strings.TrimSpace(seedPhrase)
 	return true, seedPhrase
 }
 
 func (pg *SeedRestore) verifySeeds() bool {
-	fmt.Println("------verifySeeds----------22222222--->")
 	isValid, seedphrase := pg.validateSeeds()
-	pg.seedPhrase = ""
-
 	if isValid {
 		pg.seedPhrase = seedphrase
 		if !sharedW.VerifyMnemonic(pg.seedPhrase, pg.walletType, pg.getWordSeedType()) {
@@ -521,7 +520,6 @@ func (pg *SeedRestore) HandleUserInteractions() {
 	}
 
 	if pg.validateSeed.Clicked() {
-		fmt.Println("------validateSeed----------111111--->")
 		if !pg.verifySeeds() {
 			return
 		}

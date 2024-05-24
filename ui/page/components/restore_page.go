@@ -288,8 +288,6 @@ func (pg *Restore) restoreFromSeedEditor() {
 		pg.seedInputEditor.Editor.SetText("")
 	}
 
-	fmt.Println("--restoreFromSeedEditor--------------->")
-
 	seedOrHex := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
 	// Check if the user did input a hex or seed. If its a hex set the correct tabindex.
 	if len(seedOrHex) > MaxSeedBytes {
@@ -312,7 +310,6 @@ func (pg *Restore) restoreFromSeedEditor() {
 	}
 
 	if !sharedW.VerifyMnemonic(seedOrHex, pg.walletType, wordSeedType) {
-		fmt.Println("--sharedW.VerifyMnemonic----->", seedOrHex)
 		errMsg := values.String(values.StrInvalidHex)
 		if pg.tabIndex == 0 {
 			errMsg = values.String(values.StrInvalidSeedPhrase)
@@ -323,10 +320,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		return
 	}
 
-	fmt.Println("--aaaaaaaaaaaaaaaaaaaa----->")
-
 	walletWithSameSeed, err := pg.AssetsManager.WalletWithSeed(pg.walletType, seedOrHex, wordSeedType)
-	fmt.Println("---errerrerrerrerr----->", err)
 	if err != nil {
 		log.Error(err)
 		errMsg := values.String(values.StrInvalidHex)

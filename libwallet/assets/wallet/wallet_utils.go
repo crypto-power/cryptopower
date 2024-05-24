@@ -242,9 +242,7 @@ func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType
 		if seedType == WordSeed33 {
 			hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
 		} else {
-			fmt.Println("-------DecodeSeedMnemonic-----22222--->", seedMnemonic)
 			hashedSeed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
-			fmt.Println("------DecodeSeedMnemonic--22222--->", err)
 		}
 	default:
 		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
