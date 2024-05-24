@@ -605,7 +605,7 @@ const (
 	StrRestoreExistingWallet                 = "restoreExistingWallet"
 	StrRestoreWallet                         = "restoreWallet"
 	StrRestoreWithHex                        = "restoreWithHex"
-	StrResumeAccountDiscoveryTitle           = "resumeAccountDiscoveryTitle"
+	StrResumeAccountDiscoveryInfo            = "resumeAccountDiscoveryInfo"
 	StrRetry                                 = "retry"
 	StrRevocation                            = "revocation"
 	StrRevoke                                = "revoke"
