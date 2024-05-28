@@ -315,7 +315,14 @@ func (cm *CreatePasswordModal) titleLayout() layout.Widget {
 			t.TextSize = values.TextSize16
 		}
 		t.Font.Weight = font.SemiBold
-		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, t.Layout)
+		return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, t.Layout)
+	}
+}
+
+func (cm *CreatePasswordModal) descriptionLayout() layout.Widget {
+	return func(gtx C) D {
+		desc := cm.Theme.Label(values.TextSizeTransform(cm.IsMobileView(), values.TextSize16), cm.description)
+		return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, desc.Layout)
 	}
 }
 
@@ -338,7 +345,7 @@ func (cm *CreatePasswordModal) LayoutComponents() []layout.Widget {
 	}
 
 	if cm.description != "" {
-		w = append(w, cm.Theme.Body2(cm.description).Layout)
+		w = append(w, cm.descriptionLayout())
 	}
 
 	if cm.customWidget != nil {
@@ -374,7 +381,7 @@ func (cm *CreatePasswordModal) LayoutComponents() []layout.Widget {
 								txt.Color = cm.Theme.Color.GrayText1
 								return txt.Layout(gtx)
 							}
-							return layout.Dimensions{}
+							return D{}
 						}),
 						layout.Rigid(func(gtx C) D {
 							txt := cm.Theme.Label(values.TextSize12, strconv.Itoa(cm.passwordEditor.Editor.Len()))

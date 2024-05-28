@@ -22,7 +22,6 @@ const FR = `
 "createNewAccount" = "Créer un nouveau compte";
 "createANewWallet" = "Créer un nouveau porte-monnaie";
 "seeAll" = "Voir tout";
-"resumeAccountDiscoveryTitle" = "Déverouiller pour reprendre la restauration";
 "unlockWithPassword" = "Déverrouiller avec mot de passe"
 "offline" = "Hors ligne, ";
 "viewDetails" = "View details";

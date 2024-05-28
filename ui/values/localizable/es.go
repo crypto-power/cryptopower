@@ -46,7 +46,6 @@ const ES = `
 "walletNotSynced" = "No sincronizado";
 "rebroadcast" = "Retransmitir";
 "cancel" = "Cancelar";
-"resumeAccountDiscoveryTitle" = "Desbloquear para reanudar la restauración";
 "unlock" = "Desbloquear";
 "unlockWithPassword" = "Desbloquear con contraseña"
 "syncingProgress" = "Progreso de la sincronización";

@@ -1021,7 +1021,8 @@ func (hp *HomePage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUn
 	spendingPasswordModal := modal.NewCreatePasswordModal(hp.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
-		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
+		Title(values.String(values.StrUnlockWithPassword)).
+		SetDescription(values.StringF(values.StrResumeAccountDiscoveryInfo, wal.GetAssetType(), wal.GetWalletName())).
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetCancelable(false).

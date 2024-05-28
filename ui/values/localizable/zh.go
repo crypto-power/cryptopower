@@ -16,7 +16,6 @@ const ZH = `
 "syncingProgress" = "同步进度";
 "syncingState" = "同步中…";
 "cancel" = "取消";
-"resumeAccountDiscoveryTitle" = "解锁以恢复";
 "blockHeaderFetched" = "区块头已获取";
 "noTransactions" = "没有交易";
 "viewDetails" = "View details";
