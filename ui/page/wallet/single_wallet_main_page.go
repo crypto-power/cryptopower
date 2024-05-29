@@ -226,7 +226,7 @@ func (swmp *SingleWalletMasterPage) fetchExchangeRate() {
 	}
 
 	swmp.isFetchingExchangeRate = true
-	market, err := utils.MarketFromAsset(swmp.selectedWallet.GetAssetType())
+	market, err := utils.USDMarketFromAsset(swmp.selectedWallet.GetAssetType())
 	if err != nil {
 		log.Errorf("Asset type %q is not supported for exchange rate fetching", swmp.selectedWallet.GetAssetType())
 		swmp.isFetchingExchangeRate = false

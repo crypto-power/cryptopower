@@ -103,7 +103,7 @@ func (pg *Page) OnNavigatedTo() {
 func (pg *Page) OnNavigatedFrom() {}
 
 func (pg *Page) fetchExchangeRate() {
-	market, err := utils.MarketFromAsset(pg.wallet.GetAssetType())
+	market, err := utils.USDMarketFromAsset(pg.wallet.GetAssetType())
 	if err != nil {
 		log.Errorf("Unsupported asset type: %s", pg.wallet.GetAssetType())
 		return

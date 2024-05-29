@@ -179,7 +179,7 @@ func RadiusLayout(gtx layout.Context, radius int, w layout.Widget) layout.Dimens
 	return dims
 }
 
-func MarketFromAsset(asset utils.AssetType) (values.Market, error) {
+func USDMarketFromAsset(asset utils.AssetType) (values.Market, error) {
 	switch asset {
 	case utils.DCRWalletAsset:
 		return values.DCRUSDTMarket, nil

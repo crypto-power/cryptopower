@@ -291,7 +291,7 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 	pg.isFetchingExchangeRate = true
-	market, err := utils.MarketFromAsset(pg.selectedWallet.GetAssetType())
+	market, err := utils.USDMarketFromAsset(pg.selectedWallet.GetAssetType())
 	if err != nil {
 		log.Errorf("Unsupported asset type: %s", pg.selectedWallet.GetAssetType())
 		pg.isFetchingExchangeRate = false

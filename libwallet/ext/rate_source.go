@@ -26,11 +26,6 @@ const (
 	kucoinExchange = values.KucoinExchange
 	none           = values.DefaultExchangeValue
 
-	// These are method names for expected bittrex specific websocket messages.
-	BittrexMsgHeartbeat  = "heartbeat"
-	BittrexMarketSummary = "marketSummary"
-	BittrexTicker        = "ticker"
-
 	// MktSep is used repo wide to separate market symbols.
 	MktSep = "-"
 )
@@ -166,7 +161,7 @@ func NewCommonRateSource(ctx context.Context, source string, disableConversionEx
 		sourceChanged:             make(chan *struct{}),
 		disableConversionExchange: disableConversionExchange,
 	}
-	s.getTicker = s.getFuncSource(source)
+	s.getTicker = s.sourceGetTickerFunc(source)
 	s.cond = sync.NewCond(&s.mtx)
 
 	return s, nil
@@ -227,7 +222,7 @@ func (cs *CommonRateSource) ToggleSource(newSource string) error {
 		refresh = false /* none is the dummy rate source for when user disables rates */
 	}
 
-	getTickerFn := cs.getFuncSource(newSource)
+	getTickerFn := cs.sourceGetTickerFunc(newSource)
 	if getTickerFn == nil {
 		return fmt.Errorf("new rate source %s is not supported", newSource)
 	}
@@ -603,7 +598,7 @@ func isValidSource(source string) bool {
 	}
 }
 
-func (cs *CommonRateSource) getFuncSource(source string) func(values.Market) (*Ticker, error) {
+func (cs *CommonRateSource) sourceGetTickerFunc(source string) func(values.Market) (*Ticker, error) {
 	switch source {
 	case binance, binanceUS:
 		return cs.binanceGetTicker
@@ -615,7 +610,13 @@ func (cs *CommonRateSource) getFuncSource(source string) func(values.Market) (*T
 		return kucoinGetTicker
 	case coinpaprika:
 		return cs.coinpaprikaGetTicker
+	case none:
+		return dummyGetTickerFunc
 	default:
 		return nil
 	}
+}
+
+func dummyGetTickerFunc(values.Market) (*Ticker, error) {
+	return &Ticker{}, nil
 }
