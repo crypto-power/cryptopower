@@ -71,10 +71,11 @@ type FeeEstimate struct {
 
 type Amount struct {
 	// UnitValue holds the base monetary unit value for a cryptocurrency.
-	// The field is currently used for both BTC, LTC and DCR.
+	// The field is currently used for both BTC, LTC, BCH and DCR.
 	// For Decred it holds the number of Atoms per DCR.
 	// For Bitcoin it holds the number of satoshis per BTC.
 	// For Litecoin it holds the number of litoshis per LTC.
+	// For Bitcoin Cash it holds the number of satoshis per BCH.
 	UnitValue int64
 	// CoinValue holds the monetary amount counted in a cryptocurrency base
 	// units, converted to a floating point value representing the amount

@@ -34,6 +34,7 @@ const (
 	BTCWalletAsset AssetType = "BTC"
 	DCRWalletAsset AssetType = "DCR"
 	LTCWalletAsset AssetType = "LTC"
+	BCHWalletAsset AssetType = "BCH"
 
 	fullDateformat  = "2006-01-02 15:04:05"
 	dateOnlyFormat  = "2006-01-02"
@@ -97,6 +98,8 @@ func (str AssetType) ToFull() string {
 		return "Decred"
 	case LTCWalletAsset:
 		return "Litecoin"
+	case BCHWalletAsset:
+		return "Bitcoin Cash"
 	default:
 		return "Unknown"
 	}

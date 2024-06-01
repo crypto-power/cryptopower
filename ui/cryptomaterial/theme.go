@@ -321,6 +321,8 @@ func (t *Theme) AssetIcon(asset utils.AssetType) *Image {
 		icon = t.Icons.LTC
 	case utils.BTCWalletAsset:
 		icon = t.Icons.BTC
+	case utils.BCHWalletAsset:
+		icon = t.Icons.BCH
 	default:
 		icon = nil
 	}
@@ -337,6 +339,8 @@ func (t *Theme) WatchOnlyAssetIcon(asset utils.AssetType) *Image {
 		icon = t.Icons.LtcWatchOnly
 	case utils.BTCWalletAsset:
 		icon = t.Icons.BtcWatchOnly
+	case utils.BCHWalletAsset:
+		icon = t.Icons.BCHWatchOnly
 	default:
 		icon = nil
 	}

@@ -5,6 +5,8 @@ import (
 	btctxauthor "github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/crypto-power/cryptopower/libwallet/addresshelper"
 	"github.com/decred/dcrd/dcrutil/v4"
+	bchcfg "github.com/gcash/bchd/chaincfg"
+	bchtxauthor "github.com/gcash/bchwallet/wallet/txauthor"
 	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
 	ltctxauthor "github.com/ltcsuite/ltcwallet/wallet/txauthor"
 )
@@ -68,4 +70,19 @@ func MakeLTCTxChangeSource(destAddr string, net *ltccfg.Params) (*ltctxauthor.Ch
 		ScriptSize: len(pkScript),
 	}
 	return changeSource, nil
+}
+
+func MakeBCHTxChangeSource(destAddr string, net *bchcfg.Params) (*bchtxauthor.ChangeSource, error) {
+	// var pkScript []byte
+	// changeSource := &bchtxauthor.ChangeSource{
+	// 	NewScript: func() ([]byte, error) {
+	// 		pkScript, err := addresshelper.BCHPkScript(destAddr, net)
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	// 		return pkScript, nil
+	// 	},
+	// 	ScriptSize: len(pkScript),
+	// }
+	return /*changeSource,*/ nil, nil
 }

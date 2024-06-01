@@ -6,6 +6,8 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/addresshelper"
 	dcrutil "github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
+	bchchaincfg "github.com/gcash/bchd/chaincfg"
+	bchWire "github.com/gcash/bchd/wire"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	ltcWire "github.com/ltcsuite/ltcd/wire"
 )
@@ -45,6 +47,19 @@ func MakeLTCTxOutput(address string, amountInLitoshi int64, net *ltcchaincfg.Par
 
 	output = &ltcWire.TxOut{
 		Value:    amountInLitoshi,
+		PkScript: pkScript,
+	}
+	return
+}
+
+func MakeBCHTxOutput(address string, amountInSatoshi int64, net *bchchaincfg.Params) (output *bchWire.TxOut, err error) {
+	pkScript, err := addresshelper.BCHPkScript(address, net)
+	if err != nil {
+		return
+	}
+
+	output = &bchWire.TxOut{
+		Value:    amountInSatoshi,
 		PkScript: pkScript,
 	}
 	return

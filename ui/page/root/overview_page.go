@@ -153,6 +153,11 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 				market:    values.LTCUSDTMarket,
 				image:     l.Theme.Icons.LTC,
 			},
+			// {
+			// 	assetType: libutils.BCHWalletAsset,
+			// 	market:    values.BCHUSDTMarket,
+			// 	image:     l.Theme.Icons.BCH,
+			// },
 		},
 		recentTradeList:    l.Theme.NewClickableList(layout.Vertical),
 		recentProposalList: l.Theme.NewClickableList(layout.Vertical),

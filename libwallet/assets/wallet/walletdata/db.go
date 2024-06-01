@@ -12,6 +12,7 @@ const (
 	DCRDbName = "walletData.db"
 	BTCDBName = "neutrino.db"
 	LTCDBName = "neutrino.db"
+	BCHDBName = "neutrino.db"
 	OldDbName = "tx.db"
 
 	TxBucketName = "TxIndexInfo"
@@ -25,6 +26,7 @@ const (
 type DB struct {
 	BTC            *BTCDB
 	LTC            *LTCDB
+	BCH            *BCHDB
 	walletDataDB   *storm.DB
 	ticketMaturity int32
 	ticketExpiry   int32
@@ -57,6 +59,9 @@ func Initialize(dbPath string, txData interface{}) (*DB, error) {
 			Bolt: walletDataDB.Bolt,
 		},
 		LTC: &LTCDB{
+			Bolt: walletDataDB.Bolt,
+		},
+		BCH: &BCHDB{
 			Bolt: walletDataDB.Bolt,
 		},
 		walletDataDB: walletDataDB,

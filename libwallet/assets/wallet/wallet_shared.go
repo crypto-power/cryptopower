@@ -104,6 +104,8 @@ func (wallet *Wallet) prepare() (err error) {
 		dbName = walletdata.BTCDBName
 	case utils.LTCWalletAsset:
 		dbName = walletdata.LTCDBName
+	case utils.BCHWalletAsset:
+		dbName = walletdata.BCHDBName
 	}
 
 	walletDataDBPath := filepath.Join(wallet.dataDir(), dbName)
@@ -169,10 +171,16 @@ func (wallet *Wallet) Shutdown() {
 }
 
 func (wallet *Wallet) TargetTimePerBlockMinutes() float64 {
-	if wallet.Type == utils.BTCWalletAsset {
+	switch wallet.Type {
+	case utils.BTCWalletAsset:
 		return wallet.chainsParams.BTC.TargetTimePerBlock.Minutes()
+	case utils.LTCWalletAsset:
+		return wallet.chainsParams.LTC.TargetTimePerBlock.Minutes()
+	case utils.BCHWalletAsset:
+		return wallet.chainsParams.BCH.TargetTimePerBlock.Minutes()
+	default:
+		return wallet.chainsParams.DCR.TargetTimePerBlock.Minutes()
 	}
-	return wallet.chainsParams.DCR.TargetTimePerBlock.Minutes()
 }
 
 // WalletCreationTimeInMillis returns the wallet creation time for new
@@ -613,6 +621,8 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 			return w.BTC.Manager.WatchOnly()
 		case utils.LTCWalletAsset:
 			return w.LTC.Manager.WatchOnly()
+		case utils.BCHWalletAsset:
+			return w.BCH.Manager.WatchOnly()
 		}
 	}
 
@@ -641,6 +651,8 @@ func (wallet *Wallet) WalletOpened() bool {
 		return wallet.Internal().DCR != nil
 	case utils.LTCWalletAsset:
 		return wallet.Internal().LTC != nil
+	case utils.BCHWalletAsset:
+		return wallet.Internal().BCH != nil
 	default:
 		return false
 	}
@@ -660,6 +672,8 @@ func (wallet *Wallet) UnlockWallet(privPass string) (err error) {
 		err = loadedWallet.DCR.Unlock(ctx, []byte(privPass), nil)
 	case utils.LTCWalletAsset:
 		err = loadedWallet.LTC.Unlock([]byte(privPass), nil)
+	case utils.BCHWalletAsset:
+		err = loadedWallet.BCH.Unlock([]byte(privPass), nil)
 	}
 
 	if err != nil {
@@ -683,6 +697,8 @@ func (wallet *Wallet) LockWallet() {
 			loadedWallet.DCR.Lock()
 		case utils.LTCWalletAsset:
 			loadedWallet.LTC.Lock()
+		case utils.BCHWalletAsset:
+			loadedWallet.BCH.Lock()
 		}
 	}
 }
@@ -700,6 +716,8 @@ func (wallet *Wallet) IsLocked() bool {
 		return loadedWallet.DCR.Locked()
 	case utils.LTCWalletAsset:
 		return loadedWallet.LTC.Locked()
+	case utils.BCHWalletAsset:
+		return loadedWallet.BCH.Locked()
 	default:
 		return false
 	}
@@ -770,6 +788,8 @@ func (wallet *Wallet) changePrivatePassphrase(oldPass []byte, newPass []byte) (e
 		err = wallet.Internal().DCR.ChangePrivatePassphrase(ctx, oldPass, newPass)
 	case utils.LTCWalletAsset:
 		err = wallet.Internal().LTC.ChangePrivatePassphrase(oldPass, newPass)
+	case utils.BCHWalletAsset:
+		err = wallet.Internal().BCH.ChangePrivatePassphrase(oldPass, newPass)
 	}
 	if err != nil {
 		return utils.TranslateError(err)
@@ -817,6 +837,8 @@ func (wallet *Wallet) LogFile() string {
 		return filepath.Join(wallet.logDir, dcrLogFilename)
 	case utils.LTCWalletAsset:
 		return filepath.Join(wallet.logDir, ltcLogFilename)
+	case utils.BCHWalletAsset:
+		return filepath.Join(wallet.logDir, bchLogFilename)
 	}
 	return ""
 }
