@@ -153,6 +153,11 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 				market:    values.LTCUSDTMarket,
 				image:     l.Theme.Icons.LTC,
 			},
+			{
+				assetType: libutils.ETHWalletAsset,
+				market:    values.ETHUSDTMarket,
+				image:     l.Theme.Icons.ETH,
+			},
 		},
 		recentTradeList:    l.Theme.NewClickableList(layout.Vertical),
 		recentProposalList: l.Theme.NewClickableList(layout.Vertical),

@@ -12,6 +12,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	"github.com/crypto-power/cryptopower/libwallet/assets/eth"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
@@ -79,13 +80,14 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 var (
 	// dcrLogger, btcLogger, mainLogger identifies the respective loggers.
 	dcrLogger, btcLogger, mainLogger = "dcr.log", "btc.log", libwallet.LogFilename
-	ltcLogger                        = "ltc.log"
+	ltcLogger, ethLogger             = "ltc.log", "eth.log"
 	// backendLog is the logging backend used to create all subsystem loggers.
 	// The backend must not be used before the log rotator has been initialized,
 	// or data races and/or nil pointer dereferences will occur.
 	dcrBackendLog = slog.NewBackend(logWriter{dcrLogger})
 	btcBackendLog = btclog.NewBackend(logWriter{btcLogger})
 	ltcBackendLog = btclog.NewBackend(logWriter{ltcLogger})
+	ethBackendLog = slog.NewBackend(logWriter{ethLogger})
 	backendLog    = slog.NewBackend(logWriter{mainLogger})
 
 	// logRotator is one of the logging outputs.
@@ -111,6 +113,7 @@ var (
 	ltcNtrn      = btcBackendLog.Logger("L-NTR")
 	btcLog       = btcBackendLog.Logger("BTC")
 	ltcLog       = ltcBackendLog.Logger("LTC")
+	ethLog       = ethBackendLog.Logger("ETH")
 )
 
 // Initialize package-global logger variables.
@@ -154,6 +157,7 @@ func init() {
 	account.UseLogger(winLog)
 	wallet.UseLogger(winLog)
 	receive.UseLogger(winLog)
+	eth.UseLogger(ethLog)
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.
@@ -177,6 +181,7 @@ var subsystemSLoggers = map[string]slog.Logger{
 	"TKBY": tkbyLog,
 	"WLLT": dcrWalletLog,
 	"SHWL": sharedWLog,
+	"ETH":  ethLog,
 }
 
 var subsystemBLoggers = map[string]btclog.Logger{
@@ -199,6 +204,7 @@ func initLogRotator(logDir string, maxRolls int) {
 		btcLogger:  nil,
 		dcrLogger:  nil,
 		ltcLogger:  nil,
+		ethLogger:  nil,
 		mainLogger: nil,
 	}
 

@@ -665,6 +665,18 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[s
 			values.String(values.StrSent),
 			values.String(values.StrReceived),
 		}
+	case wType == libutils.ETHWalletAsset && tabIndex == 0:
+		// LTC Transactions Activities dropdown fields.
+		mapInfo = map[string]int32{
+			values.String(values.StrAll):      libutils.TxFilterAll,
+			values.String(values.StrSent):     libutils.TxFilterSent,
+			values.String(values.StrReceived): libutils.TxFilterReceived,
+		}
+		keysInfo = []string{
+			values.String(values.StrAll),
+			values.String(values.StrSent),
+			values.String(values.StrReceived),
+		}
 	case wType == libutils.DCRWalletAsset && tabIndex == 0:
 		// DCR Transactions Activities dropdown fields.
 		mapInfo = map[string]int32{
@@ -715,6 +727,8 @@ func CoinImageBySymbol(l *load.Load, assetType libutils.AssetType, isWatchOnly b
 			return l.Theme.Icons.LtcWatchOnly
 		}
 		return l.Theme.Icons.LTC
+	case libutils.ETHWalletAsset.ToStringLower():
+		return l.Theme.Icons.ETH // ETH does not support watch only wallets
 	}
 	return nil
 }

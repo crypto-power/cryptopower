@@ -533,6 +533,8 @@ func assetIcon(th *cryptomaterial.Theme, assetType libutils.AssetType) *cryptoma
 		return th.Icons.BTC
 	case libutils.LTCWalletAsset:
 		return th.Icons.LTC
+	case libutils.ETHWalletAsset:
+		return th.Icons.ETH
 	}
 	return nil
 }

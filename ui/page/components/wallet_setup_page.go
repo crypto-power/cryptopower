@@ -501,6 +501,19 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					pg.ParentWindow().ShowModal(errModal)
 					return
 				}
+
+			case libutils.ETHWalletAsset:
+				_, err := pg.AssetsManager.CreateNewETHWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+				if err != nil {
+					if err.Error() == libutils.ErrExist {
+						pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
+						return
+					}
+
+					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errModal)
+					return
+				}
 			}
 
 			pg.walletCreationSuccessCallback()

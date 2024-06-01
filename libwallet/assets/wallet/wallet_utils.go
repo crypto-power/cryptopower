@@ -13,6 +13,7 @@ import (
 	"decred.org/dcrwallet/v3/errors"
 	"decred.org/dcrwallet/v3/walletseed"
 	"github.com/asdine/storm"
+
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
@@ -35,8 +36,13 @@ const (
 
 	defaultLTCRequiredConfirmations = 6
 
+	defaultETHRequiredConfirmations = 14
+
 	// UnminedTxHeight defines the block height of the txs in the mempool
 	UnminedTxHeight int32 = -1
+
+	// // RecommendedETHSeedBytes is the recommended ETH seed byte
+	// RecommendedETHSeedBytes = 32 // 256 bits
 
 	// btcLogFilename defines the btc log file name
 	btcLogFilename = "btc.log"
@@ -46,6 +52,9 @@ const (
 
 	// ltcLogFilename defines the ltc log file name
 	ltcLogFilename = "ltc.log"
+
+	// ethLogFilename defines the ltc log file name
+	ethLogFilename = "eth.log"
 )
 
 // InvalidBlock defines invalid height and timestamp returned in case of an error.
@@ -70,6 +79,8 @@ func (wallet *Wallet) RequiredConfirmations() int32 {
 		return defaultDCRRequiredConfirmations
 	case utils.LTCWalletAsset:
 		return defaultLTCRequiredConfirmations
+	case utils.ETHWalletAsset:
+		return defaultETHRequiredConfirmations
 	}
 	return -1 // Not supposed to happen
 }
@@ -210,6 +221,19 @@ func generateSeed(assetType utils.AssetType, wordSeedType WordSeedType) (v strin
 		if err != nil {
 			return "", err
 		}
+	case utils.ETHWalletAsset:
+		// ETH can support a maximim of 32 bytes seed (256 bits),
+		// which is 24 seed words max.
+		if wordSeedType == WordSeed33 {
+			return "", fmt.Errorf("ETH does not support 33-word seeds")
+		}
+		// TODO: CAN ETH SUPPORT 12 WORDS?
+		bitSize := ByteLengthtoBitSize(length)
+		fmt.Println("ETH seed bit size: ", bitSize)
+		entropy, err = bip39.NewEntropy(bitSize)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	if len(entropy) > 0 {
@@ -238,7 +262,7 @@ func VerifySeed(seedMnemonic string, assetType utils.AssetType, seedType WordSee
 
 func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType, seedType WordSeedType) (hashedSeed []byte, err error) {
 	switch assetType {
-	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
+	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset, utils.ETHWalletAsset:
 		words := strings.Split(strings.TrimSpace(seedMnemonic), " ")
 		if len(words) == 1 {
 			return hex.DecodeString(words[0])
@@ -340,4 +364,12 @@ func ParseWalletPeers(peerAddresses string, port string) ([]string, []error) {
 	}
 
 	return persistentPeers, errs
+}
+
+// BytetoBitSize converts the length of a seed byte to the corresponding bit size.
+// you can use the formula: Bit size = Seed byte length × 8
+// This formula assumes that each byte consists of 8 bits.
+func ByteLengthtoBitSize(byteLength uint8) int {
+	bitSize := int(byteLength) * 8
+	return bitSize
 }

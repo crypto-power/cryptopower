@@ -234,6 +234,8 @@ func (swmp *SingleWalletMasterPage) fetchExchangeRate() {
 		market = values.BTCUSDTMarket
 	case libutils.LTCWalletAsset:
 		market = values.LTCUSDTMarket
+	case libutils.ETHWalletAsset:
+		market = values.ETHUSDTMarket
 	default:
 		log.Errorf("Asset type %q is not supported for exchange rate fetching", swmp.selectedWallet.GetAssetType())
 		swmp.isFetchingExchangeRate = false

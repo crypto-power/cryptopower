@@ -30,6 +30,7 @@ type WalletSyncInfo struct {
 	reload            Reload
 	backup            func(sharedW.Asset)
 	ForwardButton     cryptomaterial.IconButton
+	isDCRAsset        bool
 
 	IsSlider bool
 }
@@ -66,6 +67,7 @@ func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload Reload, backup
 	wsi.ForwardButton, _ = SubpageHeaderButtons(l)
 	wsi.ForwardButton.Icon = wsi.Theme.Icons.NavigationArrowForward
 	wsi.ForwardButton.Size = values.MarginPadding20
+	wsi.isDCRAsset = wallet.GetAssetType() == libutils.DCRWalletAsset
 	return wsi
 }
 
@@ -269,17 +271,17 @@ func (wsi *WalletSyncInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 
 // syncContent lays out sync status content when the wallet is syncing, synced, not connected
 func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
-	isBtcAsset := wsi.wallet.GetAssetType() == libutils.BTCWalletAsset
-	isLtcAsset := wsi.wallet.GetAssetType() == libutils.LTCWalletAsset
+	// isBtcAsset := wsi.wallet.GetAssetType() == libutils.BTCWalletAsset
+	// isLtcAsset := wsi.wallet.GetAssetType() == libutils.LTCWalletAsset
 	isSyncing := wsi.wallet.IsSyncing()
-	isBtcORLtcAsset := isBtcAsset || isLtcAsset
+	// !wsi.isDCRAsset := isBtcAsset || isLtcAsset
 	// Rescanning should happen on a synced chain.
 	isRescanning := wsi.wallet.IsRescanning() && !isSyncing
 	isInProgress := isSyncing || isRescanning
 	bestBlock := wsi.wallet.GetBestBlock()
 	isAddDiscovering := false
 	syncIsScanning := false
-	if !isBtcORLtcAsset {
+	if wsi.isDCRAsset {
 		isAddDiscovering = wsi.wallet.(*dcr.Asset).IsAddressDiscovering()
 		syncIsScanning = wsi.wallet.(*dcr.Asset).IsSycnRescanning()
 	}
@@ -296,19 +298,19 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 						return wsi.labelTexSize16Layout(values.String(values.StrBlockHeaderFetched), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if isRescanning && (isBtcORLtcAsset) {
+						if isRescanning && (!wsi.isDCRAsset) {
 							return D{}
 						}
 						return wsi.labelTexSize16Layout(values.String(values.StrSyncingProgress), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !isInProgress || (isRescanning && isBtcORLtcAsset) {
+						if !isInProgress || (isRescanning && !wsi.isDCRAsset) {
 							return D{}
 						}
 						return wsi.labelTexSize16Layout(values.String(values.StrSyncCompTime), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !(isRescanning && isBtcORLtcAsset) {
+						if !(isRescanning && !wsi.isDCRAsset) {
 							return D{}
 						}
 						return wsi.labelTexSize16Layout(values.String(values.StrAddressDiscoveryInProgress), dp8, true)(gtx)
@@ -323,7 +325,7 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return wsi.labelTexSize16Layout(latestBlockTitle, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
+							if !isInProgress || (isRescanning && (!wsi.isDCRAsset)) {
 								return D{}
 							}
 							header := wsi.FetchSyncProgress().HeadersToFetchOrScan
@@ -343,7 +345,7 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							syncProgress := values.String(values.StrWalletNotSynced)
 							if wsi.wallet.IsSyncing() {
 								syncProgress = values.StringF(values.StrSyncingProgressStat, daysBehind)
-								if !isBtcORLtcAsset {
+								if wsi.isDCRAsset {
 									if isAddDiscovering {
 										syncProgress = values.String(values.StrAddressDiscovering)
 									} else if syncIsScanning {
@@ -359,7 +361,7 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return wsi.labelTexSize16Layout(syncProgress, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if !isInProgress || (isRescanning && isBtcORLtcAsset) {
+							if !isInProgress || (isRescanning && !wsi.isDCRAsset) {
 								return D{}
 							}
 							_, timeLeft := wsi.progressStatusDetails()
