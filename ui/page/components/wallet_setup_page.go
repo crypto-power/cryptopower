@@ -123,7 +123,7 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
 	defaultWordSeedType := &cryptomaterial.DropDownItem{
-		Text: values.String(values.Str33WordSeed),
+		Text: values.String(values.Str12WordSeed),
 	}
 
 	pg.seedTypeDropdown = pg.Theme.DropDown(GetWordSeedTypeDropdownItems(), defaultWordSeedType, values.TxDropdownGroup, false)
