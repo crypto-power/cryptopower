@@ -352,8 +352,7 @@ func (cs *CommonRateSource) fetchRate(market values.Market) *Ticker {
 	cs.tickers[market] = newTicker
 	cs.mtx.Unlock()
 
-	t := *newTicker
-	return &t
+	return newTicker
 }
 
 func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error) {
