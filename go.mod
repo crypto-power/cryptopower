@@ -45,9 +45,10 @@ require (
 	github.com/jrick/logrotate v1.0.0
 	github.com/kevinburke/nacl v0.0.0-20190829012316-f3ed23dbd7f8
 	github.com/lightninglabs/neutrino v0.15.0
-	github.com/ltcsuite/ltcd v0.22.1-beta.0.20230329025258-1ea035d2e665
-	github.com/ltcsuite/ltcd/btcec/v2 v2.1.0
-	github.com/ltcsuite/ltcd/ltcutil v1.1.0
+	github.com/ltcsuite/ltcd v0.23.6-0.20240131072528-64dfa402637a
+	github.com/ltcsuite/ltcd/btcec/v2 v2.3.2
+	github.com/ltcsuite/ltcd/chaincfg/chainhash v1.0.2
+	github.com/ltcsuite/ltcd/ltcutil v1.1.4-0.20240131072528-64dfa402637a
 	github.com/ltcsuite/ltcwallet v0.13.1
 	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.1.0
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.2.0
@@ -95,6 +96,7 @@ require (
 	github.com/dchest/blake2b v1.0.0 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/dcrlabs/bchwallet v0.0.0-20240114124852-0e95005810be // indirect
+	github.com/dcrlabs/ltcwallet v0.0.0-20240518141247-13553c8fce6a // indirect
 	github.com/dcrlabs/neutrino-bch v0.0.0-20240114121828-d656bce11095 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/base58 v1.0.5 // indirect
@@ -133,7 +135,6 @@ require (
 	github.com/gcash/bchutil v0.0.0-20210113190856-6ea28dff4000 // indirect
 	github.com/gcash/bchwallet v0.10.0 // indirect
 	github.com/gcash/bchwallet/walletdb v0.0.0-20210524114850-4837f9798568 // indirect
-	github.com/gcash/neutrino v0.0.0-20210524114821-3b1878290cf9 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -145,6 +146,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/trillian v1.4.1 // indirect
@@ -172,9 +174,10 @@ require (
 	github.com/lightningnetwork/lnd/ticker v1.0.0 // indirect
 	github.com/lightningnetwork/lnd/tlv v1.0.2 // indirect
 	github.com/ltcsuite/lnd/clock v0.0.0-20200822020009-1a001cbb895a // indirect
-	github.com/ltcsuite/lnd/queue v1.0.3 // indirect
+	github.com/ltcsuite/lnd/queue v1.1.0 // indirect
 	github.com/ltcsuite/lnd/ticker v1.0.1 // indirect
-	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.0-1 // indirect
+	github.com/ltcsuite/lnd/tlv v0.0.0-20240222214433-454d35886119 // indirect
+	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.1-0.20240131072528-64dfa402637a // indirect
 	github.com/ltcsuite/neutrino v0.13.2 // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -209,7 +212,7 @@ require (
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/protobuf v1.29.1 // indirect
+	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
@@ -230,11 +233,5 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
-// github.com/ukane-philemon/dcrdex v0.0.0-20240127032309-04dce45a6f09 is
-// (https://github.com/ukane-philemon/dcrdex/tree/with-upstream) the latest dcrdex
-// master plus commits that adds methods required by cryptopower. This should be
-// updated when these PRs get merged.
-// 1. core: add ActiveOrders method to Core: https://github.com/decred/dcrdex/pull/2680
-// 2. core: Add ExpiredBonds method to Core: https://github.com/decred/dcrdex/pull/2679
-// 3. And: https://github.com/ukane-philemon/dcrdex/tree/btc-node
-replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240127032309-04dce45a6f09
+// https://github.com/ukane-philemon/dcrdex/tree/btc-node
+replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240607004202-233e846a345b

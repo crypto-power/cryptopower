@@ -34,6 +34,7 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/decred/slog"
+	"github.com/jrick/logrotate/rotator"
 	"github.com/lightninglabs/neutrino"
 )
 
@@ -48,6 +49,9 @@ type DEXWallet struct {
 
 // dexLogger satisfies dex.Logger.
 type dexLogger struct {
+	level    slog.Level
+	meterMtx *sync.RWMutex
+	meters   map[string]time.Time
 	btclog.Logger
 }
 
@@ -56,10 +60,41 @@ func (dl dexLogger) Level() slog.Level {
 }
 
 func (dl dexLogger) SetLevel(lvl slog.Level) {
+	dl.level = lvl
 	dl.Logger.SetLevel(btclog.Level(lvl))
 }
 
 func (dl dexLogger) SubLogger(string) dex.Logger {
+	return dl
+}
+
+// FileLogger creates a logger that logs to a file rotator. Subloggers will also
+// log to the file only.
+func (dl dexLogger) FileLogger(r *rotator.Rotator) dex.Logger {
+	return dl
+}
+
+// Meter enforces a time delay on logging. The first call to a metered logger
+// always logs. Subsequent calls for the same callerID are ignored until the
+// delay is surpassed.
+func (dl dexLogger) Meter(callerID string, delay time.Duration) dex.Logger {
+	if dl.meterMtx == nil {
+		dl.meterMtx = &sync.RWMutex{}
+	}
+
+	dl.meterMtx.Lock()
+	defer dl.meterMtx.Unlock()
+	if dl.meters == nil {
+		dl.meters = make(map[string]time.Time)
+	}
+
+	if lastLog, exists := dl.meters[callerID]; exists && time.Since(lastLog) < delay {
+		dl.Logger.SetLevel(btclog.Level(slog.Disabled.Level()))
+		return dl
+	}
+
+	dl.Logger.SetLevel(btclog.Level(dl.level))
+	dl.meters[callerID] = time.Now()
 	return dl
 }
 
@@ -958,6 +993,26 @@ func (s *btcChainService) Peers() []dexbtc.SPVPeer {
 	case <-time.After(2 * time.Second):
 		return nil // CS.Peers() is taking too long to respond
 	}
+}
+
+// Fingerprint returns an identifier for this wallet. It is the hash of the
+// compressed serialization of the account pub key.
+func (dw *DEXWallet) Fingerprint() (string, error) {
+	props, err := dw.w.AccountProperties(waddrmgr.KeyScopeBIP0084, uint32(dw.acctNum))
+	if err != nil {
+		return "", err
+	}
+
+	if props.AccountPubKey == nil {
+		return "", fmt.Errorf("no account key available")
+	}
+
+	pk, err := props.AccountPubKey.ECPubKey()
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(btcutil.Hash160(pk.SerializeCompressed())), nil
 }
 
 // secretSource is used to locate keys and redemption scripts while signing a

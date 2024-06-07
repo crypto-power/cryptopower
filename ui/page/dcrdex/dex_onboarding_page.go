@@ -943,7 +943,8 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				}
 				defer utils.ZeroBytes(seed)
 
-				err := dexc.InitWithPassword(pg.dexPass, seed)
+				seedStr := string(seed)
+				err := dexc.InitWithPassword(pg.dexPass, &seedStr)
 				if err != nil {
 					pg.seedEditor.SetError(fmt.Errorf("Error initializing dex with seed: %w", err).Error())
 					return

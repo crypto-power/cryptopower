@@ -569,7 +569,7 @@ func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ 
 
 // PurchaseTickets purchases n tickets. vspHost and vspPubKey only
 // needed for internal wallets.
-func (dw *DEXWallet) PurchaseTickets(_ context.Context, _ int, _, _ string) ([]*dexasset.Ticket, error) {
+func (dw *DEXWallet) PurchaseTickets(_ context.Context, _ int, _, _ string, _ *dexdcr.MixingConfig) ([]*dexasset.Ticket, error) {
 	return nil, errors.New("PurchaseTickets not implemented by Cryptopower DEX wallet")
 }
 

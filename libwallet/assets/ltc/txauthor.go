@@ -295,10 +295,10 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 			return nil, err
 		}
 
-		// prevOutScript := unsignedTx.PrevScripts[index]
+		prevOutScript := unsignedTx.PrevScripts[index]
 		prevOutAmount := int64(asset.TxAuthoredInfo.inputValues[index])
-		// prevOutFetcher := txscript.NewCannedPrevOutputFetcher(prevOutScript, prevOutAmount)
-		sigHashes := txscript.NewTxSigHashes(msgTx)
+		prevOutFetcher := txscript.NewCannedPrevOutputFetcher(prevOutScript, prevOutAmount)
+		sigHashes := txscript.NewTxSigHashes(msgTx, prevOutFetcher)
 
 		witness, signature, err := asset.Internal().LTC.ComputeInputScript(
 			msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
@@ -316,7 +316,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 		flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
 			txscript.ScriptStrictMultiSig | txscript.ScriptDiscourageUpgradableNops
 		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0, flags, nil, nil,
-			prevOutAmount)
+			prevOutAmount, prevOutFetcher)
 		if err != nil {
 			log.Errorf("creating validation engine failed: %v", err)
 			return nil, err

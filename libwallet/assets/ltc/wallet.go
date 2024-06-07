@@ -147,7 +147,7 @@ func walletParams(chainParams *ltcchaincfg.Params) *ltcchaincfg.Params {
 		return chainParams
 	}
 	spoofParams := *chainParams
-	spoofParams.Net = ltcwire.TestNet3
+	spoofParams.Net = ltcwire.TestNet4
 	return &spoofParams
 }
 
@@ -156,7 +156,7 @@ func walletParams(chainParams *ltcchaincfg.Params) *ltcchaincfg.Params {
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the LTC asset. It then generates the LTC loader interface
 // that is passed to be used upstream while creating the watch only wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {

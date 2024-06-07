@@ -35,6 +35,7 @@ import (
 	neutrino "github.com/dcrlabs/neutrino-ltc"
 	"github.com/dcrlabs/neutrino-ltc/chain"
 	"github.com/decred/slog"
+	"github.com/jrick/logrotate/rotator"
 	btcneutrino "github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
@@ -64,6 +65,9 @@ type DEXWallet struct {
 
 // dexLogger satisfies dex.Logger.
 type dexLogger struct {
+	level    slog.Level
+	meterMtx *sync.RWMutex
+	meters   map[string]time.Time
 	btclog.Logger
 }
 
@@ -72,10 +76,41 @@ func (dl dexLogger) Level() slog.Level {
 }
 
 func (dl dexLogger) SetLevel(lvl slog.Level) {
+	dl.level = lvl
 	dl.Logger.SetLevel(btclog.Level(lvl))
 }
 
 func (dl dexLogger) SubLogger(string) dex.Logger {
+	return dl
+}
+
+// FileLogger creates a logger that logs to a file rotator. Subloggers will also
+// log to the file only.
+func (dl dexLogger) FileLogger(_ *rotator.Rotator) dex.Logger {
+	return dl
+}
+
+// Meter enforces a time delay on logging. The first call to a metered logger
+// always logs. Subsequent calls for the same callerID are ignored until the
+// delay is surpassed.
+func (dl dexLogger) Meter(callerID string, delay time.Duration) dex.Logger {
+	if dl.meterMtx == nil {
+		dl.meterMtx = &sync.RWMutex{}
+	}
+
+	dl.meterMtx.Lock()
+	defer dl.meterMtx.Unlock()
+	if dl.meters == nil {
+		dl.meters = make(map[string]time.Time)
+	}
+
+	if lastLog, exists := dl.meters[callerID]; exists && time.Since(lastLog) < delay {
+		dl.Logger.SetLevel(btclog.Level(slog.Disabled.Level()))
+		return dl
+	}
+
+	dl.Logger.SetLevel(btclog.Level(dl.level))
+	dl.meters[callerID] = time.Now()
 	return dl
 }
 
@@ -1100,6 +1135,10 @@ func (dw *DEXWallet) syncedTo() waddrmgr.BlockStamp {
 		Hash:      chainhash.Hash(bs.Hash),
 		Timestamp: bs.Timestamp,
 	}
+}
+
+func (dw *DEXWallet) Fingerprint() (string, error) {
+	return "", errors.New("Fingerprint not supported for Cyptopower btc wallet")
 }
 
 // ltcChainService wraps ltcsuite *neutrino.ChainService in order to translate
