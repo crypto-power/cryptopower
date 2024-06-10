@@ -45,15 +45,14 @@ import (
 	btcC "github.com/btcsuite/btcwallet/chain"
 	btcw "github.com/btcsuite/btcwallet/wallet"
 	btcWtx "github.com/btcsuite/btcwallet/wtxmgr"
-	ltcN "github.com/dcrlabs/neutrino-ltc"
+	ltcC "github.com/dcrlabs/ltcwallet/chain"
+	ltcw "github.com/dcrlabs/ltcwallet/spv"
+	ltcWtx "github.com/dcrlabs/ltcwallet/wtxmgr"
 	"github.com/decred/dcrd/addrmgr/v2"
 	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 	btcN "github.com/lightninglabs/neutrino"
-	ltcC "github.com/ltcsuite/ltcwallet/chain"
-	ltcw "github.com/ltcsuite/ltcwallet/wallet"
-	ltcWtx "github.com/ltcsuite/ltcwallet/wtxmgr"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -108,7 +107,6 @@ var (
 	dcrWalletLog = dcrBackendLog.Logger("WLLT")
 	dcrSpv       = dcrBackendLog.Logger("DCR-S")
 	btcNtrn      = btcBackendLog.Logger("B-NTR")
-	ltcNtrn      = btcBackendLog.Logger("L-NTR")
 	btcLog       = btcBackendLog.Logger("BTC")
 	ltcLog       = ltcBackendLog.Logger("LTC")
 )
@@ -140,7 +138,6 @@ func init() {
 	ticketbuyer.UseLogger(tkbyLog)
 	udb.UseLogger(dcrWalletLog)
 	btcN.UseLogger(btcNtrn)
-	ltcN.UseLogger(ltcNtrn)
 	ltcWtx.UseLogger(ltcLog)
 	btcWtx.UseLogger(btcLog)
 	ltcC.UseLogger(ltcLog)
@@ -157,7 +154,6 @@ func init() {
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.
-	ltcNtrn.SetLevel(btclog.LevelError)
 	btcNtrn.SetLevel(btclog.LevelError)
 
 	// Similar to BTC and LTC, excessive loggings of dcr spv has been capped to errors.

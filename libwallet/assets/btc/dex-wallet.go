@@ -38,6 +38,9 @@ import (
 	"github.com/lightninglabs/neutrino"
 )
 
+// dexLogLevel is used to reactivate logger after metered logging.
+var dexLogLevel = dex.LevelError
+
 // DEXWallet wraps *wallet.Wallet and implements dexbtc.Wallet.
 type DEXWallet struct {
 	w                 *wallet.Wallet
@@ -49,7 +52,6 @@ type DEXWallet struct {
 
 // dexLogger satisfies dex.Logger.
 type dexLogger struct {
-	level    slog.Level
 	meterMtx *sync.RWMutex
 	meters   map[string]time.Time
 	btclog.Logger
@@ -60,7 +62,7 @@ func (dl dexLogger) Level() slog.Level {
 }
 
 func (dl dexLogger) SetLevel(lvl slog.Level) {
-	dl.level = lvl
+	dexLogLevel = lvl
 	dl.Logger.SetLevel(btclog.Level(lvl))
 }
 
@@ -70,7 +72,7 @@ func (dl dexLogger) SubLogger(string) dex.Logger {
 
 // FileLogger creates a logger that logs to a file rotator. Subloggers will also
 // log to the file only.
-func (dl dexLogger) FileLogger(r *rotator.Rotator) dex.Logger {
+func (dl dexLogger) FileLogger(_ *rotator.Rotator) dex.Logger {
 	return dl
 }
 
@@ -93,7 +95,7 @@ func (dl dexLogger) Meter(callerID string, delay time.Duration) dex.Logger {
 		return dl
 	}
 
-	dl.Logger.SetLevel(btclog.Level(dl.level))
+	dl.Logger.SetLevel(btclog.Level(dexLogLevel))
 	dl.meters[callerID] = time.Now()
 	return dl
 }

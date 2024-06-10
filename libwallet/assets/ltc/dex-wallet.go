@@ -32,8 +32,12 @@ import (
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	btcwallet "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/wtxmgr"
-	neutrino "github.com/dcrlabs/neutrino-ltc"
-	"github.com/dcrlabs/neutrino-ltc/chain"
+	"github.com/dcrlabs/ltcwallet/chain"
+	neutrino "github.com/dcrlabs/ltcwallet/spv"
+	ltcwaddrmgr "github.com/dcrlabs/ltcwallet/waddrmgr"
+	"github.com/dcrlabs/ltcwallet/wallet"
+	"github.com/dcrlabs/ltcwallet/wallet/txauthor"
+	ltcwtxmgr "github.com/dcrlabs/ltcwallet/wtxmgr"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 	btcneutrino "github.com/lightninglabs/neutrino"
@@ -43,11 +47,10 @@ import (
 	"github.com/ltcsuite/ltcd/ltcutil"
 	ltctxscript "github.com/ltcsuite/ltcd/txscript"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
-	ltcwaddrmgr "github.com/ltcsuite/ltcwallet/waddrmgr"
-	"github.com/ltcsuite/ltcwallet/wallet"
-	"github.com/ltcsuite/ltcwallet/wallet/txauthor"
-	ltcwtxmgr "github.com/ltcsuite/ltcwallet/wtxmgr"
 )
+
+// dexLogLevel is used to reactivate logger after metered logging.
+var dexLogLevel = dex.LevelError
 
 const (
 	DefaultM uint64 = 784931 // From ltcutil. Used for gcs filters.
@@ -57,7 +60,7 @@ const (
 type DEXWallet struct {
 	w                 *wallet.Wallet
 	acctNum           int32
-	cl                *ltcChainService
+	cl                *ChainService
 	btcParams         *chaincfg.Params
 	syncStatusChecker SyncStatusChecker
 	*dexbtc.BlockFiltersScanner
@@ -65,7 +68,6 @@ type DEXWallet struct {
 
 // dexLogger satisfies dex.Logger.
 type dexLogger struct {
-	level    slog.Level
 	meterMtx *sync.RWMutex
 	meters   map[string]time.Time
 	btclog.Logger
@@ -76,7 +78,7 @@ func (dl dexLogger) Level() slog.Level {
 }
 
 func (dl dexLogger) SetLevel(lvl slog.Level) {
-	dl.level = lvl
+	dexLogLevel = lvl
 	dl.Logger.SetLevel(btclog.Level(lvl))
 }
 
@@ -109,7 +111,7 @@ func (dl dexLogger) Meter(callerID string, delay time.Duration) dex.Logger {
 		return dl
 	}
 
-	dl.Logger.SetLevel(btclog.Level(dl.level))
+	dl.Logger.SetLevel(btclog.Level(dexLogLevel))
 	dl.meters[callerID] = time.Now()
 	return dl
 }
@@ -123,13 +125,11 @@ var _ dexbtc.CustomWallet = (*DEXWallet)(nil)
 var _ dexbtc.BlockInfoReader = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btcParams *chaincfg.Params, syncStatusChecker SyncStatusChecker) *DEXWallet {
+func NewDEXWallet(w *wallet.Wallet, acctNum int32, cl *ChainService, btcParams *chaincfg.Params, syncStatusChecker SyncStatusChecker) *DEXWallet {
 	dw := &DEXWallet{
-		w:       w,
-		acctNum: acctNum,
-		cl: &ltcChainService{
-			NeutrinoClient: nc,
-		},
+		w:                 w,
+		acctNum:           acctNum,
+		cl:                cl,
 		btcParams:         btcParams,
 		syncStatusChecker: syncStatusChecker,
 	}
@@ -423,7 +423,7 @@ func (dw *DEXWallet) ListLockUnspent() ([]*dexbtc.RPCOutpoint, error) {
 
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) ChangeAddress() (btcutil.Address, error) {
-	ltcAddr, err := dw.w.NewChangeAddress(uint32(dw.acctNum), ltcwaddrmgr.KeyScopeBIP0084)
+	ltcAddr, err := dw.w.NewChangeAddress(uint32(dw.acctNum), ltcwaddrmgr.KeyScopeBIP0084WithBitcoinCoinID)
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +432,7 @@ func (dw *DEXWallet) ChangeAddress() (btcutil.Address, error) {
 
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) ExternalAddress() (btcutil.Address, error) {
-	ltcAddr, err := dw.w.NewAddress(uint32(dw.acctNum), ltcwaddrmgr.KeyScopeBIP0084)
+	ltcAddr, err := dw.w.NewAddress(uint32(dw.acctNum), ltcwaddrmgr.KeyScopeBIP0084WithBitcoinCoinID)
 	if err != nil {
 		return nil, err
 	}
@@ -1184,14 +1184,15 @@ func (dw *DEXWallet) Fingerprint() (string, error) {
 	return "", errors.New("Fingerprint not supported for Cyptopower btc wallet")
 }
 
-// ltcChainService wraps ltcsuite *neutrino.ChainService in order to translate
+// ChainService wraps ltcsuite *neutrino.ChainService in order to translate
 // the neutrino.ServerPeer to the SPVPeer interface and implement required chain
 // service methods for ltc.
-type ltcChainService struct {
+type ChainService struct {
+	*neutrino.ChainService
 	*chain.NeutrinoClient
 }
 
-func (s *ltcChainService) GetBlockHash(height int64) (*chainhash.Hash, error) {
+func (s *ChainService) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	ltcHash, err := s.CS.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -1199,7 +1200,7 @@ func (s *ltcChainService) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	return (*chainhash.Hash)(ltcHash), nil
 }
 
-func (s *ltcChainService) BestBlock() (*headerfs.BlockStamp, error) {
+func (s *ChainService) BestBlock() (*headerfs.BlockStamp, error) {
 	bs, err := s.CS.BestBlock()
 	if err != nil {
 		return nil, err
@@ -1211,14 +1212,14 @@ func (s *ltcChainService) BestBlock() (*headerfs.BlockStamp, error) {
 	}, nil
 }
 
-func (s *ltcChainService) Peers() []dexbtc.SPVPeer {
+func (s *ChainService) Peers() []dexbtc.SPVPeer {
 	// *neutrino.ChainService.Peers() may stall, especially if the wallet hasn't
 	// started sync yet. Call the method in a goroutine and wait below to see if
 	// we get a response. Return an empty slice if we don't get a response after
 	// waiting briefly.
 	rawPeersChan := make(chan []*neutrino.ServerPeer)
 	go func() {
-		rawPeersChan <- s.CS.Peers()
+		rawPeersChan <- s.ChainService.Peers()
 	}()
 
 	select {
@@ -1230,15 +1231,15 @@ func (s *ltcChainService) Peers() []dexbtc.SPVPeer {
 		return peers
 
 	case <-time.After(2 * time.Second):
-		return nil // CS.Peers() is taking too long to respond
+		return nil // ChainService.Peers() is taking too long to respond
 	}
 }
 
-func (s *ltcChainService) GetBlockHeight(h *chainhash.Hash) (int32, error) {
+func (s *ChainService) GetBlockHeight(h *chainhash.Hash) (int32, error) {
 	return s.CS.GetBlockHeight((*ltcchainhash.Hash)(h))
 }
 
-func (s *ltcChainService) GetBlockHeader(h *chainhash.Hash) (*wire.BlockHeader, error) {
+func (s *ChainService) GetBlockHeader(h *chainhash.Hash) (*wire.BlockHeader, error) {
 	hdr, err := s.CS.GetBlockHeader((*ltcchainhash.Hash)(h))
 	if err != nil {
 		return nil, err
@@ -1253,7 +1254,7 @@ func (s *ltcChainService) GetBlockHeader(h *chainhash.Hash) (*wire.BlockHeader, 
 	}, nil
 }
 
-func (s *ltcChainService) GetCFilter(blockHash chainhash.Hash, _ wire.FilterType, _ ...btcneutrino.QueryOption) (*gcs.Filter, error) {
+func (s *ChainService) GetCFilter(blockHash chainhash.Hash, _ wire.FilterType, _ ...btcneutrino.QueryOption) (*gcs.Filter, error) {
 	f, err := s.CS.GetCFilter(ltcchainhash.Hash(blockHash), ltcwire.GCSFilterRegular)
 	if err != nil {
 		return nil, err
@@ -1267,7 +1268,7 @@ func (s *ltcChainService) GetCFilter(blockHash chainhash.Hash, _ wire.FilterType
 	return gcs.FromBytes(f.N(), f.P(), DefaultM, b)
 }
 
-func (s *ltcChainService) GetBlock(blockHash chainhash.Hash, _ ...btcneutrino.QueryOption) (*btcutil.Block, error) {
+func (s *ChainService) GetBlock(blockHash chainhash.Hash, _ ...btcneutrino.QueryOption) (*btcutil.Block, error) {
 	blk, err := s.CS.GetBlock(ltcchainhash.Hash(blockHash))
 	if err != nil {
 		return nil, err

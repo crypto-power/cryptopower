@@ -23,7 +23,7 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4
-	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
+	github.com/dcrlabs/ltcwallet v0.0.0-20240518141247-13553c8fce6a
 	github.com/decred/dcrd/addrmgr/v2 v2.0.2
 	github.com/decred/dcrd/blockchain/stake/v5 v5.0.0
 	github.com/decred/dcrd/chaincfg/chainhash v1.0.4
@@ -49,12 +49,6 @@ require (
 	github.com/ltcsuite/ltcd/btcec/v2 v2.3.2
 	github.com/ltcsuite/ltcd/chaincfg/chainhash v1.0.2
 	github.com/ltcsuite/ltcd/ltcutil v1.1.4-0.20240131072528-64dfa402637a
-	github.com/ltcsuite/ltcwallet v0.13.1
-	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.1.0
-	github.com/ltcsuite/ltcwallet/wallet/txrules v1.2.0
-	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.1.0
-	github.com/ltcsuite/ltcwallet/walletdb v1.3.5
-	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0
 	github.com/nxadm/tail v1.4.8
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
@@ -96,7 +90,6 @@ require (
 	github.com/dchest/blake2b v1.0.0 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/dcrlabs/bchwallet v0.0.0-20240114124852-0e95005810be // indirect
-	github.com/dcrlabs/ltcwallet v0.0.0-20240518141247-13553c8fce6a // indirect
 	github.com/dcrlabs/neutrino-bch v0.0.0-20240114121828-d656bce11095 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/base58 v1.0.5 // indirect
@@ -178,7 +171,6 @@ require (
 	github.com/ltcsuite/lnd/ticker v1.0.1 // indirect
 	github.com/ltcsuite/lnd/tlv v0.0.0-20240222214433-454d35886119 // indirect
 	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.1-0.20240131072528-64dfa402637a // indirect
-	github.com/ltcsuite/neutrino v0.13.2 // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect

@@ -12,9 +12,9 @@ import (
 	"github.com/ltcsuite/ltcd/chaincfg"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 
+	"github.com/dcrlabs/ltcwallet/chain"
 	// "github.com/ltcsuite/neutrino"
-	neutrino "github.com/dcrlabs/neutrino-ltc"
-	labschain "github.com/dcrlabs/neutrino-ltc/chain"
+	neutrino "github.com/dcrlabs/ltcwallet/spv"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,7 +32,7 @@ const (
 type SyncData struct {
 	mu sync.RWMutex
 
-	bestBlockheight     int32 // Synced peers best block height.
+	bestBlockHeight     int32 // Synced peers best block height.
 	syncstarted         uint32
 	chainServiceStopped bool
 
@@ -139,10 +139,10 @@ func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
 // bestServerPeerBlockHeight accesses the connected peers and requests for the
 // last synced block height.
 func (asset *Asset) bestServerPeerBlockHeight() {
-	serverPeers := asset.chainClient.CS.Peers()
+	serverPeers := asset.cl.Peers()
 	for _, p := range serverPeers {
-		if p.LastBlock() > asset.syncData.bestBlockheight {
-			asset.syncData.bestBlockheight = p.LastBlock()
+		if p.LastBlock() > asset.syncData.bestBlockHeight {
+			asset.syncData.bestBlockHeight = p.LastBlock()
 			// If a dormant peer is picked, on the next iteration it will be dropped
 			// because it will be behind.
 			return
@@ -162,13 +162,13 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 		asset.syncData.headersFetchProgress.BeginFetchTimeStamp = time.Now()
 		asset.syncData.headersFetchProgress.StartHeaderHeight = &rawBlockHeight
 
-		if asset.syncData.bestBlockheight != rawBlockHeight {
+		if asset.syncData.bestBlockHeight != rawBlockHeight {
 			asset.syncData.mu.Unlock()
 			// A rescan progress update must have been sent. Allow it
 			return
 		}
 	}
-	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, asset.syncData.bestBlockheight)
+	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, asset.syncData.bestBlockHeight)
 
 	timeSpentSoFar := time.Since(asset.syncData.headersFetchProgress.BeginFetchTimeStamp).Seconds()
 	if timeSpentSoFar < 1 {
@@ -180,14 +180,14 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 		headersFetchedSoFar = 1
 	}
 
-	remainingHeaders := float64(asset.syncData.bestBlockheight - rawBlockHeight)
+	remainingHeaders := float64(asset.syncData.bestBlockHeight - rawBlockHeight)
 	if remainingHeaders < 1 {
 		remainingHeaders = 1
 	}
 
 	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
 
-	asset.syncData.headersFetchProgress.TotalHeadersToFetch = asset.syncData.bestBlockheight
+	asset.syncData.headersFetchProgress.TotalHeadersToFetch = asset.syncData.bestBlockHeight
 	asset.syncData.headersFetchProgress.HeadersFetchProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar)
@@ -307,12 +307,12 @@ func (asset *Asset) prepareChain() error {
 	}
 
 	log.Debug("Starting native LTC wallet sync...")
-	chainService, err := asset.loadChainService()
+	asset.cl, err = asset.loadChainService()
 	if err != nil {
 		return err
 	}
 
-	asset.chainClient = labschain.NewNeutrinoClient(asset.chainParams, chainService, log)
+	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, asset.cl)
 
 	return nil
 }

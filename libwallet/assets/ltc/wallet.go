@@ -14,9 +14,10 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/ltc"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	neutrino "github.com/dcrlabs/neutrino-ltc"
-	labschain "github.com/dcrlabs/neutrino-ltc/chain"
-	"github.com/dcrlabs/neutrino-ltc/headerfs"
+	"github.com/dcrlabs/ltcwallet/chain"
+	neutrino "github.com/dcrlabs/ltcwallet/spv"
+	"github.com/dcrlabs/ltcwallet/spv/headerfs"
+	_ "github.com/dcrlabs/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/ltcsuite/ltcd/btcec/v2/ecdsa"
 	"github.com/ltcsuite/ltcd/chaincfg"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
@@ -25,7 +26,6 @@ import (
 	"github.com/ltcsuite/ltcd/ltcutil/gcs"
 	"github.com/ltcsuite/ltcd/wire"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
-	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 )
 
 // Asset confirm that LTC implements that shared assets interface.
@@ -39,7 +39,8 @@ var _ sharedW.Asset = (*Asset)(nil)
 type Asset struct {
 	*sharedW.Wallet
 
-	chainClient    *labschain.NeutrinoClient
+	cl             *neutrino.ChainService
+	chainClient    *chain.NeutrinoClient
 	chainParams    *ltcchaincfg.Params
 	TxAuthoredInfo *TxAuthor
 
@@ -308,8 +309,11 @@ func (asset *Asset) SafelyCancelSync() {
 	}
 }
 
-func (asset *Asset) NeutrinoClient() *labschain.NeutrinoClient {
-	return asset.chainClient
+func (asset *Asset) NeutrinoClient() *ChainService {
+	return &ChainService{
+		ChainService:   asset.cl,
+		NeutrinoClient: asset.chainClient,
+	}
 }
 
 // IsSynced returns true if the wallet is synced.
@@ -349,7 +353,8 @@ func (asset *Asset) ConnectedPeers() int32 {
 	if !asset.IsConnectedToNetwork() {
 		return -1
 	}
-	return asset.chainClient.CS.ConnectedCount()
+
+	return int32(len(asset.cl.Peers()))
 }
 
 // IsConnectedToNetwork returns true if the wallet is connected to the network.
@@ -511,9 +516,10 @@ func (asset *Asset) SetSpecificPeer(addresses string) {
 	}()
 }
 
-// GetExtendedPubKey returns the extended public key of the given account,
-// to do that it calls LTCwallet's AccountProperties method, using KeyScopeBIP0084
-// and the account number. On failure it returns error.
+// GetExtendedPubKey returns the extended public key of the given account, to do
+// that it calls LTCwallet's AccountProperties method, using
+// KeyScopeBIP0084WithBitcoinCoinID and the account number. On failure it
+// returns error.
 func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 	loadedAsset := asset.Internal().LTC
 	if loadedAsset == nil {
