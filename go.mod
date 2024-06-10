@@ -234,4 +234,4 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
 // https://github.com/ukane-philemon/dcrdex/tree/btc-node
-replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240607004202-233e846a345b
+replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240610033628-f976f1d155a7

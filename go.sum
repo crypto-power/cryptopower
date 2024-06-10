@@ -1596,8 +1596,8 @@ github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGr
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
-github.com/ukane-philemon/dcrdex v0.0.0-20240607004202-233e846a345b h1:A3YrjXVAeblg5bKtqpnZBo4SmmlCYA3IBQQeY50ZE5U=
-github.com/ukane-philemon/dcrdex v0.0.0-20240607004202-233e846a345b/go.mod h1:t9ur12VGbTof3MPbvnmOBSvufxFE4w4fGlWt83lE2vY=
+github.com/ukane-philemon/dcrdex v0.0.0-20240610033628-f976f1d155a7 h1:M7K2uKdaZ3WBg8EEiHxZQgyJ+OdvnZ3Jt7BAXej8BvA=
+github.com/ukane-philemon/dcrdex v0.0.0-20240610033628-f976f1d155a7/go.mod h1:t9ur12VGbTof3MPbvnmOBSvufxFE4w4fGlWt83lE2vY=
 github.com/ulikunitz/xz v0.5.6/go.mod h1:2bypXElzHzzJZwzH67Y6wb67pO62Rzfn7BSiF4ABRW8=
 github.com/ulikunitz/xz v0.5.7/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ultraware/funlen v0.0.3/go.mod h1:Dp4UiAus7Wdb9KUZsYWZEWiRzGuM2kXM1lPbfaF6xhA=
