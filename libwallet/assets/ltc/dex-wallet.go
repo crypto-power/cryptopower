@@ -904,6 +904,49 @@ func (dw *DEXWallet) GetWalletTransaction(txHash *chainhash.Hash) (*dexbtc.GetTr
 	return ret, nil
 }
 
+// Implements TxLister.
+func (dw *DEXWallet) ListTransactionsSinceBlock(blockHeight int32) ([]*dexbtc.ListTransactionsResult, error) {
+	tip, err := dw.cl.CS.BestBlock()
+	if err != nil {
+		return nil, fmt.Errorf("BestBlock error: %v", err)
+	}
+
+	// We use GetTransactions instead of ListSinceBlock, because ListSinceBlock
+	// does not include transactions that pay to a change address, which
+	// Redeem, Refund, and RedeemBond do.
+	startHeight := wallet.NewBlockIdentifierFromHeight(blockHeight)
+	endHeight := wallet.NewBlockIdentifierFromHeight(tip.Height)
+	res, err := dw.w.GetTransactions(startHeight, endHeight, dw.accountName(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	txs := make([]*dexbtc.ListTransactionsResult, 0, len(res.MinedTransactions)+len(res.UnminedTransactions))
+
+	toLTR := func(tx *wallet.TransactionSummary, blockHeight uint32, blockTime uint64) *dexbtc.ListTransactionsResult {
+		fee := tx.Fee.ToBTC()
+		return &dexbtc.ListTransactionsResult{
+			TxID:        tx.Hash.String(),
+			BlockHeight: blockHeight,
+			BlockTime:   blockTime,
+			Fee:         &fee,
+			Send:        len(tx.MyInputs) > 0,
+		}
+	}
+
+	for _, block := range res.MinedTransactions {
+		for _, tx := range block.Transactions {
+			txs = append(txs, toLTR(&tx, uint32(block.Height), uint64(block.Timestamp)))
+		}
+	}
+
+	for _, tx := range res.UnminedTransactions {
+		txs = append(txs, toLTR(&tx, 0, 0))
+	}
+
+	return txs, nil
+}
+
 func hashTx(tx *wire.MsgTx) *chainhash.Hash {
 	h := tx.TxHash()
 	return &h
