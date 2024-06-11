@@ -428,9 +428,10 @@ type UnspentOutput struct {
 type WordSeedType int
 
 const (
-	WordSeed12 WordSeedType = 12
-	WordSeed24 WordSeedType = 24
-	WordSeed33 WordSeedType = 33
+	NoneWordSeed WordSeedType = 0
+	WordSeed12   WordSeedType = 12
+	WordSeed24   WordSeedType = 24
+	WordSeed33   WordSeedType = 33
 )
 
 func (s WordSeedType) ToInt() int {

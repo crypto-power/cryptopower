@@ -253,10 +253,10 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
 	}
 
-	// w.EncryptedSeed was previously deleted after verification. Existing
+	// w.EncryptedMnemonic was previously deleted after verification. Existing
 	// wallets created before the change to allow viewing wallet seed in-app
 	// should still behave normal but they can no longer view their seed.
-	if len(w.EncryptedSeed) == 0 && !w.IsBackedUp {
+	if len(w.EncryptedMnemonic) == 0 && !w.IsBackedUp {
 		w.IsBackedUp = true
 		if err := params.DB.Save(w); err != nil {
 			log.Errorf("DB.Save error: %v", err)

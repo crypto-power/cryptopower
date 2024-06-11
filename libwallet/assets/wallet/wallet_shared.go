@@ -27,7 +27,7 @@ type Wallet struct {
 	db        *storm.DB
 	logDir    string
 
-	EncryptedSeed         []byte
+	EncryptedMnemonic     []byte
 	IsBackedUp            bool
 	IsRestored            bool
 	HasDiscoveredAccounts bool
@@ -257,7 +257,7 @@ func (wallet *Wallet) IsWalletBackedUp() bool {
 func (wallet *Wallet) HasWalletSeed() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
-	return len(wallet.EncryptedSeed) > 0
+	return len(wallet.EncryptedMnemonic) > 0
 }
 
 func (wallet *Wallet) GetWalletID() int {
@@ -339,12 +339,12 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		return nil, errors.New("please select word seed type")
 	}
 
-	seed, err := generateSeed(assetType, pass.WordSeedType)
+	mnemonic, err := generateMnemonic(pass.WordSeedType)
 	if err != nil {
 		return nil, err
 	}
 
-	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seed)
+	encryptedMnemonic, err := encryptWalletMnemonic([]byte(pass.PrivatePass), mnemonic)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		rootDir:               params.RootDir,
 		logDir:                params.LogDir,
 		CreatedAt:             time.Now(),
-		EncryptedSeed:         encryptedSeed,
+		EncryptedMnemonic:     encryptedMnemonic,
 		PrivatePassphraseType: pass.PrivatePassType,
 		HasDiscoveredAccounts: true,
 		Type:                  assetType,
@@ -369,7 +369,7 @@ func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 		if err != nil {
 			return err
 		}
-		return wallet.createWallet(pass.PrivatePass, seed, pass.WordSeedType)
+		return wallet.createWallet(pass.PrivatePass, mnemonic, pass.WordSeedType)
 	}); err != nil {
 		return nil, err
 	}
@@ -474,7 +474,7 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 ) (*Wallet, error) {
 	// Ensure the encrypted seeds are available before creating wallet so we can
 	// return early.
-	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seedMnemonic)
+	encryptedMnemonic, err := encryptWalletMnemonic([]byte(pass.PrivatePass), seedMnemonic)
 	if err != nil {
 		log.Errorf("wallet.createWallet: error encrypting wallet seed: %v", err)
 		return nil, err
@@ -488,7 +488,7 @@ func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoade
 		rootDir:               params.RootDir,
 		logDir:                params.LogDir,
 
-		EncryptedSeed:         encryptedSeed,
+		EncryptedMnemonic:     encryptedMnemonic,
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
 		Type:                  assetType,
@@ -713,15 +713,15 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 
 	oldPassphrase := []byte(oldPrivatePassphrase)
 	newPassphrase := []byte(newPrivatePassphrase)
-	encryptedSeed := wallet.EncryptedSeed
+	encryptedMnemonic := wallet.EncryptedMnemonic
 
-	if encryptedSeed != nil {
-		decryptedSeed, err := decryptWalletSeed(oldPassphrase, encryptedSeed)
+	if encryptedMnemonic != nil {
+		decryptedSeed, err := decryptWalletMnemonic(oldPassphrase, encryptedMnemonic)
 		if err != nil {
 			return err
 		}
 
-		encryptedSeed, err = encryptWalletSeed(newPassphrase, decryptedSeed)
+		encryptedMnemonic, err = encryptWalletMnemonic(newPassphrase, decryptedSeed)
 		if err != nil {
 			return err
 		}
@@ -732,7 +732,7 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 		return utils.TranslateError(err)
 	}
 
-	wallet.EncryptedSeed = encryptedSeed
+	wallet.EncryptedMnemonic = encryptedMnemonic
 	wallet.PrivatePassphraseType = privatePassphraseType
 	err = wallet.db.Save(wallet)
 	if err != nil {

@@ -54,9 +54,9 @@ type SeedRestore struct {
 	optionsMenuCard cryptomaterial.Card
 	window          app.WindowNavigator
 
-	suggestions    []string
-	allSuggestions []string
-	seedMenu       []seedItemMenu
+	suggestions []string
+	// allSuggestions []string
+	seedMenu []seedItemMenu
 
 	seedPhrase string
 	walletName string
@@ -108,9 +108,6 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 
 	// init suggestion buttons
 	pg.initSeedMenu()
-
-	// set suggestions
-	pg.allSuggestions = getWordSeedType().AllWords()
 
 	return pg
 }
@@ -407,7 +404,7 @@ func (pg SeedRestore) suggestionSeeds(text string) []string {
 		return seeds
 	}
 
-	for _, word := range pg.allSuggestions {
+	for _, word := range pg.getWordSeedType().AllWords() {
 		if strings.HasPrefix(strings.ToLower(word), strings.ToLower(text)) {
 			if len(seeds) < pg.suggestionLimit {
 				seeds = append(seeds, word)
@@ -426,7 +423,7 @@ func (pg *SeedRestore) updateSeedResetBtn() bool {
 
 func (pg *SeedRestore) validateSeeds() (bool, string) {
 	seedPhrase := ""
-	allSuggestedWords := strings.Join(pg.allSuggestions, " ")
+	allSuggestedWords := strings.Join(pg.getWordSeedType().AllWords(), " ")
 	numberOfSeed := pg.getWordSeedType().ToInt()
 	for i, editor := range pg.seedEditors.editors {
 		if i >= numberOfSeed {
@@ -439,16 +436,16 @@ func (pg *SeedRestore) validateSeeds() (bool, string) {
 
 		seedPhrase += editor.Edit.Editor.Text() + " "
 	}
+
+	seedPhrase = strings.TrimSpace(seedPhrase)
 	return true, seedPhrase
 }
 
 func (pg *SeedRestore) verifySeeds() bool {
 	isValid, seedphrase := pg.validateSeeds()
-	pg.seedPhrase = ""
-
 	if isValid {
 		pg.seedPhrase = seedphrase
-		if !sharedW.VerifySeed(pg.seedPhrase, pg.walletType, pg.getWordSeedType()) {
+		if !sharedW.VerifyMnemonic(pg.seedPhrase, pg.walletType, pg.getWordSeedType()) {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 			pg.window.ShowModal(errModal)
 			return false
@@ -473,7 +470,6 @@ func (pg *SeedRestore) verifySeeds() bool {
 }
 
 func (pg *SeedRestore) resetSeeds() {
-	pg.allSuggestions = pg.getWordSeedType().AllWords()
 	pg.seedEditors.focusIndex = -1
 	for i := 0; i < len(pg.seedEditors.editors); i++ {
 		pg.seedEditors.editors[i].Edit.Editor.SetText("")
@@ -546,7 +542,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				pg.window.ShowModal(infoModal)
 				pg.resetSeeds()
 				m.Dismiss()
-				pg.ParentNavigator().CloseCurrentPage()
+				pg.window.CloseCurrentPage()
 				if pg.restoreComplete != nil {
 					pg.restoreComplete()
 				}
