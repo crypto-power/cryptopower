@@ -3,6 +3,7 @@ package components
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"gioui.org/font"
@@ -26,10 +27,11 @@ type WalletSyncInfo struct {
 	syncSwitch       *cryptomaterial.Switch
 	toBackup         cryptomaterial.Button
 
-	isStatusConnected bool
-	reload            Reload
-	backup            func(sharedW.Asset)
-	ForwardButton     cryptomaterial.IconButton
+	isStatusConnected     bool
+	reload                Reload
+	backup                func(sharedW.Asset)
+	ForwardButton         cryptomaterial.IconButton
+	syncProgressInfoMutex sync.Mutex
 
 	IsSlider bool
 }
@@ -541,6 +543,10 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 		// headers to fetch cannot be less than the previously fetched.
 		// Page refresh only needed if there is new data to update the UI.
 		if progress.HeadersToFetchOrScan >= previousProgress.HeadersToFetchOrScan {
+			// Lock the map before updating it
+			wsi.syncProgressInfoMutex.Lock()
+			// Ensure the mutex is unlocked even if there is a panic
+			defer wsi.syncProgressInfoMutex.Unlock()
 			// set the new progress against the associated asset.
 			syncProgressInfo[wsi.wallet] = progress
 
