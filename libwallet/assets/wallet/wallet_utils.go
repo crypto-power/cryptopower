@@ -188,12 +188,15 @@ func decryptWalletMnemonic(pass []byte, encryptedMnemonic []byte) (string, error
 // doesn't support the alternative `GenerateSeed` function because it returns more than 2 types.
 func generateMnemonic(wordSeedType WordSeedType) (v string, err error) {
 	var entropy []byte
-	//33-word seeds and 24-word seeds both use length 32 (256 bits) while 12-word seed uses length 16 (128 bits).
+	// 33-word seeds and 24-word seeds both use length 32 (256 bits) while 12-word seed uses length 16 (128 bits).
 	var length uint8 = dcrhdkeychain.RecommendedSeedLen
 	if wordSeedType == WordSeed12 {
 		length = dcrhdkeychain.MinSeedBytes
 	}
 
+	// The same HD key generation function is used for all assets,
+	// because the HD key chain for each asset has the same
+	// underlying structure (BTC, LTC & DCR).
 	entropy, err = btchdkeychain.GenerateSeed(length)
 	if err != nil {
 		return "", err

@@ -109,9 +109,6 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 	// init suggestion buttons
 	pg.initSeedMenu()
 
-	// set suggestions
-	// pg.allSuggestions = getWordSeedType().AllWords()
-
 	return pg
 }
 
@@ -473,7 +470,6 @@ func (pg *SeedRestore) verifySeeds() bool {
 }
 
 func (pg *SeedRestore) resetSeeds() {
-	// pg.allSuggestions = pg.getWordSeedType().AllWords()
 	pg.seedEditors.focusIndex = -1
 	for i := 0; i < len(pg.seedEditors.editors); i++ {
 		pg.seedEditors.editors[i].Edit.Editor.SetText("")

@@ -372,19 +372,14 @@ func (pg *Restore) restoreFromSeedEditor() {
 }
 
 func getWordSeedTypeFromSeed(slideWords []string) (sharedW.WordSeedType, error) {
-	wordsLen := len(slideWords)
-	if wordsLen == 12 || wordsLen == 24 || wordsLen == 33 {
-		switch wordsLen {
-		case 12:
-			return sharedW.WordSeed12, nil
-		case 24:
-			return sharedW.WordSeed24, nil
-		case 33:
-			return sharedW.WordSeed33, nil
-		default:
-			return sharedW.NoneWordSeed, nil
-		}
+	switch len(slideWords) {
+	case 12:
+		return sharedW.WordSeed12, nil
+	case 24:
+		return sharedW.WordSeed24, nil
+	case 33:
+		return sharedW.WordSeed33, nil
+	default:
+		return sharedW.NoneWordSeed, fmt.Errorf("invalid word seed")
 	}
-
-	return sharedW.NoneWordSeed, fmt.Errorf("invalid word seed")
 }
