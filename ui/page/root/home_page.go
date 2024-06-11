@@ -366,8 +366,11 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrWallets))
 	} else if hp.CurrentPageID() == exchange.TradePageID && hp.navigationTab.SelectedTab() != values.String(values.StrTrade) {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrTrade))
+	} else if hp.CurrentPageID() == transaction.TransactionsPageID && hp.navigationTab.SelectedTab() != values.String(values.StrTransactions) {
+		hp.navigationTab.SetSelectedTab(values.String(values.StrTransactions))
+	} else if hp.CurrentPageID() == governance.GovernancePageID && hp.navigationTab.SelectedTab() != values.String(values.StrGovernance) {
+		hp.navigationTab.SetSelectedTab(values.String(values.StrGovernance))
 	}
-
 	for i, item := range hp.sendReceiveNavItems {
 		for item.Clickable.Clicked() {
 			switch strings.ToLower(item.PageID) {
