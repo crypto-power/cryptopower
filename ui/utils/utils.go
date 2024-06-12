@@ -15,6 +15,7 @@ import (
 	"decred.org/dcrdex/dex/encode"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/values"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -176,4 +177,17 @@ func RadiusLayout(gtx layout.Context, radius int, w layout.Widget) layout.Dimens
 	defer clip.UniformRRect(image.Rectangle{Max: dims.Size}, radius).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 	return dims
+}
+
+func USDMarketFromAsset(asset utils.AssetType) (values.Market, error) {
+	switch asset {
+	case utils.DCRWalletAsset:
+		return values.DCRUSDTMarket, nil
+	case utils.BTCWalletAsset:
+		return values.BTCUSDTMarket, nil
+	case utils.LTCWalletAsset:
+		return values.LTCUSDTMarket, nil
+	default:
+		return values.UnknownMarket, fmt.Errorf("Unsupported asset type: %s", asset)
+	}
 }

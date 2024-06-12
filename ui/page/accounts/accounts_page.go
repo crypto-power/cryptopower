@@ -103,20 +103,13 @@ func (pg *Page) OnNavigatedTo() {
 func (pg *Page) OnNavigatedFrom() {}
 
 func (pg *Page) fetchExchangeRate() {
-	var market string
-	switch pg.wallet.GetAssetType() {
-	case libutils.DCRWalletAsset:
-		market = values.DCRUSDTMarket
-	case libutils.BTCWalletAsset:
-		market = values.BTCUSDTMarket
-	case libutils.LTCWalletAsset:
-		market = values.LTCUSDTMarket
-	default:
+	market, err := utils.USDMarketFromAsset(pg.wallet.GetAssetType())
+	if err != nil {
 		log.Errorf("Unsupported asset type: %s", pg.wallet.GetAssetType())
 		return
 	}
 
-	rate := pg.AssetsManager.RateSource.GetTicker(market, false) // okay to fetch latest rate, this is a goroutine
+	rate := pg.AssetsManager.RateSource.GetTicker(market, true) // okay to fetch latest rate, this is a goroutine
 	if rate == nil || rate.LastTradePrice <= 0 {
 		return
 	}

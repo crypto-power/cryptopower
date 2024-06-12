@@ -5,14 +5,8 @@
 package ext
 
 import (
-	"bytes"
-	"compress/flate"
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,14 +18,13 @@ import (
 
 const (
 	// These are constants used to represent various rate sources supported.
-	bittrex = values.BittrexExchange
-	binance = values.BinanceExchange
-	none    = values.DefaultExchangeValue
-
-	// These are method names for expected bittrex specific websocket messages.
-	BittrexMsgHeartbeat  = "heartbeat"
-	BittrexMarketSummary = "marketSummary"
-	BittrexTicker        = "ticker"
+	bittrex        = values.BittrexExchange
+	binance        = values.BinanceExchange
+	binanceUS      = values.BinanceUSExchange
+	coinpaprika    = values.Coinpaprika
+	messari        = values.Messari
+	kucoinExchange = values.KucoinExchange
+	none           = values.DefaultExchangeValue
 
 	// MktSep is used repo wide to separate market symbols.
 	MktSep = "-"
@@ -42,32 +35,71 @@ var (
 	bittrexURLs = sourceURLs{
 		price: "https://api.bittrex.com/v3/markets/%s/ticker",
 		stats: "https://api.bittrex.com/v3/markets/%s/summary",
-		// Bittrex uses SignalR, which retrieves the actual websocket endpoint
-		// via HTTP.
-		ws: "socket-v3.bittrex.com",
 	}
 
-	// These are urls to fetch rate information from the Binance exchange.
+	// According to the docs (See:
+	// https://www.binance.com/en/support/faq/frequently-asked-questions-on-api-360004492232),
+	// there's a 6,000 request weight per minute (keep in mind that this is not
+	// necessarily the same as 6,000 requests) limit for API requests. Multiple
+	// tickers are quested in a single call every 5min. We can never get in
+	// trouble for this. An HTTP 403 is returned for those that violates this
+	// hard rule. More information on limits can be found here:
+	// https://binance-docs.github.io/apidocs/spot/en/#limits
 	binanceURLs = sourceURLs{
 		// See: https://binance-docs.github.io/apidocs/spot/en/#current-average-price
 		price: "https://api.binance.com/api/v3/ticker/24hr?symbol=%s",
-		ws:    "wss://stream.binance.com:9443/stream?streams=%s",
+	}
+
+	binanceUSURLs = sourceURLs{
+		// See: https://binance-docs.github.io/apidocs/spot/en/#current-average-price
+		price: "https://api.binance.us/api/v3/ticker/24hr?symbol=%s",
+	}
+
+	// According to the docs (See:
+	// https://api.coinpaprika.com/#section/Rate-limit), the free version is
+	// eligible to 20,000 calls per month. All tickers are fetched in one call,
+	// that means we only exhaust 288 calls per day and 8928 calls per month if
+	// we request rate every 5min. Max of 2000 asset data returned and API is
+	// updated every 5min.
+	coinpaprikaURLs = sourceURLs{
+		price: "https://api.coinpaprika.com/v1/tickers",
+	}
+
+	// According to the x-ratelimit-limit header, we can make 4000 requests
+	// every 24hours. The x-ratelimit-reset header tells when the next reset
+	// will be. See: Header values for
+	// https://data.messari.io/api/v1/assets/DCR/metrics/market-data. From a
+	// previous research by buck, say "Without an API key requests are rate
+	// limited to 20 requests per minute". That means we are limited to 20
+	// requests for tickers per minute but with with a 10min refresh interval,
+	// we'd only exhaust 2880 call assuming we are fetching data for 20 tickers
+	// (assets supported by dex are still below 20, revisit if we implement up
+	// to 20 assets).
+	messariURLs = sourceURLs{
+		price: "https://data.messari.io/api/v1/assets/%s/metrics/market-data",
+	}
+
+	// According to the gw-ratelimit-limit header, we can make 2000 requests
+	// every 24hours(I think there's only a gw-ratelimit-reset header set to
+	// 30000 but can't decipher if it's in seconds or minutes). Multiple tickers
+	// can be requested in a single call (Firo and ZCL not supported). See
+	// Header values for
+	// https://api.kucoin.com/api/v1/prices?currencies=BTC,DCR. Requesting for
+	// ticker data every 5min gives us 288 calls per day, with the remaining
+	// 1712 calls left unused.
+
+	kucoinURLs = sourceURLs{
+		price: "https://api.kucoin.com/api/v1/prices?currencies=%s",   // symbol is asset like BTC
+		stats: "https://api.kucoin.com/api/v1/market/stats?symbol=%s", // symbol like BTC-USDT
 	}
 
 	// supportedMarkets is a map of markets supported by rate sources
 	// implemented (Binance, Bittrex).
-	supportedMarkets = map[string]*struct{}{
+	supportedMarkets = map[values.Market]*struct{}{
 		values.BTCUSDTMarket: {},
 		values.DCRUSDTMarket: {},
 		values.LTCUSDTMarket: {},
-		values.DCRBTCMarket:  {},
-		values.LTCBTCMarket:  {},
 	}
-
-	// binanceMarkets is a map of Binance formatted market to the repo's format,
-	// e.g BTCUSDT : BTC-USDT. This is to facilitate quick lookup and to/fro
-	// market name formatting.
-	binanceMarkets = make(map[string]string)
 
 	// Rates exceeding rateExpiry are expired and should be removed unless there
 	// was an error fetching a new rate.
@@ -76,30 +108,7 @@ var (
 	// Rate sources should be refreshed every RateRefreshDuration to replace
 	// expired rates and reconnect websocket if need be.
 	RateRefreshDuration = 60 * time.Minute
-
-	bittrexRateSubscription = signalRClientMsg{
-		H: "c3",
-		M: "Subscribe",
-		A: []interface{}{},
-	}
 )
-
-// Prepare subscription data for supported rate sources.
-func init() {
-	channels := []string{"heartbeat"}
-	var binanceParams []string
-	for market := range supportedMarkets {
-		channels = append(channels, BittrexTicker+"_"+market)
-		channels = append(channels, BittrexMarketSummary+"_"+market)
-		binanceMarketName := strings.ReplaceAll(market, MktSep, "")
-		binanceMarkets[binanceMarketName] = market
-		binanceParams = append(binanceParams, strings.ToLower(binanceMarketName)+"@ticker")
-	}
-
-	bittrexRateSubscription.A = append(bittrexRateSubscription.A, channels)
-	// See: https://binance-docs.github.io/apidocs/spot/en/#websocket-market-streams
-	binanceURLs.ws = fmt.Sprintf(binanceURLs.ws, strings.Join(binanceParams, "/"))
-}
 
 // RateSource is the interface that binds different rate sources. Most of the
 // methods are implemented by CommonRateSource, but Refresh is implemented in
@@ -110,11 +119,9 @@ type RateSource interface {
 	Refresh(force bool)
 	Refreshing() bool
 	LastUpdate() time.Time
-	GetTicker(market string, cacheOnly bool) *Ticker
+	GetTicker(market values.Market, cacheOnly bool) *Ticker
 	ToggleStatus(disable bool)
 	ToggleSource(newSource string) error
-	AddRateListener(listener *RateListener, uniqueID string) error
-	RemoveRateListener(uniqueID string)
 }
 
 // RateListener listens for new tickers and rate source change notifications.
@@ -131,25 +138,33 @@ type CommonRateSource struct {
 	source        string
 	disabled      bool
 	mtx           sync.RWMutex
-	tickers       map[string]*Ticker
+	tickers       map[values.Market]*Ticker
 	refreshing    bool
 	cond          *sync.Cond
-	getTicker     func(market string) (*Ticker, error)
+	getTicker     func(market values.Market) (*Ticker, error)
 	sourceChanged chan *struct{}
 	lastUpdate    time.Time
 
-	wsMtx  sync.RWMutex
-	ws     websocketFeed
-	wsSync struct {
-		errCount   int
-		lastUpdate time.Time
-		fail       time.Time
-	}
-	// wsProcessor is used to process websocket messages.
-	wsProcessor WebsocketProcessor
+	disableConversionExchange func()
+}
 
-	rateListenersMtx sync.RWMutex
-	rateListeners    map[string]*RateListener
+// Used to initialize a rate source.
+func NewCommonRateSource(ctx context.Context, source string, disableConversionExchange func()) (*CommonRateSource, error) {
+	if !isValidSource(source) {
+		return nil, fmt.Errorf("new rate source %s is not supported", source)
+	}
+
+	s := &CommonRateSource{
+		ctx:                       ctx,
+		source:                    source,
+		tickers:                   make(map[values.Market]*Ticker),
+		sourceChanged:             make(chan *struct{}),
+		disableConversionExchange: disableConversionExchange,
+	}
+	s.getTicker = s.sourceGetTickerFunc(source)
+	s.cond = sync.NewCond(&s.mtx)
+
+	return s, nil
 }
 
 // Name is the string associated with the rate source for display.
@@ -174,12 +189,6 @@ func (cs *CommonRateSource) Refreshing() bool {
 	return cs.refreshing
 }
 
-func (cs *CommonRateSource) ratesUpdated(t time.Time) {
-	cs.mtx.Lock()
-	defer cs.mtx.Unlock()
-	cs.lastUpdate = t
-}
-
 func (cs *CommonRateSource) ToggleStatus(disable bool) {
 	if cs.isDisabled() != disable {
 		return
@@ -188,8 +197,12 @@ func (cs *CommonRateSource) ToggleStatus(disable bool) {
 	cs.mtx.Lock()
 	cs.disabled = disable
 	cs.mtx.Unlock()
+}
 
-	cs.resetWs(nil)
+func (cs *CommonRateSource) ratesUpdated(t time.Time) {
+	cs.mtx.Lock()
+	defer cs.mtx.Unlock()
+	cs.lastUpdate = t
 }
 
 func (cs *CommonRateSource) isDisabled() bool {
@@ -204,33 +217,22 @@ func (cs *CommonRateSource) ToggleSource(newSource string) error {
 	if newSource == cs.source {
 		return nil // nothing to do
 	}
-
-	getTickerFn := dummyGetTickerFunc
-	wsProcessor := func([]byte) ([]*Ticker, error) { return nil, nil }
 	refresh := true
-	switch newSource {
-	case none: /* none is the dummy rate source for when user disables rates */
-		refresh = false
-	case binance:
-		getTickerFn = binanceGetTicker
-		wsProcessor = processBinanceWsMessage
-	case bittrex:
-		getTickerFn = binanceGetTicker
-		wsProcessor = processBittrexWsMessage
-	default:
-		return fmt.Errorf("New rate source %s is not supported", newSource)
+	if newSource == none {
+		refresh = false /* none is the dummy rate source for when user disables rates */
+	}
+
+	getTickerFn := cs.sourceGetTickerFunc(newSource)
+	if getTickerFn == nil {
+		return fmt.Errorf("new rate source %s is not supported", newSource)
 	}
 
 	// Update source specific fields.
 	cs.mtx.Lock()
 	cs.source = newSource
 	cs.getTicker = getTickerFn
-	cs.tickers = make(map[string]*Ticker)
+	cs.tickers = make(map[values.Market]*Ticker)
 	cs.mtx.Unlock()
-
-	cs.resetWs(wsProcessor)
-
-	go cs.notifyRateListeners()
 
 	if refresh {
 		cs.Refresh(true)
@@ -239,233 +241,15 @@ func (cs *CommonRateSource) ToggleSource(newSource string) error {
 	return nil
 }
 
-// resetWs resets the rate source's websocket connect and related data.
-// processor is optional.
-func (cs *CommonRateSource) resetWs(processor WebsocketProcessor) {
-	cs.wsMtx.Lock()
-	defer cs.wsMtx.Unlock()
-	// Update websocket fields
-	var tZero time.Time
-	if cs.ws != nil {
-		cs.ws.Close()
-		cs.ws = nil
-	}
-	if processor != nil {
-		cs.wsProcessor = processor
-	}
-	cs.wsSync.errCount = 0
-	cs.wsSync.fail = tZero
-	cs.wsSync.lastUpdate = tZero
-}
-
-func (cs *CommonRateSource) AddRateListener(listener *RateListener, uniqueID string) error {
-	if listener.OnRateUpdated == nil {
-		return fmt.Errorf("invalid RateListener")
-	}
-
-	cs.rateListenersMtx.Lock()
-	defer cs.rateListenersMtx.Unlock()
-
-	_, ok := cs.rateListeners[uniqueID]
-	if ok {
-		return errors.New(utils.ErrListenerAlreadyExist)
-	}
-
-	cs.rateListeners[uniqueID] = listener
-	return nil
-}
-
-func (cs *CommonRateSource) RemoveRateListener(uniqueID string) {
-	cs.rateListenersMtx.Lock()
-	defer cs.rateListenersMtx.Unlock()
-	delete(cs.rateListeners, uniqueID)
-}
-
 // Log the error along with the token and an additional passed identifier.
 func (cs *CommonRateSource) fail(msg string, err error) {
 	log.Errorf("%s: %s: %v", cs.source, msg, err)
 }
 
-// WebsocketProcessor is a callback for new websocket messages from the server.
-type WebsocketProcessor func([]byte) ([]*Ticker, error)
-
-// Only the fields are protected for these. (websocketFeed).Write has
-// concurrency control.
-func (cs *CommonRateSource) websocket() (websocketFeed, WebsocketProcessor) {
+func (cs *CommonRateSource) copyRates() map[values.Market]*Ticker {
 	cs.mtx.RLock()
 	defer cs.mtx.RUnlock()
-	return cs.ws, cs.wsProcessor
-}
-
-// addWebsocketConnection adds a websocket connection.
-func (cs *CommonRateSource) addWebsocketConnection(ws websocketFeed) {
-	cs.wsMtx.Lock()
-	// Ensure that any previous websocket is closed.
-	if cs.ws != nil {
-		cs.ws.Close()
-	}
-	cs.ws = ws
-	cs.wsMtx.Unlock()
-
-	cs.startWebsocket()
-}
-
-// Creates a websocket connection and starts a listen loop. Closes any existing
-// connections for this exchange.
-func (cs *CommonRateSource) connectWebsocket() error {
-	var ws websocketFeed
-	var err error
-	var subscribeMsg any
-	switch cs.source {
-	case binance:
-		ws, err = newSocketConnection(&socketConfig{address: binanceURLs.ws})
-	case bittrex:
-		subscribeMsg = bittrexRateSubscription
-		ws, err = connectSignalRWebsocket(bittrexURLs.ws, "/signalr")
-	default:
-		return errors.New("Websocket connection not supported")
-	}
-	if err != nil {
-		return err
-	}
-
-	cs.addWebsocketConnection(ws)
-	if cs.source == bittrex {
-		err = cs.wsSendJSON(subscribeMsg)
-		if err != nil {
-			return fmt.Errorf("Failed to send tickers subscription: %w", err)
-		}
-	}
-
-	return nil
-}
-
-// The listen loop for a websocket connection.
-func (cs *CommonRateSource) startWebsocket() {
-	ws, processor := cs.websocket()
-	go func() {
-		for {
-			if !ws.On() || cs.ctx.Err() != nil {
-				return
-			}
-
-			message, err := ws.Read()
-			if err != nil {
-				if ws.On() {
-					cs.setWsFail(err)
-				}
-				return // last close error msg for previous websocket connect.
-			}
-
-			tickers, err := processor(message)
-			if err != nil {
-				cs.setWsFail(err)
-				return
-			}
-
-			if len(tickers) == 0 {
-				continue
-			}
-
-			// Update ticker.
-			for _, ticker := range tickers {
-				market := ticker.Market
-				cs.mtx.Lock()
-				if _, ok := cs.tickers[market]; !ok {
-					cs.tickers[market] = &Ticker{Market: market}
-				}
-
-				if ticker.LastTradePrice > 0 {
-					cs.tickers[market].LastTradePrice = ticker.LastTradePrice
-				}
-
-				if ticker.PriceChangePercent != nil {
-					percentChange := *ticker.PriceChangePercent
-					cs.tickers[market].PriceChangePercent = &percentChange
-				}
-
-				cs.tickers[market].lastUpdate = time.Now()
-				cs.mtx.Unlock()
-
-				cs.wsUpdated()
-			}
-
-			cs.notifyRateListeners()
-		}
-	}()
-}
-
-// wsSendJSON is like wsSend but it encodes msg to JSON before sending.
-func (cs *CommonRateSource) wsSendJSON(msg interface{}) error {
-	ws, _ := cs.websocket()
-	if ws == nil || !ws.On() {
-		return errors.New("no connection") // never happens but..
-	}
-	return ws.Write(msg)
-}
-
-// Checks whether the websocketFeed Done channel is closed.
-func (cs *CommonRateSource) wsListening() bool {
-	cs.wsMtx.RLock()
-	defer cs.wsMtx.RUnlock()
-	return cs.wsSync.lastUpdate.After(cs.wsSync.fail) && cs.ws != nil && cs.ws.On()
-}
-
-// Set the updated flag. Set the error count to 0 when the client has
-// successfully updated.
-func (cs *CommonRateSource) wsUpdated() {
-	now := time.Now()
-	cs.wsMtx.Lock()
-	cs.wsSync.lastUpdate = now
-	cs.wsSync.errCount = 0
-	cs.wsMtx.Unlock()
-	cs.ratesUpdated(now)
-}
-
-func (cs *CommonRateSource) wsLastUpdate() time.Time {
-	cs.wsMtx.RLock()
-	defer cs.wsMtx.RUnlock()
-	return cs.wsSync.lastUpdate
-}
-
-// Log the error and time, and increment the error counter.
-func (cs *CommonRateSource) setWsFail(err error) {
-	cs.fail("Websocket error", err)
-	cs.wsMtx.Lock()
-	defer cs.wsMtx.Unlock()
-	if cs.ws != nil {
-		cs.ws.Close()
-		// Clear the field to prevent double Close'ing.
-		cs.ws = nil
-	}
-	cs.wsSync.errCount++
-	cs.wsSync.fail = time.Now()
-}
-
-func (cs *CommonRateSource) wsFailTime() time.Time {
-	cs.wsMtx.RLock()
-	defer cs.wsMtx.RUnlock()
-	return cs.wsSync.fail
-}
-
-// Checks whether the websocket is in a failed state.
-func (cs *CommonRateSource) wsFailed() bool {
-	cs.wsMtx.RLock()
-	defer cs.wsMtx.RUnlock()
-	return cs.wsSync.fail.After(cs.wsSync.lastUpdate)
-}
-
-// The count of errors logged since the last success-triggered reset.
-func (cs *CommonRateSource) wsErrorCount() int {
-	cs.wsMtx.RLock()
-	defer cs.wsMtx.RUnlock()
-	return cs.wsSync.errCount
-}
-
-func (cs *CommonRateSource) copyRates() map[string]*Ticker {
-	cs.mtx.RLock()
-	defer cs.mtx.RUnlock()
-	tickers := make(map[string]*Ticker, len(cs.tickers))
+	tickers := make(map[values.Market]*Ticker, len(cs.tickers))
 	for m, t := range cs.tickers {
 		tickerCopy := *t
 		tickers[m] = &tickerCopy
@@ -473,15 +257,7 @@ func (cs *CommonRateSource) copyRates() map[string]*Ticker {
 	return tickers
 }
 
-func (cs *CommonRateSource) notifyRateListeners() {
-	cs.rateListenersMtx.RLock()
-	defer cs.rateListenersMtx.RUnlock()
-	for _, l := range cs.rateListeners {
-		l.OnRateUpdated()
-	}
-}
-
-// Refresh refreshes all expired rates and reconnects the rates websocket if it
+// Refresh refreshes all expired rates if it
 // was previously disconnect. This method takes some time to refresh the rates
 // and should be executed a a goroutine.
 func (cs *CommonRateSource) Refresh(force bool) {
@@ -505,9 +281,8 @@ func (cs *CommonRateSource) Refresh(force bool) {
 	}()
 
 	defer cs.ratesUpdated(time.Now())
-	defer cs.notifyRateListeners()
 
-	tickers := make(map[string]*Ticker)
+	tickers := make(map[values.Market]*Ticker)
 	if !force {
 		tickers = cs.copyRates()
 	}
@@ -518,7 +293,7 @@ func (cs *CommonRateSource) Refresh(force bool) {
 			continue
 		}
 
-		ticker, err := cs.getTicker(market)
+		ticker, err := cs.retryGetTicker(market)
 		if err != nil {
 			cs.fail("Error fetching ticker", err)
 			continue
@@ -530,66 +305,6 @@ func (cs *CommonRateSource) Refresh(force bool) {
 	cs.mtx.Lock()
 	cs.tickers = tickers
 	cs.mtx.Unlock()
-
-	// Check if the websocket connection is still on.
-	if cs.wsListening() {
-		return
-	}
-
-	if !cs.wsFailed() {
-		// Connection has not been initialized.
-		log.Tracef("Initializing websocket connection for %s", cs.source)
-		err := cs.connectWebsocket()
-		if err != nil {
-			cs.fail("Error connecting websocket", err)
-		}
-		return
-	}
-
-	errCount := cs.wsErrorCount()
-	var delay time.Duration
-	var wsStarting bool
-	switch {
-	case errCount < 5:
-	case errCount < 20:
-		delay = 10 * time.Minute
-	default:
-		delay = time.Minute * 60
-	}
-	okToTry := cs.wsFailTime().Add(delay)
-	if time.Now().After(okToTry) {
-		wsStarting = true
-		err := cs.connectWebsocket()
-		if err != nil {
-			cs.fail("Error connecting websocket", err)
-		}
-	} else {
-		log.Errorf("%s websocket disabled. Too many errors. Refresh after %.1f minutes", cs.source, time.Until(okToTry).Minutes())
-	}
-
-	if !wsStarting {
-		sinceLast := time.Since(cs.wsLastUpdate())
-		log.Tracef("Last %s websocket update %.3f seconds ago", sinceLast.Seconds(), cs.source)
-		if sinceLast > RateRefreshDuration && cs.wsFailed() {
-			cs.setWsFail(fmt.Errorf("Lost connection detected. %s websocket will restart during next refresh", cs.source))
-		}
-	}
-}
-
-// fetchRate retrieves new ticker information via the rate source's HTTP API.
-func (cs *CommonRateSource) fetchRate(market string) *Ticker {
-	newTicker, err := cs.getTicker(market)
-	if err != nil {
-		cs.fail("Error fetching ticker", err)
-		return nil
-	}
-
-	cs.mtx.Lock()
-	cs.tickers[market] = newTicker
-	cs.mtx.Unlock()
-
-	t := *newTicker
-	return &t
 }
 
 // GetTicker retrieves ticker information for the provided market. Data will be
@@ -597,7 +312,7 @@ func (cs *CommonRateSource) fetchRate(market string) *Ticker {
 // cached isn't available and cacheOnly is true. If cacheOnly is false and no
 // valid, cached data is available, a network call will be made to fetch the
 // latest ticker information and update the cache.
-func (cs *CommonRateSource) GetTicker(market string, cacheOnly bool) *Ticker {
+func (cs *CommonRateSource) GetTicker(market values.Market, cacheOnly bool) *Ticker {
 	marketName, ok := isSupportedMarket(market, cs.source)
 	if !ok {
 		return nil
@@ -606,6 +321,8 @@ func (cs *CommonRateSource) GetTicker(market string, cacheOnly bool) *Ticker {
 	cs.mtx.RLock()
 	ticker, ok := cs.tickers[marketName]
 	cs.mtx.RUnlock()
+
+	// Get rate if market ticker does not exist
 	if !ok {
 		if cacheOnly {
 			return nil
@@ -623,55 +340,55 @@ func (cs *CommonRateSource) GetTicker(market string, cacheOnly bool) *Ticker {
 	return &t
 }
 
-// Used to initialize a rate source.
-func NewCommonRateSource(ctx context.Context, source string) (*CommonRateSource, error) {
-	if source != binance && source != bittrex && source != none {
-		return nil, fmt.Errorf("New rate source %s is not supported", source)
+// fetchRate retrieves new ticker information via the rate source's HTTP API.
+func (cs *CommonRateSource) fetchRate(market values.Market) *Ticker {
+	newTicker, err := cs.retryGetTicker(market)
+	if err != nil {
+		cs.fail("Error fetching ticker", err)
+		return nil
 	}
 
-	getTickerFunc := dummyGetTickerFunc
-	wsProcessor := func([]byte) ([]*Ticker, error) { return nil, nil }
-	switch source {
-	case binance:
-		getTickerFunc = binanceGetTicker
-		wsProcessor = processBinanceWsMessage
-	case bittrex:
-		getTickerFunc = bittrexGetTicker
-		wsProcessor = processBittrexWsMessage
-	}
+	cs.mtx.Lock()
+	cs.tickers[market] = newTicker
+	cs.mtx.Unlock()
 
-	s := &CommonRateSource{
-		ctx:           ctx,
-		source:        source,
-		tickers:       make(map[string]*Ticker),
-		getTicker:     getTickerFunc,
-		wsProcessor:   wsProcessor,
-		rateListeners: make(map[string]*RateListener),
-		sourceChanged: make(chan *struct{}),
-	}
-	s.cond = sync.NewCond(&s.mtx)
-
-	// Start shutdown goroutine.
-	go func() {
-		<-ctx.Done()
-		ws, _ := s.websocket()
-		if ws != nil {
-			ws.Close()
-		}
-	}()
-
-	return s, nil
+	return newTicker
 }
 
-func binanceGetTicker(market string) (*Ticker, error) {
-	market = strings.ReplaceAll(market, MktSep, "")
-	if _, ok := binanceMarkets[market]; !ok {
-		return nil, fmt.Errorf("Market %s not supported", market)
+func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error) {
+	var newTicker *Ticker
+	var err error
+	backoff := 1 * time.Second
+	for i := 0; i < 3; i++ {
+		select {
+		case <-cs.ctx.Done():
+			log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
+			return nil, cs.ctx.Err()
+		default:
+			newTicker, err = cs.getTicker(market)
+			if err == nil {
+				return newTicker, nil
+			}
+
+			log.Errorf("fetching ticker %d failed: %v. Retrying in %v\n", i+1, err, backoff)
+			time.Sleep(backoff)
+			backoff *= 2 // Exponential backoff
+		}
+	}
+	if cs.disableConversionExchange != nil {
+		cs.disableConversionExchange()
+	}
+	return nil, err
+}
+
+func (cs *CommonRateSource) binanceGetTicker(market values.Market) (*Ticker, error) {
+	reqCfg := &utils.ReqConfig{
+		HTTPURL: fmt.Sprintf(binanceURLs.price, market.MarketWithoutSep()),
+		Method:  "GET",
 	}
 
-	reqCfg := &utils.ReqConfig{
-		HTTPURL: fmt.Sprintf(binanceURLs.price, market),
-		Method:  "GET",
+	if cs.source == binanceUS {
+		reqCfg.HTTPURL = fmt.Sprintf(binanceUSURLs.price, market.MarketWithoutSep())
 	}
 
 	resp := new(BinanceTickerResponse)
@@ -682,7 +399,7 @@ func binanceGetTicker(market string) (*Ticker, error) {
 
 	percentChange := resp.PriceChangePercent
 	ticker := &Ticker{
-		Market:             market,
+		Market:             market.String(),
 		LastTradePrice:     resp.LastPrice,
 		PriceChangePercent: &percentChange,
 		lastUpdate:         time.Now(),
@@ -691,9 +408,9 @@ func binanceGetTicker(market string) (*Ticker, error) {
 	return ticker, nil
 }
 
-func bittrexGetTicker(market string) (*Ticker, error) {
+func bittrexGetTicker(market values.Market) (*Ticker, error) {
 	reqCfg := &utils.ReqConfig{
-		HTTPURL: fmt.Sprintf(bittrexURLs.price, market),
+		HTTPURL: fmt.Sprintf(bittrexURLs.price, market.String()),
 		Method:  "GET",
 	}
 
@@ -723,176 +440,141 @@ func bittrexGetTicker(market string) (*Ticker, error) {
 	return ticker, nil
 }
 
-type binanceWsMsg struct {
-	// Unmarshalling data.c is causing unexpected behavior and returning value
-	// for data.C so we are manually accessing the map values we need.
-	Data map[string]any `json:"data"`
+// coinpaprikaGetTicker don't need market param, but need it to satisfy the format of the getrate function
+func (cs *CommonRateSource) coinpaprikaGetTicker(market values.Market) (*Ticker, error) {
+	reqCfg := &utils.ReqConfig{
+		HTTPURL: coinpaprikaURLs.price,
+		Method:  "GET",
+	}
+
+	var res []*struct {
+		Symbol string `json:"symbol"`
+		Quotes struct {
+			USD struct {
+				Price         float64 `json:"price"`
+				PercentChange float64 `json:"percent_change_24h"`
+			} `json:"USD"`
+		} `json:"quotes"`
+	}
+	_, err := utils.HTTPRequest(reqCfg, &res)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to fetch ticker: %w", coinpaprika, err)
+	}
+
+	cs.mtx.Lock()
+	for _, coinInfo := range res {
+		market := values.NewMarket(coinInfo.Symbol, "USDT")
+		_, found := supportedMarkets[market]
+		if !found {
+			continue
+		}
+
+		price := coinInfo.Quotes.USD.Price
+		if price == 0 {
+			log.Errorf("zero-price returned from coinpaprika for asset with ticker %s", coinInfo.Symbol)
+			continue
+		}
+		ticker := &Ticker{
+			Market:             market.String(), // Ok: e.g BTC-USDT
+			LastTradePrice:     price,
+			lastUpdate:         time.Now(),
+			PriceChangePercent: &coinInfo.Quotes.USD.PercentChange,
+		}
+		cs.tickers[market] = ticker
+	}
+	cs.mtx.Unlock()
+
+	return cs.tickers[market], nil
 }
 
-func processBinanceWsMessage(inMsg []byte) ([]*Ticker, error) {
-	msg := new(binanceWsMsg)
-	err := json.Unmarshal(inMsg, &msg)
+func messariGetTicker(market values.Market) (*Ticker, error) {
+	reqCfg := &utils.ReqConfig{
+		HTTPURL: fmt.Sprintf(messariURLs.price, market.AssetString()),
+		Method:  "GET",
+	}
+	var res struct {
+		Data struct {
+			MarketData struct {
+				Price         float64 `json:"price_usd"`
+				PercentChange float64 `json:"percent_change_usd_last_24_hours"`
+			} `json:"market_data"`
+		} `json:"data"`
+	}
+
+	_, err := utils.HTTPRequest(reqCfg, &res)
 	if err != nil {
-		return nil, fmt.Errorf("Binance: unable to read message bytes: %w", err)
-	}
-
-	if len(msg.Data) == 0 {
-		return nil, nil // handled
-	}
-
-	methodName, ok := msg.Data["e"].(string)
-	if !ok || !strings.Contains(methodName, "Ticker") {
-		return nil, nil // handled
-	}
-
-	market, ok := msg.Data["s"].(string)
-	if !ok {
-		return nil, errors.New("unexpected type received as ticker market name")
-	}
-
-	priceChangePercentStr, ok := msg.Data["P"].(string)
-	if !ok {
-		return nil, errors.New("unexpected type received as ticker price change percent")
-	}
-
-	priceChangePercent, err := strconv.ParseFloat(priceChangePercentStr, 64)
-	if err != nil {
-		return nil, fmt.Errorf("strconv.ParseFloat error: %w", err)
-	}
-
-	lastPriceStr, ok := msg.Data["c"].(string)
-	if !ok {
-		return nil, errors.New("unexpected type received as ticker last price")
-	}
-
-	lastPrice, err := strconv.ParseFloat(lastPriceStr, 64)
-	if err != nil {
-		return nil, fmt.Errorf("strconv.ParseFloat error: %w", err)
+		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", messari, market, err)
 	}
 
 	ticker := &Ticker{
-		Market:             market,
-		LastTradePrice:     lastPrice,
-		PriceChangePercent: &priceChangePercent,
+		Market:             market.String(), // Ok: e.g BTC-USDT
+		LastTradePrice:     res.Data.MarketData.Price,
 		lastUpdate:         time.Now(),
+		PriceChangePercent: &res.Data.MarketData.PercentChange,
 	}
 
-	return []*Ticker{ticker}, err
+	return ticker, nil
 }
 
-// processWsMessage handles message from the bittrex websocket. The message can
-// be either a full orderbook at msg.R (msg.I == "1"), or a list of updates in
-// msg.M[i].A.
-func processBittrexWsMessage(inMsg []byte) ([]*Ticker, error) {
-	// Ignore KeepAlive messages.
-	if len(inMsg) == 2 && inMsg[0] == '{' && inMsg[1] == '}' {
-		return nil, nil // handled
+func kucoinGetTicker(market values.Market) (*Ticker, error) {
+	reqCfg := &utils.ReqConfig{
+		HTTPURL: fmt.Sprintf(kucoinURLs.price, market.AssetString()),
+		Method:  "GET",
+	}
+	var res struct {
+		Data map[string]string `json:"data"`
 	}
 
-	var msg signalRMessage
-	err := json.Unmarshal(inMsg, &msg)
+	_, err := utils.HTTPRequest(reqCfg, &res)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read message bytes: %w", err)
+		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", kucoinExchange, market, err)
 	}
 
-	msgs, err := decodeBittrexWSMessage(msg)
+	rate, err := strconv.ParseFloat(res.Data[market.AssetString()], 64)
 	if err != nil {
-		return nil, fmt.Errorf("websocket message decode error: %w", err)
+		return nil, fmt.Errorf("kucoin: failed to convert fiat rate for %s to float64: %v", market.String(), err)
 	}
 
-	if len(msgs) == 0 {
-		return nil, nil // handled
+	// Get Stats
+	reqStatsCfg := &utils.ReqConfig{
+		HTTPURL: fmt.Sprintf(kucoinURLs.stats, market.String()),
+		Method:  "GET",
+	}
+	var statsRes struct {
+		Data struct {
+			ChangeRate string `json:"changeRate"`
+		} `json:"data"`
 	}
 
-	var tickers []*Ticker
-	for _, msgData := range msgs {
-		ticker := &Ticker{}
-		switch d := msgData.(type) {
-		case *BittrexMarketSummaryResponse:
-			ticker.Market = d.Symbol // Ok: e.g BTC-USDT
-			percent := d.PercentChange
-			ticker.PriceChangePercent = &percent
-		case *BittrexTickerResponse:
-			ticker.Market = d.Symbol // Ok: e.g BTC-USDT
-			ticker.LastTradePrice = d.LastTradeRate
-		default:
-			return nil, fmt.Errorf("received unexpected message type %T from decodeBittrexWSMessage", d)
-		}
-
-		ticker.lastUpdate = time.Now()
-		tickers = append(tickers, ticker)
+	_, err = utils.HTTPRequest(reqStatsCfg, &statsRes)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to fetch stat for %s: %w", kucoinExchange, market, err)
 	}
 
-	return tickers, nil
-}
-
-func decodeBittrexWSMessage(msg signalRMessage) ([]any, error) {
-	if len(msg.M) == 0 {
-		return nil, nil // handled
+	changeRate, err := strconv.ParseFloat(statsRes.Data.ChangeRate, 64)
+	if err != nil {
+		return nil, fmt.Errorf("kucoin: failed to convert fiat changeRate to float64: %v", err)
 	}
 
-	var msgs []any
-	for i := range msg.M {
-		msgInfo := msg.M[i]
-		name := msgInfo.M
-		if name == BittrexMsgHeartbeat {
-			return nil, nil // handled
-		}
-
-		isSummary := name == BittrexMarketSummary
-		isTicker := name == BittrexTicker
-		if !isSummary && !isTicker {
-			return nil, fmt.Errorf("unknown message type %q: %+v", name, msgInfo)
-		}
-
-		msgStr := msgInfo.A[0]
-		s, ok := msgStr.(string)
-		if !ok {
-			return nil, errors.New("message not a string")
-		}
-
-		data, err := base64.StdEncoding.DecodeString(s)
-		if err != nil {
-			return nil, fmt.Errorf("base64 error: %w", err)
-		}
-
-		buf := bytes.NewBuffer(data)
-		zr := flate.NewReader(buf)
-		defer zr.Close()
-
-		var b bytes.Buffer
-		if _, err := io.Copy(&b, zr); err != nil {
-			return nil, fmt.Errorf("copy error: %w", err)
-		}
-
-		var msgData any
-		switch name {
-		case BittrexTicker:
-			msgData = new(BittrexTickerResponse)
-			err = json.Unmarshal(b.Bytes(), &msgData)
-		case BittrexMarketSummary:
-			msgData = new(BittrexMarketSummaryResponse)
-			err = json.Unmarshal(b.Bytes(), &msgData)
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		msgs = append(msgs, msgData)
+	ticker := &Ticker{
+		Market:             market.String(), // Ok: e.g BTC-USDT
+		LastTradePrice:     rate,
+		lastUpdate:         time.Now(),
+		PriceChangePercent: &changeRate,
 	}
 
-	return msgs, nil
+	return ticker, nil
 }
 
 // isSupportedMarket returns a proper market name for the provided rate source
 // and returns false if the market is not supported.
-func isSupportedMarket(market, rateSource string) (string, bool) {
+func isSupportedMarket(market values.Market, rateSource string) (values.Market, bool) {
 	if rateSource == none {
 		return "", false
 	}
 
-	market = strings.ToTitle(market)
-	currencies := strings.Split(market, MktSep)
+	marketStr := strings.ToTitle(market.String())
+	currencies := strings.Split(marketStr, MktSep)
 	if len(currencies) != 2 {
 		return "", false
 	}
@@ -903,7 +585,7 @@ func isSupportedMarket(market, rateSource string) (string, bool) {
 		fromCur, toCur = toCur, fromCur // e.g DCR/BTC, LTC/BTC and not BTC/LTC or BTC/DCR
 	}
 
-	marketName := fromCur + MktSep + toCur
+	marketName := values.NewMarket(fromCur, toCur)
 	_, ok := supportedMarkets[marketName]
 	if !ok {
 		return "", false
@@ -912,6 +594,34 @@ func isSupportedMarket(market, rateSource string) (string, bool) {
 	return marketName, true
 }
 
-func dummyGetTickerFunc(string) (*Ticker, error) {
+func isValidSource(source string) bool {
+	switch source {
+	case bittrex, binance, binanceUS, coinpaprika, messari, kucoinExchange, none:
+		return true
+	default:
+		return false
+	}
+}
+
+func (cs *CommonRateSource) sourceGetTickerFunc(source string) func(values.Market) (*Ticker, error) {
+	switch source {
+	case binance, binanceUS:
+		return cs.binanceGetTicker
+	case bittrex:
+		return bittrexGetTicker
+	case messari:
+		return messariGetTicker
+	case kucoinExchange:
+		return kucoinGetTicker
+	case coinpaprika:
+		return cs.coinpaprikaGetTicker
+	case none:
+		return dummyGetTickerFunc
+	default:
+		return nil
+	}
+}
+
+func dummyGetTickerFunc(values.Market) (*Ticker, error) {
 	return &Ticker{}, nil
 }

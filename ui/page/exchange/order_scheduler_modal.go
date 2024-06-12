@@ -13,7 +13,6 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -292,7 +291,8 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							ticker := osm.AssetsManager.RateSource.GetTicker(fromCur+ext.MktSep+toCur, true)
+																							market := values.NewMarket(fromCur, toCur)
+																							ticker := osm.AssetsManager.RateSource.GetTicker(market, true)
 																							if ticker == nil || ticker.LastTradePrice <= 0 {
 																								return D{}
 																							}

@@ -100,7 +100,7 @@ type assetBalanceSliderItem struct {
 
 type assetMarketData struct {
 	assetType libutils.AssetType
-	market    string
+	market    values.Market
 	image     *cryptomaterial.Image
 }
 
@@ -605,7 +605,7 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 					return pg.marketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
 						asset := pg.mktValues[i]
-						rate, ok := rates[asset.market]
+						rate, ok := rates[asset.market.String()]
 						if !ok {
 							return D{}
 						}
@@ -677,7 +677,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return pg.mobileMarketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
 						asset := pg.mktValues[i]
-						rate, ok := rates[asset.market]
+						rate, ok := rates[asset.market.String()]
 						if !ok {
 							return D{}
 						}
@@ -814,7 +814,7 @@ func (pg *OverviewPage) marketRates() map[string]*ext.Ticker {
 		if rate == nil || rate.LastTradePrice <= 0 {
 			continue
 		}
-		marketRates[asset.market] = rate
+		marketRates[asset.market.String()] = rate
 	}
 
 	return marketRates
@@ -1207,18 +1207,6 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 		}
 	}
 
-	// Reload the window whenever there is an exchange rate update.
-	pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
-	rateListener := &ext.RateListener{
-		OnRateUpdated: func() {
-			go pg.updateAssetsUSDBalance()
-		},
-	}
-	err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
-	if err != nil {
-		log.Error("RateSource.AddRateListener error: %v", err)
-	}
-
 	pg.sortedMixerSlideKeys = make([]int, 0)
 	pg.mixerSliderData = make(map[int]*mixerData)
 	for _, wal := range wallets {
@@ -1254,7 +1242,6 @@ func (pg *OverviewPage) stopNtfnListeners() {
 		}
 		wal.RemoveTxAndBlockNotificationListener(OverviewPageID)
 	}
-	pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 }
 
 func (pg *OverviewPage) setUnMixedBalance(id int) {

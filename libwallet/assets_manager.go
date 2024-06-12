@@ -20,6 +20,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/notification"
 	"github.com/crypto-power/cryptopower/ui/values"
 	bolt "go.etcd.io/bbolt"
 
@@ -63,11 +64,15 @@ type AssetsManager struct {
 	InstantSwap     *instantswap.InstantSwap
 	ExternalService *ext.Service
 	RateSource      ext.RateSource
+	rateMutex       sync.Mutex
 
 	dexcMtx     sync.RWMutex
 	dexcCtx     context.Context
 	dexc        DEXClient
 	startingDEX atomic.Bool
+
+	//TODO: some time need show message for user. Change it if has other solution
+	toast *notification.Toast
 }
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
@@ -202,6 +207,17 @@ func (mgr *AssetsManager) RootDir() string {
 	return mgr.params.RootDir
 }
 
+func (mgr *AssetsManager) SetToast(toast *notification.Toast) {
+	mgr.toast = toast
+}
+
+func (mgr *AssetsManager) disableConversionExchange() {
+	mgr.SetCurrencyConversionExchange(values.DefaultExchangeValue)
+	if mgr.toast != nil {
+		mgr.toast.NotifyError(values.String(values.StrRateUnavailable))
+	}
+}
+
 // initRateSource initializes the user's rate source and starts a loop to
 // refresh the rates.
 func (mgr *AssetsManager) initRateSource() (err error) {
@@ -211,7 +227,7 @@ func (mgr *AssetsManager) initRateSource() (err error) {
 	rateSource := mgr.GetCurrencyConversionExchange()
 	disabled := mgr.IsPrivacyModeOn()
 
-	mgr.RateSource, err = ext.NewCommonRateSource(ctx, rateSource)
+	mgr.RateSource, err = ext.NewCommonRateSource(ctx, rateSource, mgr.disableConversionExchange)
 	if err != nil {
 		return fmt.Errorf("ext.NewCommonRateSource error: %w", err)
 	}
@@ -830,7 +846,7 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 		return nil, fmt.Errorf("the USD exchange rate is disabled")
 	}
 
-	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
+	usdBalance := func(bal sharedW.AssetAmount, market values.Market) (float64, error) {
 		rate := mgr.RateSource.GetTicker(market, true)
 		if rate == nil || rate.LastTradePrice <= 0 {
 			return 0, fmt.Errorf("no rate information available")

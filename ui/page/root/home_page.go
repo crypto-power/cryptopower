@@ -17,7 +17,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/appos"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -160,12 +159,13 @@ func (hp *HomePage) ID() string {
 // Part of the load.Page interface.
 func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
-
 	hp.initPageItems()
 	hp.initDEX()
 
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
+	} else {
+		hp.CurrentPage().OnNavigatedTo()
 	}
 
 	// Initiate the auto sync for all wallets with autosync set.
@@ -176,17 +176,9 @@ func (hp *HomePage) OnNavigatedTo() {
 		}
 	}
 
-	// Reload the window whenever there is an exchange rate update.
-	hp.AssetsManager.RateSource.RemoveRateListener(HomePageID)
-	rateListener := &ext.RateListener{
-		OnRateUpdated: hp.CalculateAssetsUSDBalance,
+	if hp.AssetsManager.ExchangeRateFetchingEnabled() {
+		go hp.CalculateAssetsUSDBalance()
 	}
-	err := hp.AssetsManager.RateSource.AddRateListener(rateListener, HomePageID)
-	if err != nil {
-		log.Error("RateSource.AddRateListener error: %v", err)
-	}
-
-	go hp.CalculateAssetsUSDBalance()
 	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
 
 	if hp.isUpdateAPIAllowed() {
@@ -561,8 +553,6 @@ func (hp *HomePage) OnNavigatedFrom() {
 	if activeTab := hp.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedFrom()
 	}
-
-	hp.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 
 	hp.ctxCancel()
 }
