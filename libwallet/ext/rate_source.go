@@ -360,14 +360,20 @@ func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error
 	var err error
 	backoff := 1 * time.Second
 	for i := 0; i < 3; i++ {
-		newTicker, err = cs.getTicker(market)
-		if err == nil {
-			return newTicker, nil
-		}
+		select {
+		case <-cs.ctx.Done():
+			log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
+			return nil, cs.ctx.Err()
+		default:
+			newTicker, err = cs.getTicker(market)
+			if err == nil {
+				return newTicker, nil
+			}
 
-		log.Errorf("fetching ticker %d failed: %v. Retrying in %v\n", i+1, err, backoff)
-		time.Sleep(backoff)
-		backoff *= 2 // Exponential backoff
+			log.Errorf("fetching ticker %d failed: %v. Retrying in %v\n", i+1, err, backoff)
+			time.Sleep(backoff)
+			backoff *= 2 // Exponential backoff
+		}
 	}
 	if cs.disableConversionExchange != nil {
 		cs.disableConversionExchange()

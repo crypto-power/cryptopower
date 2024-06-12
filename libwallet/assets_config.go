@@ -150,6 +150,8 @@ func (mgr *AssetsManager) GetCurrencyConversionExchange() string {
 
 // SetCurrencyConversionExchange sets the currency conversion exchange.
 func (mgr *AssetsManager) SetCurrencyConversionExchange(xc string) {
+	mgr.rateMutex.Lock()
+	defer mgr.rateMutex.Unlock()
 	mgr.SaveAppConfigValue(sharedW.CurrencyConversionConfigKey, xc)
 	go func() {
 		err := mgr.RateSource.ToggleSource(xc)

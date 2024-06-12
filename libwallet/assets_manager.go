@@ -64,6 +64,7 @@ type AssetsManager struct {
 	InstantSwap     *instantswap.InstantSwap
 	ExternalService *ext.Service
 	RateSource      ext.RateSource
+	rateMutex       sync.Mutex
 
 	dexcMtx     sync.RWMutex
 	dexcCtx     context.Context
