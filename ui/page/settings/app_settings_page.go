@@ -470,7 +470,7 @@ func (pg *AppSettingsPage) clickableRow(gtx C, row row) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(row.label.Layout),
 					layout.Rigid(func(gtx C) D {
-						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding20)
+						return pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding20)
 					}),
 				)
 			})

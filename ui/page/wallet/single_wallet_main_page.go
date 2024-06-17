@@ -613,9 +613,7 @@ func (swmp *SingleWalletMasterPage) LayoutUSDBalance(gtx C) D {
 			Top:  values.MarginPadding7,
 			Left: values.MarginPadding5,
 		}.Layout(gtx, func(gtx C) D {
-			return swmp.refreshExchangeRateBtn.Layout(gtx, func(gtx C) D {
-				return swmp.Theme.Icons.Restore.Layout16dp(gtx)
-			})
+			return swmp.refreshExchangeRateBtn.Layout(gtx, swmp.Theme.NewIcon(swmp.Theme.Icons.NavigationRefresh).Layout16dp)
 		})
 	case len(swmp.totalBalanceUSD) > 0:
 		textSize := values.TextSize20
@@ -701,7 +699,7 @@ func initializeBeepNotification(n string) {
 	}
 
 	err = beeep.Notify(values.String(values.StrAppWallet), n,
-		filepath.Join(absoluteWdPath, "ui/assets/decredicons/qrcodeSymbol.png"))
+		filepath.Join(absoluteWdPath, "ui/assets/decredicons/ic_dcr_qr.png"))
 	if err != nil {
 		log.Info("could not initiate desktop notification, reason:", err.Error())
 	}

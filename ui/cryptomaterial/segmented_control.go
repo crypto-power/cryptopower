@@ -208,7 +208,7 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 		Alignment:   layout.Middle,
 	}.Layout(gtx,
 		layout.Flexed(flexWidthLeft, func(gtx C) D {
-			return sc.leftNavBtn.Layout(gtx, sc.theme.Icons.ChevronLeft.Layout24dp)
+			return sc.leftNavBtn.Layout(gtx, sc.theme.NewIcon(sc.theme.Icons.ChevronLeft).Layout24dp)
 		}),
 		layout.Flexed(flexWidthCenter, func(gtx C) D {
 			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
@@ -247,7 +247,7 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 			})
 		}),
 		layout.Flexed(flexWidthRight, func(gtx C) D {
-			return sc.rightNavBtn.Layout(gtx, sc.theme.Icons.ChevronRight.Layout24dp)
+			return sc.rightNavBtn.Layout(gtx, sc.theme.NewIcon(sc.theme.Icons.ChevronRight).Layout24dp)
 		}),
 	)
 }

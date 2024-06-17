@@ -42,11 +42,11 @@ type Page struct {
 
 	pageContainer         layout.List
 	scrollContainer       *widget.List
-	isNewAddr, isInfo     bool
+	isNewAddr             bool
 	currentAddress        string
 	qrImage               *image.Image
 	newAddr, copy         *cryptomaterial.Clickable
-	info, more            cryptomaterial.IconButton
+	info                  cryptomaterial.IconButton
 	card                  cryptomaterial.Card
 	sourceAccountselector *components.WalletAndAccountSelector
 	sourceWalletSelector  *components.WalletAndAccountSelector
@@ -71,7 +71,6 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 		info:              l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		copy:              l.Theme.NewClickable(false),
 		newAddr:           l.Theme.NewClickable(false),
-		more:              l.Theme.IconButton(l.Theme.Icons.NavigationMore),
 		card:              l.Theme.Card(),
 		backdrop:          new(widget.Clickable),
 		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
@@ -346,17 +345,17 @@ func (pg *Page) copyAndNewAddressLayout(gtx C) D {
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return pg.buttonIconLayout(gtx, pg.Theme.Icons.CopyIcon, values.String(values.StrCopy), pg.copy)
+				return pg.buttonIconLayout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon), values.String(values.StrCopy), pg.copy)
 			}),
 			layout.Rigid(layout.Spacer{Width: values.MarginPadding32}.Layout),
 			layout.Rigid(func(gtx C) D {
-				return pg.buttonIconLayout(gtx, pg.Theme.Icons.Restore, values.String(values.StrRegenerate), pg.newAddr)
+				return pg.buttonIconLayout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh), values.String(values.StrRegenerate), pg.newAddr)
 			}),
 		)
 	})
 }
 
-func (pg *Page) buttonIconLayout(gtx C, icon *cryptomaterial.Image, text string, clickable *cryptomaterial.Clickable) D {
+func (pg *Page) buttonIconLayout(gtx C, icon *cryptomaterial.Icon, text string, clickable *cryptomaterial.Clickable) D {
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			dp40 := gtx.Dp(values.MarginPadding40)
@@ -434,13 +433,6 @@ func (pg *Page) addressLayout(gtx C) D {
 func (pg *Page) HandleUserInteractions() {
 	if pg.backdrop.Clicked() {
 		pg.isNewAddr = false
-	}
-
-	if pg.more.Button.Clicked() {
-		pg.isNewAddr = !pg.isNewAddr
-		if pg.isInfo {
-			pg.isInfo = false
-		}
 	}
 
 	if pg.newAddr.Clicked() {

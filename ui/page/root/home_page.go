@@ -457,7 +457,7 @@ func (hp *HomePage) HandleUserInteractions() {
 													clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
 													hp.Toast.Notify(values.String(values.StrCopied))
 												}
-												return hp.copyRedirectURL.Layout(gtx, hp.Theme.Icons.CopyIcon.Layout24dp)
+												return hp.copyRedirectURL.Layout(gtx, hp.Theme.NewIcon(hp.Theme.Icons.CopyIcon).Layout24dp)
 											})
 										}),
 									)

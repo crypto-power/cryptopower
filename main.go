@@ -40,6 +40,15 @@ func main() {
 		return
 	}
 
+	// f, _ := os.Create("cpu.pprof")
+	// pprof.StartCPUProfile(f)
+
+	// mem, _ := os.Create("mem.pprof")
+	// runtime.GC()
+	// if err := pprof.WriteHeapProfile(mem); err != nil {
+	// 	fmt.Println("could not write memory profile: ", err)
+	// }
+
 	if cfg.Profile > 0 {
 		go func() {
 			golog.Printf("Starting profiling server on port %d\n", cfg.Profile)
@@ -111,6 +120,8 @@ func main() {
 		// Wait until we receive the shutdown request.
 		<-win.Quit
 		// Terminate all the backend processes safely.
+		// pprof.StopCPUProfile()
+		// mem.Close()
 		appInfo.AssetsManager.Shutdown()
 		// Backend process terminated safely trigger app shutdown now.
 		win.IsShutdown <- struct{}{}

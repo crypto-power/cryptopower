@@ -254,7 +254,7 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 		layout.Rigid(titleTxt.Layout),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-				return rp.deleteBtn.Layout(gtx, rp.Theme.Icons.DeleteIcon.Layout20dp)
+				return rp.deleteBtn.Layout(gtx, rp.Theme.NewIcon(rp.Theme.Icons.ChevronLeft).Layout20dp)
 			})
 		}),
 	)

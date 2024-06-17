@@ -1116,7 +1116,7 @@ func (pg *OverviewPage) updateAssetsSliders() {
 		case libutils.BTCWalletAsset:
 			pg.btc = sliderItem(balance, assetFullName, pg.Theme.Icons.BTCGroupIcon, pg.Theme.Icons.BTCBackground)
 		case libutils.DCRWalletAsset:
-			pg.dcr = sliderItem(balance, assetFullName, pg.Theme.Icons.DCRGroupIcon, pg.Theme.Icons.DCRBackground)
+			pg.dcr = sliderItem(balance, assetFullName, pg.Theme.Icons.LogoDCRSlide, pg.Theme.Icons.DCRBackground)
 		case libutils.LTCWalletAsset:
 			pg.ltc = sliderItem(balance, assetFullName, pg.Theme.Icons.LTCGroupIcon, pg.Theme.Icons.LTCBackground)
 		default:
@@ -1310,9 +1310,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.Inset{Left: values.MarginPadding5, Bottom: values.MarginPadding2}.Layout(gtx, pg.materialLoader.Layout)
 					}
-					return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.Restore.LayoutSize(gtx, values.MarginPadding18)
-					})
+					return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).Layout18dp)
 				})
 			}),
 		)

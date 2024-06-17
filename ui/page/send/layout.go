@@ -281,7 +281,7 @@ func (pg *Page) coinSelectionSection(gtx C) D {
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
 					return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
 						layout.Rigid(textLabel.Layout),
-						layout.Rigid(pg.Theme.Icons.ChevronRight.Layout20dp),
+						layout.Rigid(pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).Layout20dp),
 					)
 				})
 

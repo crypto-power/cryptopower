@@ -336,7 +336,7 @@ func (pg *SettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clicka
 				layout.Rigid(textLabel.Layout),
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+						return pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
 					})
 				}),
 			)
@@ -389,7 +389,7 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 				assetID, _ := dex.BipSymbolID(pg.wallet.GetAssetType().ToStringLower())
 				err := pg.AssetsManager.DexClient().SetWalletPassword([]byte(dexPass), assetID, []byte(newPassword))
 				if err != nil {
-					m.SetError(fmt.Errorf("Failed to update your dex wallet password, try again: %v", err).Error())
+					m.SetError(fmt.Errorf("failed to update your dex wallet password, try again: %v", err).Error())
 
 					// Undo password change.
 					if err = pg.wallet.ChangePrivatePassphraseForWallet(newPassword, currentPassword, sharedW.PassphraseTypePass); err != nil {
@@ -618,7 +618,7 @@ func (pg *SettingsPage) clickableRow(gtx C, row clickableRowData) D {
 				layout.Rigid(lbl.Layout),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+						return pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
 					})
 				}),
 			)
