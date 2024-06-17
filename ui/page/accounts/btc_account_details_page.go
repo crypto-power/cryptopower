@@ -140,14 +140,14 @@ func (pg *BTCAcctDetailsPage) extendedPubkey(gtx C) D {
 					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								icon := pg.Theme.Icons.RevealIcon
+								icon := pg.Theme.Icons.VisibilityOffIcon
 								if pg.isHiddenExtendedxPubkey {
-									icon = pg.Theme.Icons.ConcealIcon
+									icon = pg.Theme.Icons.VisibilityIcon
 								}
 								return layout.Inset{
 									Right: values.MarginPadding9,
 								}.Layout(gtx, func(gtx C) D {
-									return pg.showExtendedKeyButton.Layout(gtx, icon.Layout16dp)
+									return pg.showExtendedKeyButton.Layout(gtx, pg.Theme.NewIcon(icon).Layout20dp)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {

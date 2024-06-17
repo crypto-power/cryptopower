@@ -81,7 +81,7 @@ func (mc MixerComponent) middleMixerLayout(gtx C) D {
 			Radius: cryptomaterial.Radius(7),
 		},
 	}.Layout(gtx,
-		layout.Rigid(mc.Theme.Icons.Alert.Layout20dp),
+		layout.Rigid(mc.Theme.Icons.AlertIcon.Layout20dp),
 		layout.Rigid(func(gtc C) D {
 			lbl := mc.Theme.Body2(values.String(values.StrKeepAppOpen))
 			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, lbl.Layout)

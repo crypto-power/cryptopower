@@ -13,16 +13,15 @@ type Icons struct {
 	NavigationArrowForward, ActionCheck, NavigationCancel, NavMoreIcon,
 	DotIcon, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon,
 	ActionSettings, ActionSwapHoriz, ActionSwapVertical, NavigationRefresh, ContentCopy, MenuIcon, CopyIcon, ArrowDropDown, ArrowDropUp,
-	ChevronLeft, ChevronRight, ChevronUp, ChevronDown, DeleteIcon *widget.Icon
+	ChevronLeft, ChevronRight, ChevronUp, ChevronDown, DeleteIcon, VisibilityIcon, VisibilityOffIcon *widget.Icon
 
-	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, TradeIconActive, TradeIconInactive, RedAlert, Alert,
+	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, TradeIconActive, TradeIconInactive, RedAlert, AlertIcon,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon,
 	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, ArrowForward, AccountIcon,
 	EditIcon, expandIcon, MixedTx, Mixer, SettingsIcon,
-	ArrowDownIcon, WatchOnlyWalletIcon, SyncingIcon, TransactionFingerprint, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon,
+	ArrowDownIcon, SyncingIcon, TransactionFingerprint, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon,
 	GovernanceActiveIcon, GovernanceInactiveIcon, LogoDarkMode, TimerDarkMode, Rebroadcast, Notification, SuccessIcon, FailedIcon,
-	MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
-	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, AddExchange, FlypMeIcon, ChangellyIcon,
+	MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, InfoAction, LightMode, DarkMode, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, TrocadorIcon,
 	LTCBackground, LTCGroupIcon, DCRBackground, LogoDCRSlide, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
 	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon, FilterImgIcon, FilterOffImgIcon, ShareIcon,
@@ -71,6 +70,8 @@ func (i *Icons) StandardMaterialIcons() *Icons {
 	i.ChevronUp = MustIcon(widget.NewIcon(icons.HardwareKeyboardArrowUp))
 	i.ChevronDown = MustIcon(widget.NewIcon(icons.HardwareKeyboardArrowDown))
 	i.DeleteIcon = MustIcon(widget.NewIcon(icons.ActionDelete))
+	i.VisibilityIcon = MustIcon(widget.NewIcon(icons.ActionVisibility))
+	i.VisibilityOffIcon = MustIcon(widget.NewIcon(icons.ActionVisibilityOff))
 	return i
 }
 
@@ -98,7 +99,6 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.Mixer = NewImage(decredIcons["ic_mixer"])
 	i.SettingsIcon = NewImage(decredIcons["ic_settings"])
 	i.ArrowDownIcon = NewImage(decredIcons["ic_arrow_down"])
-	i.WatchOnlyWalletIcon = NewImage(decredIcons["ic_watch_wallet"])
 	i.SyncingIcon = NewImage(decredIcons["ic_syncing"])
 	i.DocumentationIcon = NewImage(decredIcons["ic_document"])
 	i.TimerIcon = NewImage(decredIcons["ic_timer"])
@@ -118,13 +118,11 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.GovernanceActiveIcon = NewImage(decredIcons["ic_governance_active"])
 	i.GovernanceInactiveIcon = NewImage(decredIcons["ic_governance_inactive"])
 	i.Rebroadcast = NewImage(decredIcons["ic_rebroadcast"])
-	i.ConcealIcon = NewImage(decredIcons["ic_reveal"])
-	i.RevealIcon = NewImage(decredIcons["ic_hide"])
 	i.AddExchange = NewImage(decredIcons["ic_add_exchange"])
 	i.TradeExchangeIcon = NewImage(decredIcons["ic_trade_exchange"])
 	i.TransactionFingerprint = NewImage(decredIcons["ic_tx_fingerprint"])
 	i.ArrowForward = NewImage(decredIcons["ic_arrow_fwd"])
-	i.Alert = NewImage(decredIcons["ic_alert"])
+	i.AlertIcon = NewImage(decredIcons["ic_alert"])
 
 	/* Start - Asset types Icons */
 	i.DcrDex = NewImage(decredIcons["logo_dcrdex"])
@@ -155,7 +153,6 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.InfoAction = NewImage(decredIcons["ic_info"])
 	i.DarkMode = NewImage(decredIcons["ic_moon"])
 	i.LightMode = NewImage(decredIcons["ic_light_mode"])
-	i.AddIcon = NewImage(decredIcons["ic_add"])
 	i.Notification = NewImage(decredIcons["ic_notification"])
 	i.Dot = NewImage(decredIcons["ic_dot"])
 
@@ -204,7 +201,6 @@ func (i *Icons) DarkModeIcons() *Icons {
 	i.Mixer = NewImage(decredIcons["dm_mixer"])
 	i.SettingsIcon = NewImage(decredIcons["dm_settings"])
 	i.ArrowDownIcon = NewImage(decredIcons["dm_arrow_down"])
-	i.WatchOnlyWalletIcon = NewImage(decredIcons["dm_watch_only_wallet"])
 	i.TimerIcon = NewImage(decredIcons["dm_timer"])
 	i.WalletIcon = NewImage(decredIcons["dm_wallet"])
 	i.StakeIcon = NewImage(decredIcons["dm_stake"])

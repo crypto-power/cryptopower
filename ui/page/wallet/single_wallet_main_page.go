@@ -558,15 +558,15 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 										return layoutPosition.Layout(gtx, func(gtx C) D {
 											return layout.Flex{}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
-													icon := swmp.Theme.Icons.RevealIcon
+													icon := swmp.Theme.Icons.VisibilityOffIcon
 													if swmp.isBalanceHidden {
-														icon = swmp.Theme.Icons.ConcealIcon
+														icon = swmp.Theme.Icons.VisibilityIcon
 													}
 													return layout.Inset{
 														Top:   values.MarginPadding5,
 														Right: values.MarginPadding9,
 													}.Layout(gtx, func(gtx C) D {
-														return swmp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
+														return swmp.hideBalanceButton.Layout(gtx, swmp.Theme.NewIcon(icon).Layout20dp)
 													})
 												}),
 												layout.Rigid(swmp.totalAssetBalance),

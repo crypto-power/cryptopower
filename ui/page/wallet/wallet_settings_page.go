@@ -299,7 +299,7 @@ func (pg *SettingsPage) pageSections(gtx C, title string, body layout.Widget) D 
 									return D{}
 								}
 								return pg.addAccount.Layout(gtx, func(gtx C) D {
-									return pg.Theme.Icons.AddIcon.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+									return pg.Theme.AddIcon().LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
 								})
 							})
 						}

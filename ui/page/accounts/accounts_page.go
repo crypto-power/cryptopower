@@ -170,7 +170,7 @@ func (pg *Page) addAccountBtnLayout(gtx C) D {
 		Clickable:  pg.addAccountBtn,
 		Alignment:  layout.Middle,
 	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.AddIcon.Layout16dp),
+		layout.Rigid(pg.Theme.AddIcon().Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddNewAccount))
 			txt.Color = pg.Theme.Color.DefaultThemeColors().Primary

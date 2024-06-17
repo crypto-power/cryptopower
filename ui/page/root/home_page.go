@@ -869,12 +869,12 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
-				icon := hp.Theme.Icons.RevealIcon
+				icon := hp.Theme.Icons.VisibilityOffIcon
 				if hp.isBalanceHidden {
-					icon = hp.Theme.Icons.ConcealIcon
+					icon = hp.Theme.Icons.VisibilityIcon
 				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					return hp.hideBalanceButton.Layout(gtx, icon.Layout20dp)
+					return hp.hideBalanceButton.Layout(gtx, hp.Theme.NewIcon(icon).Layout24dp)
 				})
 			}),
 		)

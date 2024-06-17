@@ -30,6 +30,13 @@ func (t *Theme) NewIcon(icon *widget.Icon) *Icon {
 	}
 }
 
+func (t *Theme) AddIcon() *Icon {
+	return &Icon{
+		Icon:  t.Icons.ContentAdd,
+		Color: t.Color.Primary,
+	}
+}
+
 func (icon *Icon) Layout24dp(gtx C) D {
 	return icon.Layout(gtx, values.MarginPadding24)
 }

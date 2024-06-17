@@ -169,7 +169,7 @@ func (pg *Page) addRecipentBtnLayout(gtx C) D {
 		Clickable:  pg.addRecipentBtn,
 		Alignment:  layout.Middle,
 	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.AddIcon.Layout16dp),
+		layout.Rigid(pg.Theme.AddIcon().Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddRecipient))
 			txt.Color = pg.Theme.Color.Primary
