@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v3/errors"
-	w "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/errors"
+	w "decred.org/dcrwallet/v4/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"

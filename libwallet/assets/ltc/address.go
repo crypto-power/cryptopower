@@ -3,7 +3,7 @@ package ltc
 import (
 	"fmt"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/ltcsuite/ltcd/ltcutil"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/wallet"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"

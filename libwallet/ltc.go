@@ -3,7 +3,7 @@ package libwallet
 import (
 	"fmt"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
