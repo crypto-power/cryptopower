@@ -136,8 +136,6 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	// Mixed split buying through CoinShuffle++, if configured.
 	if csppCfg := asset.readCSPPConfig(); csppCfg != nil {
 		request.Mixing = csppCfg.Mixing
-		// request.CSPPServer = csppCfg.CSPPServer
-		// request.DialCSPPServer = csppCfg.DialCSPPServer
 		request.MixedAccount = csppCfg.MixedAccount
 		request.MixedAccountBranch = csppCfg.MixedAccountBranch
 		request.ChangeAccount = csppCfg.ChangeAccount
@@ -482,8 +480,6 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	// Mixed split buying through CoinShuffle++, if configured.
 	if csppCfg := asset.readCSPPConfig(); csppCfg != nil {
 		request.Mixing = csppCfg.Mixing
-		// request.CSPPServer = csppCfg.CSPPServer
-		// request.DialCSPPServer = csppCfg.DialCSPPServer
 		request.MixedAccount = csppCfg.MixedAccount
 		request.MixedAccountBranch = csppCfg.MixedAccountBranch
 		request.ChangeAccount = csppCfg.ChangeAccount

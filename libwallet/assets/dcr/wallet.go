@@ -65,7 +65,6 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 
 	stakeOptions := &dcr.StakeOptions{
 		VotingEnabled: false,
-		// AddressReuse:  false,
 		VotingAddress: nil,
 	}
 

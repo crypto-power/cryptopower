@@ -213,11 +213,6 @@ func (asset *Asset) AgendaChoices(txHash string) (map[string]string, error) {
 		return nil, err
 	}
 
-	// choicesMap := make(map[string]string, len(choices))
-	// for agenda, choice := range choices {
-	// 	choicesMap[choices[c].AgendaID] = choices[c].ChoiceID
-	// }
-
 	return choicesMap, nil
 }
 

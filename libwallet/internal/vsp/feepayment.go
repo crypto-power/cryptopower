@@ -76,15 +76,10 @@ type feePayment struct {
 
 	// Set at feepayment creation and never changes
 	ticket *wallet.VSPTicket
-	// commitmentAddr stdaddr.StakeAddress
-	// votingAddr     stdaddr.StakeAddress
 	policy Policy
 
 	// Requires locking for all access outside of Client.feePayment
-	mu sync.Mutex
-	// votingKey     string
-	// ticketLive    int32
-	// ticketExpires int32
+	mu      sync.Mutex
 	fee     dcrutil.Amount
 	feeAddr stdaddr.Address
 	feeHash chainhash.Hash
@@ -105,51 +100,6 @@ const (
 	_ // ...
 	ticketSpent
 )
-
-// func parseTicket(ticket *wire.MsgTx, params *chaincfg.Params) (
-// 	votingAddr, commitmentAddr stdaddr.StakeAddress, err error,
-// ) {
-// 	fail := func(err error) (_, _ stdaddr.StakeAddress, _ error) {
-// 		return nil, nil, err
-// 	}
-// 	if !stake.IsSStx(ticket) {
-// 		return fail(fmt.Errorf("%v is not a ticket", ticket))
-// 	}
-// 	_, addrs := stdscript.ExtractAddrs(ticket.TxOut[0].Version, ticket.TxOut[0].PkScript, params)
-// 	if len(addrs) != 1 {
-// 		return fail(fmt.Errorf("cannot parse voting addr"))
-// 	}
-// 	switch addr := addrs[0].(type) {
-// 	case stdaddr.StakeAddress:
-// 		votingAddr = addr
-// 	default:
-// 		return fail(fmt.Errorf("address cannot be used for voting rights: %v", err))
-// 	}
-// 	commitmentAddr, err = stake.AddrFromSStxPkScrCommitment(ticket.TxOut[1].PkScript, params)
-// 	if err != nil {
-// 		return fail(fmt.Errorf("cannot parse commitment address: %w", err))
-// 	}
-// 	return
-// }
-
-// func (fp *feePayment) ticketSpent() bool {
-// 	ctx := fp.ctx
-// 	ticketOut := wire.OutPoint{Hash: *fp.ticket.Hash(), Index: 0, Tree: 1}
-// 	_, _, err := fp.client.Wallet.Spender(ctx, &ticketOut)
-// 	return err == nil
-// }
-
-// func (fp *feePayment) ticketExpired() bool {
-// 	ctx := fp.ctx
-// 	w := fp.client.Wallet
-// 	_, tipHeight := w.MainChainTip(ctx)
-
-// 	fp.mu.Lock()
-// 	expires := fp.ticketExpires
-// 	fp.mu.Unlock()
-
-// 	return expires > 0 && tipHeight >= expires
-// }
 
 func (fp *feePayment) removedExpiredOrSpent() bool {
 	var reason string
@@ -206,8 +156,6 @@ func (c *Client) feePayment(ticket *wallet.VSPTicket, policy Policy, paidConfirm
 	}()
 
 	ctx := context.Background()
-	// w := c.Wallet
-	// params := w.ChainParams()
 
 	fp = &feePayment{
 		client: c,
@@ -222,56 +170,12 @@ func (c *Client) feePayment(ticket *wallet.VSPTicket, policy Policy, paidConfirm
 		return fp
 	}
 
-	// ticket, err := c.tx(ctx, ticket.Hash())
-	// if err != nil {
-	// 	log.Warnf("no ticket found for %v", ticketHash)
-	// 	return nil
-	// }
-
-	// _, ticketHeight, err := w.TxBlock(ctx, ticket.Hash())
-	// if err != nil {
-	// 	// This is not expected to ever error, as the ticket was fetched
-	// 	// from the wallet in the above call.
-	// 	log.Errorf("failed to query block which mines ticket: %v", err)
-	// 	return nil
-	// }
-	// if ticketHeight >= 2 {
-	// 	// Note the off-by-one; this is correct.  Tickets become live
-	// 	// one block after the params would indicate.
-	// 	fp.ticketLive = ticketHeight + int32(params.TicketMaturity) + 1
-	// 	// fp.ticketExpires = fp.ticketLive + int32(params.TicketExpiry)
-	// }
-
-	// fp.votingAddr, fp.commitmentAddr, err = parseTicket(ticket.RawTx(), params)
-	// if err != nil {
-	// 	log.Errorf("%v is not a ticket: %v", ticket.String(), err)
-	// 	return nil
-	// }
-	// Try to access the voting key, ignore error unless the wallet is
-	// locked.
-	// fp.votingKey, err = w.DumpWIFPrivateKey(ctx, fp.votingAddr)
-	// if err != nil && !errors.Is(errors.Locked, err) {
-	// 	log.Errorf("no voting key for ticket %v: %v", ticket.RawTx(), err)
-	// 	return nil
-	// }
 	feeHash, err := fp.ticket.FeeHash(ctx)
 	if err != nil {
 		// caller must schedule next method, as paying the fee may
 		// require using provided transaction inputs.
 		return fp
 	}
-
-	// fee, err := c.tx(ctx, &feeHash)
-	// if err != nil {
-	// 	// A fee hash is recorded for this ticket, but was not found in
-	// 	// the wallet.  This should not happen and may require manual
-	// 	// intervention.
-	// 	//
-	// 	// XXX should check ticketinfo and see if fee is not paid. if
-	// 	// possible, update it with a new fee.
-	// 	fp.err = fmt.Errorf("fee transaction not found in wallet: %w", err)
-	// 	return fp
-	// }
 
 	fp.feeTx = ticket.RawTx()
 	fp.feeHash = feeHash
@@ -289,14 +193,6 @@ func (c *Client) feePayment(ticket *wallet.VSPTicket, policy Policy, paidConfirm
 	}
 	return fp
 }
-
-// func (c *Client) tx(ctx context.Context, hash *chainhash.Hash) (*wire.MsgTx, error) {
-// 	txs, _, err := c.Wallet.GetTransactionsByHashes(ctx, []*chainhash.Hash{hash})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return txs[0], nil
-// }
 
 // Schedule a method to be executed.
 // Any currently-scheduled method is replaced.
@@ -323,10 +219,8 @@ func (fp *feePayment) next() time.Duration {
 	params := w.ChainParams()
 	_, tipHeight := w.MainChainTip(fp.ctx)
 
-	// fp.mu.Lock()
 	ticketLive := fp.ticket.LiveHeight(fp.ctx)
 	ticketExpires := fp.ticket.ExpiryHeight(fp.ctx)
-	// fp.mu.Unlock()
 
 	var jitter time.Duration
 	switch {
@@ -617,24 +511,11 @@ func (c *Client) GetTicketStatus(ctx context.Context, ticketHash *chainhash.Hash
 
 func (c *Client) status(ctx context.Context, ticketHash *chainhash.Hash) (*TicketStatus, error) {
 	w := c.Wallet
-	// params := w.ChainParams()
 
 	ticketTx, err := w.NewVSPTicket(ctx, ticketHash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve ticket %v: %w", ticketHash, err)
 	}
-	// if len(ticketTx.RawTx().TxOut) != 3 {
-	// 	return nil, fmt.Errorf("ticket %v has multiple commitments: %w", ticketHash, errNotSolo)
-	// }
-
-	// if !stake.IsSStx(ticketTx.RawTx()) {
-	// 	return nil, fmt.Errorf("%v is not a ticket", ticketHash)
-	// }
-	// commitmentAddr, err := stake.AddrFromSStxPkScrCommitment(ticketTx.RawTx().TxOut[1].PkScript, params)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to extract commitment address from %v: %w",
-	// 		ticketHash, err)
-	// }
 
 	var resp TicketStatus
 	requestBody, err := json.Marshal(&struct {
@@ -673,26 +554,6 @@ func (c *Client) setVoteChoices(ctx context.Context, ticketHash *chainhash.Hash,
 	if err != nil {
 		return fmt.Errorf("failed to retrieve ticket %v: %w", ticketHash, err)
 	}
-
-	// if !stake.IsSStx(ticketTx) {
-	// 	return fmt.Errorf("%v is not a ticket", ticketHash)
-	// }
-	// if len(ticketTx.TxOut) != 3 {
-	// 	return fmt.Errorf("ticket %v has multiple commitments: %w", ticketHash, errNotSolo)
-	// }
-
-	// commitmentAddr, err := stake.AddrFromSStxPkScrCommitment(ticketTx.TxOut[1].PkScript, params)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to extract commitment address from %v: %w",
-	// 		ticketHash, err)
-	// }
-
-	// agendaChoices := make(map[string]string, len(choices))
-
-	// // Prepare agenda choice
-	// for _, c := range choices {
-	// 	agendaChoices[c.AgendaID] = c.ChoiceID
-	// }
 
 	var resp TicketStatus
 	requestBody, err := json.Marshal(&struct {
@@ -841,7 +702,6 @@ func (fp *feePayment) submitPayment() (err error) {
 	// submitting a payment requires the fee tx to already be created.
 	fp.mu.Lock()
 	feeTx := fp.feeTx
-	// votingKey := fp.votingKey
 	fp.mu.Unlock()
 	if feeTx == nil {
 		feeTx = new(wire.MsgTx)
@@ -852,15 +712,6 @@ func (fp *feePayment) submitPayment() (err error) {
 			return
 		}
 	}
-	// if votingKey == "" {
-	// 	votingKey, err = w.DumpWIFPrivateKey(ctx, fp.votingAddr)
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	fp.mu.Lock()
-	// 	fp.votingKey = votingKey
-	// 	fp.mu.Unlock()
-	// }
 
 	// Retrieve voting preferences
 	var voteChoices map[string]string

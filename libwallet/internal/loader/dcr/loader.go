@@ -59,7 +59,6 @@ type dcrLoader struct {
 // StakeOptions contains the various options necessary for stake mining.
 type StakeOptions struct {
 	VotingEnabled       bool
-	// AddressReuse        bool
 	VotingAddress       stdaddr.StakeAddress
 	PoolAddress         stdaddr.StakeAddress
 	PoolFees            float64
@@ -163,7 +162,6 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 		DB:                      db,
 		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		// AddressReuse:            so.AddressReuse,
 		VotingAddress:           so.VotingAddress,
 		PoolAddress:             so.PoolAddress,
 		PoolFees:                so.PoolFees,
@@ -227,7 +225,6 @@ func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		DB:                      db,
 		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		// AddressReuse:            so.AddressReuse,
 		VotingAddress:           so.VotingAddress,
 		PoolAddress:             so.PoolAddress,
 		PoolFees:                so.PoolFees,
@@ -292,7 +289,6 @@ func (l *dcrLoader) OpenExistingWallet(ctx context.Context, walletID string, pub
 		DB:                      db,
 		PubPassphrase:           pubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		// AddressReuse:            so.AddressReuse,
 		VotingAddress:           so.VotingAddress,
 		PoolAddress:             so.PoolAddress,
 		PoolFees:                so.PoolFees,

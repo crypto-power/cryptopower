@@ -50,9 +50,6 @@ type WalletsIterator struct {
 }
 
 type CSPPConfig struct {
-	// CSPPServer         string
-	// DialCSPPServer     func(ctx context.Context, network, addr string) (net.Conn, error)
-
 	// Mixing option activates the new version of the coins mixer which is a
 	// replacement of the old client-server mechanism. Now peer to peer
 	// mechanism is in place. Ref: https://github.com/decred/dcrwallet/pull/2351

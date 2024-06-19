@@ -12,10 +12,7 @@ import (
 )
 
 const (
-	smalletSplitPoint = 000.00262144
-	// ShuffleServer      = "mix.decred.org"
-	// MainnetShufflePort = "5760"
-	// TestnetShufflePort = "15760"
+	smalletSplitPoint  = 000.00262144
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
@@ -165,8 +162,6 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 		c.MixedAccountBranch = cfg.MixedAccountBranch
 		c.MixedAccount = cfg.MixedAccount
 		c.ChangeAccount = cfg.ChangeAccount
-		// c.CSPPServer = cfg.CSPPServer
-		// c.DialCSPPServer = cfg.DialCSPPServer
 		c.Mixing = cfg.Mixing
 		c.TicketSplitAccount = cfg.TicketSplitAccount
 		c.BuyTickets = false
@@ -209,35 +204,9 @@ func (asset *Asset) readCSPPConfig() *CSPPConfig {
 		// not configured for mixing
 		return nil
 	}
-	/**
-	shufflePort := TestnetShufflePort
-	var dialCSPPServer func(ctx context.Context, network, addr string) (net.Conn, error)
-	if asset.chainParams.Net == chaincfg.MainNetParams().Net {
-		shufflePort = MainnetShufflePort
-
-		pool := x509.NewCertPool()
-		pool.AppendCertsFromPEM([]byte(certs.CSPP))
-
-		csppTLSConfig := new(tls.Config)
-		csppTLSConfig.ServerName = ShuffleServer
-		csppTLSConfig.RootCAs = pool
-
-		dailer := new(net.Dialer)
-		dialCSPPServer = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := dailer.DialContext(context.Background(), network, addr)
-			if err != nil {
-				return nil, err
-			}
-
-			conn = tls.Client(conn, csppTLSConfig)
-			return conn, nil
-		}
-	}**/
 
 	return &CSPPConfig{
-		// CSPPServer:         ShuffleServer + ":" + shufflePort,
-		// DialCSPPServer:     dialCSPPServer,
-		Mixing:       true,
+		Mixing:             true,
 		MixedAccount:       uint32(mixedAccount),
 		MixedAccountBranch: uint32(MixedAccountBranch),
 		ChangeAccount:      uint32(unmixedAccount),
