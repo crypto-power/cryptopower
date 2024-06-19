@@ -1,27 +1,21 @@
 package dcr
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
-	"net"
 
 	"decred.org/dcrwallet/v4/ticketbuyer"
 	w "decred.org/dcrwallet/v4/wallet"
 	"decred.org/dcrwallet/v4/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/certs"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 const (
-	smalletSplitPoint  = 000.00262144
-	ShuffleServer      = "mix.decred.org"
-	MainnetShufflePort = "5760"
-	TestnetShufflePort = "15760"
+	smalletSplitPoint = 000.00262144
+	// ShuffleServer      = "mix.decred.org"
+	// MainnetShufflePort = "5760"
+	// TestnetShufflePort = "15760"
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
@@ -171,8 +165,9 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 		c.MixedAccountBranch = cfg.MixedAccountBranch
 		c.MixedAccount = cfg.MixedAccount
 		c.ChangeAccount = cfg.ChangeAccount
-		c.CSPPServer = cfg.CSPPServer
-		c.DialCSPPServer = cfg.DialCSPPServer
+		// c.CSPPServer = cfg.CSPPServer
+		// c.DialCSPPServer = cfg.DialCSPPServer
+		c.Mixing = cfg.Mixing
 		c.TicketSplitAccount = cfg.TicketSplitAccount
 		c.BuyTickets = false
 		c.MixChange = true
@@ -214,7 +209,7 @@ func (asset *Asset) readCSPPConfig() *CSPPConfig {
 		// not configured for mixing
 		return nil
 	}
-
+	/**
 	shufflePort := TestnetShufflePort
 	var dialCSPPServer func(ctx context.Context, network, addr string) (net.Conn, error)
 	if asset.chainParams.Net == chaincfg.MainNetParams().Net {
@@ -237,11 +232,12 @@ func (asset *Asset) readCSPPConfig() *CSPPConfig {
 			conn = tls.Client(conn, csppTLSConfig)
 			return conn, nil
 		}
-	}
+	}**/
 
 	return &CSPPConfig{
-		CSPPServer:         ShuffleServer + ":" + shufflePort,
-		DialCSPPServer:     dialCSPPServer,
+		// CSPPServer:         ShuffleServer + ":" + shufflePort,
+		// DialCSPPServer:     dialCSPPServer,
+		Mixing:       true,
 		MixedAccount:       uint32(mixedAccount),
 		MixedAccountBranch: uint32(MixedAccountBranch),
 		ChangeAccount:      uint32(unmixedAccount),

@@ -1,9 +1,7 @@
 package dcr
 
 import (
-	"context"
 	"fmt"
-	"net"
 
 	"decred.org/dcrwallet/v4/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -52,8 +50,13 @@ type WalletsIterator struct {
 }
 
 type CSPPConfig struct {
-	CSPPServer         string
-	DialCSPPServer     func(ctx context.Context, network, addr string) (net.Conn, error)
+	// CSPPServer         string
+	// DialCSPPServer     func(ctx context.Context, network, addr string) (net.Conn, error)
+
+	// Mixing option activates the new version of the coins mixer which is a
+	// replacement of the old client-server mechanism. Now peer to peer
+	// mechanism is in place. Ref: https://github.com/decred/dcrwallet/pull/2351
+	Mixing             bool
 	MixedAccount       uint32
 	MixedAccountBranch uint32
 	TicketSplitAccount uint32
