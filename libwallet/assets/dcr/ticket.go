@@ -129,7 +129,7 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 		MinConf:       asset.RequiredConfirmations(),
 		VSPFeePercent: vspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
-			return vspClient.Process(ctx, ticket.Hash(), feeTx, asset.GetvspPolicy(account))
+			return vspClient.Process(ctx, ticket, feeTx, asset.GetvspPolicy(account))
 		},
 	}
 
@@ -476,7 +476,7 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 		MinConf:       asset.RequiredConfirmations(),
 		VSPFeePercent: cfg.VspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
-			return cfg.VspClient.Process(ctx, ticket.Hash(), feeTx, vspPolicy)
+			return cfg.VspClient.Process(ctx, ticket, feeTx, vspPolicy)
 		},
 	}
 	// Mixed split buying through CoinShuffle++, if configured.

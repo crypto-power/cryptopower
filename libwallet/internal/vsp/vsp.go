@@ -86,9 +86,13 @@ func (c *Client) FeePercentage(ctx context.Context) (float64, error) {
 func (c *Client) ProcessUnprocessedTickets(ctx context.Context, policy Policy) {
 	var wg sync.WaitGroup
 	_ = c.Wallet.ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
+		ticketTx, err := c.Wallet.NewVSPTicket(ctx, hash)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve ticket %v: %w", hash, err)
+		}
 		// Skip tickets which have a fee tx already associated with
 		// them; they are already processed by some vsp.
-		_, err := c.Wallet.VSPFeeHashForTicket(ctx, hash)
+		_, err = ticketTx.FeeHash(ctx)
 		if err == nil {
 			return nil
 		}
@@ -114,7 +118,7 @@ func (c *Client) ProcessUnprocessedTickets(ctx context.Context, policy Policy) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := c.Process(ctx, hash, nil, policy)
+			err := c.Process(ctx, ticketTx, nil, policy)
 			if err != nil {
 				log.Error(err)
 			}
@@ -127,7 +131,12 @@ func (c *Client) ProcessUnprocessedTickets(ctx context.Context, policy Policy) {
 
 // ProcessTicket attempts to process a given ticket based on the hash provided.
 func (c *Client) ProcessTicket(ctx context.Context, hash *chainhash.Hash, policy Policy) error {
-	err := c.Process(ctx, hash, nil, policy)
+	ticketTx, err := c.Wallet.NewVSPTicket(ctx, hash)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve ticket %v: %w", hash, err)
+	}
+
+	err = c.Process(ctx, ticketTx, nil, policy)
 	if err != nil {
 		return err
 	}
@@ -140,6 +149,11 @@ func (c *Client) ProcessTicket(ctx context.Context, hash *chainhash.Hash, policy
 // tickets.
 func (c *Client) ProcessManagedTickets(ctx context.Context, policy Policy) error {
 	err := c.Wallet.ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
+		vspTicket, err := c.Wallet.NewVSPTicket(ctx, hash)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve ticket %v: %w", hash, err)
+		}
+
 		// We only want to process tickets that haven't been confirmed yet.
 		confirmed, err := c.Wallet.IsVSPTicketConfirmed(ctx, hash)
 		if err != nil && !errors.Is(err, errors.NotExist) {
@@ -173,7 +187,7 @@ func (c *Client) ProcessManagedTickets(ctx context.Context, policy Policy) error
 			if err != nil {
 				return err
 			}
-			err = c.Wallet.UpdateVspTicketFeeToConfirmed(ctx, hash, feeHash, c.client.url, c.client.pub)
+			err = vspTicket.UpdateFeeConfirmed(ctx, *feeHash, c.client.url, c.client.pub)
 			if err != nil {
 				return err
 			}
@@ -183,14 +197,14 @@ func (c *Client) ProcessManagedTickets(ctx context.Context, policy Policy) error
 			if err != nil {
 				return err
 			}
-			err = c.Wallet.UpdateVspTicketFeeToPaid(ctx, hash, feeHash, c.client.url, c.client.pub)
+			err = vspTicket.UpdateFeePaid(ctx, *feeHash, c.client.url, c.client.pub)
 			if err != nil {
 				return err
 			}
-			_ = c.feePayment(hash, policy, true)
+			_ = c.feePayment(vspTicket, policy, true)
 		} else {
 			// Fee hasn't been paid at the provided VSP, so this should do that if needed.
-			_ = c.feePayment(hash, policy, false)
+			_ = c.feePayment(vspTicket, policy, false)
 		}
 
 		return nil
@@ -206,29 +220,25 @@ func (c *Client) ProcessManagedTickets(ctx context.Context, policy Policy) error
 // with the inputs and the fee and change outputs before returning without an
 // error.  The fee transaction is also recorded as unpublised in the wallet, and
 // the fee hash is associated with the ticket.
-func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx,
+func (c *Client) Process(ctx context.Context, ticket *wallet.VSPTicket, feeTx *wire.MsgTx,
 	policy Policy,
 ) error {
-	ticket, err := c.Wallet.NewVSPTicket(ctx, ticketHash)
-	if err != nil && !errors.Is(err, errors.NotExist) {
-		return err
-	}
-	vspTicket, err :=ticket.VSPTicketInfo(ctx)
+	vspTicketInfo, err := ticket.VSPTicketInfo(ctx)
 	if err != nil && !errors.Is(err, errors.NotExist) {
 		return err
 	}
 	feeStatus := udb.VSPFeeProcessStarted // Will be used if the ticket isn't registered to the vsp yet.
-	if vspTicket != nil {
-		feeStatus = udb.FeeStatus(vspTicket.FeeTxStatus)
+	if vspTicketInfo != nil {
+		feeStatus = udb.FeeStatus(vspTicketInfo.FeeTxStatus)
 	}
 
 	switch feeStatus {
 	case udb.VSPFeeProcessStarted, udb.VSPFeeProcessErrored:
 		// If VSPTicket has been started or errored then attempt to create a new fee
 		// transaction, submit it then confirm.
-		fp := c.feePayment(ticketHash, policy, false)
+		fp := c.feePayment(ticket, policy, false)
 		if fp == nil {
-			err := c.Wallet.UpdateVspTicketFeeToErrored(ctx, ticketHash, c.client.url, c.client.pub)
+			err := ticket.UpdateFeeErrored(ctx, c.client.url, c.client.pub)
 			if err != nil {
 				return err
 			}
@@ -241,7 +251,7 @@ func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx 
 		fp.mu.Unlock()
 		err := fp.receiveFeeAddress()
 		if err != nil {
-			err := c.Wallet.UpdateVspTicketFeeToErrored(ctx, ticketHash, c.client.url, c.client.pub)
+			err := ticket.UpdateFeeErrored(ctx, c.client.url, c.client.pub)
 			if err != nil {
 				return err
 			}
@@ -252,7 +262,7 @@ func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx 
 		}
 		err = fp.makeFeeTx(feeTx)
 		if err != nil {
-			err := c.Wallet.UpdateVspTicketFeeToErrored(ctx, ticketHash, c.client.url, c.client.pub)
+			err := ticket.UpdateFeeErrored(ctx, c.client.url, c.client.pub)
 			if err != nil {
 				return err
 			}
@@ -261,11 +271,11 @@ func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx 
 		return fp.submitPayment()
 	case udb.VSPFeeProcessPaid:
 		// If a VSP ticket has been paid, but confirm payment.
-		if len(vspTicket.Host) > 0 && vspTicket.Host != c.client.url {
+		if len(vspTicketInfo.Host) > 0 && vspTicketInfo.Host != c.client.url {
 			// Cannot confirm a paid ticket that is already with another VSP.
 			return fmt.Errorf("ticket already paid or confirmed with another vsp")
 		}
-		fp := c.feePayment(ticketHash, policy, true)
+		fp := c.feePayment(ticket, policy, true)
 		if fp == nil {
 			// Don't update VSPStatus to Errored if it was already paid or
 			// confirmed.
@@ -385,9 +395,9 @@ func (c *Client) TrackedTickets() []*TicketInfo {
 	for _, job := range jobs {
 		job.mu.Lock()
 		tickets = append(tickets, &TicketInfo{
-			TicketHash:     job.ticketHash,
-			CommitmentAddr: job.commitmentAddr,
-			VotingAddr:     job.votingAddr,
+			TicketHash:     *job.ticket.Hash(),
+			CommitmentAddr: job.ticket.CommitmentAddr(),
+			VotingAddr:     job.ticket.VotingAddr(),
 			State:          uint32(job.state),
 			Fee:            job.fee,
 			FeeHash:        job.feeHash,
