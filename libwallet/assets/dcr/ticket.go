@@ -127,16 +127,17 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 		Count:         int(numTickets),
 		SourceAccount: uint32(account),
 		MinConf:       asset.RequiredConfirmations(),
-		VSPFeeProcess: vspClient.FeePercentage,
-		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return vspClient.Process(ctx, ticketHash, feeTx, asset.GetvspPolicy(account))
+		VSPFeePercent: vspClient.FeePercentage,
+		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
+			return vspClient.Process(ctx, ticket.Hash(), feeTx, asset.GetvspPolicy(account))
 		},
 	}
 
 	// Mixed split buying through CoinShuffle++, if configured.
 	if csppCfg := asset.readCSPPConfig(); csppCfg != nil {
-		request.CSPPServer = csppCfg.CSPPServer
-		request.DialCSPPServer = csppCfg.DialCSPPServer
+		request.Mixing = csppCfg.Mixing
+		// request.CSPPServer = csppCfg.CSPPServer
+		// request.DialCSPPServer = csppCfg.DialCSPPServer
 		request.MixedAccount = csppCfg.MixedAccount
 		request.MixedAccountBranch = csppCfg.MixedAccountBranch
 		request.ChangeAccount = csppCfg.ChangeAccount
@@ -163,6 +164,17 @@ func (asset *Asset) GetvspPolicy(account int32) vsp.Policy {
 	}
 }
 
+// DCR_VSPTicketInfo masks the upstream VSPTicketInfo method that has been split
+// into two methods. Namely NewVSPTicket and VSPTicketInfo.
+func (asset *Asset) DCR_VSPTicketInfo(ctx context.Context, ticketHash *chainhash.Hash) (*w.TicketInfo, error) {
+	ticket, err := asset.Internal().DCR.NewVSPTicket(ctx, ticketHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return ticket.VSPTicketInfo(ctx)
+}
+
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
 func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
@@ -177,7 +189,7 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	// Read the VSP info for this ticket from the wallet db.
 	ctx, _ := asset.ShutdownContextWithCancel()
-	walletTicketInfo, err := asset.Internal().DCR.VSPTicketInfo(ctx, ticketHash)
+	walletTicketInfo, err := asset.DCR_VSPTicketInfo(ctx, ticketHash)
 	if err != nil {
 		log.Warnf("unable to getWallet info using ticket: %s Error: %v", hash, err)
 		return nil, err
@@ -462,9 +474,9 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 		SourceAccount: uint32(cfg.PurchaseAccount),
 		Expiry:        expiry,
 		MinConf:       asset.RequiredConfirmations(),
-		VSPFeeProcess: cfg.VspClient.FeePercentage,
-		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return cfg.VspClient.Process(ctx, ticketHash, feeTx, vspPolicy)
+		VSPFeePercent: cfg.VspClient.FeePercentage,
+		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
+			return cfg.VspClient.Process(ctx, ticket.Hash(), feeTx, vspPolicy)
 		},
 	}
 	// Mixed split buying through CoinShuffle++, if configured.

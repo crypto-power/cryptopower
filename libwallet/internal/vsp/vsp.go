@@ -209,7 +209,11 @@ func (c *Client) ProcessManagedTickets(ctx context.Context, policy Policy) error
 func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx,
 	policy Policy,
 ) error {
-	vspTicket, err := c.Wallet.VSPTicketInfo(ctx, ticketHash)
+	ticket, err := c.Wallet.NewVSPTicket(ctx, ticketHash)
+	if err != nil && !errors.Is(err, errors.NotExist) {
+		return err
+	}
+	vspTicket, err :=ticket.VSPTicketInfo(ctx)
 	if err != nil && !errors.Is(err, errors.NotExist) {
 		return err
 	}
@@ -281,7 +285,7 @@ func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx 
 // the connected VSP. The status provides the current voting preferences so we
 // can just update from there if need be.
 func (c *Client) SetVoteChoice(ctx context.Context, hash *chainhash.Hash,
-	choices []wallet.AgendaChoice, tspendPolicy map[string]string, treasuryPolicy map[string]string,
+	choices map[string]string, tspendPolicy map[string]string, treasuryPolicy map[string]string,
 ) error {
 	// Retrieve current voting preferences from VSP.
 	status, err := c.status(ctx, hash)
@@ -298,13 +302,13 @@ func (c *Client) SetVoteChoice(ctx context.Context, hash *chainhash.Hash,
 	update := false
 
 	// Check consensus vote choices.
-	for _, newChoice := range choices {
-		vspChoice, ok := status.VoteChoices[newChoice.AgendaID]
+	for agenda, choice := range choices {
+		vspChoice, ok := status.VoteChoices[agenda]
 		if !ok {
 			update = true
 			break
 		}
-		if vspChoice != newChoice.ChoiceID {
+		if vspChoice != choice {
 			update = true
 			break
 		}

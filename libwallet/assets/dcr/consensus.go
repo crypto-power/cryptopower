@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"decred.org/dcrwallet/v4/errors"
-	w "decred.org/dcrwallet/v4/wallet"
 
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
@@ -111,21 +110,19 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 		return err
 	}
 
-	currentChoice := w.AgendaChoice{
-		AgendaID: agendaID,
-		ChoiceID: "abstain", // default to abstain as current choice if not found in wallet
+	currentChoice := map[string]string{
+		agendaID: "abstain", // default to abstain as current choice if not found in wallet
 	}
 
-	for i := range choices {
-		if choices[i].AgendaID == agendaID {
-			currentChoice.ChoiceID = choices[i].ChoiceID
+	for agenda, choice := range choices {
+		if agenda != agendaID {
+			currentChoice[agendaID] = choice
 			break
 		}
 	}
 
-	newChoice := w.AgendaChoice{
-		AgendaID: agendaID,
-		ChoiceID: strings.ToLower(choiceID),
+	newChoice := map[string]string{
+		agendaID: strings.ToLower(choiceID),
 	}
 
 	_, err = asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, newChoice)
@@ -165,7 +162,7 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 	// The first error will be returned to the caller.
 	var firstErr error
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := asset.Internal().DCR.VSPTicketInfo(ctx, tHash)
+		vspTicketInfo, err := asset.DCR_VSPTicketInfo(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
@@ -181,7 +178,7 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 			firstErr = err
 			continue // try next tHash
 		}
-		err = vspClient.SetVoteChoice(ctx, tHash, []w.AgendaChoice{newChoice}, nil, nil)
+		err = vspClient.SetVoteChoice(ctx, tHash, newChoice, nil, nil)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash
@@ -211,15 +208,15 @@ func (asset *Asset) AgendaChoices(txHash string) (map[string]string, error) {
 	}
 
 	ctx, _ := asset.ShutdownContextWithCancel()
-	choices, _, err := asset.Internal().DCR.AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
+	choicesMap, _, err := asset.Internal().DCR.AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
 	if err != nil {
 		return nil, err
 	}
 
-	choicesMap := make(map[string]string, len(choices))
-	for c := range choices {
-		choicesMap[choices[c].AgendaID] = choices[c].ChoiceID
-	}
+	// choicesMap := make(map[string]string, len(choices))
+	// for agenda, choice := range choices {
+	// 	choicesMap[choices[c].AgendaID] = choices[c].ChoiceID
+	// }
 
 	return choicesMap, nil
 }

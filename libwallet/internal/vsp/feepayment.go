@@ -671,7 +671,7 @@ func (c *Client) status(ctx context.Context, ticketHash *chainhash.Hash) (*Ticke
 }
 
 func (c *Client) setVoteChoices(ctx context.Context, ticketHash *chainhash.Hash,
-	choices []wallet.AgendaChoice, tspendPolicy map[string]string, treasuryPolicy map[string]string,
+	agendaChoices, tspendPolicy, treasuryPolicy map[string]string,
 ) error {
 	w := c.Wallet
 	params := w.ChainParams()
@@ -694,12 +694,12 @@ func (c *Client) setVoteChoices(ctx context.Context, ticketHash *chainhash.Hash,
 			ticketHash, err)
 	}
 
-	agendaChoices := make(map[string]string, len(choices))
+	// agendaChoices := make(map[string]string, len(choices))
 
-	// Prepare agenda choice
-	for _, c := range choices {
-		agendaChoices[c.AgendaID] = c.ChoiceID
-	}
+	// // Prepare agenda choice
+	// for _, c := range choices {
+	// 	agendaChoices[c.AgendaID] = c.ChoiceID
+	// }
 
 	var resp TicketStatus
 	requestBody, err := json.Marshal(&struct {
@@ -875,8 +875,8 @@ func (fp *feePayment) submitPayment() (err error) {
 	if err != nil {
 		return err
 	}
-	for _, agendaChoice := range agendaChoices {
-		voteChoices[agendaChoice.AgendaID] = agendaChoice.ChoiceID
+	for agenda, choice := range agendaChoices {
+		voteChoices[agenda] = choice
 	}
 
 	var payfeeResponse struct {
