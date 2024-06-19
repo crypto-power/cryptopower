@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	decred.org/dcrdex v0.6.3
+	decred.org/dcrwallet/v3 v3.0.1
 	decred.org/dcrwallet/v4 v4.1.1
 	gioui.org v0.1.0
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
@@ -65,7 +66,6 @@ require (
 require (
 	decred.org/cspp/v2 v2.2.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect
-	decred.org/dcrwallet/v3 v3.0.1 // indirect
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.6 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
