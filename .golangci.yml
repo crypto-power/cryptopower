@@ -24,7 +24,9 @@ linters:
 
 linters-settings:
   errcheck:
+    # Individual function to be ignored one per line.
+    # see https://github.com/kisielk/errcheck#excluding-functions for details
     exclude-functions:
       - (net/http.ResponseWriter).Write
-      - (github.com/jrick/logrotate/rotator.Rotator).Write
-      - (github.com/crypto-power/cryptopower/logger).SetLogLevels
+      - (*github.com/jrick/logrotate/rotator.Rotator).Write
+      - ./logger.SetLogLevels
