@@ -37,7 +37,7 @@ jobs:
         with:
           version: v1.59.1
           skip-pkg-cache: true
-          args: --out-format=colored-line-number
+          args: --out-format=colored-line-number --timeout=10m
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'

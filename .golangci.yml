@@ -29,4 +29,3 @@ linters-settings:
     exclude-functions:
       - (net/http.ResponseWriter).Write
       - (*github.com/jrick/logrotate/rotator.Rotator).Write
-      - ./logger.SetLogLevels
