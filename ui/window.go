@@ -10,8 +10,8 @@ import (
 
 	giouiApp "gioui.org/app"
 	"gioui.org/gesture"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
-	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"golang.org/x/text/language"
@@ -76,7 +76,8 @@ func CreateWindow(appInfo *load.AppInfo) (*Window, error) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	giouiWindow := giouiApp.NewWindow(appSize, appMinSize, appTitle)
+	giouiWindow := new(giouiApp.Window)
+	giouiWindow.Option(appSize, appMinSize, appTitle)
 	win := &Window{
 		ctx:        ctx,
 		ctxCancel:  cancel,
@@ -189,6 +190,13 @@ func (win *Window) HandleEvents() {
 		win.Quit <- struct{}{}
 	}
 
+	events := make(chan event.Event)
+	go func() {
+		for {
+			events <- win.Event()
+		}
+	}()
+
 	for {
 		// Select either the os interrupt or the window event, whichever becomes
 		// ready first.
@@ -198,13 +206,13 @@ func (win *Window) HandleEvents() {
 		case <-win.IsShutdown:
 			// backend processes shutdown is complete, exit UI process too.
 			return
-		case e := <-win.Events():
+		case e := <-events:
 			switch evt := e.(type) {
 
-			case system.DestroyEvent:
+			case giouiApp.DestroyEvent:
 				displayShutdownPage()
 
-			case system.FrameEvent:
+			case giouiApp.FrameEvent:
 				ops := win.handleFrameEvent(evt)
 				evt.Frame(ops)
 
@@ -219,7 +227,7 @@ func (win *Window) HandleEvents() {
 // window. It expects a new frame in the form of a list of operations that
 // describes what to display and how to handle input. This operations list
 // is returned to the caller for displaying on screen.
-func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
+func (win *Window) handleFrameEvent(evt giouiApp.FrameEvent) *op.Ops {
 	win.load.SetCurrentAppWidth(evt.Size.X, evt.Metric)
 
 	switch {
@@ -251,12 +259,13 @@ func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
 // handleRelevantKeyPresses checks if any open modal or the current page is a
 // load.KeyEventHandler AND if the provided system.FrameEvent contains key press
 // events for the modal or page.
-func (win *Window) handleRelevantKeyPresses(evt system.FrameEvent) {
+func (win *Window) handleRelevantKeyPresses(evt giouiApp.FrameEvent) {
 	handleKeyPressFor := func(tag string, maybeHandler interface{}) {
 		handler, ok := maybeHandler.(load.KeyEventHandler)
 		if !ok {
 			return
 		}
+		evt.Source.Event()
 		for _, event := range evt.Queue.Events(tag) {
 			if keyEvent, isKeyEvent := event.(key.Event); isKeyEvent && keyEvent.State == key.Press {
 				handler.HandleKeyPress(&keyEvent)
@@ -277,7 +286,7 @@ func (win *Window) handleRelevantKeyPresses(evt system.FrameEvent) {
 // window UI components into it. The created ops is returned and may be used to
 // record further operations before finally being rendered on screen via
 // system.FrameEvent.Frame(ops).
-func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
+func (win *Window) prepareToDisplayUI(evt giouiApp.FrameEvent) *op.Ops {
 	backgroundWidget := layout.Expanded(func(gtx C) D {
 		return win.load.Theme.DropdownBackdrop.Layout(gtx, func(gtx C) D {
 			return cryptomaterial.Fill(gtx, win.load.Theme.Color.Gray4)
