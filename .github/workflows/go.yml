@@ -33,9 +33,10 @@ jobs:
             ${{ runner.os }}-go-
       
       - name: Install linter
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.54
+          version: v1.58
+          skip-pkg-cache: true
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
