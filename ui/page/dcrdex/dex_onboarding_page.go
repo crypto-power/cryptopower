@@ -271,7 +271,7 @@ func (pg *DEXOnboarding) Layout(gtx C) D {
 		},
 		Alignment: layout.Middle,
 	}.Layout2(gtx, func(gtx C) D {
-		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return layout.Flex{Axis: vertical, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					txt := pg.Theme.Body1(values.String(values.StrDCRDEXWelcomeMessage))
@@ -1328,7 +1328,7 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 	// OnNavigateFrom().
 	asset := pg.bondSourceAccountSelector.SelectedWallet()
 	asset.RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
-	asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
+	_ = asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
 		OnBlockAttached: func(_ int, _ int32) {
 			if pg.AssetsManager.DEXCInitialized() && !pg.AssetsManager.DexClient().IsLoggedIn() {
 				// Don't update conf if we are not yet logged in.

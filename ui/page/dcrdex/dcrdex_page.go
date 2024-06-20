@@ -128,7 +128,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 	}
 
 	if pg.showSplashPage || pg.dexIsLoading {
-		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return pg.splashPage(gtx)
 		})
 	}

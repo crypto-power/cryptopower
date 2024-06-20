@@ -595,7 +595,7 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 		OnTransaction: func(_ int, _ *sharedW.Transaction) {
 			wsi.reload()
 		},
-		OnBlockAttached: func(_ int, /*blockHeight*/_ int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			wsi.reload()
 		},
 	}

@@ -35,7 +35,7 @@ jobs:
       - name: Install linter
         uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.58
+          version: v1.59.1
           skip-pkg-cache: true
 
       - name: Install dependencies

@@ -140,7 +140,7 @@ func (sp *startPage) OnNavigatedTo() {
 			sp.unlock()
 		} else {
 			sp.loading = true
-			go sp.openWalletsAndDisplayHomePage("")
+			go func() { _ = sp.openWalletsAndDisplayHomePage("") }()
 		}
 	} else {
 		sp.loading = false
@@ -506,7 +506,7 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 												titleLabel.Font.Weight = font.Bold
 												return layout.Inset{Bottom: values.MarginPadding40}.Layout(gtx, titleLabel.Layout)
 											}),
-											layout.Rigid(func(gtc C) D {
+											layout.Rigid(func(gtx C) D {
 												gtx.Constraints.Max.Y = gtx.Dp(values.MarginPadding48)
 												return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 													layout.Rigid(func(gtx C) D {

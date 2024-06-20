@@ -105,12 +105,12 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 	})
 
 	rp.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		_ = rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	// destinationAccountSelector does not have a default value,
 	// so assign it an initial value here
-	rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.sendDestination.destinationWalletSelector.SelectedWallet())
+	_ = rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.sendDestination.destinationWalletSelector.SelectedWallet())
 }
 
 func (rp *recipient) isShowSendToWallet() bool {

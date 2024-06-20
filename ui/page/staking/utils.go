@@ -239,7 +239,7 @@ func ticketListLayout(gtx C, l *load.Load, wallet *dcr.Asset, ticket *transactio
 
 						return layout.Inset{
 							Right: values.MarginPadding16,
-						}.Layout(gtx, func(gtx C) D {
+						}.Layout(gtx, func(_ C) D {
 							return dims
 						})
 					}),

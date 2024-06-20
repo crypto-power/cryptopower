@@ -60,7 +60,7 @@ func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetTyp
 	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrAccount))
-	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
+	_ = dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
 }
 
 // destinationAddress validates the destination address obtained from the provided

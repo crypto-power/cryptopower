@@ -53,7 +53,7 @@ func newAgendaVoteModal(l *load.Load, dcrWallet *dcr.Asset, agenda *dcr.Agenda, 
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	avm.accountSelector.SelectFirstValidAccount(avm.dcrImpl)
+	_ = avm.accountSelector.SelectFirstValidAccount(avm.dcrImpl)
 }
 
 // - Layout

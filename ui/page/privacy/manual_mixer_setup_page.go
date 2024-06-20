@@ -93,8 +93,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 			return true
 		})
 
-	pg.mixedAccountSelector.SelectFirstValidAccount(dcrWallet)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(dcrWallet)
+	_ = pg.mixedAccountSelector.SelectFirstValidAccount(dcrWallet)
+	_ = pg.unmixedAccountSelector.SelectFirstValidAccount(dcrWallet)
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.backButton = components.GetBackButton(l)
@@ -107,8 +107,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
-	pg.mixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
+	_ = pg.mixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
+	_ = pg.unmixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
 }
 
 // Layout draws the page UI components into the provided layout context

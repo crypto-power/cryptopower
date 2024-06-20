@@ -222,6 +222,6 @@ func (pg *LogPage) HandleUserInteractions() {}
 // Part of the load.Page interface.
 func (pg *LogPage) OnNavigatedFrom() {
 	if pg.tail != nil {
-		pg.tail.Stop()
+		_ = pg.tail.Stop()
 	}
 }

@@ -84,7 +84,7 @@ func (pg *LicensePage) layoutMobile(gtx layout.Context) layout.Dimensions {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 						return layout.UniformInset(values.MarginPadding25).Layout(gtx, func(gtx C) D {
 							licenseText := pg.Theme.Body1(license)
@@ -126,7 +126,7 @@ func (pg *LicensePage) pageContentLayout(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = gtx.Dp(unit.Dp(560))
 		gtx.Constraints.Max.X = gtx.Constraints.Min.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-		return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 				return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 					licenseText := pg.Theme.Body1(license)

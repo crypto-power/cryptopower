@@ -588,7 +588,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			sharedW.LogLevelConfigKey, libutils.DefaultLogLevel, preference.LogOptions).
 			Title(values.StrLogLevel).
 			UpdateValues(func(val string) {
-				logger.SetLogLevels(val)
+				_ = logger.SetLogLevels(val)
 			})
 		pg.ParentWindow().ShowModal(logLevelSelector)
 		break
@@ -642,7 +642,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 					EnableName(false).
 					PasswordHint(values.String(values.StrNewStartupPass)).
 					ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
-					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+					SetPositiveButtonCallback(func(_, newPassword string, m *modal.CreatePasswordModal) bool {
 						if !utils.StringNotEmpty(newPassword) {
 							m.SetError(values.String(values.StrErrPassEmpty))
 							return false
@@ -671,7 +671,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 				SetCancelable(false).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmStartupPass)).
-				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+				SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 					if !utils.StringNotEmpty(password) {
 						m.SetError(values.String(values.StrErrPassEmpty))
 						return false

@@ -28,7 +28,7 @@ func (db *DB) SaveOrUpdate(emptyTxPointer, record interface{}) (overwritten bool
 	if timestamp > 0 {
 		overwritten = true
 		// delete old record before saving new (if it exists)
-		db.walletDataDB.DeleteStruct(emptyTxPointer)
+		_ = db.walletDataDB.DeleteStruct(emptyTxPointer)
 	}
 
 	if txlabel != "" {
