@@ -100,7 +100,7 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 		return rp.isAccountValid(sourceAccount, account)
 	})
 
-	rp.sendDestination.destinationAccountSelector.AccountSelected(func(selectedWallet *sharedW.Account) {
+	rp.sendDestination.destinationAccountSelector.AccountSelected(func(_ *sharedW.Account) {
 		rp.sendDestination.addressChanged()
 	})
 

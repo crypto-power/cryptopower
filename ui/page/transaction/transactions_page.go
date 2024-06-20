@@ -722,7 +722,7 @@ func exportTxs(assets []sharedW.Asset, fileName string) error {
 
 func (pg *TransactionsPage) listenForTxNotifications() {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		OnTransaction: func(walletID int, _ *sharedW.Transaction) {
 			// Listen for all new txs but ignore ntfns if the wallet sending the
 			// ntfn is not the currently selected wallet.
 			if pg.selectedWallet != nil && pg.selectedWallet.GetWalletID() != walletID {

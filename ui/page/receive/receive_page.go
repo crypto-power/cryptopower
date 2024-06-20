@@ -136,7 +136,7 @@ func (pg *Page) initWalletSelectors() {
 		pg.generateQRForAddress()
 	})
 
-	pg.sourceAccountselector.AccountSelected(func(selectedAccount *sharedW.Account) {
+	pg.sourceAccountselector.AccountSelected(func(_ *sharedW.Account) {
 		pg.generateQRForAddress()
 	})
 
@@ -297,7 +297,7 @@ func (pg *Page) contentLayout(gtx C) D {
 									},
 									func(gtx C) D {
 										if pg.selectedWallet.IsSyncing() {
-											syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(a sharedW.Asset) {})
+											syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(_ sharedW.Asset) {})
 											blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 											text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
 											blockInfo := pg.Theme.Label(textSize16, text)

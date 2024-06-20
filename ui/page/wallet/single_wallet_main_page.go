@@ -792,8 +792,8 @@ func (swmp *SingleWalletMasterPage) showBackupInfo() {
 		}).
 		PositiveButtonStyle(swmp.Load.Theme.Color.Primary, swmp.Load.Theme.Color.InvText).
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
-		SetPositiveButtonCallback(func(_ bool, m *modal.InfoModal) bool {
-			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(load *load.Load, navigator app.WindowNavigator) {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(_ *load.Load, navigator app.WindowNavigator) {
 				swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
 				swmp.ParentNavigator().ClosePagesAfter(MainPageID)
 			}))

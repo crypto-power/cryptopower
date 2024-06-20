@@ -426,7 +426,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrCoordinationServer)).
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-			SetPositiveButtonCallback(func(newName string, tim *modal.TextInputModal) bool {
+			SetPositiveButtonCallback(func(_ string, _ *modal.TextInputModal) bool {
 				// Todo - implement custom CSPP server
 				return true
 			})

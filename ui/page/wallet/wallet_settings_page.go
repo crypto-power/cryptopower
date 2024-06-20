@@ -661,7 +661,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.viewSeed.Clicked() {
 		currentPage := pg.ParentWindow().CurrentPageID()
-		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(load *load.Load, navigator app.WindowNavigator) {
+		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 			navigator.ClosePagesAfter(currentPage)
 		}))
 	}

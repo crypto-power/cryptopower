@@ -605,7 +605,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 			Body(values.String(values.StrResetDEXDataWarning)).
 			SetNegativeButtonText(values.String(values.StrCancel)).
 			SetPositiveButtonText(values.String(values.StrReset)).
-			SetPositiveButtonCallback(func(_ bool, in *modal.InfoModal) bool {
+			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				if pg.AssetsManager.DEXCInitialized() {
 					if err := pg.AssetsManager.DeleteDEXData(); err != nil {
 						return false
@@ -762,7 +762,7 @@ func (pg *AppSettingsPage) showDEXSeedModal() {
 				layout.Rigid(pg.copyDEXSeed.Layout),
 			)
 		}).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			utils.ZeroBytes(pg.dexSeed)
 			return true
 		})
@@ -795,7 +795,7 @@ func ChangeNetworkType(load *load.Load, windowNav app.WindowNavigator, newNetTyp
 		SetCancelable(true).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
-		SetPositiveButtonCallback(func(isChecked bool, confirmModal *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			newAssetsManager, err := load.ChangeAssetsManagerNetwork(libutils.ToNetworkType(newNetType))
 			if err != nil {
 				errorModal := modal.NewErrorModal(load, err.Error(), modal.DefaultClickFunc())

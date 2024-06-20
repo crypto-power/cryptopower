@@ -432,7 +432,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		if pg.scheduler.IsChecked() {
 
 			orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
-				OnSettingsSaved(func(params *callbackParams) {
+				OnSettingsSaved(func(_ *callbackParams) {
 					refundAddress, _ := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
 					destinationAddress, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
 					pg.sourceWalletID = pg.sourceWalletSelector.SelectedWallet().GetWalletID()
@@ -1436,7 +1436,7 @@ func (pg *CreateOrderPage) listenForNotifications() {
 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},
-		OnOrderCreated: func(order *instantswap.Order) {
+		OnOrderCreated: func(_ *instantswap.Order) {
 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},

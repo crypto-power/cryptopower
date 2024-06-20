@@ -1178,7 +1178,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		AccountValidator(func(a *sharedW.Account) bool {
 			return !a.IsWatchOnly && pg.validateBondWalletOrAccount(pg.bondSourceWalletSelector.SelectedWallet().GetAssetType(), dexc.WalletAccountNumberConfigKey, fmt.Sprint(a.AccountNumber))
 		}).
-		AccountSelected(func(a *sharedW.Account) {
+		AccountSelected(func(_ *sharedW.Account) {
 			pg.bondAccountHasEnough()
 		})
 	pg.bondSourceAccountSelector.HideLogo = true
@@ -1274,7 +1274,7 @@ func (pg *DEXOnboarding) postBond() {
 		SetNegativeButtonCallback(func() {
 			pg.isLoading = false
 		}).
-		SetPositiveButtonCallback(func(_, walletPass string, pm *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, walletPass string, _ *modal.CreatePasswordModal) bool {
 			if ok := addWalletFn(walletPass); ok {
 				postBondFn()
 			}

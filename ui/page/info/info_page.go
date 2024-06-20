@@ -118,7 +118,7 @@ func (pg *WalletInfo) reload() {
 
 func (pg *WalletInfo) backup(wallet sharedW.Asset) {
 	currentPage := pg.ParentWindow().CurrentPageID()
-	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(load *load.Load, navigator app.WindowNavigator) {
+	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 		navigator.ClosePagesAfter(currentPage)
 	}))
 }

@@ -574,7 +574,7 @@ func (pg *DEXMarketPage) Layout(gtx C) D {
 		},
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
-		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, index int) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return layout.Stack{}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
 					return layout.Inset{Top: 110}.Layout(gtx, func(gtx C) D {

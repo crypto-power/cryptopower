@@ -149,7 +149,7 @@ func (p ProgressBarStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 	progressBarWidth := int(p.Width)
 	return layout.Stack{Alignment: layout.W}.Layout(gtx,
-		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+		layout.Stacked(func(_ layout.Context) layout.Dimensions {
 			return shader(progressBarWidth, p.TrackColor)
 		}),
 		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
