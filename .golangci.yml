@@ -20,3 +20,9 @@ linters:
     - revive
     - goimports
     - unparam
+    - errcheck
+
+linters-settings:
+  errcheck:
+    exclude-functions:
+      - (net/http.ResponseWriter).Write
