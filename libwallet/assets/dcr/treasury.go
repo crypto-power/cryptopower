@@ -104,7 +104,7 @@ func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, pa
 		PiKey: newVotingPolicy,
 	}
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := asset.DCR_VSPTicketInfo(ctx, tHash)
+		vspTicketInfo, err := asset.DCRVSPTicketInfo(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.

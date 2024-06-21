@@ -162,9 +162,9 @@ func (asset *Asset) GetvspPolicy(account int32) vsp.Policy {
 	}
 }
 
-// DCR_VSPTicketInfo masks the upstream VSPTicketInfo method that has been split
+// DCRVSPTicketInfo masks the upstream VSPTicketInfo method that has been split
 // into two methods. Namely NewVSPTicket and VSPTicketInfo.
-func (asset *Asset) DCR_VSPTicketInfo(ctx context.Context, ticketHash *chainhash.Hash) (*w.TicketInfo, error) {
+func (asset *Asset) DCRVSPTicketInfo(ctx context.Context, ticketHash *chainhash.Hash) (*w.TicketInfo, error) {
 	ticket, err := asset.Internal().DCR.NewVSPTicket(ctx, ticketHash)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	// Read the VSP info for this ticket from the wallet db.
 	ctx, _ := asset.ShutdownContextWithCancel()
-	walletTicketInfo, err := asset.DCR_VSPTicketInfo(ctx, ticketHash)
+	walletTicketInfo, err := asset.DCRVSPTicketInfo(ctx, ticketHash)
 	if err != nil {
 		log.Warnf("unable to getWallet info using ticket: %s Error: %v", hash, err)
 		return nil, err
