@@ -63,13 +63,13 @@ func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, col
 	}
 
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
+		layout.Rigid(func(_ C) D {
 			return lblWidget(mainTextSize, mainText)
 		}),
-		layout.Rigid(func(gtx C) D {
+		layout.Rigid(func(_ C) D {
 			return lblWidget(subTextSize, subText)
 		}),
-		layout.Rigid(func(gtx C) D {
+		layout.Rigid(func(_ C) D {
 			if displayUnitText {
 				return lblWidget(mainTextSize, unitText)
 			}

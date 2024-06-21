@@ -187,7 +187,8 @@ func (pg *Page) initModalWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.selectedWallet = selectedWallet
-		go load.GetAPIFeeRate(pg.selectedWallet)
+		// TODO: @JustinDo Why was this go routine necessary.
+		//go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 		pg.setAssetTypeForRecipients()
 		pg.initializeAccountSelectors()
@@ -223,7 +224,7 @@ func (pg *Page) initializeAccountSelectors() {
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
 	// if a source account exists, don't overwrite it.
 	if pg.sourceAccountSelector.SelectedAccount() == nil {
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		_ = pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	}
 }
 
@@ -274,7 +275,8 @@ func (pg *Page) OnNavigatedTo() {
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
-		go load.GetAPIFeeRate(pg.selectedWallet)
+		// TODO: @Wisdom Why was this line necessary?
+		// go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 	}
 }

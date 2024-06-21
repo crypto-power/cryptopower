@@ -309,7 +309,7 @@ func (pg *OverviewPage) reload() {
 
 func (pg *OverviewPage) backup(wallet sharedW.Asset) {
 	currentPage := pg.ParentWindow().CurrentPageID()
-	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(load *load.Load, navigator app.WindowNavigator) {
+	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 		navigator.ClosePagesAfter(currentPage)
 	}))
 }
@@ -335,7 +335,7 @@ func (pg *OverviewPage) layoutDesktop(gtx C) D {
 	}
 
 	return cryptomaterial.UniformPaddingWithTopInset(values.MarginPadding15, gtx, func(gtx C) D {
-		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
@@ -1183,7 +1183,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 
 	// Reload wallets unmixed balance and reload UI on new blocks.
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			pg.reloadBalances()
 			pg.ParentWindow().Reload()
 		},

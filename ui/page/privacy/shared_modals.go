@@ -55,7 +55,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
 				Body(values.String(values.StrMixerAccErrorMsg)).
 				SetPositiveButtonText(values.String(values.StrBackAndRename)).
-				SetPositiveButtonCallback(func(movefundsChecked bool, _ *modal.InfoModal) bool {
+				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					conf.pageNavigator.CloseCurrentPage()
 					return true
 				})

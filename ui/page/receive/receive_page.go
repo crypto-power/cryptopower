@@ -108,7 +108,7 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 				}
 				return false
 			})
-		pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)
+		_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)
 	}
 
 	return pg
@@ -128,15 +128,15 @@ func (pg *Page) initWalletSelectors() {
 
 			return accountIsValid
 		})
-	pg.sourceAccountselector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
+	_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
 
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.selectedWallet = selectedWallet
-		pg.sourceAccountselector.SelectFirstValidAccount(selectedWallet)
+		_ = pg.sourceAccountselector.SelectFirstValidAccount(selectedWallet)
 		pg.generateQRForAddress()
 	})
 
-	pg.sourceAccountselector.AccountSelected(func(selectedAccount *sharedW.Account) {
+	pg.sourceAccountselector.AccountSelected(func(_ *sharedW.Account) {
 		pg.generateQRForAddress()
 	})
 
@@ -166,8 +166,8 @@ func (pg *Page) OnNavigatedTo() {
 		return
 	}
 
-	pg.sourceAccountselector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
-	pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)  // Want to reset the user's selection everytime this page appears?
+	pg.sourceAccountselector.ListenForTxNotifications(pg.ParentWindow())    // listener is stopped in OnNavigatedFrom()
+	_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
 	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.sourceAccountselector.SelectedAccount().Number)
 	if err != nil {
@@ -235,7 +235,7 @@ func (pg *Page) Layout(gtx C) D {
 func (pg *Page) contentLayout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
-	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 		textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 		uniformSize := values.MarginPadding16
 		if pg.modalLayout != nil {
@@ -297,7 +297,7 @@ func (pg *Page) contentLayout(gtx C) D {
 									},
 									func(gtx C) D {
 										if pg.selectedWallet.IsSyncing() {
-											syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(a sharedW.Asset) {})
+											syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(_ sharedW.Asset) {})
 											blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 											text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
 											blockInfo := pg.Theme.Label(textSize16, text)

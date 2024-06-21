@@ -45,7 +45,7 @@ func newAgendaVoteModal(l *load.Load, dcrWallet *dcr.Asset, agenda *dcr.Agenda, 
 		AccountSelected(func(selectedAccount *sharedW.Account) {
 			avm.accountSelected = selectedAccount
 		}).
-		AccountValidator(func(account *sharedW.Account) bool {
+		AccountValidator(func(_ *sharedW.Account) bool {
 			return true
 		})
 
@@ -53,7 +53,7 @@ func newAgendaVoteModal(l *load.Load, dcrWallet *dcr.Asset, agenda *dcr.Agenda, 
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	avm.accountSelector.SelectFirstValidAccount(avm.dcrImpl)
+	_ = avm.accountSelector.SelectFirstValidAccount(avm.dcrImpl)
 }
 
 // - Layout

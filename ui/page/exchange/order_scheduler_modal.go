@@ -237,7 +237,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 										})
 									}),
 									layout.Rigid(func(gtx C) D {
-										return osm.Theme.List(osm.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+										return osm.Theme.List(osm.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 											return cryptomaterial.LinearLayout{
 												Width:     cryptomaterial.MatchParent,
 												Height:    cryptomaterial.WrapContent,
@@ -494,7 +494,9 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 			SpendingPassphrase: osm.passwordEditor.Editor.Text(),
 		}
 
-		go osm.AssetsManager.StartScheduler(context.Background(), params)
+		go func() {
+			_ = osm.AssetsManager.StartScheduler(context.Background(), params)
+		}()
 
 		osm.Dismiss()
 		osm.orderSchedulerStarted()

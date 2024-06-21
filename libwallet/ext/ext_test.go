@@ -220,7 +220,7 @@ var (
 		UnconfirmedBalance: 0,
 		UnconfirmedTxs:     0,
 		Txs:                17,
-		TxIds: []string{
+		TxIDs: []string{
 			"bd1bf8897a5c1a53f3e90c26fc908d03624f8bd5d21da49ba8fa80cb99bae84d",
 			"335fc62ec6ebd8d29cef8dc98478807327ad2f2bc58a4ca6fb8a73411a38788f",
 			"88b4e3b7162667d0d5aec2e78663342721413a6fea280062444ab8d9f13065ac",
@@ -249,7 +249,7 @@ var (
 		UnconfirmedBalance: 0,
 		UnconfirmedTxs:     0,
 		Txs:                35,
-		TxIds: []string{
+		TxIDs: []string{
 			"bd1bf8897a5c1a53f3e90c26fc908d03624f8bd5d21da49ba8fa80cb99bae84d",
 			"335fc62ec6ebd8d29cef8dc98478807327ad2f2bc58a4ca6fb8a73411a38788f",
 			"88b4e3b7162667d0d5aec2e78663342721413a6fea280062444ab8d9f13065ac",
@@ -288,7 +288,7 @@ func TestGetBestBlock(t *testing.T) {
 	}{
 		{
 			name: "best block",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`681536`))
 			})),
@@ -319,7 +319,7 @@ func TestGetBestBlockTimeStamp(t *testing.T) {
 	}{
 		{
 			name: "bestblock timeStamp",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"height":681649,"size":22216,"hash":"0000000000000000109256ba6dab7e921c4d7e98d00357f51bff3b2d28ef345e",
 					"diff":3046219499.387013,"sdiff":227.59014758,"time":1659420872,"txlength":0,"ticket_pool":{"height":0,"size":41152,
@@ -354,7 +354,7 @@ func TestGetCurrentAgendaStatus(t *testing.T) {
 	}{
 		{
 			name: "current agenda status",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"currentheight":681658,"startheight":681472,"endheight":689535,"hash":"00000000000000008a66428f2b98ab0ed1a220cfe23013acc393801d5e480b40",
 					"voteversion":9,"quorum":4032,"totalvotes":931,"agendas":[{"id":"reverttreasurypolicy","description":"Change maximum treasury expenditure policy as defined in DCP0007",
@@ -395,7 +395,7 @@ func TestGetAgendas(t *testing.T) {
 	}{
 		{
 			name: "agendas list",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`[{"name":"reverttreasurypolicy","description":"Change maximum treasury expenditure policy as defined in DCP0007","status":"finished","votingStarted":0,"votingdone":649215,"activated":657280,"hardforked":0,"starttime":"2021-09-16T00:00:00Z","expiretime":"2023-09-16T00:00:00Z","voteversion":9,"mask":6},
 						{"name":"explicitverupgrades","description":"Enable explicit version upgrades as defined in DCP0008","status":"finished","votingStarted":0,"votingdone":649215,"activated":657280,"hardforked":0,"starttime":"2021-09-16T00:00:00Z","expiretime":"2023-09-16T00:00:00Z","voteversion":9,"mask":24},
@@ -431,7 +431,7 @@ func TestGetTreasuryBalance(t *testing.T) {
 	}{
 		{
 			name: "treasury balance",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"height":681712,"maturity_height":681456,"balance":75919531830200,"output_count":129283,
 						"add_count":13,"added":61780107690000,"spend_count":5,"spent":779373012698,"tbase_count":129265,
@@ -467,7 +467,7 @@ func TestGetExchangeRate(t *testing.T) {
 	}{
 		{
 			name: "exchange rate",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"btcIndex":"USD","dcrPrice":26.182965232480655,"btcPrice":22728.06395,
 					"exchanges":{
@@ -506,7 +506,7 @@ func TestGetTicketFeeRateSummary(t *testing.T) {
 	}{
 		{
 			name: "Ticket Fee rate summary",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"height":681734,"time":1659448720,"number":0,"min":0,"max":0,"mean":0,"median":0,"stddev":0,"lowest_mineable":0}`))
 			})),
@@ -540,7 +540,7 @@ func TestGetTicketFeeRate(t *testing.T) {
 	}{
 		{
 			name: "Ticket Fee rate",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"height":681741,"time":1659449708,"length":0,"total":0,"top_fees":[]}`))
 			})),
@@ -574,7 +574,7 @@ func TestGetAddress(t *testing.T) {
 	}{
 		{
 			name: "address state",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"page":1,"totalPages":1,"itemsOnPage":1000,"address":"DsTxPUVFxXeNgu5fzozr4mTR4tqqMaKcvpY","balance":"0",
 					"totalReceived":"95645588","totalSent":"95645588","unconfirmedBalance":"0","unconfirmedTxs":0,"txs":17,

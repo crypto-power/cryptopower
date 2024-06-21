@@ -96,7 +96,7 @@ func (tx *transaction) DeleteTopLevelBucket(key []byte) error {
 		return errors.E(errors.Invalid)
 	}
 
-	tx.badgerTx.Delete(item.Key()[:])
+	_ = tx.badgerTx.Delete(item.Key()[:])
 
 	it := tx.badgerTx.NewIterator(badger.DefaultIteratorOptions)
 	defer it.Close()
@@ -108,7 +108,7 @@ func (tx *transaction) DeleteTopLevelBucket(key []byte) error {
 		}
 		prefixLength := int(val[0])
 		if bytes.Equal(item.Key()[:prefixLength], key) {
-			tx.badgerTx.Delete(item.Key()[:])
+			_ = tx.badgerTx.Delete(item.Key()[:])
 		}
 	}
 	for i := range tx.buckets {

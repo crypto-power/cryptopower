@@ -55,12 +55,12 @@ func parseHex(colorCode string) (color.NRGBA, bool) {
 
 	var r, g, b uint8
 	if len(colorCode) == 4 {
-		fmt.Sscanf(colorCode, hexShortFormat, &r, &g, &b)
+		_, _ = fmt.Sscanf(colorCode, hexShortFormat, &r, &g, &b)
 		r *= hexToRGBFactor
 		g *= hexToRGBFactor
 		b *= hexToRGBFactor
 	} else {
-		fmt.Sscanf(colorCode, hexFormat, &r, &g, &b)
+		_, _ = fmt.Sscanf(colorCode, hexFormat, &r, &g, &b)
 	}
 
 	return color.NRGBA{R: r, G: g, B: b, A: 255}, true

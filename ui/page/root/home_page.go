@@ -172,7 +172,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	allWallets := hp.AssetsManager.AllWallets()
 	for _, wallet := range allWallets {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			hp.startSyncing(wallet, func(isUnlock bool) {})
+			hp.startSyncing(wallet, func(_ bool) {})
 		}
 	}
 
@@ -240,7 +240,7 @@ func (hp *HomePage) initDEX() {
 				}).
 				SetNegativeButtonText(values.String(values.StrIWillLoginLater)).
 				SetPositiveButtonText(values.String(values.StrLogin)).
-				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					dexPassEditor.SetError("")
 					err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
 					if err != nil {
@@ -305,7 +305,7 @@ func (hp *HomePage) initDEX() {
 			SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
 			SetNegativeButtonCallback(showDEXLoginModal).
 			SetPositiveButtonText(values.String(values.StrOkaySync)).
-			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				if !hp.isConnected.Load() {
 					hp.Toast.NotifyError(values.String(values.StrNotConnected))
 				} else {

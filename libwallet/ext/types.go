@@ -77,7 +77,7 @@ type (
 		UnconfirmedBalance int64    `json:"unconfirmedBalance,string"`
 		UnconfirmedTxs     int64    `json:"unconfirmedTxs"`
 		Txs                int32    `json:"txs"`
-		TxIds              []string `json:"txids"`
+		TxIDs              []string `json:"txids"`
 	}
 
 	// XpubAddress models data about a specific xpub token.
@@ -100,7 +100,7 @@ type (
 		UnconfirmedBalance int64         `json:"unconfirmedBalance,string"`
 		UnconfirmedTxs     int64         `json:"unconfirmedTxs"`
 		Txs                int32         `json:"txs"`
-		TxIds              []string      `json:"txids"`
+		TxIDs              []string      `json:"txids"`
 		UsedTokens         int32         `json:"usedTokens"`
 		XpubAddress        []XpubAddress `json:"tokens"`
 	}

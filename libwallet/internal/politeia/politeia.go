@@ -84,7 +84,7 @@ func (p *Politeia) saveOrOverwiteProposal(proposal *Proposal) error {
 
 	if oldProposal.Token != "" {
 		// delete old record before saving new (if it exists)
-		p.db.DeleteStruct(oldProposal)
+		_ = p.db.DeleteStruct(oldProposal)
 	}
 
 	return p.db.Save(proposal)

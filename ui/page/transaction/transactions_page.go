@@ -499,7 +499,7 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 						return layout.Center.Layout(gtx, pg.materialLoader.Layout)
 					}
 
-					return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+					return pg.scroll.List().Layout(gtx, 1, func(gtx C, _ int) D {
 						return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 							return card.Layout(gtx, func(gtx C) D {
 								padding := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)
@@ -626,7 +626,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 			Body(values.String(values.StrExportTransactionsMsg)).
 			SetNegativeButtonText(values.String(values.StrCancel)).
 			SetPositiveButtonText(values.String(values.StrExport)).
-			SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
+			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				assets := []sharedW.Asset{pg.selectedWallet}
 				if pg.selectedWallet == nil {
 					assets = pg.assetWallets
@@ -722,7 +722,7 @@ func exportTxs(assets []sharedW.Asset, fileName string) error {
 
 func (pg *TransactionsPage) listenForTxNotifications() {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		OnTransaction: func(walletID int, _ *sharedW.Transaction) {
 			// Listen for all new txs but ignore ntfns if the wallet sending the
 			// ntfn is not the currently selected wallet.
 			if pg.selectedWallet != nil && pg.selectedWallet.GetWalletID() != walletID {

@@ -242,7 +242,7 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 							Top:  values.MarginPadding20,
 							Left: values.MarginPaddingMinus75,
 						}
-						return inset.Layout(gtx, func(gtx C) D {
+						return inset.Layout(gtx, func(_ C) D {
 							// return page.walletInfoPopup(gtx)
 							return layout.Dimensions{}
 						})

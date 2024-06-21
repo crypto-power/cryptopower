@@ -149,7 +149,7 @@ func (p ProgressBarStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 	progressBarWidth := int(p.Width)
 	return layout.Stack{Alignment: layout.W}.Layout(gtx,
-		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+		layout.Stacked(func(_ layout.Context) layout.Dimensions {
 			return shader(progressBarWidth, p.TrackColor)
 		}),
 		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
@@ -204,14 +204,14 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 
 	// This takes only 2 layers
 	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
+		layout.Rigid(func(_ C) D {
 			width := calProgressWidth(mp.items[0].Value)
 			if width == 0 {
 				return D{}
 			}
 			return pg(int(width), mp.items[0].Label, mp.items[0].Color)
 		}),
-		layout.Rigid(func(gtx C) D {
+		layout.Rigid(func(_ C) D {
 			width := calProgressWidth(mp.items[1].Value)
 			if width == 0 {
 				return D{}

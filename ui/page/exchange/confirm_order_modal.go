@@ -138,7 +138,7 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		err = com.constructTx(order.DepositAddress, order.InvoicedAmount)
 		if err != nil {
-			com.AssetsManager.InstantSwap.DeleteOrder(order)
+			_ = com.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			return
 		}
@@ -146,7 +146,7 @@ func (com *confirmOrderModal) confirmOrder() {
 		// FOR DEVELOPMENT: Comment this block to prevent debit of account
 		_, err = com.sourceWalletSelector.SelectedWallet().Broadcast(password, "")
 		if err != nil {
-			com.AssetsManager.InstantSwap.DeleteOrder(order)
+			_ = com.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			return
 		}
@@ -195,7 +195,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 									})
 								}),
 								layout.Rigid(func(gtx C) D {
-									return com.Theme.List(com.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+									return com.Theme.List(com.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
 												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

@@ -74,7 +74,7 @@ func (pg *WalletSelectorPage) deleteBadWallet(badWalletID int) {
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
-		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			err := pg.AssetsManager.DeleteBadWallet(badWalletID)
 			if err != nil {
 				errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())

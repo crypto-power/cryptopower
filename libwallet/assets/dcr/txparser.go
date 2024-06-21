@@ -103,7 +103,7 @@ func (asset *Asset) decodeTransactionWithTxSummary(txSummary *w.TransactionSumma
 
 		// update ticket with spender hash
 		ticketPurchaseTx.TicketSpender = decodedTx.Hash
-		asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, ticketPurchaseTx)
+		_, _ = asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, ticketPurchaseTx)
 	}
 
 	return decodedTx, nil

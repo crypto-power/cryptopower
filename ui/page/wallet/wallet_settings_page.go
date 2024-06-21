@@ -377,7 +377,7 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 		EnableName(false).
 		PasswordHint(values.String(values.StrNewSpendingPassword)).
 		ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
-		SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, newPassword string, m *modal.CreatePasswordModal) bool {
 			err := pg.wallet.ChangePrivatePassphraseForWallet(currentPassword,
 				newPassword, sharedW.PassphraseTypePass)
 			if err != nil {
@@ -637,7 +637,7 @@ func (pg *SettingsPage) showWarningModalDialog(title, msg string) {
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			// TODO: Check if deletion happened successfully
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
@@ -661,7 +661,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.viewSeed.Clicked() {
 		currentPage := pg.ParentWindow().CurrentPageID()
-		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(load *load.Load, navigator app.WindowNavigator) {
+		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 			navigator.ClosePagesAfter(currentPage)
 		}))
 	}
