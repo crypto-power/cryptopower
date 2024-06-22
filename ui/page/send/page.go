@@ -218,7 +218,21 @@ func (pg *Page) initializeAccountSelectors() {
 				// only mixed accounts can send to address/wallets for wallet with privacy setup
 				// don't need to check account the same with destination account
 				accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
+
+				// For an Intra-Accounts to happen transfer the bare minimum expected is that:
+				// 1. There is only one recipient instance available.
+				// 2. Both (i.e. source and recipient) use the same wallet.
+				// 3. Source account selected must have a spendable balance
+				// 4. Recipient's wallet tab option must be active.
+				// 5. The destination and source accounts must be different.
+				if len(pg.recipients) == 1 && !pg.recipients[0].isSendToAddress() && account.Balance.Spendable.ToInt() > 0 {
+					if pg.recipients[0].selectedWallet.GetWalletName() == pg.selectedWallet.GetWalletName() {
+						// If it is same wallet, make accounts different from the destination valid.
+						accountIsValid = account != pg.recipients[0].destinationAccount()
+					}
+				}
 			}
+
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))

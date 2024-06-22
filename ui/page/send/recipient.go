@@ -148,7 +148,7 @@ func (rp *recipient) isShowSendToWallet() bool {
 }
 
 func (rp *recipient) isSendToAddress() bool {
-	return rp.sendDestination.sendToAddress
+	return rp.sendDestination.isSendToAddress()
 }
 
 func (rp *recipient) isValidated() bool {
@@ -233,7 +233,7 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 					return layoutBody(gtx)
 				}
 
-				if !rp.sendDestination.sendToAddress {
+				if !rp.isSendToAddress() {
 					layoutBody = rp.walletAccountlayout(window)
 				}
 
@@ -389,7 +389,7 @@ func (rp *recipient) handle() {
 	}
 
 	// if destination switch is equal to Address
-	if rp.sendDestination.sendToAddress {
+	if rp.isSendToAddress() {
 		if rp.sendDestination.validate() {
 			if !rp.AssetsManager.ExchangeRateFetchingEnabled() {
 				if len(rp.amount.amountEditor.Editor.Text()) == 0 {
