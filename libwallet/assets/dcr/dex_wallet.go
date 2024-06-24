@@ -207,7 +207,8 @@ func (dw *DEXWallet) LockedOutputs(ctx context.Context, accountName string) ([]c
 func (dw *DEXWallet) Unspents(ctx context.Context, accountName string) ([]*walletjson.ListUnspentResult, error) {
 	data, err := dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
 	var array = make([]*walletjson.ListUnspentResult, len(data))
-	// Copy v4 data into v3 container
+	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
+	// dcrwallet v4, copy v4 data into a v3 instance.
 	for _, val := range data {
 		array = append(array, &walletjson.ListUnspentResult{
 			TxID:          val.TxID,
@@ -582,7 +583,8 @@ func (dw *DEXWallet) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (
 func (dw *DEXWallet) ListSinceBlock(ctx context.Context, start, end, syncHeight int32) ([]walletjson.ListTransactionsResult, error) {
 	data, err := dw.w.ListSinceBlock(ctx, start, end, syncHeight)
 	var array = make([]walletjson.ListTransactionsResult, len(data))
-	// Copy v4 data into v3 container
+	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
+	// dcrwallet v4, copy v4 data into a v3 instance.
 	for _, val := range data {
 		var txType = wallettypes.ListTransactionsTxType(*val.TxType)
 		newVal := walletjson.ListTransactionsResult{
