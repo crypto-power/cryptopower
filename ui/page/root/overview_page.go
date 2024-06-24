@@ -226,14 +226,14 @@ func (pg *OverviewPage) OnNavigatedTo() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *OverviewPage) HandleUserInteractions() {
-	for pg.sliderRedirectBtn.Clicked() {
+func (pg *OverviewPage) HandleUserInteractions(gtx C) {
+	for pg.sliderRedirectBtn.Clicked(gtx) {
 		walPage := NewWalletSelectorPage(pg.Load)
 		walPage.showNavigationFunc = pg.showNavigationFunc
 		pg.ParentNavigator().Display(walPage)
 	}
 
-	if pg.forceRefreshRates.Clicked() {
+	if pg.forceRefreshRates.Clicked(gtx) {
 		go pg.AssetsManager.RateSource.Refresh(true)
 	}
 
@@ -256,7 +256,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
-	if pg.forwardButton.Button.Clicked() {
+	if pg.forwardButton.Button.Clicked(gtx) {
 		curSliderIndex := pg.mixerSlider.GetSelectedIndex()
 		mixerData := pg.mixerSliderData[pg.sortedMixerSlideKeys[curSliderIndex]]
 		selectedWallet := mixerData.Asset
@@ -273,7 +273,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 
 	for _, info := range pg.listInfoWallets {
-		if info.ForwardButton.Button.Clicked() {
+		if info.ForwardButton.Button.Clicked(gtx) {
 			pg.showNavigationFunc(true)
 			callback := func() {
 				pg.showNavigationFunc(false)
@@ -1042,7 +1042,11 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 		return pg.recentProposalList.Layout(gtx, len(pg.proposalItems), func(gtx C, i int) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.ProposalsList(gtx, pg.Load, pg.proposalItems[i])
+					fmt.Println("----ProposalsList---00----0000--", len(pg.proposalItems))
+					fmt.Println("----ProposalsList---11----0000--", i)
+					list := components.ProposalsList(gtx, pg.Load, pg.proposalItems[i])
+					fmt.Println("----ProposalsList--------111111-")
+					return list
 				}),
 				layout.Rigid(func(gtx C) D {
 					// No divider for last row

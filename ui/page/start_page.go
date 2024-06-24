@@ -240,8 +240,8 @@ func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (sp *startPage) HandleUserInteractions() {
-	if sp.networkSwitchButton.Clicked() {
+func (sp *startPage) HandleUserInteractions(gtx C) {
+	if sp.networkSwitchButton.Clicked(gtx) {
 		newNetType := libutils.Testnet
 		if sp.AssetsManager.NetType() == libutils.Testnet {
 			newNetType = libutils.Mainnet
@@ -249,7 +249,7 @@ func (sp *startPage) HandleUserInteractions() {
 		settings.ChangeNetworkType(sp.Load, sp.ParentWindow(), string(newNetType))
 	}
 
-	if sp.addWalletButton.Clicked() {
+	if sp.addWalletButton.Clicked(gtx) {
 		createWalletPage := components.NewCreateWallet(sp.Load, func() {
 			sp.setLanguagePref(false)
 			sp.ParentNavigator().Display(root.NewHomePage(sp.ctx, sp.Load))
@@ -257,7 +257,7 @@ func (sp *startPage) HandleUserInteractions() {
 		sp.ParentNavigator().Display(createWalletPage)
 	}
 
-	for sp.nextButton.Clicked() {
+	if sp.nextButton.Clicked(gtx) {
 		if sp.currentPageIndex < startupSettingsPageIndex {
 			sp.currentPageIndex++
 		} else {
@@ -267,14 +267,14 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	for i, item := range sp.settingsOptions {
-		for item.clickable.Clicked() {
+		for item.clickable.Clicked(gtx) {
 			sp.selectedSettingsOptionIndex = i
 			if item.title == values.String(values.StrAdvanced) {
 				sp.ParentWindow().Display(settings.NewAppSettingsPage(sp.Load))
 			}
 		}
 
-		for item.infoButton.Button.Clicked() {
+		if item.infoButton.Button.Clicked(gtx) {
 			body := values.String(values.StrRecommendedModalBody)
 			if i == advancedSettingsOptionIndex {
 				body = values.String(values.StrAdvancedModalBody)
@@ -289,13 +289,13 @@ func (sp *startPage) HandleUserInteractions() {
 		}
 	}
 
-	if sp.languageDropdown.Changed() {
+	if sp.languageDropdown.Changed(gtx) {
 		// Refresh the user language now.
 		values.SetUserLanguage(sp.selectedLanguageKey())
 		sp.RefreshTheme(sp.ParentWindow())
 	}
 
-	for sp.backButton.Clicked() {
+	if sp.backButton.Clicked(gtx) {
 		sp.currentPageIndex--
 	}
 

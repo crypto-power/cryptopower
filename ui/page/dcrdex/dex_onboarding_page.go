@@ -227,7 +227,8 @@ func (pg *DEXOnboarding) OnNavigatedTo() {
 	}()
 
 	pg.ctx, pg.cancelCtx = context.WithCancel(context.Background())
-	pg.checkForPendingBondPayment("")
+	// TODO07 need handler
+	// pg.checkForPendingBondPayment("")
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -867,8 +868,8 @@ func calculateBondAmount(asset sharedW.Asset, bondAsset *core.BondAsset, tier in
 // user interaction recently occurred on the page and may be used to update the
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
-func (pg *DEXOnboarding) HandleUserInteractions() {
-	if pg.addServerBtn.Clicked() {
+func (pg *DEXOnboarding) HandleUserInteractions(gtx C) {
+	if pg.addServerBtn.Clicked(gtx) {
 		pg.wantCustomServer = true
 		pg.currentStep = onBoardingStepAddServer
 
@@ -877,14 +878,14 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.serverCertEditor.Editor.SetText("")
 	}
 
-	if pg.goBackToChooseServer.Clicked() {
+	if pg.goBackToChooseServer.Clicked(gtx) {
 		pg.wantCustomServer = false
 		pg.currentStep = onboardingChooseServer
 		pg.serverURLEditor.SetError("")
 		pg.serverCertEditor.SetError("")
 	}
 
-	if pg.goBackBtn.Clicked() {
+	if pg.goBackBtn.Clicked(gtx) {
 		switch pg.currentStep {
 		case onboardingPostBond:
 			if pg.wantCustomServer {
@@ -901,7 +902,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		}
 	}
 
-	if pg.bondStrengthMoreInfo.Clicked() {
+	if pg.bondStrengthMoreInfo.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrBondStrength)).
 			SetupWithTemplate(modal.BondStrengthInfoTemplate).
@@ -912,7 +913,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 	}
 
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor, pg.serverURLEditor.Editor, pg.serverCertEditor.Editor, pg.bondStrengthEditor.Editor, pg.seedEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor, pg.serverURLEditor.Editor, pg.serverCertEditor.Editor, pg.bondStrengthEditor.Editor, pg.seedEditor.Editor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.passwordEditor.SetError("")
@@ -923,7 +924,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.seedEditor.SetError("")
 	}
 
-	if (pg.nextBtn.Clicked() || isSubmit) && !pg.isLoading {
+	if (pg.nextBtn.Clicked(gtx) || isSubmit) && !pg.isLoading {
 		dexc := pg.AssetsManager.DexClient()
 		switch pg.currentStep {
 		case onboardingSetPassword:
@@ -991,7 +992,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			pg.isLoading = true
 			if !dexc.InitializedWithPassword() || len(pg.dexPass) > 0 {
 				go func() {
-					pg.connectServerAndPrepareForBonding()
+					pg.connectServerAndPrepareForBonding(gtx)
 					pg.isLoading = false
 				}()
 				break
@@ -1007,7 +1008,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			// Re-login is a no-op.
 			callbackFn := func(password string) {
 				pg.dexPass = []byte(password)
-				pg.connectServerAndPrepareForBonding()
+				pg.connectServerAndPrepareForBonding(gtx)
 				pg.isLoading = false
 			}
 
@@ -1028,14 +1029,14 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}
 
 			if !pg.bondSourceWalletSelector.SelectedWallet().IsSynced() { // Only fully synced wallets should post bonds.
-				pg.notifyError(values.String(values.StrWalletNotSynced))
+				pg.notifyError(gtx, values.String(values.StrWalletNotSynced))
 				return
 			}
 
 			pg.isLoading = true
 			go func() {
 				if dexc.InitializedWithPassword() {
-					pg.postBond()
+					pg.postBond(gtx)
 					pg.isLoading = false
 					return
 				}
@@ -1044,7 +1045,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
 				if err := dexc.InitWithPassword(pg.dexPass, nil); err != nil {
 					pg.isLoading = false
-					pg.notifyError(err.Error())
+					pg.notifyError(gtx, err.Error())
 					return
 				}
 
@@ -1052,11 +1053,11 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				err := dexc.Login(pg.dexPass)
 				if err != nil {
 					pg.isLoading = false
-					pg.notifyError(err.Error())
+					pg.notifyError(gtx, err.Error())
 					return
 				}
 
-				pg.postBond()
+				pg.postBond(gtx)
 			}()
 
 		case onBoardingStepWaitForConfirmation:
@@ -1075,12 +1076,12 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				pg.dexPass = []byte(pass)
 				err := dexc.Login(pg.dexPass)
 				if err != nil {
-					pg.notifyError(err.Error())
+					pg.notifyError(gtx, err.Error())
 				} else {
 					// Check now if we should still wait.
 					xc, err := dexc.Exchange(pg.bondServer.url)
 					if err != nil {
-						pg.notifyError(err.Error())
+						pg.notifyError(gtx, err.Error())
 					} else if len(xc.Auth.PendingBonds) == 0 {
 						// No pending bonds to wait for, show market page with
 						// the server selected.
@@ -1120,7 +1121,7 @@ func (pg *DEXOnboarding) setAddServerStep() {
 	}
 }
 
-func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
+func (pg *DEXOnboarding) connectServerAndPrepareForBonding(gtx C) {
 	dexClient := pg.AssetsManager.DexClient()
 	var xc *core.Exchange
 	var err error
@@ -1130,7 +1131,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		xc, _, err = dexClient.DiscoverAccount(pg.bondServer.url, pg.dexPass, pg.bondServer.cert)
 		if err == nil {
 			if len(xc.Auth.PendingBonds) > 0 { // has pending bonds, let's wait for them
-				pg.checkForPendingBondPayment(xc.Host)
+				pg.checkForPendingBondPayment(gtx, xc.Host)
 				return
 			} else if xc.Auth.EffectiveTier > 0 {
 				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, xc.Host)) // Show market page with the server selected.
@@ -1141,7 +1142,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		xc, err = dexClient.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
 	}
 	if err != nil {
-		pg.notifyError(fmt.Errorf("Error retrieving DEX server info: %w", err).Error())
+		pg.notifyError(gtx, fmt.Errorf("Error retrieving DEX server info: %w", err).Error())
 		return
 	}
 
@@ -1157,7 +1158,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	}
 
 	if len(supportedBondAssets) == 0 {
-		pg.notifyError(values.StringF(values.StrNoSupportedBondAsset, pg.bondServer.url))
+		pg.notifyError(gtx, values.StringF(values.StrNoSupportedBondAsset, pg.bondServer.url))
 		return
 	}
 
@@ -1194,7 +1195,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 
 // postBond prepares the data required to post bond and starts the bond posting
 // process.
-func (pg *DEXOnboarding) postBond() {
+func (pg *DEXOnboarding) postBond(gtx C) {
 	dexClient := pg.AssetsManager.DexClient()
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
@@ -1225,7 +1226,7 @@ func (pg *DEXOnboarding) postBond() {
 
 		err := dexClient.AddWallet(bondAsset.ID, cfg, pg.dexPass, []byte(walletPass))
 		if err != nil {
-			pg.notifyError(fmt.Sprintf("Failed to prepare bond wallet: %v", err))
+			pg.notifyError(gtx, fmt.Sprintf("Failed to prepare bond wallet: %v", err))
 			return false
 		}
 
@@ -1237,7 +1238,7 @@ func (pg *DEXOnboarding) postBond() {
 	postBondFn := func() {
 		res, err := dexClient.PostBond(postBond)
 		if err != nil {
-			pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
+			pg.notifyError(gtx, fmt.Sprintf("Failed to post bond: %v", err))
 			return
 		}
 
@@ -1253,7 +1254,7 @@ func (pg *DEXOnboarding) postBond() {
 	pg.isLoading = true
 	walletID, err := dexClient.WalletIDForAsset(bondAsset.ID)
 	if err != nil {
-		pg.notifyError(err.Error())
+		pg.notifyError(gtx, err.Error())
 		return
 	}
 
@@ -1341,7 +1342,7 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 }
 
 // host is optional.
-func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
+func (pg *DEXOnboarding) checkForPendingBondPayment(gtx C, host string) {
 	// Check if bond has already been posted but still pending confirmation.
 	xcHost, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager, host)
 	if bond == nil {
@@ -1370,7 +1371,7 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 		pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
 		ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
 		if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.
-			pg.notifyError(values.String(values.StrNoWalletLoaded))
+			pg.notifyError(gtx, values.String(values.StrNoWalletLoaded))
 			return
 		}
 
@@ -1389,7 +1390,7 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 	pg.ParentWindow().ShowModal(dexPasswordModal)
 }
 
-func (pg *DEXOnboarding) notifyError(errMsg string) {
+func (pg *DEXOnboarding) notifyError(gtx C, errMsg string) {
 	errModal := modal.NewErrorModal(pg.Load, errMsg, modal.DefaultClickFunc())
 	pg.ParentWindow().ShowModal(errModal)
 }

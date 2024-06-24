@@ -71,7 +71,8 @@ func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 }
 
 func (com *confirmOrderModal) OnResume() {
-	com.passwordEditor.Editor.Focus()
+	// TODO07 need handle
+	// com.passwordEditor.Editor.Focus()
 }
 
 func (com *confirmOrderModal) OnOrderCompleted(orderCompleted func(order *instantswap.Order)) *confirmOrderModal {
@@ -156,10 +157,15 @@ func (com *confirmOrderModal) confirmOrder() {
 	}()
 }
 
-func (com *confirmOrderModal) Handle() {
-	for _, evt := range com.passwordEditor.Editor.Events() {
-		if com.passwordEditor.Editor.Focused() {
-			switch evt.(type) {
+func (com *confirmOrderModal) Handle(gtx C) {
+	//TODO07
+	for {
+		event, ok := com.passwordEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+		if gtx.Source.Focused(com.passwordEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				com.confirmButton.SetEnabled(com.passwordEditor.Editor.Text() != "")
 			case widget.SubmitEvent:
@@ -167,12 +173,22 @@ func (com *confirmOrderModal) Handle() {
 			}
 		}
 	}
+	// for _, evt := range com.passwordEditor.Editor.Events() {
+	// 	if com.passwordEditor.Editor.Focused() {
+	// 		switch evt.(type) {
+	// 		case widget.ChangeEvent:
+	// 			com.confirmButton.SetEnabled(com.passwordEditor.Editor.Text() != "")
+	// 		case widget.SubmitEvent:
+	// 			com.confirmOrder()
+	// 		}
+	// 	}
+	// }
 
-	for com.confirmButton.Clicked() {
+	for com.confirmButton.Clicked(gtx) {
 		com.confirmOrder()
 	}
 
-	for com.closeConfirmationModalButton.Clicked() {
+	for com.closeConfirmationModalButton.Clicked(gtx) {
 		if !com.isCreating {
 			com.Dismiss()
 		}

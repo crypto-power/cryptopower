@@ -189,7 +189,8 @@ func (pg *StatPage) layoutDesktop(gtx C) D {
 	}
 
 	// Refresh frames every 1 second
-	op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
+	gtx.Execute(op.InvalidateCmd{At: time.Now().Add(time.Second * 1)})
+	// op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
 	return container(gtx)
 }
 
@@ -208,7 +209,8 @@ func (pg *StatPage) layoutMobile(gtx C) D {
 	}
 
 	// Refresh frames every 1 second
-	op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
+	gtx.Execute(op.InvalidateCmd{At: time.Now().Add(time.Second * 1)})
+	// op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
 	return components.UniformMobile(gtx, false, true, container)
 }
 
@@ -227,7 +229,7 @@ func (pg *StatPage) appStartTime() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *StatPage) HandleUserInteractions() {
+func (pg *StatPage) HandleUserInteractions(gtx C) {
 	pg.appStartTime()
 }
 

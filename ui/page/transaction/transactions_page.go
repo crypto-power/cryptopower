@@ -570,12 +570,12 @@ func (pg *TransactionsPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transactio
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *TransactionsPage) HandleUserInteractions() {
-	if pg.statusDropDown.Changed() {
+func (pg *TransactionsPage) HandleUserInteractions(gtx C) {
+	if pg.statusDropDown.Changed(gtx) {
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		assetIndex := pg.walletDropDown.SelectedIndex()
 		// The "All Wallets" dropdown item is the first in the dropdown list.
 		if assetIndex == 0 {
@@ -600,7 +600,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if pg.walletDropDown != nil {
 		dropDownList = append(dropDownList, pg.walletDropDown)
 	}
-	cryptomaterial.DisplayOneDropdown(dropDownList...)
+	cryptomaterial.DisplayOneDropdown(gtx, dropDownList...)
 
 	if pg.txCategoryTab.Changed() {
 		pg.selectedTxCategoryTab = pg.txCategoryTab.SelectedIndex()
@@ -616,11 +616,11 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	for pg.filterBtn.Clicked() {
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 
-	for pg.exportBtn.Clicked() {
+	for pg.exportBtn.Clicked(gtx) {
 		exportModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrExportTransaction)).
 			Body(values.String(values.StrExportTransactionsMsg)).
@@ -648,18 +648,31 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(exportModal)
 	}
 
-	if pg.orderDropDown.Changed() {
+	if pg.orderDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	for _, evt := range pg.searchEditor.Editor.Events() {
-		if pg.searchEditor.Editor.Focused() {
-			switch evt.(type) {
+	for {
+		event, ok := pg.searchEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(pg.searchEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 			}
 		}
 	}
+	// for _, evt := range pg.searchEditor.Editor.Events() {
+	// 	if pg.searchEditor.Editor.Focused() {
+	// 		switch evt.(type) {
+	// 		case widget.ChangeEvent:
+	// 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+	// 		}
+	// 	}
+	// }
 }
 
 func exportTxs(assets []sharedW.Asset, fileName string) error {

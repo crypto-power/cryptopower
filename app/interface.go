@@ -24,7 +24,7 @@ type Page interface {
 	// if any user interaction recently occurred on the page and may be
 	// used to update the page's UI components shortly before they are
 	// displayed.
-	HandleUserInteractions()
+	HandleUserInteractions(gtx layout.Context)
 	// Layout draws the page UI components into the provided layout context
 	// to be eventually drawn on screen.
 	Layout(layout.Context) layout.Dimensions
@@ -55,7 +55,7 @@ type Modal interface {
 	// Handle is called just before Layout() to determine if any user
 	// interaction recently occurred on the modal and may be used to update the
 	// page's UI components shortly before they are displayed.
-	Handle()
+	Handle(gtx layout.Context)
 	// Layout draws the modal's UI components into the provided layout context
 	// to be eventually drawn on screen.
 	Layout(gtx layout.Context) layout.Dimensions

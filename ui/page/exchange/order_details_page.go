@@ -105,8 +105,8 @@ func (pg *OrderDetailsPage) OnNavigatedFrom() {
 	}
 }
 
-func (pg *OrderDetailsPage) HandleUserInteractions() {
-	if pg.refreshBtn.Clicked() {
+func (pg *OrderDetailsPage) HandleUserInteractions(gtx C) {
+	if pg.refreshBtn.Clicked(gtx) {
 		go func() {
 			pg.isRefreshing = true
 			pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
@@ -116,7 +116,7 @@ func (pg *OrderDetailsPage) HandleUserInteractions() {
 		}()
 	}
 
-	if pg.createOrderBtn.Clicked() {
+	if pg.createOrderBtn.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 }

@@ -128,21 +128,35 @@ func (dst *destination) clearAddressInput() {
 	dst.destinationAddressEditor.Editor.SetText("")
 }
 
-func (dst *destination) handle() {
+func (dst *destination) handle(gtx C) {
 	dst.sendToAddress = dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
 
 	if dst.accountSwitch.Changed() {
 		dst.addressChanged()
 	}
 
-	for _, evt := range dst.destinationAddressEditor.Editor.Events() {
-		if dst.destinationAddressEditor.Editor.Focused() {
-			switch evt.(type) {
+	for {
+		event, ok := dst.destinationAddressEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(&dst.destinationAddressEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				dst.addressChanged()
 			}
 		}
 	}
+
+	// for _, evt := range dst.destinationAddressEditor.Editor.Events() {
+	// 	if dst.destinationAddressEditor.Editor.Focused() {
+	// 		switch evt.(type) {
+	// 		case widget.ChangeEvent:
+	// 			dst.addressChanged()
+	// 		}
+	// 	}
+	// }
 }
 
 // styleWidgets sets the appropriate colors for the destination widgets.

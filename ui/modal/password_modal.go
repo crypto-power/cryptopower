@@ -60,7 +60,9 @@ func NewPasswordModal(l *load.Load) *PasswordModal {
 }
 
 func (pm *PasswordModal) OnResume() {
-	pm.password.Editor.Focus()
+	// pm.password.Editor.Focus()
+	//TODO07
+	// gtx.Execute(key.FocusCmd{Tag: &pm.password.Editor})
 }
 
 func (pm *PasswordModal) OnDismiss() {
@@ -116,13 +118,13 @@ func (pm *PasswordModal) SetError(err string) {
 	}
 }
 
-func (pm *PasswordModal) Handle() {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pm.password.Editor)
+func (pm *PasswordModal) Handle(gtx C) {
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pm.password.Editor)
 	if isChanged {
 		pm.password.SetError("")
 	}
 
-	if pm.btnPositve.Button.Clicked() || isSubmit {
+	if pm.btnPositve.Button.Clicked(gtx) || isSubmit {
 
 		if !utils.EditorsNotEmpty(pm.password.Editor) {
 			pm.password.SetError(values.String(values.StrEnterSpendingPassword))
@@ -141,14 +143,14 @@ func (pm *PasswordModal) Handle() {
 	}
 
 	pm.btnNegative.SetEnabled(!pm.isLoading)
-	for pm.btnNegative.Clicked() {
+	for pm.btnNegative.Clicked(gtx) {
 		if !pm.isLoading {
 			pm.Dismiss()
 			pm.negativeButtonClicked()
 		}
 	}
 
-	if pm.Modal.BackdropClicked(pm.isCancelable) {
+	if pm.Modal.BackdropClicked(gtx, pm.isCancelable) {
 		if !pm.isLoading {
 			pm.Dismiss()
 			pm.negativeButtonClicked()

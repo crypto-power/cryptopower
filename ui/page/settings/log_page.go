@@ -2,8 +2,10 @@ package settings
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"runtime"
+	"strings"
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -73,7 +75,8 @@ func (pg *LogPage) OnNavigatedTo() {
 }
 
 func (pg *LogPage) copyLogEntries(gtx C) {
-	clipboard.WriteOp{Text: pg.fullLog}.Add(gtx.Ops)
+	// clipboard.WriteOp{Text: pg.fullLog}.Add(gtx.Ops)
+	gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.fullLog))})
 }
 
 func (pg *LogPage) watchLogs() {
@@ -211,7 +214,7 @@ func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *LogPage) HandleUserInteractions() {}
+func (pg *LogPage) HandleUserInteractions(gtx C) {}
 
 // OnNavigatedFrom is called when the page is about to be removed from
 // the displayed window. This method should ideally be used to disable

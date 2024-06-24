@@ -85,8 +85,8 @@ func (pg *BackupInstructionsPage) OnNavigatedTo() {}
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *BackupInstructionsPage) HandleUserInteractions() {
-	for pg.viewSeedBtn.Clicked() {
+func (pg *BackupInstructionsPage) HandleUserInteractions(gtx C) {
+	for pg.viewSeedBtn.Clicked(gtx) {
 		if pg.verifyCheckBoxes() {
 			// TODO: Will repeat the paint cycle, just queue the next fragment to be displayed
 			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet, pg.redirectCallback))

@@ -204,9 +204,9 @@ func (m *Modal) Layout(gtx C, widgets []layout.Widget, width ...float32) D {
 	return dims
 }
 
-func (m *Modal) BackdropClicked(minimizable bool) bool {
+func (m *Modal) BackdropClicked(gtx C, minimizable bool) bool {
 	if minimizable {
-		return m.button.Clicked()
+		return m.button.Clicked(gtx)
 	}
 
 	return false

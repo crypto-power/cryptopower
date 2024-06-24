@@ -13,7 +13,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -280,7 +279,7 @@ func (app *AppInfo) ConvertIconSize(size unit.Dp) unit.Dp {
 }
 
 func networkSwitchTempPage(currentNetType, newNetType utils.NetworkType) app.Page {
-	theme := material.NewTheme(assets.FontCollection())
+	theme := material.NewTheme()
 	text := fmt.Sprintf("Switching from %s to %s, please wait...", currentNetType, newNetType)
 	lbl := material.Body1(theme, text)
 	return app.NewWidgetDisplayPage(func(gtx layout.Context) layout.Dimensions {

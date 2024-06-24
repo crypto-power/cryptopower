@@ -4,8 +4,11 @@ package cryptomaterial
 
 import (
 	"image/color"
+	"io"
+	"strings"
 
 	"gioui.org/io/clipboard"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -182,28 +185,31 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 	return newEditor
 }
 
-func (e *Editor) Pressed() bool {
-	return e.clickable.Pressed() || e.copy.Clicked() || e.paste.Clicked()
+func (e *Editor) Pressed(gtx C) bool {
+	return e.clickable.Pressed() || e.copy.Clicked(gtx) || e.paste.Clicked(gtx)
 }
 
-func (e *Editor) FirstPressed() bool {
-	return !e.Editor.Focused() && e.clickable.Pressed()
+func (e *Editor) FirstPressed(gtx C) bool {
+	// TODO07
+	// return !e.Editor.Focused() && e.clickable.Pressed()
+	return !gtx.Source.Focused(&e.Editor) && e.clickable.Pressed()
+
 }
 
 func (e *Editor) Layout(gtx C) D {
 	e.handleEvents(gtx)
-	clicks := e.clickable.Clicks()
-	if len(clicks) > 0 {
-		clk := clicks[len(clicks)-1]
-		if clk.NumClicks == 2 {
-			e.isShowMenu = true
-		}
-		if clk.NumClicks == 1 {
-			e.Editor.Focus()
-		}
-		if clk.NumClicks != 2 && clk.NumClicks > 0 {
-			e.isShowMenu = false
-		}
+	clicks1, _ := e.clickable.Update(gtx)
+	// clicks := e.clickable.Clicks()
+	// if len(clicks) > 0 {
+	if clicks1.NumClicks == 2 {
+		e.isShowMenu = true
+	}
+	if clicks1.NumClicks == 1 {
+		gtx.Execute(key.FocusCmd{Tag: &e.Editor})
+		// e.Editor.Focus()
+	}
+	if clicks1.NumClicks != 2 && clicks1.NumClicks > 0 {
+		e.isShowMenu = false
 	}
 	return e.layout(gtx)
 }
@@ -217,13 +223,16 @@ func (e *Editor) layout(gtx C) D {
 		e.TitleLabel.Text = ""
 	}
 
-	if e.Editor.Focused() {
+	// TODO07
+	focused := gtx.Source.Focused(&e.Editor)
+	if focused {
+		// if e.Editor.Focused() {
 		e.TitleLabel.Text = e.Hint
 		e.TitleLabel.Color, e.LineColor = e.t.Color.Primary, e.t.Color.Primary
 		e.Hint = ""
 	}
 
-	if e.IsRequired && !e.Editor.Focused() && e.Editor.Len() == 0 {
+	if e.IsRequired && !focused && e.Editor.Len() == 0 {
 		e.errorLabel.Text = e.requiredErrorText
 		e.LineColor = e.t.Color.Danger
 	}
@@ -314,7 +323,8 @@ func (e *Editor) editorLayout(gtx C) D {
 }
 
 func (e *Editor) editorMenusLayout(gtx C, editorHeight int) {
-	e.isShowMenu = e.isShowMenu && (e.Editor.Focused() || e.copy.Hovered() || e.paste.Hovered())
+	// TODO07
+	e.isShowMenu = e.isShowMenu && (gtx.Source.Focused(&e.Editor) || e.copy.Hovered() || e.paste.Hovered())
 	if e.isShowMenu {
 		flexChilds := make([]layout.FlexChild, 0)
 		if len(e.Editor.Text()) > 0 {
@@ -417,8 +427,8 @@ func (e *Editor) editor(gtx C) D {
 }
 
 func (e *Editor) handleEvents(gtx C) {
-	e.processEvent(gtx)
-	if e.showHidePassword.Button.Clicked() {
+	// e.processEvent(gtx)
+	if e.showHidePassword.Button.Clicked(gtx) {
 		if e.Editor.Mask == '*' {
 			e.Editor.Mask = 0
 		} else if e.Editor.Mask == 0 {
@@ -426,35 +436,37 @@ func (e *Editor) handleEvents(gtx C) {
 		}
 	}
 
-	if e.editorIconButton.Button.Clicked() {
+	if e.editorIconButton.Button.Clicked(gtx) {
 		e.EditorIconButtonEvent()
 	}
 
-	if e.copy.Clicked() {
-		clipboard.WriteOp{Text: e.Editor.Text()}.Add(gtx.Ops)
+	// TODO07
+	if e.copy.Clicked(gtx) {
+		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(e.Editor.Text()))})
 		e.isShowMenu = false
 	}
 
-	if e.paste.Clicked() {
-		clipboard.ReadOp{Tag: &e.eventKey}.Add(gtx.Ops)
+	if e.paste.Clicked(gtx) {
+		gtx.Execute(clipboard.ReadCmd{Tag: &e.eventKey})
 		e.isShowMenu = false
 	}
 }
 
-func (e *Editor) processEvent(gtx C) {
-	for _, event := range gtx.Events(&e.eventKey) {
-		switch eventType := event.(type) {
-		case clipboard.Event:
-			e.Editor.Insert(eventType.Text)
-		}
-	}
-}
+// TODO07
+// func (e *Editor) processEvent(gtx C) {
+// 	for _, event := range gtx.Events(&e.eventKey) {
+// 		switch eventType := event.(type) {
+// 		case clipboard.Event:
+// 			e.Editor.Insert(eventType.Text)
+// 		}
+// 	}
+// }
 
 func (re RestoreEditor) Layout(gtx C) D {
 	width := int(gtx.Metric.PxPerDp * 2.0)
 	height := int(gtx.Metric.PxPerDp * float32(re.height))
 	l := re.t.SeparatorVertical(height, width)
-	if re.Edit.Editor.Focused() {
+	if gtx.Source.Focused(&re.Edit.Editor) {
 		re.TitleLabel.Color, re.LineColor, l.Color = re.t.Color.Primary, re.t.Color.Primary, re.t.Color.Primary
 	} else {
 		l.Color = re.t.Color.Gray2

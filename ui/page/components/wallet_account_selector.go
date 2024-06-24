@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"gioui.org/font"
-	"gioui.org/io/event"
+	"gioui.org/io/input"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -55,7 +55,7 @@ type selectorModal struct {
 	walletsList        layout.List
 	selectorItems      []*SelectorItem // A SelectorItem can either be a wallet or account
 	assetType          []utils.AssetType
-	eventQueue         event.Queue
+	eventSource        input.Source
 	isCancelable       bool
 	infoButton         cryptomaterial.IconButton
 	infoModalOpen      bool
@@ -229,8 +229,8 @@ func (ws *WalletAndAccountSelector) Changed() bool {
 	return changed
 }
 
-func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
-	for ws.openSelectorDialog.Clicked() {
+func (ws *WalletAndAccountSelector) Handle(gtx C, window app.WindowNavigator) {
+	for ws.openSelectorDialog.Clicked(gtx) {
 		ws.title(ws.dialogTitle).accountValidator(ws.accountIsValid)
 		window.ShowModal(ws.selectorModal)
 	}
@@ -261,7 +261,7 @@ func (ws *WalletAndAccountSelector) SetBorder(isHaveBorder bool) {
 }
 
 func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D {
-	ws.Handle(window)
+	ws.Handle(gtx, window)
 
 	borderColor := ws.Theme.Color.Gray2
 	if ws.errorLabel.Text != "" {
@@ -522,34 +522,34 @@ func (sm *selectorModal) accountValidator(accountIsValid func(*sharedW.Account) 
 	return sm
 }
 
-func (sm *selectorModal) Handle() {
-	if sm.eventQueue != nil {
-		for _, selectorItem := range sm.selectorItems {
-			for selectorItem.clickable.Clicked() {
-				switch item := selectorItem.item.(type) {
-				case *sharedW.Account:
-					if sm.onAccountClicked != nil {
-						sm.onAccountClicked(item)
-					}
-				case sharedW.Asset:
-					if sm.onWalletClicked != nil {
-						sm.onWalletClicked(item)
-					}
+func (sm *selectorModal) Handle(gtx C) {
+	// if sm.eventQueue != nil {
+	for _, selectorItem := range sm.selectorItems {
+		for selectorItem.clickable.Clicked(gtx) {
+			switch item := selectorItem.item.(type) {
+			case *sharedW.Account:
+				if sm.onAccountClicked != nil {
+					sm.onAccountClicked(item)
 				}
-				sm.Dismiss()
+			case sharedW.Asset:
+				if sm.onWalletClicked != nil {
+					sm.onWalletClicked(item)
+				}
 			}
-		}
-
-		if sm.infoBackdrop.Clicked() {
-			sm.infoModalOpen = false
-		}
-
-		if sm.infoButton.IconButtonStyle.Button.Clicked() {
-			sm.infoModalOpen = !sm.infoModalOpen
+			sm.Dismiss()
 		}
 	}
 
-	if sm.Modal.BackdropClicked(sm.isCancelable) {
+	if sm.infoBackdrop.Clicked(gtx) {
+		sm.infoModalOpen = false
+	}
+
+	if sm.infoButton.IconButtonStyle.Button.Clicked(gtx) {
+		sm.infoModalOpen = !sm.infoModalOpen
+	}
+	// }
+
+	if sm.Modal.BackdropClicked(gtx, sm.isCancelable) {
 		sm.Dismiss()
 	}
 }
@@ -570,7 +570,7 @@ func (sm *selectorModal) accountClicked(callback func(*sharedW.Account)) *select
 }
 
 func (sm *selectorModal) Layout(gtx C) D {
-	sm.eventQueue = gtx
+	sm.eventSource = gtx.Source
 	sm.infoBackdropLayout(gtx)
 
 	w := []layout.Widget{

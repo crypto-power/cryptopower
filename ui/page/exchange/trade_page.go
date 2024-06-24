@@ -95,7 +95,7 @@ func (pg *TradePage) OnNavigatedTo() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *TradePage) HandleUserInteractions() {
+func (pg *TradePage) HandleUserInteractions(gtx C) {
 	selectedIndex := tab.SelectedIndex()
 	if pg.IsMobileView() {
 		selectedIndex++ // Adjust index for mobile view
@@ -118,7 +118,7 @@ func (pg *TradePage) HandleUserInteractions() {
 		}
 	}
 
-	pg.CurrentPage().HandleUserInteractions()
+	pg.CurrentPage().HandleUserInteractions(gtx)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

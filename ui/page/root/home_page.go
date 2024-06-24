@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -10,6 +11,7 @@ import (
 	dexdb "decred.org/dcrdex/client/db"
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -343,9 +345,9 @@ func (hp *HomePage) OnDarkModeChanged(isDarkModeOn bool) {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (hp *HomePage) HandleUserInteractions() {
+func (hp *HomePage) HandleUserInteractions(gtx C) {
 	if hp.CurrentPage() != nil {
-		hp.CurrentPage().HandleUserInteractions()
+		hp.CurrentPage().HandleUserInteractions(gtx)
 	}
 
 	if hp.navigationTab.Changed() {
@@ -364,7 +366,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrGovernance))
 	}
 	for i, item := range hp.sendReceiveNavItems {
-		for item.Clickable.Clicked() {
+		for item.Clickable.Clicked(gtx) {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
@@ -388,7 +390,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		}
 	}
 
-	if hp.infoButton.Button.Clicked() {
+	if hp.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(hp.Load).
 			Title(values.String(values.StrTotalValue)).
 			SetupWithTemplate(modal.TotalValueInfoTemplate).
@@ -398,16 +400,16 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.ParentWindow().ShowModal(infoModal)
 	}
 
-	if hp.appNotificationButton.Clicked() {
+	if hp.appNotificationButton.Clicked(gtx) {
 		// TODO: Use real values as these are dummy so lint will pass
 		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
-	for hp.appLevelSettingsButton.Clicked() {
+	for hp.appLevelSettingsButton.Clicked(gtx) {
 		hp.ParentNavigator().Display(settings.NewAppSettingsPage(hp.Load))
 	}
 
-	for hp.hideBalanceButton.Clicked() {
+	for hp.hideBalanceButton.Clicked(gtx) {
 		hp.isBalanceHidden = !hp.isBalanceHidden
 		hp.AssetsManager.SetTotalBalanceVisibility(hp.isBalanceHidden)
 	}
@@ -415,7 +417,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	hp.bottomNavigationBar.CurrentPage = hp.CurrentPageID()
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
 	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
-		for item.Clickable.Clicked() {
+		for item.Clickable.Clicked(gtx) {
 			if hp.ID() == hp.CurrentPageID() {
 				continue
 			}
@@ -424,7 +426,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	for _, item := range hp.floatingActionButton.FloatingActionButton {
-		for item.Clickable.Clicked() {
+		for item.Clickable.Clicked(gtx) {
 			if strings.ToLower(item.PageID) == values.StrReceive {
 				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
 			}
@@ -435,7 +437,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		}
 	}
 
-	if hp.updateAvailableBtn.Clicked() {
+	if hp.updateAvailableBtn.Clicked(gtx) {
 		info := modal.NewCustomModal(hp.Load).
 			Title(fmt.Sprintf(values.String(values.StrNewUpdateText), hp.releaseResponse.TagName)).
 			Body(values.String(values.StrCopyLink)).
@@ -453,8 +455,9 @@ func (hp *HomePage) HandleUserInteractions() {
 										layout.Flexed(0.9, hp.Theme.Body1(hp.releaseResponse.URL).Layout),
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
-												if hp.copyRedirectURL.Clicked() {
-													clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
+												if hp.copyRedirectURL.Clicked(gtx) {
+													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(hp.releaseResponse.URL))})
+													// clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
 													hp.Toast.Notify(values.String(values.StrCopied))
 												}
 												return hp.copyRedirectURL.Layout(gtx, hp.Theme.Icons.CopyIcon.Layout24dp)
@@ -517,22 +520,23 @@ func (hp *HomePage) showWarningNoSpendableWallet() {
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (hp *HomePage) KeysToHandle() key.Set {
+// TODO07
+func (hp *HomePage) KeysToHandle() []event.Filter {
 	if currentPage := hp.CurrentPage(); currentPage != nil {
 		if keyEvtHandler, ok := currentPage.(load.KeyEventHandler); ok {
 			return keyEvtHandler.KeysToHandle()
 		}
 	}
-	return ""
+	return nil
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (hp *HomePage) HandleKeyPress(evt *key.Event) {
+func (hp *HomePage) HandleKeyPress(gtx C, evt *key.Event) {
 	if currentPage := hp.CurrentPage(); currentPage != nil {
 		if keyEvtHandler, ok := currentPage.(load.KeyEventHandler); ok {
-			keyEvtHandler.HandleKeyPress(evt)
+			keyEvtHandler.HandleKeyPress(gtx, evt)
 		}
 	}
 }

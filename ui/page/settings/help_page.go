@@ -2,6 +2,8 @@ package settings
 
 import (
 	"image"
+	"io"
+	"strings"
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -240,9 +242,9 @@ func (pg *HelpPage) pageSections(gtx C, icon *cryptomaterial.Image, action *cryp
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *HelpPage) HandleUserInteractions() {
+func (pg *HelpPage) HandleUserInteractions(gtx C) {
 	for _, cardItem := range pg.helpPageCard {
-		if cardItem.Clickable.Clicked() {
+		if cardItem.Clickable.Clicked(gtx) {
 			decredURL := cardItem.Link
 			info := modal.NewCustomModal(pg.Load).
 				Title("View " + cardItem.Title).
@@ -262,8 +264,9 @@ func (pg *HelpPage) HandleUserInteractions() {
 											layout.Flexed(0.1, func(gtx C) D {
 												return layout.E.Layout(gtx, func(gtx C) D {
 													return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
-														if pg.copyRedirectURL.Clicked() {
-															clipboard.WriteOp{Text: decredURL}.Add(gtx.Ops)
+														if pg.copyRedirectURL.Clicked(gtx) {
+															gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(decredURL))})
+															// clipboard.WriteOp{Text: decredURL}.Add(gtx.Ops)
 															pg.Toast.Notify(values.String(values.StrCopied))
 														}
 														return pg.copyRedirectURL.Layout(gtx, pg.Theme.Icons.CopyIcon.Layout24dp)
@@ -292,7 +295,7 @@ func (pg *HelpPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.backButton.Button.Clicked() {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 }

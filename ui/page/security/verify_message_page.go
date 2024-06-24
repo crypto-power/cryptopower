@@ -2,6 +2,7 @@ package security
 
 import (
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -72,7 +73,8 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifyMessagePage) OnNavigatedTo() {
-	pg.addressEditor.Editor.Focus()
+	// TODO07 need handle
+	// pg.addressEditor.Editor.Focus()
 
 	pg.verifyButton.SetEnabled(pg.updateBtn())
 }
@@ -158,17 +160,17 @@ func (pg *VerifyMessagePage) verifyAndClearButtons() layout.Widget {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *VerifyMessagePage) HandleUserInteractions() {
+func (pg *VerifyMessagePage) HandleUserInteractions(gtx C) {
 	pg.verifyButton.SetEnabled(pg.updateBtn())
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
 	if isChanged {
-		if pg.addressEditor.Editor.Focused() {
+		if gtx.Source.Focused(&pg.addressEditor.Editor) {
 			pg.validateAddress()
 		}
 	}
 
-	if (pg.verifyButton.Clicked() || isSubmit) && pg.validateAllInputs() {
+	if (pg.verifyButton.Clicked(gtx) || isSubmit) && pg.validateAllInputs() {
 		var verifyMessageText string
 		var info *modal.InfoModal
 
@@ -186,7 +188,7 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.clearBtn.Clicked() {
+	if pg.clearBtn.Clicked(gtx) {
 		pg.clearInputs()
 	}
 }
@@ -195,16 +197,17 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *VerifyMessagePage) KeysToHandle() key.Set {
-	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+func (pg *VerifyMessagePage) KeysToHandle() []event.Filter {
+	return []event.Filter{key.FocusFilter{Target: pg}, key.Filter{Focus: pg, Name: key.NameTab, Optional: key.ModShift}}
+	// return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *VerifyMessagePage) HandleKeyEvent(evt *key.Event) {
+func (pg *VerifyMessagePage) HandleKeyEvent(gtx C, evt *key.Event) {
 	// Switch editors on tab press.
-	cryptomaterial.SwitchEditors(evt, pg.addressEditor.Editor, pg.signatureEditor.Editor, pg.messageEditor.Editor)
+	cryptomaterial.SwitchEditors(gtx, evt, pg.addressEditor.Editor, pg.signatureEditor.Editor, pg.messageEditor.Editor)
 }
 
 func (pg *VerifyMessagePage) validateAllInputs() bool {

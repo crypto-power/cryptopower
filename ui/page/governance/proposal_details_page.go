@@ -2,6 +2,8 @@ package governance
 
 import (
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"gioui.org/font"
@@ -207,13 +209,13 @@ func (pg *ProposalDetails) getProposalItemWidgets() *proposalItemWidgets {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *ProposalDetails) HandleUserInteractions() {
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+func (pg *ProposalDetails) HandleUserInteractions(gtx C) {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 		//TODO: implement when selected wallet
 	}
 
-	if pg.vote.Clicked() {
+	if pg.vote.Clicked(gtx) {
 		if len(pg.assetWallets) == 0 {
 			pg.displayCreateWalletModal(libutils.DCRWalletAsset)
 			return
@@ -221,7 +223,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(newVoteModal(pg.Load, pg.proposal))
 	}
 
-	for pg.viewInPoliteiaBtn.Clicked() {
+	for pg.viewInPoliteiaBtn.Clicked(gtx) {
 		host := "https://proposals.decred.org/record/" + pg.proposal.Token
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "http://45.32.108.164:3000/record/" + pg.proposal.Token
@@ -245,8 +247,9 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
-													if pg.copyRedirectURL.Clicked() {
-														clipboard.WriteOp{Text: host}.Add(gtx.Ops)
+													if pg.copyRedirectURL.Clicked(gtx) {
+														// clipboard.WriteOp{Text: host}.Add(gtx.Ops)
+														gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(host))})
 														pg.Toast.Notify(values.String(values.StrCopied))
 													}
 													return pg.copyRedirectURL.Layout(gtx, pg.Theme.Icons.CopyIcon.Layout24dp)

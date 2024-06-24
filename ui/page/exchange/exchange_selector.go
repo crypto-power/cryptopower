@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"gioui.org/font"
-	"gioui.org/io/event"
+	"gioui.org/io/input"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -45,7 +45,7 @@ type exchangeModal struct {
 	onExchangeClicked func(*Exchange)
 	exchangeList      layout.List
 	exchangeItems     []*exchangeItem
-	eventQueue        event.Queue
+	eventSource       input.Source
 	isCancelable      bool
 }
 
@@ -140,15 +140,15 @@ func (es *ExSelector) SetSelectedExchangeName(name string) {
 	}
 }
 
-func (es *ExSelector) Handle(window app.WindowNavigator) {
-	for es.openSelectorDialog.Clicked() {
+func (es *ExSelector) Handle(gtx C, window app.WindowNavigator) {
+	for es.openSelectorDialog.Clicked(gtx) {
 		es.title(es.dialogTitle)
 		window.ShowModal(es.exchangeModal)
 	}
 }
 
 func (es *ExSelector) Layout(window app.WindowNavigator, gtx C) D {
-	es.Handle(window)
+	es.Handle(gtx, window)
 
 	bg := es.Theme.Color.White
 	if es.AssetsManager.IsDarkModeOn() {
@@ -226,17 +226,17 @@ func (es *ExSelector) buildExchangeItems(server ...instantswap.Server) []*exchan
 
 func (em *exchangeModal) OnResume() {}
 
-func (em *exchangeModal) Handle() {
-	if em.eventQueue != nil {
-		for _, exchangeItem := range em.exchangeItems {
-			for exchangeItem.clickable.Clicked() {
-				em.onExchangeClicked(exchangeItem.item)
-				em.Dismiss()
-			}
+func (em *exchangeModal) Handle(gtx C) {
+	// if em.eventQueue != nil {
+	for _, exchangeItem := range em.exchangeItems {
+		for exchangeItem.clickable.Clicked(gtx) {
+			em.onExchangeClicked(exchangeItem.item)
+			em.Dismiss()
 		}
 	}
+	// }
 
-	if em.Modal.BackdropClicked(em.isCancelable) {
+	if em.Modal.BackdropClicked(gtx, em.isCancelable) {
 		em.Dismiss()
 	}
 }
@@ -252,7 +252,7 @@ func (em *exchangeModal) exchangeClicked(callback func(*Exchange)) *exchangeModa
 }
 
 func (em *exchangeModal) Layout(gtx C) D {
-	em.eventQueue = gtx
+	em.eventSource = gtx.Source
 	w := []layout.Widget{
 		func(gtx C) D {
 			titleTxt := em.Theme.Label(values.TextSize20, em.dialogTitle)

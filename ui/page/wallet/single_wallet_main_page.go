@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -279,16 +280,16 @@ func (swmp *SingleWalletMasterPage) OnCurrencyChanged() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
+func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 	if swmp.CurrentPage() != nil {
-		swmp.CurrentPage().HandleUserInteractions()
+		swmp.CurrentPage().HandleUserInteractions(gtx)
 	}
 
-	if swmp.refreshExchangeRateBtn.Clicked() {
+	if swmp.refreshExchangeRateBtn.Clicked(gtx) {
 		go swmp.fetchExchangeRate()
 	}
 
-	for swmp.openWalletSelector.Button.Clicked() {
+	for swmp.openWalletSelector.Button.Clicked(gtx) {
 		swmp.showNavigationFunc()
 	}
 
@@ -350,14 +351,14 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		}
 	}
 
-	if swmp.navigateToSyncBtn.Button.Clicked() {
+	if swmp.navigateToSyncBtn.Button.Clicked(gtx) {
 		swmp.ToggleSync(swmp.selectedWallet, func(b bool) {
 			swmp.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
 			swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet))
 		})
 	}
 
-	for swmp.hideBalanceButton.Clicked() {
+	for swmp.hideBalanceButton.Clicked(gtx) {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
 		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
 	}
@@ -367,22 +368,22 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (swmp *SingleWalletMasterPage) KeysToHandle() key.Set {
+func (swmp *SingleWalletMasterPage) KeysToHandle() []event.Filter {
 	if currentPage := swmp.CurrentPage(); currentPage != nil {
 		if keyEvtHandler, ok := currentPage.(load.KeyEventHandler); ok {
 			return keyEvtHandler.KeysToHandle()
 		}
 	}
-	return ""
+	return nil
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (swmp *SingleWalletMasterPage) HandleKeyPress(evt *key.Event) {
+func (swmp *SingleWalletMasterPage) HandleKeyPress(gtx C, evt *key.Event) {
 	if currentPage := swmp.CurrentPage(); currentPage != nil {
 		if keyEvtHandler, ok := currentPage.(load.KeyEventHandler); ok {
-			keyEvtHandler.HandleKeyPress(evt)
+			keyEvtHandler.HandleKeyPress(gtx, evt)
 		}
 	}
 }

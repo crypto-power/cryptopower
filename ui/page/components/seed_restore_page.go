@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -104,7 +105,8 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 		pg.seedEditors.editors = append(pg.seedEditors.editors, l.Theme.RestoreEditor(widgetEditor, "", fmt.Sprintf("%d", i+1)))
 	}
 
-	pg.setEditorFocus()
+	// TODO07 need handle
+	// pg.setEditorFocus()
 
 	// init suggestion buttons
 	pg.initSeedMenu()
@@ -124,17 +126,20 @@ func (pg *SeedRestore) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *SeedRestore) OnNavigatedTo() {
-	pg.setEditorFocus()
+	//TODO07 need handle
+	// pg.setEditorFocus()
 }
 
 func (pg *SeedRestore) SetParentNav(window app.WindowNavigator) {
 	pg.window = window
 }
 
-func (pg *SeedRestore) setEditorFocus() {
+func (pg *SeedRestore) setEditorFocus(gtx C) {
 	if !pg.IsIOS() {
 		pg.seedEditors.focusIndex = -1
-		pg.seedEditors.editors[0].Edit.Editor.Focus()
+		//TODO07
+		gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[0].Edit.Editor})
+		// pg.seedEditors.editors[0].Edit.Editor.Focus()
 	}
 }
 
@@ -143,12 +148,15 @@ func (pg *SeedRestore) seedEditorsHandle(gtx C) {
 		return
 	}
 	for i := range pg.seedEditors.editors {
-		if pg.seedEditors.editors[i].Edit.FirstPressed() {
+		if pg.seedEditors.editors[i].Edit.FirstPressed(gtx) {
 			pg.seedList.ScrollTo(i)
 			if i >= 28 {
-				key.SoftKeyboardOp{Show: true}.Add(gtx.Ops)
+				//TODO07
+				// key.SoftKeyboardOp{Show: true}.Add(gtx.Ops)
+				gtx.Execute(key.SoftKeyboardCmd{Show: true})
 			} else {
-				pg.seedEditors.editors[i].Edit.Editor.Focus()
+				gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[i].Edit.Editor})
+				// pg.seedEditors.editors[i].Edit.Editor.Focus()
 			}
 		}
 	}
@@ -260,16 +268,18 @@ func (pg *SeedRestore) seedEditorViewDesktop(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, columnFlexChilds...)
 }
 
-func (pg *SeedRestore) onSuggestionSeedsClicked() {
+func (pg *SeedRestore) onSuggestionSeedsClicked(gtx C) {
 	index := pg.seedEditors.focusIndex
 	if index != -1 {
 		for i, b := range pg.seedMenu {
-			if pg.seedMenu[i].button.Clicked() {
+			if pg.seedMenu[i].button.Clicked(gtx) {
 				pg.seedEditors.editors[index].Edit.Editor.SetText(b.text)
 				pg.seedEditors.editors[index].Edit.Editor.MoveCaret(len(b.text), 0)
 				pg.seedClicked = true
 				if index != defaultNumberOfSeeds {
-					pg.seedEditors.editors[index+1].Edit.Editor.Focus()
+					//TODO07
+					// pg.seedEditors.editors[index+1].Edit.Editor.Focus()
+					gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[index+1].Edit.Editor})
 				}
 
 				if index == defaultNumberOfSeeds {
@@ -280,7 +290,7 @@ func (pg *SeedRestore) onSuggestionSeedsClicked() {
 	}
 }
 
-func (pg *SeedRestore) editorSeedsEventsHandler() {
+func (pg *SeedRestore) editorSeedsEventsHandler(gtx C) {
 	seedEvent := func(i int, text string) {
 		if pg.seedClicked {
 			pg.seedEditors.focusIndex = -1
@@ -312,12 +322,18 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 		editor := pg.seedEditors.editors[i]
 		text := editor.Edit.Editor.Text()
 
-		if editor.Edit.Editor.Focused() {
+		//TODO07
+		if gtx.Source.Focused(&editor.Edit.Editor) {
 			seedEvent(i, text)
 		}
 
-		for _, e := range editor.Edit.Editor.Events() {
-			switch e.(type) {
+		for {
+			event, ok := editor.Edit.Editor.Update(gtx)
+			if !ok {
+				break
+			}
+			// for _, e := range editor.Edit.Editor.Events() {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				seedEvent(i, text)
 
@@ -330,7 +346,8 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 
 				//  Handles Enter and Return keyboard events.
 				if i != defaultNumberOfSeeds {
-					pg.seedEditors.editors[i+1].Edit.Editor.Focus()
+					gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[i+1].Edit.Editor})
+					// pg.seedEditors.editors[i+1].Edit.Editor.Focus()
 					pg.selected = 0
 				}
 
@@ -339,6 +356,7 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 					pg.isLastEditor = true
 				}
 			}
+			// }
 		}
 	}
 }
@@ -441,7 +459,7 @@ func (pg *SeedRestore) validateSeeds() (bool, string) {
 	return true, seedPhrase
 }
 
-func (pg *SeedRestore) verifySeeds() bool {
+func (pg *SeedRestore) verifySeeds(gtx C) bool {
 	isValid, seedphrase := pg.validateSeeds()
 	if isValid {
 		pg.seedPhrase = seedphrase
@@ -479,9 +497,10 @@ func (pg *SeedRestore) resetSeeds() {
 // switchSeedEditors sets focus on the next seed phrase after moving the
 // provided steps either forward or backwards. One the focus get to the last cell
 // it start for the initial cell.
-func switchSeedEditors(editors []*cryptomaterial.RestoreEditor, steps int) {
+// TODO07
+func switchSeedEditors(gtx C, editors []*cryptomaterial.RestoreEditor, steps int) {
 	for i := 0; i < len(editors); i++ {
-		if editors[i].Edit.Editor.Focused() {
+		if gtx.Source.Focused(&editors[i].Edit.Editor) {
 			nextOnFocus := i + steps
 			if (nextOnFocus) < 0 {
 				nextOnFocus += len(editors) + 2
@@ -492,7 +511,8 @@ func switchSeedEditors(editors []*cryptomaterial.RestoreEditor, steps int) {
 				nextOnFocus -= 2
 			}
 			nextOnFocus = nextOnFocus % len(editors)
-			editors[nextOnFocus].Edit.Editor.Focus()
+			gtx.Execute(key.FocusCmd{Tag: &editors[nextOnFocus].Edit.Editor})
+			// editors[nextOnFocus].Edit.Editor.Focus()
 			return
 		}
 	}
@@ -503,7 +523,7 @@ func switchSeedEditors(editors []*cryptomaterial.RestoreEditor, steps int) {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *SeedRestore) HandleUserInteractions() {
+func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 	focus := pg.seedEditors.focusIndex
 	if focus != -1 {
 		pg.suggestions = pg.suggestionSeeds(pg.seedEditors.editors[focus].Edit.Editor.Text())
@@ -515,8 +535,8 @@ func (pg *SeedRestore) HandleUserInteractions() {
 		}
 	}
 
-	if pg.validateSeed.Clicked() {
-		if !pg.verifySeeds() {
+	if pg.validateSeed.Clicked(gtx) {
+		if !pg.verifySeeds(gtx) {
 			return
 		}
 
@@ -551,12 +571,12 @@ func (pg *SeedRestore) HandleUserInteractions() {
 		pg.window.ShowModal(walletPasswordModal)
 	}
 
-	for pg.resetSeedFields.Clicked() {
+	for pg.resetSeedFields.Clicked(gtx) {
 		pg.resetSeeds()
 	}
 
-	pg.editorSeedsEventsHandler()
-	pg.onSuggestionSeedsClicked()
+	pg.editorSeedsEventsHandler(gtx)
+	pg.onSuggestionSeedsClicked(gtx)
 	pg.suggestionSeedEffect()
 
 	if pg.seedEditorChanged() {
@@ -575,23 +595,33 @@ func (pg *SeedRestore) HandleUserInteractions() {
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *SeedRestore) KeysToHandle() key.Set {
+func (pg *SeedRestore) KeysToHandle() []event.Filter {
 	if pg.isRestoring {
-		return "" // don't capture keys while restoring, problematic?
+		return nil // don't capture keys while restoring, problematic?
+	}
+	//TODO07
+	return []event.Filter{key.FocusFilter{Target: pg},
+		key.Filter{Focus: pg, Name: key.NameTab, Optional: key.ModShift},
+		key.Filter{Focus: pg, Name: key.NameUpArrow},
+		key.Filter{Focus: pg, Name: key.NameDownArrow},
+		key.Filter{Focus: pg, Name: key.NameLeftArrow},
+		key.Filter{Focus: pg, Name: key.NameRightArrow},
+		key.Filter{Focus: pg, Name: key.NameReturn},
+		key.Filter{Focus: pg, Name: key.NameEnter},
 	}
 	// Once user starts editing any of the input boxes, the arrow up, down
 	// and enter key signals are no longer received.
-	keySet1 := cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
-	keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow,
-		key.NameLeftArrow, key.NameRightArrow)
-	keySet3 := cryptomaterial.AnyKey(key.NameReturn, key.NameEnter)
-	return cryptomaterial.AnyKey(string(keySet1), string(keySet2), string(keySet3))
+	// keySet1 := cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	// keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow,
+	// 	key.NameLeftArrow, key.NameRightArrow)
+	// keySet3 := cryptomaterial.AnyKey(key.NameReturn, key.NameEnter)
+	// return cryptomaterial.AnyKey(string(keySet1), string(keySet2), string(keySet3))
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
+func (pg *SeedRestore) HandleKeyPress(gtx C, evt *key.Event) {
 	if pg.isRestoring {
 		return
 	}
@@ -599,7 +629,7 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 		if len(pg.suggestions) > 0 {
 			pg.seedClicked = true
 		}
-		switchSeedEditors(pg.seedEditors.editors, 1)
+		switchSeedEditors(gtx, pg.seedEditors.editors, 1)
 	}
 
 	// If seed suggestion list is opened and tab key is pressed select
@@ -612,7 +642,7 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 	}
 
 	if evt.Name == key.NameTab && evt.Modifiers == key.ModShift && evt.State == key.Press && pg.openPopupIndex == -1 {
-		switchSeedEditors(pg.seedEditors.editors, -1)
+		switchSeedEditors(gtx, pg.seedEditors.editors, -1)
 	}
 
 	if evt.Name == key.NameDownArrow && evt.State == key.Press {
@@ -626,7 +656,7 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 		if len(pg.suggestions) > 0 {
 			pg.seedClicked = true
 		}
-		switchSeedEditors(pg.seedEditors.editors, 5)
+		switchSeedEditors(gtx, pg.seedEditors.editors, 5)
 	}
 
 	if evt.Name == key.NameUpArrow && evt.State == key.Press {
@@ -637,21 +667,21 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 			}
 			return
 		}
-		switchSeedEditors(pg.seedEditors.editors, -5)
+		switchSeedEditors(gtx, pg.seedEditors.editors, -5)
 	}
 
 	if evt.Name == key.NameLeftArrow && evt.State == key.Press && pg.openPopupIndex == -1 {
 		if len(pg.suggestions) > 0 {
 			pg.seedClicked = true
 		}
-		switchSeedEditors(pg.seedEditors.editors, -1)
+		switchSeedEditors(gtx, pg.seedEditors.editors, -1)
 	}
 
 	if evt.Name == key.NameRightArrow && evt.State == key.Press && pg.openPopupIndex == -1 {
 		if len(pg.suggestions) > 0 {
 			pg.seedClicked = true
 		}
-		switchSeedEditors(pg.seedEditors.editors, 1)
+		switchSeedEditors(gtx, pg.seedEditors.editors, 1)
 	}
 
 	if (evt.Name == key.NameReturn || evt.Name == key.NameEnter) && pg.openPopupIndex != -1 && evt.State == key.Press && len(pg.suggestions) != 0 {

@@ -29,7 +29,10 @@ func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 		proposal := prop.Proposal
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layoutTitleAndDate(gtx, l, prop)
+				fmt.Println("----layoutTitleAndDate-------0000--")
+				title := layoutTitleAndDate(gtx, l, prop)
+				fmt.Println("----layoutTitleAndDate-------11111--")
+				return title
 			}),
 			layout.Rigid(func(gtx C) D {
 				return layoutAuthor(gtx, l, prop)
@@ -38,7 +41,10 @@ func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 				if proposal.Category == libwallet.ProposalCategoryActive ||
 					proposal.Category == libwallet.ProposalCategoryApproved ||
 					proposal.Category == libwallet.ProposalCategoryRejected {
-					return layoutProposalVoteBar(gtx, prop)
+					fmt.Println("----layoutProposalVoteBar-------0000--")
+					vote := layoutProposalVoteBar(gtx, prop)
+					fmt.Println("----layoutProposalVoteBar-------1111--")
+					return vote
 				}
 				return D{}
 			}),
@@ -47,7 +53,10 @@ func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 					return D{}
 				}
 				// TODO Pass proposal name of RFP proposal
-				return layoutProposalSubmission(gtx, l, "", nil)
+				fmt.Println("----layoutProposalSubmission-------0000--")
+				sub := layoutProposalSubmission(gtx, l, "", nil)
+				fmt.Println("----layoutProposalSubmission-------11111--")
+				return sub
 			}),
 		)
 	})

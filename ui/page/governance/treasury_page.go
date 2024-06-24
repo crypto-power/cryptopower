@@ -128,23 +128,23 @@ func (pg *TreasuryPage) initWalletSelector() {
 	pg.walletDropDown.SetConvertTextSize(pg.ConvertTextSize)
 }
 
-func (pg *TreasuryPage) HandleUserInteractions() {
+func (pg *TreasuryPage) HandleUserInteractions(gtx C) {
 	for i := range pg.treasuryItems {
-		if pg.treasuryItems[i].SetChoiceButton.Clicked() {
+		if pg.treasuryItems[i].SetChoiceButton.Clicked(gtx) {
 			pg.updatePolicyPreference(pg.treasuryItems[i])
 		}
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()].(*dcr.Asset)
 		pg.FetchPolicies()
 	}
 
-	if pg.navigateToSettingsBtn.Button.Clicked() {
+	if pg.navigateToSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrTreasurySpending)).
 			Body(values.String(values.StrTreasurySpendingInfo)).
@@ -153,7 +153,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
-	for pg.viewGovernanceKeys.Clicked() {
+	for pg.viewGovernanceKeys.Clicked(gtx) {
 		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
@@ -176,7 +176,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 		})
 	}
 
-	if pg.createWalletBtn.Button.Clicked() {
+	if pg.createWalletBtn.Button.Clicked(gtx) {
 		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
 			pg.walletCreationSuccessFunc()
 		}, libutils.DCRWalletAsset))

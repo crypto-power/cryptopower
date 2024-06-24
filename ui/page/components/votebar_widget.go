@@ -103,6 +103,7 @@ func (v *VoteBar) SetBottomLayout(lay layout.Widget) *VoteBar {
 }
 
 func (v *VoteBar) votebarLayout(gtx C) D {
+	fmt.Println("---vote5---------000000----")
 	var rW, rE int
 	r := gtx.Dp(values.MarginPadding4)
 	progressBarWidth := gtx.Constraints.Max.X
@@ -163,7 +164,10 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 
 	return layout.Stack{Alignment: layout.W}.Layout(gtx,
 		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-			return progressScale(progressBarWidth, v.Theme.Color.Gray2, 1)
+			fmt.Println("---vote5---------111111----")
+			pro := progressScale(progressBarWidth, v.Theme.Color.Gray2, 1)
+			fmt.Println("---vote5---------2222222----")
+			return pro
 		}),
 		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{}.Layout(gtx,
@@ -171,13 +175,19 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 					if yesWidth == 0 {
 						return D{}
 					}
-					return progressScale(yesWidth, v.yesColor, 2)
+					fmt.Println("---vote5---------33333----")
+					pro := progressScale(yesWidth, v.yesColor, 2)
+					fmt.Println("---vote5---------44444----")
+					return pro
 				}),
 				layout.Rigid(func(gtx C) D {
 					if noWidth == 0 {
 						return D{}
 					}
-					return progressScale(noWidth, v.noColor, 3)
+					fmt.Println("---vote5---------55555----")
+					pro := progressScale(noWidth, v.noColor, 3)
+					fmt.Println("---vote5---------666666----")
+					return pro
 				}),
 			)
 		}),
@@ -186,15 +196,23 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 }
 
 func (v *VoteBar) votesIndicatorTooltip(gtx C, r image.Rectangle, tipPos float32) {
+	fmt.Println("---votesIndicatorTooltip---------00000----")
 	insetLeft := tipPos - float32(voteBarThumbWidth/2) - 205
+	fmt.Println("---votesIndicatorTooltip---------1111----")
 	inset := layout.Inset{Left: unit.Dp(insetLeft), Top: values.MarginPadding25}
+	fmt.Println("---votesIndicatorTooltip---------2222----")
 	v.passTooltip.Layout(gtx, r, inset, func(gtx C) D {
+		fmt.Println("---votesIndicatorTooltip---------3333----")
 		txt := values.StringF(values.StrVoteTooltip, int(v.passPercentage))
-		return v.Theme.Caption(txt).Layout(gtx)
+		cap := v.Theme.Caption(txt).Layout(gtx)
+		fmt.Println("---votesIndicatorTooltip---------4444----")
+		return cap
 	})
+	fmt.Println("---votesIndicatorTooltip---------55555----")
 }
 
 func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
+	fmt.Println("---requiredYesVotesIndicator---------000000----")
 	thumbLeftPos := (v.passPercentage / 100) * float32(gtx.Constraints.Max.X)
 	rect := image.Rectangle{
 		Min: image.Point{
@@ -208,29 +226,40 @@ func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
 	}
 	defer clip.Rect(rect).Push(gtx.Ops).Pop()
 	paint.Fill(gtx.Ops, v.Theme.Color.Gray3)
+	fmt.Println("---requiredYesVotesIndicator---------11111----")
 	v.votesIndicatorTooltip(gtx, rect, thumbLeftPos)
-
+	fmt.Println("---requiredYesVotesIndicator---------22222----")
 	return D{
 		Size: rect.Max,
 	}
 }
 
 func (v *VoteBar) Layout(gtx C) D {
-	return layout.Stack{}.Layout(gtx,
+	fmt.Println("---layoutvote1---------00000----")
+	layoutvote1 := layout.Stack{}.Layout(gtx,
 		layout.Stacked(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			fmt.Println("---layoutvote2---------00000----")
+			layoutvote2 := layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				fmt.Println("---layoutvote3---------00000----")
+				layoutvote3 := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return layout.Flex{}.Layout(gtx,
+						fmt.Println("---layoutvote4---------00000----")
+						layoutvote4 := layout.Flex{}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								yesLabel := v.Theme.Body1(values.String(values.StrYes) + values.String(values.StrColon))
 								yesLabel.TextSize = v.ConvertTextSize(values.TextSize14)
-								return v.layoutIconAndText(gtx, yesLabel, int(v.yesVotes), v.yesColor)
+								fmt.Println("---vote1---------00000----")
+								vote1 := v.layoutIconAndText(gtx, yesLabel, int(v.yesVotes), v.yesColor)
+								fmt.Println("---vote1---------111111----")
+								return vote1
 							}),
 							layout.Rigid(func(gtx C) D {
 								noLabel := v.Theme.Body1(values.String(values.StrNo) + values.String(values.StrColon))
 								noLabel.TextSize = v.ConvertTextSize(values.TextSize14)
-								return v.layoutIconAndText(gtx, noLabel, int(v.noVotes), v.noColor)
+								fmt.Println("---vote2---------000000----")
+								vote2 := v.layoutIconAndText(gtx, noLabel, int(v.noVotes), v.noColor)
+								fmt.Println("---vote2---------111111----")
+								return vote2
 							}),
 							layout.Flexed(1, func(gtx C) D {
 								if v.isDisableInfoTitle || v.IsMobileView() {
@@ -241,13 +270,21 @@ func (v *VoteBar) Layout(gtx C) D {
 									lb := v.Theme.Body1(values.StringF(values.StrVotes, v.totalVotes))
 									lb.TextSize = v.ConvertTextSize(values.TextSize14)
 									lb.Font.Weight = font.SemiBold
-									return lb.Layout(gtx)
+									fmt.Println("---vote3---------000000----")
+									vote3 := lb.Layout(gtx)
+									fmt.Println("---vote3---------111111----")
+									return vote3
 								})
 							}),
 						)
+						fmt.Println("---layoutvote4---------11111----")
+						return layoutvote4
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.votebarLayout)
+						fmt.Println("---layoutvote5---------0000----")
+						layoutvote5 := layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.votebarLayout)
+						fmt.Println("---layoutvote5---------1111----")
+						return layoutvote5
 					}),
 					layout.Rigid(func(gtx C) D {
 						if !v.IsMobileView() {
@@ -258,19 +295,33 @@ func (v *VoteBar) Layout(gtx C) D {
 							lb := v.Theme.Body1(values.StringF(values.StrVotes, v.totalVotes))
 							lb.TextSize = v.ConvertTextSize(values.TextSize14)
 							lb.Font.Weight = font.SemiBold
-							return lb.Layout(gtx)
+							fmt.Println("---vote4---------000000----")
+							vote4 := lb.Layout(gtx)
+							fmt.Println("---vote4---------111111----")
+							return vote4
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
 						if v.BottomExtra == nil {
 							return D{}
 						}
-						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.BottomExtra)
+						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							fmt.Println("---vote6---------000000----")
+							vote6 := v.BottomExtra(gtx)
+							fmt.Println("---vote6---------000000----")
+							return vote6
+						})
 					}),
 				)
+				fmt.Println("---layoutvote3---------11111----")
+				return layoutvote3
 			})
+			fmt.Println("---layoutvote2---------11111----")
+			return layoutvote2
 		}),
 	)
+	fmt.Println("---layoutvote1---------11111----")
+	return layoutvote1
 }
 
 func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, col color.NRGBA) D {

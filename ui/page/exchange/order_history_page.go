@@ -128,16 +128,16 @@ func (pg *OrderHistoryPage) OnNavigatedFrom() {
 	pg.stopSyncNtfnListener()
 }
 
-func (pg *OrderHistoryPage) HandleUserInteractions() {
-	if pg.statusDropdown.Changed() {
+func (pg *OrderHistoryPage) HandleUserInteractions(gtx C) {
+	if pg.statusDropdown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.orderDropdown.Changed() {
+	if pg.orderDropdown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.serverDropdown != nil && pg.serverDropdown.Changed() {
+	if pg.serverDropdown != nil && pg.serverDropdown.Changed(gtx) {
 		if pg.serverDropdown.SelectedIndex() == 0 {
 			pg.selectedServer = nil
 		} else {
@@ -145,7 +145,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.serverDropdown.Changed() {
+	if pg.serverDropdown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
@@ -154,20 +154,33 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 		pg.ParentWindow().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
-	if pg.refreshClickable.Clicked() {
+	if pg.refreshClickable.Clicked(gtx) {
 		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 
-	for _, evt := range pg.searchEditor.Editor.Events() {
-		if pg.searchEditor.Editor.Focused() {
-			switch evt.(type) {
+	//TODO07
+	for {
+		event, ok := pg.searchEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+		if gtx.Source.Focused(&pg.searchEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 			}
 		}
 	}
+	// for _, evt := range pg.searchEditor.Editor.Events() {
+	// 	if pg.searchEditor.Editor.Focused() {
+	// 		switch evt.(type) {
+	// 		case widget.ChangeEvent:
+	// 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+	// 		}
+	// 	}
+	// }
 
-	for pg.filterBtn.Clicked() {
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }

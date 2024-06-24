@@ -1,6 +1,7 @@
 package cryptomaterial
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
@@ -48,13 +49,16 @@ func (t *Tooltip) layout(gtx C, pos layout.Inset, wdgt layout.Widget) D {
 }
 
 func (t *Tooltip) Layout(gtx C, rect image.Rectangle, pos layout.Inset, wdgt layout.Widget) D {
+	fmt.Println("----Tooltip------------0000---")
 	if t.hoverable.Hovered() {
 		m := op.Record(gtx.Ops)
 		t.layout(gtx, pos, wdgt)
 		op.Defer(gtx.Ops, m.Stop())
 	}
+	fmt.Println("----Tooltip------------11111---")
 
 	t.hoverable.Layout(gtx, rect)
+	fmt.Println("----Tooltip------------22222---")
 	return D{
 		Size: rect.Min,
 	}

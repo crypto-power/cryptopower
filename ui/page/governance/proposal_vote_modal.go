@@ -168,22 +168,22 @@ func (vm *voteModal) sendVotes() {
 	vm.ParentWindow().ShowModal(passwordModal)
 }
 
-func (vm *voteModal) Handle() {
-	for vm.cancelBtn.Clicked() {
+func (vm *voteModal) Handle(gtx C) {
+	for vm.cancelBtn.Clicked(gtx) {
 		if vm.isVoting {
 			continue
 		}
 		vm.Dismiss()
 	}
 
-	vm.handleVoteCountButtons(vm.yesVote)
-	vm.handleVoteCountButtons(vm.noVote)
+	vm.handleVoteCountButtons(gtx, vm.yesVote)
+	vm.handleVoteCountButtons(gtx, vm.noVote)
 
 	totalVotes := vm.yesVote.voteCount() + vm.noVote.voteCount()
 	validToVote := totalVotes > 0 && totalVotes <= vm.eligibleVotes()
 	vm.voteBtn.SetEnabled(validToVote)
 
-	for vm.voteBtn.Clicked() {
+	for vm.voteBtn.Clicked(gtx) {
 		if vm.isVoting {
 			break
 		}
@@ -196,7 +196,7 @@ func (vm *voteModal) Handle() {
 		vm.sendVotes()
 	}
 
-	if vm.navigateToStakePage.Clicked() {
+	if vm.navigateToStakePage.Clicked(gtx) {
 		vm.Dismiss()
 		selectedWallet, _ := vm.walletSelector.selectedWallet.(*dcr.Asset)
 		walletCallbackFunc := func() {

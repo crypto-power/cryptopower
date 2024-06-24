@@ -43,7 +43,9 @@ func NewTextInputModal(l *load.Load) *TextInputModal {
 }
 
 func (tm *TextInputModal) OnResume() {
-	tm.textInput.Editor.Focus()
+	// tm.textInput.Editor.Focus()
+	//TODO07
+	// gtx.Execute(key.FocusCmd{Tag: &tm.textInput.Editor})
 	// set the positive button state
 	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
 }
@@ -102,16 +104,16 @@ func (tm *TextInputModal) SetTextWithTemplate(template string, walletName ...str
 	return tm
 }
 
-func (tm *TextInputModal) Handle() {
+func (tm *TextInputModal) Handle(gtx C) {
 	// set the positive button state
 	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(tm.textInput.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, tm.textInput.Editor)
 	if isChanged {
 		tm.textInput.SetError("")
 	}
 
-	if tm.btnPositive.Clicked() || isSubmit {
+	if tm.btnPositive.Clicked(gtx) || isSubmit {
 		if tm.isLoading {
 			return
 		}
@@ -127,14 +129,14 @@ func (tm *TextInputModal) Handle() {
 		}()
 	}
 
-	for tm.btnNegative.Clicked() {
+	for tm.btnNegative.Clicked(gtx) {
 		if !tm.isLoading {
 			tm.Dismiss()
 			tm.negativeButtonClicked()
 		}
 	}
 
-	if tm.Modal.BackdropClicked(tm.isCancelable) {
+	if tm.Modal.BackdropClicked(gtx, tm.isCancelable) {
 		if !tm.isLoading {
 			tm.Dismiss()
 			tm.negativeButtonClicked()

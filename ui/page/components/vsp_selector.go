@@ -64,8 +64,8 @@ func (v *VSPSelector) SelectedVSP() *dcr.VSP {
 	return v.selectedVSP
 }
 
-func (v *VSPSelector) handle(window app.WindowNavigator) {
-	if v.showVSPModal.Clicked() {
+func (v *VSPSelector) handle(gtx C, window app.WindowNavigator) {
+	if v.showVSPModal.Clicked(gtx) {
 		modal := newVSPSelectorModal(v.Load, v.dcrWallet).
 			title(values.String(values.StrVotingServiceProvider)).
 			vspSelected(func(info *dcr.VSP) {
@@ -76,7 +76,7 @@ func (v *VSPSelector) handle(window app.WindowNavigator) {
 }
 
 func (v *VSPSelector) Layout(window app.WindowNavigator, gtx C) D {
-	v.handle(window)
+	v.handle(gtx, window)
 
 	border := widget.Border{
 		Color:        v.Theme.Color.Gray2,
@@ -177,9 +177,9 @@ func (v *vspSelectorModal) OnResume() {
 	}
 }
 
-func (v *vspSelectorModal) Handle() {
+func (v *vspSelectorModal) Handle(gtx C) {
 	v.addVSP.SetEnabled(v.editorsNotEmpty(v.inputVSP.Editor))
-	if v.addVSP.Clicked() {
+	if v.addVSP.Clicked(gtx) {
 		if !utils.ValidateHost(v.inputVSP.Editor.Text()) {
 			v.inputVSP.SetError(values.StringF(values.StrValidateHostErr, v.inputVSP.Editor.Text()))
 			return
@@ -195,7 +195,7 @@ func (v *vspSelectorModal) Handle() {
 		}()
 	}
 
-	if v.Modal.BackdropClicked(true) {
+	if v.Modal.BackdropClicked(gtx, true) {
 		v.Dismiss()
 	}
 

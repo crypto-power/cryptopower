@@ -324,8 +324,8 @@ func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *AccountMixerPage) HandleUserInteractions() {
-	if pg.toggleMixer.Changed() {
+func (pg *AccountMixerPage) HandleUserInteractions(gtx C) {
+	if pg.toggleMixer.Changed(gtx) {
 		if pg.toggleMixer.IsChecked() {
 			if pg.unmixedBalance.ToCoin() <= 0 {
 				pg.Toast.NotifyError(values.String(values.StrNoMixable))
@@ -366,7 +366,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 		return num
 	}
 
-	for pg.mixedAccount.Clicked() {
+	for pg.mixedAccount.Clicked(gtx) {
 		name, err := pg.dcrWallet.AccountName(pg.dcrWallet.MixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
@@ -394,7 +394,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(mixedAccountModal)
 	}
 
-	for pg.unmixedAccount.Clicked() {
+	for pg.unmixedAccount.Clicked(gtx) {
 		name, err := pg.dcrWallet.AccountName(pg.dcrWallet.UnmixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
@@ -422,7 +422,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
 	}
 
-	for pg.coordinationServer.Clicked() {
+	for pg.coordinationServer.Clicked(gtx) {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrCoordinationServer)).
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).

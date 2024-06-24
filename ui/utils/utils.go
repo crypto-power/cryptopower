@@ -120,14 +120,23 @@ func ComputePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomate
 	}
 }
 
-func HandleSubmitEvent(editors ...*widget.Editor) bool {
+func HandleSubmitEvent(gtx layout.Context, editors ...*widget.Editor) bool {
 	var submit bool
 	for _, editor := range editors {
-		for _, e := range editor.Events() {
-			if _, ok := e.(widget.SubmitEvent); ok {
+		for {
+			event, ok := editor.Update(gtx)
+			if !ok {
+				break
+			}
+			if _, ok := event.(widget.SubmitEvent); ok {
 				submit = true
 			}
 		}
+		// for _, e := range editor.Events() {
+		// 	if _, ok := e.(widget.SubmitEvent); ok {
+		// 		submit = true
+		// 	}
+		// }
 	}
 	return submit
 }

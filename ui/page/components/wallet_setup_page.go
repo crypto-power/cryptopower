@@ -429,21 +429,21 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *CreateWallet) HandleUserInteractions() {
+func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 	// back button action
-	if pg.backButton.Button.Clicked() {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
 	// decred wallet type sub action
 	for i, item := range pg.walletActions {
-		for item.clickable.Clicked() {
+		for item.clickable.Clicked(gtx) {
 			pg.selectedWalletAction = i
 		}
 	}
 
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.walletName.Editor, pg.watchOnlyWalletHex.Editor, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.walletName.Editor, pg.watchOnlyWalletHex.Editor, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.walletName.SetError("")
@@ -453,7 +453,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// create wallet action
-	if (pg.continueBtn.Clicked() || isSubmit) && pg.validCreateWalletInputs() {
+	if (pg.continueBtn.Clicked(gtx) || isSubmit) && pg.validCreateWalletInputs() {
 		go func() {
 			defer func() {
 				pg.isLoading = false
@@ -508,7 +508,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// restore wallet actions
-	if pg.restoreBtn.Clicked() && pg.validRestoreWalletInputs() {
+	if pg.restoreBtn.Clicked(gtx) && pg.validRestoreWalletInputs() {
 		afterRestore := func() {
 			// todo setup mixer for restored accounts automatically
 			pg.walletCreationSuccessCallback()
@@ -518,7 +518,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// imported wallet click action control
-	if (pg.importBtn.Clicked() || isSubmit) && pg.validRestoreWalletInputs() {
+	if (pg.importBtn.Clicked(gtx) || isSubmit) && pg.validRestoreWalletInputs() {
 		pg.showLoader = true
 		var err error
 		go func() {

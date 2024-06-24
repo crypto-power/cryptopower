@@ -43,7 +43,7 @@ func (cl *ClickableList) ItemClicked() (bool, int) {
 	return cl.selectedItem != -1, cl.selectedItem
 }
 
-func (cl *ClickableList) handleClickables(count int) {
+func (cl *ClickableList) handleClickables(gtx C, count int) {
 	if len(cl.clickables) != count {
 
 		cl.clickables = make([]*Clickable, count)
@@ -54,14 +54,14 @@ func (cl *ClickableList) handleClickables(count int) {
 	}
 
 	for index, clickable := range cl.clickables {
-		for clickable.Clicked() {
+		for clickable.Clicked(gtx) {
 			cl.selectedItem = index
 		}
 	}
 }
 
 func (cl *ClickableList) Layout(gtx layout.Context, count int, w layout.ListElement) layout.Dimensions {
-	cl.handleClickables(count)
+	cl.handleClickables(gtx, count)
 	return cl.List.Layout(gtx, count, func(gtx C, i int) D {
 		if cl.IsShadowEnabled && cl.clickables[i].button.Hovered() {
 			shadow := cl.theme.Shadow()

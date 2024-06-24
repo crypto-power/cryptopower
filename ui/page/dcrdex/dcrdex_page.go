@@ -170,18 +170,18 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 // user interaction recently occurred on the page and may be used to update the
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
-func (pg *DEXPage) HandleUserInteractions() {
-	if pg.switchToTestnetBtn.Button.Clicked() {
+func (pg *DEXPage) HandleUserInteractions(gtx C) {
+	if pg.switchToTestnetBtn.Button.Clicked(gtx) {
 		settings.ChangeNetworkType(pg.Load, pg.ParentWindow(), string(libutils.Testnet))
 	}
 
 	if pg.CurrentPage() != nil {
-		pg.CurrentPage().HandleUserInteractions()
+		pg.CurrentPage().HandleUserInteractions(gtx)
 	}
-	if pg.splashPageInfoButton.Button.Clicked() {
-		pg.showInfoModal()
+	if pg.splashPageInfoButton.Button.Clicked(gtx) {
+		pg.showInfoModal(gtx)
 	}
-	if pg.startTradingBtn.Button.Clicked() {
+	if pg.startTradingBtn.Button.Clicked(gtx) {
 		pg.showSplashPage = false
 	}
 }

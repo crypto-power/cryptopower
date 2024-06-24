@@ -191,16 +191,16 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *ProposalsPage) HandleUserInteractions() {
-	if pg.statusDropDown.Changed() {
+func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
+	if pg.statusDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.orderDropDown.Changed() {
+	if pg.orderDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 	}
 
@@ -210,7 +210,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
 	}
 
-	for pg.syncButton.Clicked() {
+	for pg.syncButton.Clicked(gtx) {
 		go pg.AssetsManager.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
@@ -223,7 +223,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.proposalsFetched = true
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrProposal)).
 			Body(values.String(values.StrOffChainVote)).
@@ -239,16 +239,30 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		})
 	}
 
-	for _, evt := range pg.searchEditor.Editor.Events() {
-		if pg.searchEditor.Editor.Focused() {
-			switch evt.(type) {
+	for {
+		event, ok := pg.searchEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(&pg.searchEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 			}
 		}
 	}
 
-	for pg.filterBtn.Clicked() {
+	// for _, evt := range pg.searchEditor.Editor.Events() {
+	// 	if pg.searchEditor.Editor.Focused() {
+	// 		switch evt.(type) {
+	// 		case widget.ChangeEvent:
+	// 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+	// 		}
+	// 	}
+	// }
+
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }

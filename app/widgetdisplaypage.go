@@ -24,7 +24,7 @@ func NewWidgetDisplayPage(widget layout.Widget) *WidgetDisplayPage {
 func (*WidgetDisplayPage) OnNavigatedTo() {}
 
 // HandleUserInteractions implements Page.
-func (*WidgetDisplayPage) HandleUserInteractions() {}
+func (*WidgetDisplayPage) HandleUserInteractions(gtx layout.Context) {}
 
 // Layout implements Page.
 func (pg *WidgetDisplayPage) Layout(gtx layout.Context) layout.Dimensions {

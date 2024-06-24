@@ -2,7 +2,9 @@ package accounts
 
 import (
 	"fmt"
+	"io"
 	"strconv"
+	"strings"
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -353,8 +355,9 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 									lbl := pg.Theme.Label(values.TextSize14, "********")
 									lbl.Color = pg.Theme.Color.GrayText1
 									if !pg.isHiddenExtendedxPubkey {
-										if pg.extendedKeyClickable.Clicked() {
-											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
+										if pg.extendedKeyClickable.Clicked(gtx) {
+											// clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
+											gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.extendedKey))})
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}
 										lbl.Text = utils.SplitXPUB(pg.extendedKey, 70, 35)
@@ -383,8 +386,8 @@ func (pg *AcctDetailsPage) pageSections(gtx C, body layout.Widget) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *AcctDetailsPage) HandleUserInteractions() {
-	if pg.renameAccount.Clicked() {
+func (pg *AcctDetailsPage) HandleUserInteractions(gtx C) {
+	if pg.renameAccount.Clicked(gtx) {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrAcctName)).
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
@@ -405,13 +408,13 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(textModal)
 	}
 
-	for pg.showExtendedKeyButton.Clicked() {
+	for pg.showExtendedKeyButton.Clicked(gtx) {
 		if pg.extendedKey != "" {
 			pg.isHiddenExtendedxPubkey = !pg.isHiddenExtendedxPubkey
 		}
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrExtendedKey)).
 			Body(values.String(values.StrExtendedInfo)).

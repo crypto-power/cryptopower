@@ -1,8 +1,12 @@
 package security
 
 import (
+	"io"
+	"strings"
+
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -99,7 +103,8 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *SignMessagePage) OnNavigatedTo() {
-	pg.addressEditor.Editor.Focus()
+	//TODO07 need handle
+	// pg.addressEditor.Editor.Focus()
 }
 
 // Layout draws the page UI components into the provided C
@@ -205,8 +210,9 @@ func (pg *SignMessagePage) drawResult() layout.Widget {
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
-													if pg.copySignature.Clicked() {
-														clipboard.WriteOp{Text: pg.signedMessageLabel.Text}.Add(gtx.Ops)
+													if pg.copySignature.Clicked(gtx) {
+														gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.signedMessageLabel.Text))})
+														// clipboard.WriteOp{Text: pg.signedMessageLabel.Text}.Add(gtx.Ops)
 														pg.Toast.Notify(values.String(values.StrSignCopied))
 													}
 													return pg.copySignature.Layout(gtx, pg.copyIcon.Layout24dp)
@@ -257,25 +263,25 @@ func (pg *SignMessagePage) updateButtonColors() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *SignMessagePage) HandleUserInteractions() {
+func (pg *SignMessagePage) HandleUserInteractions(gtx C) {
 	pg.updateButtonColors()
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor)
 	if isChanged {
-		if pg.addressEditor.Editor.Focused() {
+		if gtx.Source.Focused(&pg.addressEditor.Editor) {
 			pg.validateAddress()
 		}
 
-		if pg.messageEditor.Editor.Focused() {
+		if gtx.Source.Focused(&pg.messageEditor.Editor) {
 			pg.validateMessage()
 		}
 	}
 
-	for pg.clearButton.Clicked() {
+	for pg.clearButton.Clicked(gtx) {
 		pg.clearForm()
 	}
 
-	if (pg.signButton.Clicked() || isSubmit) && pg.isEnabled {
+	if (pg.signButton.Clicked(gtx) || isSubmit) && pg.isEnabled {
 		if !pg.isSigningMessage && pg.validate() {
 			address := pg.addressEditor.Editor.Text()
 			message := pg.messageEditor.Editor.Text()
@@ -304,16 +310,17 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *SignMessagePage) KeysToHandle() key.Set {
-	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+func (pg *SignMessagePage) KeysToHandle() []event.Filter {
+	return []event.Filter{key.FocusFilter{Target: pg}, key.Filter{Focus: pg, Name: key.NameTab, Optional: key.ModShift}}
+	// return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *SignMessagePage) HandleKeyPress(evt *key.Event) {
+func (pg *SignMessagePage) HandleKeyPress(gtx C, evt *key.Event) {
 	// Switch editors when tab key is pressed.
-	cryptomaterial.SwitchEditors(evt, pg.addressEditor.Editor, pg.messageEditor.Editor)
+	cryptomaterial.SwitchEditors(gtx, evt, pg.addressEditor.Editor, pg.messageEditor.Editor)
 }
 
 func (pg *SignMessagePage) validate() bool {

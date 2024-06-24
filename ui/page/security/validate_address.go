@@ -68,7 +68,8 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ValidateAddressPage) OnNavigatedTo() {
-	pg.addressEditor.Editor.Focus()
+	// TODO07 need handle
+	// pg.addressEditor.Editor.Focus()
 
 	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 }
@@ -166,19 +167,19 @@ func (pg *ValidateAddressPage) pageSections(gtx C, body layout.Widget) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *ValidateAddressPage) HandleUserInteractions() {
+func (pg *ValidateAddressPage) HandleUserInteractions(gtx C) {
 	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor)
 	if isChanged {
 		pg.stateValidate = none
 	}
 
-	if pg.validateBtn.Clicked() || isSubmit {
+	if pg.validateBtn.Clicked(gtx) || isSubmit {
 		pg.validateAddress()
 	}
 
-	if pg.clearBtn.Clicked() {
+	if pg.clearBtn.Clicked(gtx) {
 		pg.clearPage()
 	}
 }

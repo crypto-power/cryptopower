@@ -62,7 +62,8 @@ func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset
 }
 
 func (scm *sendConfirmModal) OnResume() {
-	scm.passwordEditor.Editor.Focus()
+	//TODO07 need handle
+	// scm.passwordEditor.Editor.Focus()
 }
 
 func (scm *sendConfirmModal) SetError(err string) {
@@ -98,10 +99,15 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 	}()
 }
 
-func (scm *sendConfirmModal) Handle() {
-	for _, evt := range scm.passwordEditor.Editor.Events() {
-		if scm.passwordEditor.Editor.Focused() {
-			switch evt.(type) {
+func (scm *sendConfirmModal) handle(gtx C) {
+	for {
+		event, ok := scm.passwordEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(&scm.passwordEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				scm.confirmButton.SetEnabled(scm.passwordEditor.Editor.Text() != "")
 			case widget.SubmitEvent:
@@ -109,12 +115,22 @@ func (scm *sendConfirmModal) Handle() {
 			}
 		}
 	}
+	// for _, evt := range scm.passwordEditor.Editor.Events() {
+	// 	if scm.passwordEditor.Editor.Focused() {
+	// 		switch evt.(type) {
+	// 		case widget.ChangeEvent:
+	// 			scm.confirmButton.SetEnabled(scm.passwordEditor.Editor.Text() != "")
+	// 		case widget.SubmitEvent:
+	// 			scm.broadcastTransaction()
+	// 		}
+	// 	}
+	// }
 
-	for scm.confirmButton.Clicked() {
+	for scm.confirmButton.Clicked(gtx) {
 		scm.broadcastTransaction()
 	}
 
-	for scm.closeConfirmationModalButton.Clicked() {
+	for scm.closeConfirmationModalButton.Clicked(gtx) {
 		if !scm.isSending {
 			scm.Dismiss()
 		}

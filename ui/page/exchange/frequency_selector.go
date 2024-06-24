@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"gioui.org/font"
-	"gioui.org/io/event"
+	"gioui.org/io/input"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -39,7 +39,7 @@ type frequencyModal struct {
 	onFrequencyClicked func(*frequencyItem)
 	frequencyList      layout.List
 	frequencyItems     []*frequencyItem
-	eventQueue         event.Queue
+	eventSource        input.Source
 	isCancelable       bool
 }
 
@@ -71,15 +71,15 @@ func (fs *FrequencySelector) setSelectedFrequency(fi *frequencyItem) {
 	fs.selectedFrequency = fi
 }
 
-func (fs *FrequencySelector) handle(window app.WindowNavigator) {
-	for fs.openSelectorDialog.Clicked() {
+func (fs *FrequencySelector) handle(gtx C, window app.WindowNavigator) {
+	for fs.openSelectorDialog.Clicked(gtx) {
 		fs.title(fs.dialogTitle)
 		window.ShowModal(fs.frequencyModal)
 	}
 }
 
 func (fs *FrequencySelector) Layout(window app.WindowNavigator, gtx C) D {
-	fs.handle(window)
+	fs.handle(gtx, window)
 
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
@@ -162,17 +162,17 @@ func (fs *FrequencySelector) buildFrequencyItems() []*frequencyItem {
 
 func (fm *frequencyModal) OnResume() {}
 
-func (fm *frequencyModal) Handle() {
-	if fm.eventQueue != nil {
-		for _, frequencyItem := range fm.frequencyItems {
-			if frequencyItem.clickable.Clicked() {
-				fm.onFrequencyClicked(frequencyItem)
-				fm.Dismiss()
-			}
+func (fm *frequencyModal) Handle(gtx C) {
+	// if fm.eventQueue != nil {
+	for _, frequencyItem := range fm.frequencyItems {
+		if frequencyItem.clickable.Clicked(gtx) {
+			fm.onFrequencyClicked(frequencyItem)
+			fm.Dismiss()
 		}
 	}
+	// }
 
-	if fm.Modal.BackdropClicked(fm.isCancelable) {
+	if fm.Modal.BackdropClicked(gtx, fm.isCancelable) {
 		fm.Dismiss()
 	}
 }
@@ -188,7 +188,7 @@ func (fm *frequencyModal) frequencyClicked(callback func(*frequencyItem)) *frequ
 }
 
 func (fm *frequencyModal) Layout(gtx C) D {
-	fm.eventQueue = gtx
+	fm.eventSource = gtx.Source
 	w := []layout.Widget{
 		func(gtx C) D {
 			titleTxt := fm.Theme.Label(values.TextSize20, fm.dialogTitle)

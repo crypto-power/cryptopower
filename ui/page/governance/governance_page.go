@@ -80,16 +80,16 @@ func (pg *Page) OnNavigatedFrom() {
 	}
 }
 
-func (pg *Page) HandleUserInteractions() {
+func (pg *Page) HandleUserInteractions(gtx C) {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
+		activeTab.HandleUserInteractions(gtx)
 	}
 
-	if pg.navigateToSettingsBtn.Button.Clicked() {
+	if pg.navigateToSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
-	if pg.splashScreenInfoButton.Button.Clicked() {
+	if pg.splashScreenInfoButton.Button.Clicked(gtx) {
 		pg.showInfoModal()
 	}
 
@@ -105,7 +105,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	// Handle individual page user interactions.
 	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
+		activeTab.HandleUserInteractions(gtx)
 	}
 
 	if pg.tab.Changed() {
