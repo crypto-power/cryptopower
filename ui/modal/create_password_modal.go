@@ -80,7 +80,7 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 
 	// Set the default click functions
 	cm.negativeButtonClicked = func() {}
-	cm.positiveButtonClicked = func(walletName, password string, m *CreatePasswordModal) bool { return true }
+	cm.positiveButtonClicked = func(_, _ string, _ *CreatePasswordModal) bool { return true }
 
 	cm.materialLoader = material.Loader(l.Theme.Base)
 

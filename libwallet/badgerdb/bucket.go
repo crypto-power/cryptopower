@@ -57,7 +57,7 @@ func newBucket(tx *badger.Txn, badgerKey []byte, dbTx *transaction) (*Bucket, er
 		return nil, convertErr(err)
 	}
 	if item.UserMeta() != metaBucket {
-		errors.E(errors.Invalid, "key is not associated with a bucket")
+		return nil, errors.E(errors.Invalid, "key is not associated with a bucket")
 	}
 	return &Bucket{txn: tx, prefix: prefix, dbTransaction: dbTx}, nil
 }

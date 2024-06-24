@@ -85,7 +85,7 @@ func (c *Client) FeePercentage(ctx context.Context) (float64, error) {
 // any association with a VSP.
 func (c *Client) ProcessUnprocessedTickets(ctx context.Context, policy Policy) {
 	var wg sync.WaitGroup
-	c.Wallet.ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
+	_ = c.Wallet.ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
 		// Skip tickets which have a fee tx already associated with
 		// them; they are already processed by some vsp.
 		_, err := c.Wallet.VSPFeeHashForTicket(ctx, hash)

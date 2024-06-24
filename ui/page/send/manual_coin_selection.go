@@ -650,7 +650,7 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 			}
 		default:
 			// create an empty default placeholder for unsupported widgets.
-			widget = func(gtx C) D { return D{} }
+			widget = func(_ C) D { return D{} }
 		}
 		return widget
 	}

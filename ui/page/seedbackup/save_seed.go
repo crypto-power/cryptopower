@@ -210,7 +210,7 @@ func (pg *SaveSeedPage) Layout(gtx C) D {
 			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
-			return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						label := pg.Theme.Label(values.TextSize16, values.StringF(values.String(values.StrWriteDownAllXWords), pg.wordSeedType.ToInt()))

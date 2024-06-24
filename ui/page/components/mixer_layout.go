@@ -82,7 +82,7 @@ func (mc MixerComponent) middleMixerLayout(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(mc.Theme.Icons.AlertIcon.Layout20dp),
-		layout.Rigid(func(gtc C) D {
+		layout.Rigid(func(gtx C) D {
 			lbl := mc.Theme.Body2(values.String(values.StrKeepAppOpen))
 			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, lbl.Layout)
 		}),
@@ -100,7 +100,7 @@ func (mc MixerComponent) bottomMixerLayout(gtx C) D {
 			Radius: cryptomaterial.Radius(8),
 		},
 	}.Layout(gtx,
-		layout.Rigid(func(gtc C) D {
+		layout.Rigid(func(gtx C) D {
 			lbl := mc.Theme.Body2(mc.WalletName)
 			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)

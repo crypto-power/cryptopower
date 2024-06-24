@@ -87,7 +87,7 @@ func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 // DefaultClickFunc returns the default click function satisfying the positive
 // btn click function.
 func DefaultClickFunc() ClickFunc {
-	return func(isChecked bool, in *InfoModal) bool {
+	return func(_ bool, _ *InfoModal) bool {
 		return true
 	}
 }

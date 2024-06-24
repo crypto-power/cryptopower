@@ -10,10 +10,10 @@ import (
 
 func (asset *Asset) spvSyncNotificationCallbacks() *spv.Notifications {
 	return &spv.Notifications{
-		PeerConnected: func(peerCount int32, addr string) {
+		PeerConnected: func(peerCount int32, _ string) {
 			asset.handlePeerCountUpdate(peerCount)
 		},
-		PeerDisconnected: func(peerCount int32, addr string) {
+		PeerDisconnected: func(peerCount int32, _ string) {
 			asset.handlePeerCountUpdate(peerCount)
 		},
 		Synced:                       asset.syncedWallet,

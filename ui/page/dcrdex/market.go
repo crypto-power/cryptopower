@@ -574,7 +574,7 @@ func (pg *DEXMarketPage) Layout(gtx C) D {
 		},
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
-		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, index int) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return layout.Stack{}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
 					return layout.Inset{Top: 110}.Layout(gtx, func(gtx C) D {
@@ -960,7 +960,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 		}
 
 		gtxCopy := gtx
-		overlay := func(gtx C) D {
+		overlay := func(_ C) D {
 			label := pg.Theme.Body1(overlayMsg)
 			label.Alignment = text.Middle
 			return cryptomaterial.DisableLayout(nil, gtxCopy,
@@ -1283,7 +1283,7 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.Theme.List(pg.ordersTableHorizontalScroll).Layout(gtx, 1, func(gtx C, index int) D {
+			return pg.Theme.List(pg.ordersTableHorizontalScroll).Layout(gtx, 1, func(gtx C, _ int) D {
 				gtx.Constraints.Max.X = gtx.Dp(sectionWidth)
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				gtx.Constraints.Max.Y = sectionHeight
@@ -1809,7 +1809,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 			)
 		}).
 		SetPositiveButtonText(values.String(values.StrAddWallet)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			pg.ParentWindow().ShowModal(dexPasswordModal)
 			return true
 		})

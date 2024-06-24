@@ -57,7 +57,7 @@ var InvalidBlock = &BlockInfo{
 // a transaction needs to be consider as confirmed.
 func (wallet *Wallet) RequiredConfirmations() int32 {
 	var spendUnconfirmed bool
-	wallet.ReadUserConfigValue(SpendUnconfirmedConfigKey, &spendUnconfirmed)
+	_ = wallet.ReadUserConfigValue(SpendUnconfirmedConfigKey, &spendUnconfirmed)
 	if spendUnconfirmed {
 		return 0
 	}
@@ -105,7 +105,7 @@ func (wallet *Wallet) batchDbTransaction(dbOp func(node storm.Node) error) (err 
 	panicked := true
 	defer func() {
 		if panicked || err != nil {
-			dbTx.Rollback()
+			_ = dbTx.Rollback()
 			return
 		}
 

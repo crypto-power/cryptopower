@@ -153,7 +153,9 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 			if swmp.AssetsManager.Politeia.IsSyncing() {
 				return
 			}
-			go swmp.AssetsManager.Politeia.Sync(context.TODO()) // TODO: Politeia should be given a ctx when initialized.
+			go func() {
+				_ = swmp.AssetsManager.Politeia.Sync(context.TODO()) // TODO: Politeia should be given a ctx when initialized.
+			}()
 		}
 	}
 }
@@ -438,7 +440,7 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 								privacy.SetupPrivacyPageID, accounts.AccountsPageID:
 								// Disable page functionality if a page is not synced or rescanning is in progress.
 								if swmp.selectedWallet.IsSyncing() {
-									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(a sharedW.Asset) {})
+									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(_ sharedW.Asset) {})
 									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 									title := values.String(values.StrFunctionUnavailable)
 									subTitle := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
@@ -721,7 +723,7 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 	}
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		OnTransaction: func(_ int, transaction *sharedW.Transaction) {
 			swmp.updateBalance()
 			if swmp.AssetsManager.IsTransactionNotificationsOn() {
 				// TODO: SPV wallets only receive mempool tx ntfn for txs that
@@ -735,7 +737,7 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 		// OnBlockAttached is also called whenever OnTransactionConfirmed is
 		// called, so use OnBlockAttached. Also, OnTransactionConfirmed may be
 		// called multiple times whereas OnBlockAttached is only called once.
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			beep := swmp.selectedWallet.ReadBoolConfigValueForKey(sharedW.BeepNewBlocksConfigKey, false)
 			if beep {
 				err := beeep.Beep(5, 1)
@@ -790,8 +792,8 @@ func (swmp *SingleWalletMasterPage) showBackupInfo() {
 		}).
 		PositiveButtonStyle(swmp.Load.Theme.Color.Primary, swmp.Load.Theme.Color.InvText).
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
-		SetPositiveButtonCallback(func(_ bool, m *modal.InfoModal) bool {
-			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(load *load.Load, navigator app.WindowNavigator) {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(_ *load.Load, _ app.WindowNavigator) {
 				swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
 				swmp.ParentNavigator().ClosePagesAfter(MainPageID)
 			}))

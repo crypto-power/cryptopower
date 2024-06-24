@@ -280,7 +280,7 @@ func (asset *Asset) rescanFinished(height int32) {
 		// Update the assets birthday from genesis block to a date closer
 		// to when the privatekey was first used.
 		asset.updateAssetBirthday()
-		asset.MarkWalletAsDiscoveredAccounts()
+		_ = asset.MarkWalletAsDiscoveredAccounts()
 	}
 
 	asset.syncData.mu.Lock()
@@ -592,7 +592,7 @@ func (asset *Asset) reloadChainService() error {
 		asset.CancelSync()
 	}
 
-	asset.chainClient.CS.Stop()
+	_ = asset.chainClient.CS.Stop()
 	chainService, err := asset.loadChainService()
 	if err != nil {
 		return err

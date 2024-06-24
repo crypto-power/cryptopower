@@ -184,7 +184,7 @@ func (pg *BTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(g
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, _ int) D {
 					return layout.Inset{
 						Bottom: values.MarginPadding7,
 						Right:  values.MarginPadding2,
@@ -222,7 +222,7 @@ func (pg *BTCAcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gt
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, _ int) D {
 					return layout.Inset{
 						Bottom: values.MarginPadding7,
 						Right:  values.MarginPadding2,

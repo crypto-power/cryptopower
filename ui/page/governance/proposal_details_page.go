@@ -277,7 +277,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 }
 
 func (pg *ProposalDetails) listenForSyncNotifications() {
-	proposalSyncCallback := func(propName string, status libutils.ProposalStatus) {
+	proposalSyncCallback := func(_ string, status libutils.ProposalStatus) {
 		if status == libutils.ProposalStatusSynced {
 			proposal, err := pg.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
 			if err == nil {
@@ -662,7 +662,7 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 	}
 
 	return pg.descriptionCard.Layout(gtx, func(gtx C) D {
-		return pg.Theme.List(pg.scrollbarList).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.scrollbarList).Layout(gtx, 1, func(gtx C, _ int) D {
 			mpSize := values.MarginPadding16
 			if pg.IsMobileView() {
 				mpSize = values.MarginPadding12

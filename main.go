@@ -64,9 +64,9 @@ func main() {
 		logDir := filepath.Join(cfg.LogDir, string(netType))
 		initLogRotator(logDir, cfg.MaxLogZips)
 		if cfg.DebugLevel == "" {
-			logger.SetLogLevels(utils.DefaultLogLevel)
+			_ = logger.SetLogLevels(utils.DefaultLogLevel)
 		} else {
-			logger.SetLogLevels(cfg.DebugLevel)
+			_ = logger.SetLogLevels(cfg.DebugLevel)
 		}
 
 		assetsManager, err := libwallet.NewAssetsManager(cfg.HomeDir, logDir, netType, cfg.DEXTestAddr)
@@ -78,7 +78,7 @@ func main() {
 		if cfg.DebugLevel != "" {
 			assetsManager.SetLogLevels(cfg.DebugLevel)
 		} else {
-			logger.SetLogLevels(assetsManager.GetLogLevels())
+			_ = logger.SetLogLevels(assetsManager.GetLogLevels())
 		}
 
 		return assetsManager, nil

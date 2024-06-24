@@ -228,7 +228,7 @@ func (asset *Asset) readCSPPConfig() *CSPPConfig {
 		csppTLSConfig.RootCAs = pool
 
 		dailer := new(net.Dialer)
-		dialCSPPServer = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialCSPPServer = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := dailer.DialContext(context.Background(), network, addr)
 			if err != nil {
 				return nil, err

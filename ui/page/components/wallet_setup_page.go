@@ -224,7 +224,7 @@ func (pg *CreateWallet) Layout(gtx C) D {
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+						return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 							return layout.Inset{
 								Top:   values.MarginPadding26,
 								Right: values.MarginPadding20,
