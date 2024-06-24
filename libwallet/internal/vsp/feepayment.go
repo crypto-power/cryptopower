@@ -261,7 +261,6 @@ func (fp *feePayment) stop() {
 func (fp *feePayment) receiveFeeAddress() error {
 	ctx := fp.ctx
 	w := fp.client.Wallet
-	params := w.ChainParams()
 
 	// stop processing if ticket is expired or spent
 	if fp.removedExpiredOrSpent() {
@@ -269,8 +268,7 @@ func (fp *feePayment) receiveFeeAddress() error {
 		return errStopped
 	}
 
-	// Fetch ticket and its parent transaction (typically, a split
-	// transaction).
+	// Fetch ticket and its parent transaction (typically, a split transaction).
 	parentHash := fp.ticket.ParentTx().CachedHash
 	parent, err := w.NewVSPTicket(ctx, parentHash)
 	if err != nil {
@@ -311,7 +309,7 @@ func (fp *feePayment) receiveFeeAddress() error {
 	}
 
 	feeAmount := dcrutil.Amount(response.FeeAmount)
-	feeAddr, err := stdaddr.DecodeAddress(response.FeeAddress, params)
+	feeAddr, err := stdaddr.DecodeAddress(response.FeeAddress, w.ChainParams())
 	if err != nil {
 		return fmt.Errorf("server fee address invalid: %w", err)
 	}

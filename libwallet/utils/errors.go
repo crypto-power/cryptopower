@@ -59,6 +59,7 @@ var (
 	ErrUnsupporttedIPV6Address = errors.New("IPv6 addresses unsupportted by the current network")
 	ErrNetConnectionTimeout    = errors.New("Timeout on network connection")
 	ErrPeerConnectionRejected  = errors.New("Peer connection rejected")
+	ErrStakingAccountsMissing  = errors.New("Mixing and Unmixing Accounts are not set")
 )
 
 // todo, should update this method to translate more error kinds.

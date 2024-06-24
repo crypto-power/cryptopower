@@ -133,14 +133,17 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 		},
 	}
 
-	// Mixed split buying through CoinShuffle++, if configured.
-	if csppCfg := asset.readCSPPConfig(); csppCfg != nil {
-		request.Mixing = csppCfg.Mixing
-		request.MixedAccount = csppCfg.MixedAccount
-		request.MixedAccountBranch = csppCfg.MixedAccountBranch
-		request.ChangeAccount = csppCfg.ChangeAccount
-		request.MixedSplitAccount = csppCfg.TicketSplitAccount
+	csppCfg := asset.readCSPPConfig()
+	if csppCfg == nil {
+		return nil, utils.ErrStakingAccountsMissing
 	}
+
+	// Mixed split buying through CoinShuffle++, if configured.
+	request.Mixing = csppCfg.Mixing
+	request.MixedAccount = csppCfg.MixedAccount
+	request.MixedAccountBranch = csppCfg.MixedAccountBranch
+	request.ChangeAccount = csppCfg.ChangeAccount
+	request.MixedSplitAccount = csppCfg.TicketSplitAccount
 
 	ctx, _ := asset.ShutdownContextWithCancel()
 	ticketsResponse, err := asset.Internal().DCR.PurchaseTickets(ctx, networkBackend, request)
@@ -477,14 +480,18 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 			return cfg.VspClient.Process(ctx, ticket, feeTx, vspPolicy)
 		},
 	}
-	// Mixed split buying through CoinShuffle++, if configured.
-	if csppCfg := asset.readCSPPConfig(); csppCfg != nil {
-		request.Mixing = csppCfg.Mixing
-		request.MixedAccount = csppCfg.MixedAccount
-		request.MixedAccountBranch = csppCfg.MixedAccountBranch
-		request.ChangeAccount = csppCfg.ChangeAccount
-		request.MixedSplitAccount = csppCfg.TicketSplitAccount
+
+	csppCfg := asset.readCSPPConfig()
+	if csppCfg == nil {
+		return utils.ErrStakingAccountsMissing
 	}
+
+	// Mixed split buying through CoinShuffle++, if configured.
+	request.Mixing = csppCfg.Mixing
+	request.MixedAccount = csppCfg.MixedAccount
+	request.MixedAccountBranch = csppCfg.MixedAccountBranch
+	request.ChangeAccount = csppCfg.ChangeAccount
+	request.MixedSplitAccount = csppCfg.TicketSplitAccount
 
 	tix, err := asset.Internal().DCR.PurchaseTickets(ctx, networkBackend, request)
 	if tix != nil {

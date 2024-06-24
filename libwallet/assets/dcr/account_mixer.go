@@ -149,7 +149,7 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 
 	cfg := asset.readCSPPConfig()
 	if cfg == nil {
-		return errors.New(utils.ErrFailedPrecondition)
+		return utils.ErrStakingAccountsMissing
 	}
 
 	hasMixableOutput := asset.accountHasMixableOutput(int32(cfg.ChangeAccount))
