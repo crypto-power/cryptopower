@@ -219,11 +219,11 @@ func (pg *Page) initializeAccountSelectors() {
 				// don't need to check account the same with destination account
 				accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
 
-				// For an Intra-Accounts to happen transfer the bare minimum expected is that:
+				// For an Intra-Accounts transfer to happen the bare minimum expected is that:
 				// 1. There is only one recipient instance available.
-				// 2. Both (i.e. source and recipient) use the same wallet.
+				// 2. Both (i.e. source and recipient) must use the same wallet.
 				// 3. Source account selected must have a spendable balance
-				// 4. Recipient's wallet tab option must be active.
+				// 4. Recipient's "Wallets" tab option must be active/on display.
 				// 5. The destination and source accounts must be different.
 				if len(pg.recipients) == 1 && !pg.recipients[0].isSendToAddress() && account.Balance.Spendable.ToInt() > 0 {
 					if pg.recipients[0].selectedWallet.GetWalletName() == pg.selectedWallet.GetWalletName() {
