@@ -7,7 +7,7 @@ issues:
     - ui/values/localizable
 
 output:
-  formats: colored-line-number,github-actions
+  formats: colored-line-number
 
 linters:
   disable-all: true

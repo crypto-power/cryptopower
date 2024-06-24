@@ -56,7 +56,7 @@ the supported instant exchange are: [trocador](https://trocador.app/),
 
 For taking the api keys. Please go to the instant exchange websites
 
-Note: You need to have [Go 1.19](https://golang.org/dl/) or above to build.
+Note: You need to have [Go 1.20](https://golang.org/dl/) or above to build.
 
 Then `go build`.
 
