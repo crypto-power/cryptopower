@@ -1042,10 +1042,7 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 		return pg.recentProposalList.Layout(gtx, len(pg.proposalItems), func(gtx C, i int) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					fmt.Println("----ProposalsList---00----0000--", len(pg.proposalItems))
-					fmt.Println("----ProposalsList---11----0000--", i)
 					list := components.ProposalsList(gtx, pg.Load, pg.proposalItems[i])
-					fmt.Println("----ProposalsList--------111111-")
 					return list
 				}),
 				layout.Rigid(func(gtx C) D {

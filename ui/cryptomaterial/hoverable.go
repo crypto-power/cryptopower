@@ -1,10 +1,8 @@
 package cryptomaterial
 
 import (
-	"fmt"
 	"image"
 
-	"gioui.org/f32"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
 	"gioui.org/op"
@@ -12,8 +10,7 @@ import (
 )
 
 type Hoverable struct {
-	hovered  bool
-	position *f32.Point
+	hovered bool
 }
 
 func (t *Theme) Hoverable() *Hoverable {
@@ -22,10 +19,6 @@ func (t *Theme) Hoverable() *Hoverable {
 
 func (h *Hoverable) Hovered() bool {
 	return h.hovered
-}
-
-func (h *Hoverable) Position() *f32.Point {
-	return h.position
 }
 
 func (h *Hoverable) update(gtx C) {
@@ -96,10 +89,7 @@ func (h *Hoverable) Layout(gtx C, rect image.Rectangle) D {
 	// 	Size: rect.Max,
 	// }
 
-	fmt.Println("-----Hoverable------0000-----")
 	defer clip.Rect(rect).Push(gtx.Ops).Pop()
-	fmt.Println("-----Hoverable------1111-----")
 	event.Op(gtx.Ops, h)
-	fmt.Println("-----Hoverable------2222-----")
-	return D{Size: gtx.Constraints.Max}
+	return D{Size: rect.Max}
 }

@@ -1,9 +1,7 @@
 package cryptomaterial
 
 import (
-	"fmt"
 	"image"
-	"image/color"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -11,10 +9,9 @@ import (
 )
 
 type Tooltip struct {
-	theme      *Theme
-	hoverable  *Hoverable
-	background color.NRGBA
-	shadow     *Shadow
+	theme     *Theme
+	hoverable *Hoverable
+	shadow    *Shadow
 }
 
 func (t *Theme) Tooltip() *Tooltip {
@@ -49,17 +46,13 @@ func (t *Tooltip) layout(gtx C, pos layout.Inset, wdgt layout.Widget) D {
 }
 
 func (t *Tooltip) Layout(gtx C, rect image.Rectangle, pos layout.Inset, wdgt layout.Widget) D {
-	fmt.Println("----Tooltip------------0000---")
 	if t.hoverable.Hovered() {
 		m := op.Record(gtx.Ops)
 		t.layout(gtx, pos, wdgt)
-		op.Defer(gtx.Ops, m.Stop())
+		call := m.Stop()
+		ops := gtx.Ops
+		op.Defer(ops, call)
 	}
-	fmt.Println("----Tooltip------------11111---")
-
 	t.hoverable.Layout(gtx, rect)
-	fmt.Println("----Tooltip------------22222---")
-	return D{
-		Size: rect.Min,
-	}
+	return D{Size: rect.Min}
 }
