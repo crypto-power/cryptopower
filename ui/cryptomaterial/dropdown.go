@@ -211,8 +211,6 @@ func (d *DropDown) Changed(gtx C) bool {
 
 		// If no dropdown item was clicked, check if there's a click on the
 		// backdrop and close all dropdowns.
-		//TODO07
-		// if len(d.theme.DropdownBackdrop.Clicks()) > 0 {
 		if d.theme.DropdownBackdrop.Clicked(gtx) {
 			d.theme.closeAllDropdowns()
 		}

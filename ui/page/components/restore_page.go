@@ -254,7 +254,7 @@ func (pg *Restore) HandleUserInteractions(gtx C) {
 
 	if pg.confirmSeedButton.Clicked(gtx) {
 		if !pg.restoreInProgress {
-			go pg.restoreFromSeedEditor(gtx)
+			go pg.restoreFromSeedEditor()
 		}
 	}
 
@@ -283,7 +283,7 @@ func (pg *Restore) HandleKeyPress(gtx C, evt *key.Event) {
 	}
 }
 
-func (pg *Restore) restoreFromSeedEditor(gtx C) {
+func (pg *Restore) restoreFromSeedEditor() {
 	pg.restoreInProgress = true
 	clearEditor := func() {
 		pg.restoreInProgress = false

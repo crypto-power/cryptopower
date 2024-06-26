@@ -144,7 +144,6 @@ func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
 	return layout.Dimensions{Size: dims}
 }
 
-// TODO07
 func (s *Switch) Changed(gtx C) bool {
 	return s.clk.Update(gtx)
 }

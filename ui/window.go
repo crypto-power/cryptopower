@@ -324,7 +324,7 @@ func (win *Window) prepareToDisplayUI(gtx layout.Context) {
 	// list via a graphical context that is linked to the ops.
 	// ops := &op.Ops{}
 	// gtx := giouiApp.NewContext(ops, evt)
-	// win.addEvents(gtx)
+	win.addEvents(gtx)
 	layout.Stack{Alignment: layout.N}.Layout(
 		gtx,
 		backgroundWidget,
@@ -476,14 +476,15 @@ func (win *Window) listenSoftKey(gtx C) {
 	// }
 }
 
-// func (win *Window) addEvents(gtx C) {
-// 	// clicker use for show and hide soft keyboard and menu button on editor
-// 	win.clicker.Add(gtx.Ops)
+func (win *Window) addEvents(gtx C) {
+	// clicker use for show and hide soft keyboard and menu button on editor
+	win.clicker.Add(gtx.Ops)
 
-// 	if runtime.GOOS == "android" {
-// 		key.InputOp{
-// 			Tag:  win,
-// 			Keys: key.NameBack,
-// 		}.Add(gtx.Ops)
-// 	}
-// }
+	//TODO07 Need handle
+	// if runtime.GOOS == "android" {
+	// 	key.InputOp{
+	// 		Tag:  win,
+	// 		Keys: key.NameBack,
+	// 	}.Add(gtx.Ops)
+	// }
+}

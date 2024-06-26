@@ -443,7 +443,7 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 	}
 
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.walletName.Editor, pg.watchOnlyWalletHex.Editor, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.watchOnlyWalletHex.Editor, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.walletName.SetError("")

@@ -459,7 +459,7 @@ func (pg *SeedRestore) validateSeeds() (bool, string) {
 	return true, seedPhrase
 }
 
-func (pg *SeedRestore) verifySeeds(gtx C) bool {
+func (pg *SeedRestore) verifySeeds() bool {
 	isValid, seedphrase := pg.validateSeeds()
 	if isValid {
 		pg.seedPhrase = seedphrase
@@ -536,7 +536,7 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.validateSeed.Clicked(gtx) {
-		if !pg.verifySeeds(gtx) {
+		if !pg.verifySeeds() {
 			return
 		}
 
