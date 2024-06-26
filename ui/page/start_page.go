@@ -616,9 +616,7 @@ func (sp *startPage) pageHeaderLayout(gtx C) D {
 		Clickable:   sp.backButton,
 		Padding:     layout.UniformInset(values.MarginPadding12),
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return sp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding24)
-		}),
+		layout.Rigid(sp.Theme.NewIcon(sp.Theme.Icons.ChevronLeft).Layout24dp),
 		layout.Rigid(sp.Theme.Label(values.TextSize20, values.String(values.StrBack)).Layout),
 	)
 }

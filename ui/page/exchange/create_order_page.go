@@ -64,7 +64,6 @@ type CreateOrderPage struct {
 	settingsButton                           cryptomaterial.IconButton
 	iconClickable                            *cryptomaterial.Clickable
 	refreshClickable                         *cryptomaterial.Clickable
-	refreshIcon                              *cryptomaterial.Image
 	viewAllButton                            cryptomaterial.Button
 	navToSettingsBtn                         cryptomaterial.Button
 	createWalletBtn                          cryptomaterial.Button
@@ -129,7 +128,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeRate:     -1,
 		refreshClickable: l.Theme.NewClickable(true),
 		iconClickable:    l.Theme.NewClickable(true),
-		refreshIcon:      l.Theme.Icons.Restore,
 		navToSettingsBtn: l.Theme.Button(values.String(values.StrStartTrading)),
 		createWalletBtn:  l.Theme.Button(values.String(values.StrCreateANewWallet)),
 		splashPageContainer: &widget.List{List: layout.List{
@@ -1058,8 +1056,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 																	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 																	return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 																}
-																size := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding18)
-																return pg.refreshIcon.LayoutSize(gtx, size)
+																return pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).LayoutTransform(gtx, pg.IsMobileView(), values.MarginPadding18)
 															})
 														}),
 													)

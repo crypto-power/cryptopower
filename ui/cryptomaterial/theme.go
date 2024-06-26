@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 
-	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
@@ -50,8 +49,9 @@ type Theme struct {
 	dropDownMenus    []*DropDown
 	DropdownBackdrop *widget.Clickable
 
-	allEditors  []*Editor
-	backButtons []*widget.Clickable
+	allEditors   []*Editor
+	backButtons  []*widget.Clickable
+	isDarkModeOn bool
 }
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
@@ -63,6 +63,7 @@ func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image
 		Styles:           values.DefaultWidgetStyles(),
 		TextSize:         values.TextSize16,
 		DropdownBackdrop: new(widget.Clickable),
+		isDarkModeOn:     isDarkModeOn,
 	}
 	t.SwitchDarkMode(isDarkModeOn, decredIcons)
 	t.checkBoxCheckedIcon = MustIcon(widget.NewIcon(icons.ToggleCheckBox))
@@ -81,13 +82,14 @@ func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image
 func (t *Theme) SwitchDarkMode(isDarkModeOn bool, decredIcons map[string]image.Image) {
 	t.Color = t.Color.DefaultThemeColors()
 	t.Icons.DefaultIcons()
-	expandIcon := "expand_icon"
+	t.isDarkModeOn = isDarkModeOn
+	expandIcon := "ic_expand"
 	collapseIcon := "collapse_icon"
 	if isDarkModeOn {
 		t.Icons.DarkModeIcons()
 		t.Color.DarkThemeColors() // override defaults with dark themed colors
-		expandIcon = "expand_dm"
-		collapseIcon = "collapse_dm"
+		expandIcon = "dm_expand"
+		collapseIcon = "dm_collapse"
 	}
 
 	t.expandIcon = NewImage(decredIcons[expandIcon])
@@ -165,10 +167,6 @@ func rgb(c uint32) color.NRGBA {
 
 func argb(c uint32) color.NRGBA {
 	return color.NRGBA{A: uint8(c >> 24), R: uint8(c >> 16), G: uint8(c >> 8), B: uint8(c)}
-}
-
-func toPointF(p image.Point) f32.Point {
-	return f32.Point{X: float32(p.X), Y: float32(p.Y)}
 }
 
 func fillMax(gtx layout.Context, col color.NRGBA, radius CornerRadius) D {

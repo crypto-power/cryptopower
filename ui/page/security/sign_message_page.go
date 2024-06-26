@@ -45,7 +45,6 @@ type SignMessagePage struct {
 	addressEditor, messageEditor               cryptomaterial.Editor
 	clearButton, signButton, copyButton        cryptomaterial.Button
 	copySignature                              *cryptomaterial.Clickable
-	copyIcon                                   *cryptomaterial.Image
 
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
@@ -65,7 +64,6 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 
 	errorLabel := l.Theme.Caption("")
 	errorLabel.Color = l.Theme.Color.Danger
-	copyIcon := l.Theme.Icons.CopyIcon
 
 	pg := &SignMessagePage{
 		Load:             l,
@@ -84,7 +82,6 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 		signButton:         signButton,
 		copyButton:         l.Theme.Button(values.String(values.StrCopy)),
 		copySignature:      l.Theme.NewClickable(false),
-		copyIcon:           copyIcon,
 	}
 
 	pg.signedMessageLabel.Color = l.Theme.Color.GrayText2
@@ -209,7 +206,7 @@ func (pg *SignMessagePage) drawResult() layout.Widget {
 														clipboard.WriteOp{Text: pg.signedMessageLabel.Text}.Add(gtx.Ops)
 														pg.Toast.Notify(values.String(values.StrSignCopied))
 													}
-													return pg.copySignature.Layout(gtx, pg.copyIcon.Layout24dp)
+													return pg.copySignature.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon).Layout24dp)
 												})
 											})
 										}),

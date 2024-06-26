@@ -33,7 +33,6 @@ type LogPage struct {
 	tail *tail.Tail
 
 	copyLog    *cryptomaterial.Clickable
-	copyIcon   *cryptomaterial.Image
 	backButton cryptomaterial.IconButton
 
 	logList *widget.List
@@ -55,7 +54,6 @@ func NewLogPage(l *load.Load, logPath string, pageTitle string) *LogPage {
 		copyLog: l.Theme.NewClickable(true),
 	}
 
-	pg.copyIcon = pg.Theme.Icons.CopyIcon
 	pg.logPath = logPath
 	pg.title = pageTitle
 
@@ -130,14 +128,7 @@ func (pg *LogPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			ExtraItem: pg.copyLog,
-			Extra: func(gtx C) D {
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					return pg.copyLog.Layout(gtx, func(gtx C) D {
-						return pg.copyIcon.Layout24dp(gtx)
-					})
-
-				})
-			},
+			Extra:     pg.Theme.IconButton(pg.Theme.Icons.CopyIcon).Layout,
 			HandleExtra: func() {
 				pg.copyLogEntries(gtx)
 				pg.Toast.Notify(values.String(values.StrCopied))
@@ -175,14 +166,7 @@ func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			ExtraItem: pg.copyLog,
-			Extra: func(gtx C) D {
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					return pg.copyLog.Layout(gtx, func(gtx C) D {
-						return pg.copyIcon.Layout24dp(gtx)
-					})
-
-				})
-			},
+			Extra:     pg.Theme.IconButton(pg.Theme.Icons.CopyIcon).Layout,
 			HandleExtra: func() {
 				pg.copyLogEntries(gtx)
 				pg.Toast.Notify(values.String(values.StrCopied))

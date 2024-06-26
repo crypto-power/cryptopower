@@ -125,7 +125,7 @@ func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickab
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(pg.Theme.Body1(title).Layout),
 					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+						return layout.E.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).Layout24dp)
 					}),
 				)
 			})

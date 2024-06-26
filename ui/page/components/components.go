@@ -843,7 +843,7 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 										clipboard.WriteOp{Text: url}.Add(gtx.Ops)
 										l.Toast.Notify(values.String(values.StrCopied))
 									}
-									return copyRedirect.Layout(gtx, l.Theme.Icons.CopyIcon.Layout24dp)
+									return copyRedirect.Layout(gtx, l.Theme.NewIcon(l.Theme.Icons.CopyIcon).Layout24dp)
 								})
 							}),
 						)

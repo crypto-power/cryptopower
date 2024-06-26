@@ -158,7 +158,7 @@ func (pg *AboutPage) layoutRows(gtx C) D {
 						}),
 						layout.Flexed(1, func(gtx C) D {
 							return layout.E.Layout(gtx, func(gtx C) D {
-								return in.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+								return in.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).Layout24dp)
 							})
 						}),
 					)

@@ -290,7 +290,7 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 			Extra: func(gtx C) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(pg.Theme.Icons.EllipseHoriz.Layout24dp),
+						layout.Rigid(pg.Theme.NewIcon(pg.Theme.Icons.NavigationMore).Layout24dp),
 						layout.Rigid(func(gtx C) D {
 							if pg.moreOptionIsOpen {
 								pg.layoutOptionsMenu(gtx)

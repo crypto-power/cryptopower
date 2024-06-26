@@ -41,7 +41,6 @@ type OrderHistoryPage struct {
 	selectedServer  *instantswap.ExchangeServer
 
 	refreshClickable *cryptomaterial.Clickable
-	refreshIcon      *cryptomaterial.Image
 	statusDropdown   *cryptomaterial.DropDown
 	orderDropdown    *cryptomaterial.DropDown
 	serverDropdown   *cryptomaterial.DropDown
@@ -54,7 +53,6 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OrderHistoryPageID),
 		refreshClickable: l.Theme.NewClickable(true),
-		refreshIcon:      l.Theme.Icons.Restore,
 	}
 
 	pg.backButton = components.GetBackButton(l)
@@ -301,7 +299,7 @@ func (pg *OrderHistoryPage) layoutSectionHeader(gtx C) D {
 									return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 								}
 								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return pg.refreshIcon.LayoutSize(gtx, values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding18))
+									return pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).LayoutTransform(gtx, pg.IsMobileView(), values.MarginPadding18)
 								})
 							}),
 						)

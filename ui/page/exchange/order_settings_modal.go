@@ -374,7 +374,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																									clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(mGtx.Ops)
 																									osm.Load.Toast.Notify(values.String(values.StrCopied))
 																								}
-																								return osm.copyRedirect.Layout(mGtx, osm.Load.Theme.Icons.CopyIcon.Layout24dp)
+																								return osm.copyRedirect.Layout(mGtx, osm.Theme.NewIcon(osm.Theme.Icons.CopyIcon).Layout24dp)
 																							})
 																						}),
 																					)

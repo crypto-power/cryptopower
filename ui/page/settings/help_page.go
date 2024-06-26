@@ -266,7 +266,7 @@ func (pg *HelpPage) HandleUserInteractions() {
 															clipboard.WriteOp{Text: decredURL}.Add(gtx.Ops)
 															pg.Toast.Notify(values.String(values.StrCopied))
 														}
-														return pg.copyRedirectURL.Layout(gtx, pg.Theme.Icons.CopyIcon.Layout24dp)
+														return pg.copyRedirectURL.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon).Layout24dp)
 													})
 												})
 											}),

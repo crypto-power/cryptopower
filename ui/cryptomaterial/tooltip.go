@@ -2,7 +2,6 @@ package cryptomaterial
 
 import (
 	"image"
-	"image/color"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -10,10 +9,9 @@ import (
 )
 
 type Tooltip struct {
-	theme      *Theme
-	hoverable  *Hoverable
-	background color.NRGBA
-	shadow     *Shadow
+	theme     *Theme
+	hoverable *Hoverable
+	shadow    *Shadow
 }
 
 func (t *Theme) Tooltip() *Tooltip {
