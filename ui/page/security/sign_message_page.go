@@ -46,7 +46,7 @@ type SignMessagePage struct {
 	isEnabled        bool
 
 	titleLabel, errorLabel, signedMessageLabel cryptomaterial.Label
-	addressEditor, messageEditor               cryptomaterial.Editor
+	addressEditor, messageEditor               *cryptomaterial.Editor
 	clearButton, signButton, copyButton        cryptomaterial.Button
 	copySignature                              *cryptomaterial.Clickable
 	copyIcon                                   *cryptomaterial.Image
@@ -82,8 +82,8 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 		titleLabel:         l.Theme.H5(values.String(values.StrSignMessage)),
 		signedMessageLabel: l.Theme.Body1(""),
 		errorLabel:         errorLabel,
-		addressEditor:      addressEditor,
-		messageEditor:      messageEditor,
+		addressEditor:      &addressEditor,
+		messageEditor:      &messageEditor,
 		clearButton:        clearButton,
 		signButton:         signButton,
 		copyButton:         l.Theme.Button(values.String(values.StrCopy)),
@@ -103,8 +103,7 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *SignMessagePage) OnNavigatedTo() {
-	//TODO07 need handle
-	// pg.addressEditor.Editor.Focus()
+	pg.addressEditor.Focus()
 }
 
 // Layout draws the page UI components into the provided C
@@ -160,7 +159,7 @@ func (pg *SignMessagePage) description() layout.Widget {
 	}
 }
 
-func (pg *SignMessagePage) editors(editor cryptomaterial.Editor) layout.Widget {
+func (pg *SignMessagePage) editors(editor *cryptomaterial.Editor) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Bottom: values.MarginPadding15}.Layout(gtx, editor.Layout)
 	}
@@ -268,11 +267,11 @@ func (pg *SignMessagePage) HandleUserInteractions(gtx C) {
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor)
 	if isChanged {
-		if gtx.Source.Focused(&pg.addressEditor.Editor) {
+		if gtx.Source.Focused(pg.addressEditor.Editor) {
 			pg.validateAddress()
 		}
 
-		if gtx.Source.Focused(&pg.messageEditor.Editor) {
+		if gtx.Source.Focused(pg.messageEditor.Editor) {
 			pg.validateMessage()
 		}
 	}

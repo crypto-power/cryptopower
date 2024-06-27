@@ -245,7 +245,7 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 			break
 		}
 
-		if gtx.Source.Focused(&pg.searchEditor.Editor) {
+		if gtx.Source.Focused(pg.searchEditor.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)

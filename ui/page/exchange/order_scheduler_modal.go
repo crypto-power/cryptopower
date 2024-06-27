@@ -177,7 +177,7 @@ func (osm *orderSchedulerModal) Handle(gtx C) {
 			break
 		}
 
-		if gtx.Source.Focused(&osm.balanceToMaintain.Editor) {
+		if gtx.Source.Focused(osm.balanceToMaintain.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				if components.InputsNotEmpty(osm.balanceToMaintain.Editor) {

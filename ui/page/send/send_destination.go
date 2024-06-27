@@ -141,22 +141,13 @@ func (dst *destination) handle(gtx C) {
 			break
 		}
 
-		if gtx.Source.Focused(&dst.destinationAddressEditor.Editor) {
+		if gtx.Source.Focused(dst.destinationAddressEditor.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				dst.addressChanged()
 			}
 		}
 	}
-
-	// for _, evt := range dst.destinationAddressEditor.Editor.Events() {
-	// 	if dst.destinationAddressEditor.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			dst.addressChanged()
-	// 		}
-	// 	}
-	// }
 }
 
 // styleWidgets sets the appropriate colors for the destination widgets.

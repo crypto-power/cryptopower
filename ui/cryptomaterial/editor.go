@@ -81,6 +81,8 @@ type Editor struct {
 
 	// add space for error lable if it is true
 	isSpaceError bool
+
+	isFirstFocus bool
 }
 
 func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
@@ -169,9 +171,8 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 			t.Styles.IconButtonColorStyle,
 		},
 		CustomButton: t.Button(""),
-		// clickable:    new(widget.Clickable),
-		copy:  t.Button(values.String(values.StrCopy)),
-		paste: t.Button(values.String(values.StrPaste)),
+		copy:         t.Button(values.String(values.StrCopy)),
+		paste:        t.Button(values.String(values.StrPaste)),
 	}
 	newEditor.copy.TextSize = values.TextSize10
 	newEditor.copy.Background = color.NRGBA{}
@@ -190,19 +191,23 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 }
 
 func (e *Editor) Pressed(gtx C) bool {
-	// return e.clickable.Pressed() || e.copy.Clicked(gtx) || e.paste.Clicked(gtx)
-	return e.copy.Clicked(gtx) || e.paste.Clicked(gtx)
+	return e.click.Pressed() || e.copy.Clicked(gtx) || e.paste.Clicked(gtx)
 }
 
 func (e *Editor) FirstPressed(gtx C) bool {
-	// TODO07
-	// return !e.Editor.Focused() && e.clickable.Pressed()
-	// return !gtx.Source.Focused(&e.Editor) && e.clickable.Pressed()
-	return !gtx.Source.Focused(e.Editor)
+	return !gtx.Source.Focused(e.Editor) && e.click.Pressed()
 
 }
 
+func (e *Editor) Focus() {
+	e.isFirstFocus = true
+}
+
 func (e *Editor) Layout(gtx C) D {
+	if e.isFirstFocus {
+		e.isFirstFocus = false
+		gtx.Execute(key.FocusCmd{Tag: e.Editor})
+	}
 	e.handleEvents(gtx)
 	e.update(gtx)
 	return e.layout(gtx)
@@ -467,7 +472,7 @@ func (re RestoreEditor) Layout(gtx C) D {
 	width := int(gtx.Metric.PxPerDp * 2.0)
 	height := int(gtx.Metric.PxPerDp * float32(re.height))
 	l := re.t.SeparatorVertical(height, width)
-	if gtx.Source.Focused(&re.Edit.Editor) {
+	if gtx.Source.Focused(re.Edit.Editor) {
 		re.TitleLabel.Color, re.LineColor, l.Color = re.t.Color.Primary, re.t.Color.Primary, re.t.Color.Primary
 	} else {
 		l.Color = re.t.Color.Gray2

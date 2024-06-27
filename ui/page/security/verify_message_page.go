@@ -28,9 +28,9 @@ type VerifyMessagePage struct {
 	*app.GenericPageModal
 	wallet sharedW.Asset
 
-	addressEditor          cryptomaterial.Editor
-	messageEditor          cryptomaterial.Editor
-	signatureEditor        cryptomaterial.Editor
+	addressEditor          *cryptomaterial.Editor
+	messageEditor          *cryptomaterial.Editor
+	signatureEditor        *cryptomaterial.Editor
 	clearBtn, verifyButton cryptomaterial.Button
 	backButton             cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
@@ -45,15 +45,19 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 		wallet:           wallet,
 	}
 
-	pg.addressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	addressEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	messageEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrMessage))
+	signatureEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrSignature))
+
+	pg.addressEditor = &addressEditor
 	pg.addressEditor.Editor.SingleLine = true
 	pg.addressEditor.Editor.Submit = true
 
-	pg.messageEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrMessage))
+	pg.messageEditor = &messageEditor
 	pg.messageEditor.Editor.SingleLine = true
 	pg.messageEditor.Editor.Submit = true
 
-	pg.signatureEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrSignature))
+	pg.signatureEditor = &signatureEditor
 	pg.signatureEditor.Editor.Submit = true
 
 	pg.verifyButton = l.Theme.Button(values.String(values.StrVerifyMessage))
@@ -73,9 +77,7 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifyMessagePage) OnNavigatedTo() {
-	// TODO07 need handle
-	// pg.addressEditor.Editor.Focus()
-
+	pg.addressEditor.Focus()
 	pg.verifyButton.SetEnabled(pg.updateBtn())
 }
 
@@ -115,15 +117,15 @@ func (pg *VerifyMessagePage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx, body)
 }
 
-func (pg *VerifyMessagePage) layoutDesktop(gtx layout.Context, body layout.Widget) layout.Dimensions {
+func (pg *VerifyMessagePage) layoutDesktop(gtx C, body layout.Widget) D {
 	return body(gtx)
 }
 
-func (pg *VerifyMessagePage) layoutMobile(gtx layout.Context, body layout.Widget) layout.Dimensions {
+func (pg *VerifyMessagePage) layoutMobile(gtx C, body layout.Widget) D {
 	return components.UniformMobile(gtx, false, false, body)
 }
 
-func (pg *VerifyMessagePage) inputRow(editor cryptomaterial.Editor) layout.Widget {
+func (pg *VerifyMessagePage) inputRow(editor *cryptomaterial.Editor) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Bottom: values.MarginPadding15}.Layout(gtx, editor.Layout)
 	}
@@ -165,7 +167,7 @@ func (pg *VerifyMessagePage) HandleUserInteractions(gtx C) {
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
 	if isChanged {
-		if gtx.Source.Focused(&pg.addressEditor.Editor) {
+		if gtx.Source.Focused(pg.addressEditor.Editor) {
 			pg.validateAddress()
 		}
 	}

@@ -381,18 +381,13 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 		pg.AssetsManager.SaveAppConfigValue(sharedW.IsCEXFirstVisitConfigKey, pg.isFirstVisit)
 	}
 
-	if pg.fromAmountEditor.Edit.CustomButton.Button.Clicked(gtx) {
-		//TODO07 what is logic here?
-		// pg.fromAmountEditor.Edit.Editor.Focused()
-	}
-
 	for {
 		event, ok := pg.fromAmountEditor.Edit.Editor.Update(gtx)
 		if !ok {
 			break
 		}
 
-		if gtx.Source.Focused(&pg.fromAmountEditor.Edit.Editor) {
+		if gtx.Source.Focused(pg.fromAmountEditor.Edit.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				pg.setToAmount(pg.fromAmountEditor.Edit.Editor.Text())
@@ -415,7 +410,7 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 			break
 		}
 
-		if gtx.Source.Focused(&pg.toAmountEditor.Edit.Editor) {
+		if gtx.Source.Focused(pg.toAmountEditor.Edit.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				if pg.inputsNotEmpty(pg.toAmountEditor.Edit.Editor) {

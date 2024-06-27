@@ -33,7 +33,7 @@ type ValidateAddressPage struct {
 	*app.GenericPageModal
 	wallet sharedW.Asset
 
-	addressEditor         cryptomaterial.Editor
+	addressEditor         *cryptomaterial.Editor
 	clearBtn, validateBtn cryptomaterial.Button
 	stateValidate         int
 	backButton            cryptomaterial.IconButton
@@ -47,8 +47,8 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 	}
 
 	pg.backButton = components.GetBackButton(l)
-
-	pg.addressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	addressEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	pg.addressEditor = &addressEditor
 	pg.addressEditor.Editor.SingleLine = true
 	pg.addressEditor.Editor.Submit = true
 
@@ -68,9 +68,7 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ValidateAddressPage) OnNavigatedTo() {
-	// TODO07 need handle
-	// pg.addressEditor.Editor.Focus()
-
+	pg.addressEditor.Focus()
 	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 }
 

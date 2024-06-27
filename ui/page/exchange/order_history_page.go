@@ -158,27 +158,18 @@ func (pg *OrderHistoryPage) HandleUserInteractions(gtx C) {
 		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 
-	//TODO07
 	for {
 		event, ok := pg.searchEditor.Editor.Update(gtx)
 		if !ok {
 			break
 		}
-		if gtx.Source.Focused(&pg.searchEditor.Editor) {
+		if gtx.Source.Focused(pg.searchEditor.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 			}
 		}
 	}
-	// for _, evt := range pg.searchEditor.Editor.Events() {
-	// 	if pg.searchEditor.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
-	// 		}
-	// 	}
-	// }
 
 	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
@@ -255,9 +246,7 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 												if pg.IsMobileView() && pg.isFilterOpen {
 													topInset = values.MarginPadding80
 												}
-												return layout.Inset{
-													Top: topInset,
-												}.Layout(gtx, pg.searchEditor.Layout)
+												return layout.Inset{Top: topInset}.Layout(gtx, pg.searchEditor.Layout)
 											}),
 											layout.Rigid(pg.layoutHistory),
 										)
@@ -313,7 +302,7 @@ func (pg *OrderHistoryPage) layoutSectionHeader(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 								}
-								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
 									return pg.refreshIcon.LayoutSize(gtx, values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding18))
 								})
 							}),

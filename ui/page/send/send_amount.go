@@ -225,7 +225,7 @@ func (sa *sendAmount) handle(gtx C) {
 			break
 		}
 
-		if gtx.Source.Focused(&sa.amountEditor.Editor) {
+		if gtx.Source.Focused(sa.amountEditor.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				if sa.sendMaxChangeEvent {
@@ -239,28 +239,13 @@ func (sa *sendAmount) handle(gtx C) {
 		}
 	}
 
-	// for _, evt := range sa.amountEditor.Editor.Events() {
-	// 	if sa.amountEditor.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			if sa.sendMaxChangeEvent {
-	// 				sa.sendMaxChangeEvent = false
-	// 				continue
-	// 			}
-	// 			sa.SendMax = false
-	// 			sa.validateAmount()
-	// 			sa.amountChanged()
-	// 		}
-	// 	}
-	// }
-
 	for {
 		event, ok := sa.usdAmountEditor.Editor.Update(gtx)
 		if !ok {
 			break
 		}
 
-		if gtx.Source.Focused(&sa.usdAmountEditor.Editor) {
+		if gtx.Source.Focused(sa.usdAmountEditor.Editor) {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				if sa.usdSendMaxChangeEvent {
@@ -273,31 +258,14 @@ func (sa *sendAmount) handle(gtx C) {
 			}
 		}
 	}
-
-	// for _, evt := range sa.usdAmountEditor.Editor.Events() {
-	// 	if sa.usdAmountEditor.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			if sa.usdSendMaxChangeEvent {
-	// 				sa.usdSendMaxChangeEvent = false
-	// 				continue
-	// 			}
-	// 			sa.SendMax = false
-	// 			sa.validateUSDAmount()
-	// 			sa.amountChanged()
-	// 		}
-	// 	}
-	// }
 }
 
 func (sa *sendAmount) IsMaxClicked(gtx C) bool {
 	switch {
 	case sa.amountEditor.CustomButton.Clicked(gtx):
-		gtx.Execute(key.FocusCmd{Tag: &sa.amountEditor.Editor})
-		// sa.amountEditor.Editor.Focus()
+		gtx.Execute(key.FocusCmd{Tag: sa.amountEditor.Editor})
 	case sa.usdAmountEditor.CustomButton.Clicked(gtx):
-		gtx.Execute(key.FocusCmd{Tag: &sa.usdAmountEditor.Editor})
-		// sa.usdAmountEditor.Editor.Focus()
+		gtx.Execute(key.FocusCmd{Tag: sa.usdAmountEditor.Editor})
 	default:
 		return false
 	}

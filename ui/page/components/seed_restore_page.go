@@ -105,8 +105,7 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 		pg.seedEditors.editors = append(pg.seedEditors.editors, l.Theme.RestoreEditor(widgetEditor, "", fmt.Sprintf("%d", i+1)))
 	}
 
-	// TODO07 need handle
-	// pg.setEditorFocus()
+	pg.setEditorFocus()
 
 	// init suggestion buttons
 	pg.initSeedMenu()
@@ -126,24 +125,21 @@ func (pg *SeedRestore) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *SeedRestore) OnNavigatedTo() {
-	//TODO07 need handle
-	// pg.setEditorFocus()
+	pg.setEditorFocus()
 }
 
 func (pg *SeedRestore) SetParentNav(window app.WindowNavigator) {
 	pg.window = window
 }
 
-func (pg *SeedRestore) setEditorFocus(gtx C) {
+func (pg *SeedRestore) setEditorFocus() {
 	if !pg.IsIOS() {
 		pg.seedEditors.focusIndex = -1
-		//TODO07
-		gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[0].Edit.Editor})
-		// pg.seedEditors.editors[0].Edit.Editor.Focus()
+		pg.seedEditors.editors[0].Edit.Focus()
 	}
 }
 
-func (pg *SeedRestore) seedEditorsHandle(gtx C) {
+func (pg *SeedRestore) seedEditorsMobileHandle(gtx C) {
 	if !pg.Load.IsMobileView() {
 		return
 	}
@@ -151,12 +147,9 @@ func (pg *SeedRestore) seedEditorsHandle(gtx C) {
 		if pg.seedEditors.editors[i].Edit.FirstPressed(gtx) {
 			pg.seedList.ScrollTo(i)
 			if i >= 28 {
-				//TODO07
-				// key.SoftKeyboardOp{Show: true}.Add(gtx.Ops)
 				gtx.Execute(key.SoftKeyboardCmd{Show: true})
 			} else {
-				gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[i].Edit.Editor})
-				// pg.seedEditors.editors[i].Edit.Editor.Focus()
+				gtx.Execute(key.FocusCmd{Tag: pg.seedEditors.editors[i].Edit.Editor})
 			}
 		}
 	}
@@ -167,7 +160,7 @@ func (pg *SeedRestore) seedEditorsHandle(gtx C) {
 // Part of the load.Page interface.
 func (pg *SeedRestore) Layout(gtx C) D {
 	body := pg.restore(gtx)
-	pg.seedEditorsHandle(gtx)
+	pg.seedEditorsMobileHandle(gtx)
 	pg.resetSeedFields.SetEnabled(pg.updateSeedResetBtn())
 	seedValid, _ := pg.validateSeeds()
 	pg.validateSeed.SetEnabled(seedValid)
@@ -277,9 +270,7 @@ func (pg *SeedRestore) onSuggestionSeedsClicked(gtx C) {
 				pg.seedEditors.editors[index].Edit.Editor.MoveCaret(len(b.text), 0)
 				pg.seedClicked = true
 				if index != defaultNumberOfSeeds {
-					//TODO07
-					// pg.seedEditors.editors[index+1].Edit.Editor.Focus()
-					gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[index+1].Edit.Editor})
+					gtx.Execute(key.FocusCmd{Tag: pg.seedEditors.editors[index+1].Edit.Editor})
 				}
 
 				if index == defaultNumberOfSeeds {
@@ -322,8 +313,7 @@ func (pg *SeedRestore) editorSeedsEventsHandler(gtx C) {
 		editor := pg.seedEditors.editors[i]
 		text := editor.Edit.Editor.Text()
 
-		//TODO07
-		if gtx.Source.Focused(&editor.Edit.Editor) {
+		if gtx.Source.Focused(editor.Edit.Editor) {
 			seedEvent(i, text)
 		}
 
@@ -332,7 +322,6 @@ func (pg *SeedRestore) editorSeedsEventsHandler(gtx C) {
 			if !ok {
 				break
 			}
-			// for _, e := range editor.Edit.Editor.Events() {
 			switch event.(type) {
 			case widget.ChangeEvent:
 				seedEvent(i, text)
@@ -346,8 +335,7 @@ func (pg *SeedRestore) editorSeedsEventsHandler(gtx C) {
 
 				//  Handles Enter and Return keyboard events.
 				if i != defaultNumberOfSeeds {
-					gtx.Execute(key.FocusCmd{Tag: &pg.seedEditors.editors[i+1].Edit.Editor})
-					// pg.seedEditors.editors[i+1].Edit.Editor.Focus()
+					gtx.Execute(key.FocusCmd{Tag: pg.seedEditors.editors[i+1].Edit.Editor})
 					pg.selected = 0
 				}
 
@@ -356,7 +344,6 @@ func (pg *SeedRestore) editorSeedsEventsHandler(gtx C) {
 					pg.isLastEditor = true
 				}
 			}
-			// }
 		}
 	}
 }
@@ -497,10 +484,9 @@ func (pg *SeedRestore) resetSeeds() {
 // switchSeedEditors sets focus on the next seed phrase after moving the
 // provided steps either forward or backwards. One the focus get to the last cell
 // it start for the initial cell.
-// TODO07
 func switchSeedEditors(gtx C, editors []*cryptomaterial.RestoreEditor, steps int) {
 	for i := 0; i < len(editors); i++ {
-		if gtx.Source.Focused(&editors[i].Edit.Editor) {
+		if gtx.Source.Focused(editors[i].Edit.Editor) {
 			nextOnFocus := i + steps
 			if (nextOnFocus) < 0 {
 				nextOnFocus += len(editors) + 2
@@ -511,8 +497,7 @@ func switchSeedEditors(gtx C, editors []*cryptomaterial.RestoreEditor, steps int
 				nextOnFocus -= 2
 			}
 			nextOnFocus = nextOnFocus % len(editors)
-			gtx.Execute(key.FocusCmd{Tag: &editors[nextOnFocus].Edit.Editor})
-			// editors[nextOnFocus].Edit.Editor.Focus()
+			gtx.Execute(key.FocusCmd{Tag: editors[nextOnFocus].Edit.Editor})
 			return
 		}
 	}

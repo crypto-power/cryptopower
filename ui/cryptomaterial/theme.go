@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 
-	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
@@ -167,10 +166,6 @@ func argb(c uint32) color.NRGBA {
 	return color.NRGBA{A: uint8(c >> 24), R: uint8(c >> 16), G: uint8(c >> 8), B: uint8(c)}
 }
 
-func toPointF(p image.Point) f32.Point {
-	return f32.Point{X: float32(p.X), Y: float32(p.Y)}
-}
-
 func fillMax(gtx layout.Context, col color.NRGBA, radius CornerRadius) D {
 	cs := gtx.Constraints
 	d := image.Point{X: cs.Max.X, Y: cs.Max.Y}
@@ -275,26 +270,25 @@ func approxLuminance(c color.NRGBA) byte {
 
 func HandleEditorEvents(gtx C, editors ...*widget.Editor) (bool, bool) {
 	var submit, changed bool
-	// for _, editor := range editors {
-	// 	evt, ok := editor.Update(gtx)
-	// 	if !ok {
-	// 		continue
-	// 	}
-	// 	switch evt.(type) {
-	// 	case widget.ChangeEvent:
-	// 		changed = true
-	// 	case widget.SubmitEvent:
-	// 		submit = true
-	// 	}
-	// }
+	for _, editor := range editors {
+		evt, ok := editor.Update(gtx)
+		if !ok {
+			continue
+		}
+		switch evt.(type) {
+		case widget.ChangeEvent:
+			changed = true
+		case widget.SubmitEvent:
+			submit = true
+		}
+	}
 	return submit, changed
 }
 
-// TODO07
 func SwitchEditors(gtx C, event *key.Event, editors ...*widget.Editor) {
 	if event.Modifiers != key.ModShift {
 		for i := 0; i < len(editors); i++ {
-			if gtx.Source.Focused(&editors[i]) {
+			if gtx.Source.Focused(editors[i]) {
 				if i == len(editors)-1 {
 					gtx.Execute(key.FocusCmd{Tag: editors[0]})
 				} else {
@@ -304,7 +298,7 @@ func SwitchEditors(gtx C, event *key.Event, editors ...*widget.Editor) {
 		}
 	} else {
 		for i := 0; i < len(editors); i++ {
-			if gtx.Source.Focused(&editors[i]) {
+			if gtx.Source.Focused(editors[i]) {
 				if i == 0 {
 					gtx.Execute(key.FocusCmd{Tag: editors[len(editors)-1]})
 				} else {
@@ -354,7 +348,6 @@ func (t *Theme) AutoHideSoftKeyBoardAndMenuButton(gtx C) {
 	}
 	if isHide {
 		gtx.Execute(key.SoftKeyboardCmd{Show: false})
-		// key.SoftKeyboardCmd{Show: false}.Add(gtx.Ops)
 	}
 }
 

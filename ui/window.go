@@ -294,9 +294,6 @@ func (win *Window) prepareToDisplayUI(gtx layout.Context) {
 
 	// Use a StackLayout to write the above UI components into an operations
 	// list via a graphical context that is linked to the ops.
-	// ops := &op.Ops{}
-	// gtx := giouiApp.NewContext(ops, evt)
-	win.addEvents(gtx)
 	layout.Stack{Alignment: layout.N}.Layout(
 		gtx,
 		backgroundWidget,
@@ -306,18 +303,6 @@ func (win *Window) prepareToDisplayUI(gtx layout.Context) {
 	)
 	win.handleEvents(gtx)
 }
-
-// func (win *Window) handleKeyPress(gtx C) {
-// 	if modal := win.navigator.TopModal(); modal != nil {
-// 		if handler, ok := modal.(load.KeyEventHandler); ok {
-// 			handler.HandleKeyPress()
-// 		}
-// 	} else {
-// 		if handler, ok := win.navigator.CurrentPage().(load.KeyEventHandler); ok {
-// 			handler.HandleKeyPress()
-// 		}
-// 	}
-// }
 
 func (win *Window) addListenKeyEvent(gtx C) {
 	// Request key events on the top modal, if necessary.
@@ -377,6 +362,8 @@ func (win *Window) handleUserClick(gtx C) {
 
 // handleShortKeys listen keys pressed.
 func (win *Window) listenSoftKey(gtx C) {
+	// clicker use for show and hide soft keyboard and menu button on editor
+	win.clicker.Add(gtx.Ops)
 	// check for presses of the back key.
 	if runtime.GOOS == "android" {
 		for {
@@ -395,25 +382,4 @@ func (win *Window) listenSoftKey(gtx C) {
 			}
 		}
 	}
-	// for _, event := range gtx.Events(win) {
-	// 	switch event := event.(type) {
-	// 	case key.Event:
-	// 		if event.Name == key.NameBack && event.State == key.Press {
-	// 			win.load.Theme.OnTapBack()
-	// 		}
-	// 	}
-	// }
-}
-
-func (win *Window) addEvents(gtx C) {
-	// clicker use for show and hide soft keyboard and menu button on editor
-	win.clicker.Add(gtx.Ops)
-
-	//TODO07 Need handle
-	// if runtime.GOOS == "android" {
-	// 	key.InputOp{
-	// 		Tag:  win,
-	// 		Keys: key.NameBack,
-	// 	}.Add(gtx.Ops)
-	// }
 }

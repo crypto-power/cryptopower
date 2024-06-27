@@ -102,7 +102,6 @@ func (pg *Restore) getWordSeedType() sharedW.WordSeedType {
 // Part of the load.Page interface.
 func (pg *Restore) OnNavigatedTo() {
 	pg.toggleSeedInput.SetChecked(false)
-	//TODO07 Handle it
 	pg.seedRestorePage.OnNavigatedTo()
 	pg.seedRestorePage.SetParentNav(pg.ParentWindow())
 }
@@ -241,7 +240,7 @@ func (pg *Restore) HandleUserInteractions(gtx C) {
 	}
 
 	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed(gtx) {
-		pg.seedRestorePage.setEditorFocus(gtx)
+		pg.seedRestorePage.setEditorFocus()
 	}
 
 	if pg.tabIndex == 0 {
