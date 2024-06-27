@@ -158,9 +158,7 @@ func (pg *BTCAcctDetailsPage) extendedPubkey(gtx C) D {
 									lbl.Color = pg.Theme.Color.GrayText1
 									if !pg.isHiddenExtendedxPubkey {
 										if pg.extendedKeyClickable.Clicked(gtx) {
-											//TODO07
 											gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.extendedKey))})
-											// clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}
 										lbl.Text = utils.SplitXPUB(pg.extendedKey, 70, 35)

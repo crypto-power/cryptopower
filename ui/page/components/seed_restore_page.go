@@ -591,15 +591,14 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
-// that this page wishes to capture. The HandleKeyPress() method will only be
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
+// that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *SeedRestore) KeysToHandle() []event.Filter {
 	if pg.isRestoring {
 		return nil // don't capture keys while restoring, problematic?
 	}
-	//TODO07
 	return []event.Filter{key.FocusFilter{Target: pg},
 		key.Filter{Focus: pg, Name: key.NameTab, Optional: key.ModShift},
 		key.Filter{Focus: pg, Name: key.NameUpArrow},
@@ -609,13 +608,6 @@ func (pg *SeedRestore) KeysToHandle() []event.Filter {
 		key.Filter{Focus: pg, Name: key.NameReturn},
 		key.Filter{Focus: pg, Name: key.NameEnter},
 	}
-	// Once user starts editing any of the input boxes, the arrow up, down
-	// and enter key signals are no longer received.
-	// keySet1 := cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
-	// keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow,
-	// 	key.NameLeftArrow, key.NameRightArrow)
-	// keySet3 := cryptomaterial.AnyKey(key.NameReturn, key.NameEnter)
-	// return cryptomaterial.AnyKey(string(keySet1), string(keySet2), string(keySet3))
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current

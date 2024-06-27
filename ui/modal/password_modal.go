@@ -2,6 +2,7 @@ package modal
 
 import (
 	"gioui.org/font"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -40,11 +41,11 @@ type PasswordModal struct {
 func NewPasswordModal(l *load.Load) *PasswordModal {
 	pm := &PasswordModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("password_modal", l.IsMobileView()),
 		btnPositve:   l.Theme.Button(values.String(values.StrConfirm)),
 		btnNegative:  l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable: true,
 	}
+	pm.Modal = l.Theme.ModalFloatTitle("password_modal", l.IsMobileView(), pm.firstLoad)
 
 	pm.btnPositve.Font.Weight = font.Medium
 
@@ -59,14 +60,13 @@ func NewPasswordModal(l *load.Load) *PasswordModal {
 	return pm
 }
 
-func (pm *PasswordModal) OnResume() {
-	// pm.password.Editor.Focus()
-	//TODO07
-	// gtx.Execute(key.FocusCmd{Tag: &pm.password.Editor})
+func (pm *PasswordModal) OnResume() {}
+
+func (pm *PasswordModal) firstLoad(gtx C) {
+	gtx.Execute(key.FocusCmd{Tag: pm.password.Editor})
 }
 
-func (pm *PasswordModal) OnDismiss() {
-}
+func (pm *PasswordModal) OnDismiss() {}
 
 func (pm *PasswordModal) Title(title string) *PasswordModal {
 	pm.dialogTitle = title

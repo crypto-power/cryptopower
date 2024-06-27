@@ -225,15 +225,12 @@ func (ats *AssetTypeSelector) buildExchangeItems() []*AssetTypeItem {
 func (atm *assetTypeModal) OnResume() {}
 
 func (atm *assetTypeModal) Handle(gtx C) {
-	// if atm.eventSoruce != nil {
-	// TODO07
 	for _, assetTypeItem := range atm.assetTypeItems {
 		for assetTypeItem.clickable.Clicked(gtx) {
 			atm.onAssetTypeClicked(assetTypeItem)
 			atm.Dismiss()
 		}
 	}
-	// }
 
 	if atm.Modal.BackdropClicked(gtx, atm.isCancelable) {
 		atm.Dismiss()

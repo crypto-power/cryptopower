@@ -78,8 +78,6 @@ func drawInk(gtx layout.Context, c widget.Press, highlightColor color.NRGBA) {
 
 	// Animate only ended presses, and presses that are fading in.
 	if !c.End.IsZero() || sizet <= 1.0 {
-		// TODO07
-		// op.InvalidateOp{}.Add(gtx.Ops)
 		gtx.Execute(op.InvalidateCmd{})
 	}
 
@@ -122,27 +120,6 @@ func drawInk(gtx layout.Context, c widget.Press, highlightColor color.NRGBA) {
 func GenerateRandomNumber() int {
 	return rand.New(rand.NewSource(time.Now().UnixNano())).Int()
 }
-
-// AnyKey returns a key.Set that will match any of the provided keys.
-// See the doc on key.Set for more.
-// func AnyKey(keys ...string) key.Set {
-// 	keysCombined := strings.Join(keys, "|")
-// 	return key.Set(keysCombined)
-// }
-
-// AnyKeyWithOptionalModifier returns a key.Set that will match any of the
-// provided keys whether or not they are pressed with provided modifier.
-// See the doc on key.Set for more.
-// TODO07
-// func AnyKeyWithOptionalModifier(id interface{}, modifier key.Modifiers, keys ...string) event.Filter {
-
-// }
-
-// func AnyKeyWithOptionalModifier(modifier key.Modifiers, keys ...string) key.Name {
-// 	keysCombined := strings.Join(keys, ",")
-// 	keysWithModifier := fmt.Sprintf("(%s)-[%s]", modifier, keysCombined)
-// 	return key.Set(keysWithModifier)
-// }
 
 func UniformPaddingWithTopInset(topInset unit.Dp, gtx layout.Context, body layout.Widget, isMobileView ...bool) D {
 	_isMobileView := len(isMobileView) > 0 && isMobileView[0]

@@ -46,49 +46,10 @@ func (h *Hoverable) update(gtx C) {
 	if h.hovered != start {
 		gtx.Execute(op.InvalidateCmd{})
 	}
-	// // TODO07
-	// for {
-	// 	event, ok := gtx.Event(pointer.Filter{
-	// 		Target: h,
-	// 		Kinds:  pointer.Enter | pointer.Leave,
-	// 	})
-	// 	if !ok {
-	// 		continue
-	// 	}
-	// 	ev, ok := event.(pointer.Event)
-	// 	if !ok {
-	// 		continue
-	// 	}
-	// 	switch ev.Kind {
-	// 	case pointer.Enter:
-	// 		h.hovered = true
-	// 		h.position = &ev.Position
-	// 	case pointer.Leave:
-	// 		h.hovered = false
-	// 		h.position = &f32.Point{}
-	// 	}
-	// }
 }
 
 func (h *Hoverable) Layout(gtx C, rect image.Rectangle) D {
 	h.update(gtx)
-	// fmt.Println("-----Hoverable------0000-----")
-	// area := clip.Rect(rect).Push(gtx.Ops)
-	// fmt.Println("-----Hoverable------1111-----")
-	// event.Op(gtx.Ops, h)
-	// fmt.Println("-----Hoverable------2222-----")
-	// // TODO07
-	// // pointer.InputOp{
-	// // 	Tag:   h,
-	// // 	Types: pointer.Enter | pointer.Leave,
-	// // }.Add(gtx.Ops)
-	// area.Pop()
-	// fmt.Println("-----Hoverable------3333-----")
-
-	// return layout.Dimensions{
-	// 	Size: rect.Max,
-	// }
-
 	defer clip.Rect(rect).Push(gtx.Ops).Pop()
 	event.Op(gtx.Ops, h)
 	return D{Size: rect.Max}

@@ -193,13 +193,12 @@ func (pg *VerifyMessagePage) HandleUserInteractions(gtx C) {
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
-// that this page wishes to capture. The HandleKeyPress() method will only be
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
+// that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *VerifyMessagePage) KeysToHandle() []event.Filter {
 	return []event.Filter{key.FocusFilter{Target: pg}, key.Filter{Focus: pg, Name: key.NameTab, Optional: key.ModShift}}
-	// return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current

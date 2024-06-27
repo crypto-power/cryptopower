@@ -40,11 +40,12 @@ type CreateWatchOnlyModal struct {
 func NewCreateWatchOnlyModal(l *load.Load) *CreateWatchOnlyModal {
 	cm := &CreateWatchOnlyModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("create_watch_only_modal", l.IsMobileView()),
 		btnPositve:   l.Theme.Button(values.String(values.StrImport)),
 		btnNegative:  l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable: true,
 	}
+
+	cm.Modal = l.Theme.ModalFloatTitle("create_watch_only_modal", l.IsMobileView(), cm.firstLoad)
 
 	cm.btnPositve.Font.Weight = font.Medium
 
@@ -62,15 +63,14 @@ func NewCreateWatchOnlyModal(l *load.Load) *CreateWatchOnlyModal {
 	return cm
 }
 
-// TODO07
-func (cm *CreateWatchOnlyModal) OnResume() {
-	// if cm.walletNameEnabled {
-	// 	gtx.Execute(key.FocusCmd{Tag: &cm.walletName.Editor})
-	// 	// cm.walletName.Editor.Focus()
-	// } else {
-	// 	gtx.Execute(key.FocusCmd{Tag: &cm.extendedPubKey.Editor})
-	// 	// cm.extendedPubKey.Editor.Focus()
-	// }
+func (cm *CreateWatchOnlyModal) OnResume() {}
+
+func (cm *CreateWatchOnlyModal) firstLoad(gtx C) {
+	if cm.walletNameEnabled {
+		gtx.Execute(key.FocusCmd{Tag: cm.walletName.Editor})
+	} else {
+		gtx.Execute(key.FocusCmd{Tag: cm.extendedPubKey.Editor})
+	}
 }
 
 func (cm *CreateWatchOnlyModal) OnDismiss() {}
@@ -168,7 +168,7 @@ func (cm *CreateWatchOnlyModal) Handle(gtx C) {
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
@@ -177,7 +177,6 @@ func (cm *CreateWatchOnlyModal) KeysToHandle() []event.Filter {
 		return []event.Filter{}
 	}
 	return []event.Filter{key.FocusFilter{Target: cm}, key.Filter{Focus: cm, Name: key.NameTab, Optional: key.ModShift}}
-	// return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current

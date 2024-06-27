@@ -3,6 +3,7 @@ package modal
 import (
 	"image/color"
 
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -28,9 +29,9 @@ type TextInputModal struct {
 
 func NewTextInputModal(l *load.Load) *TextInputModal {
 	tm := &TextInputModal{
-		InfoModal:    newInfoModalWithKey(l, "text_input_modal", InfoBtn),
 		isCancelable: true,
 	}
+	tm.InfoModal = newInfoModalWithKey(l, "text_input_modal", InfoBtn, tm.firstLoad)
 	tm.btnNegative = l.Theme.OutlineButton(values.String(values.StrCancel))
 
 	tm.textInput = l.Theme.Editor(new(widget.Editor), values.String(values.StrHint))
@@ -43,11 +44,12 @@ func NewTextInputModal(l *load.Load) *TextInputModal {
 }
 
 func (tm *TextInputModal) OnResume() {
-	// tm.textInput.Editor.Focus()
-	//TODO07
-	// gtx.Execute(key.FocusCmd{Tag: &tm.textInput.Editor})
 	// set the positive button state
 	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
+}
+
+func (tm *TextInputModal) firstLoad(gtx C) {
+	gtx.Execute(key.FocusCmd{Tag: &tm.textInput.Editor})
 }
 
 func (tm *TextInputModal) Hint(hint string) *TextInputModal {

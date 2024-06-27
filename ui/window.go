@@ -248,7 +248,6 @@ func (win *Window) handleFrameEvent(evt giouiApp.FrameEvent) *op.Ops {
 		// such interactions before re-displaying the UI components. This
 		// ensures that the proper interface is displayed to the user based on
 		// the action(s) they just performed.
-		// win.handleRelevantKeyPresses(evt)
 		win.navigator.CurrentPage().HandleUserInteractions(gtx)
 		if modal := win.navigator.TopModal(); modal != nil {
 			modal.Handle(gtx)
@@ -258,36 +257,9 @@ func (win *Window) handleFrameEvent(evt giouiApp.FrameEvent) *op.Ops {
 	// Generate an operations list with instructions for drawing the window's UI
 	// components onto the screen. Use the generated ops to request key events.
 	win.prepareToDisplayUI(gtx)
-	// win.addKeyEventRequestsToOps(ops)
 	win.addListenKeyEvent(gtx)
 	return ops
 }
-
-// handleRelevantKeyPresses checks if any open modal or the current page is a
-// load.KeyEventHandler AND if the provided system.FrameEvent contains key press
-// events for the modal or page.
-// func (win *Window) handleRelevantKeyPresses(evt giouiApp.FrameEvent) {
-// 	handleKeyPressFor := func(tag string, maybeHandler interface{}) {
-// 		handler, ok := maybeHandler.(load.KeyEventHandler)
-// 		if !ok {
-// 			return
-// 		}
-// 		evt.Source.Event()
-// 		for _, event := range evt.Queue.Events(tag) {
-// 			if keyEvent, isKeyEvent := event.(key.Event); isKeyEvent && keyEvent.State == key.Press {
-// 				handler.HandleKeyPress(&keyEvent)
-// 			}
-// 		}
-// 	}
-
-// 	// Handle key events on the top modal first, if there's one.
-// 	// Only handle key events on the current page if no modal is displayed.
-// 	if modal := win.navigator.TopModal(); modal != nil {
-// 		handleKeyPressFor(modal.ID(), modal)
-// 	} else {
-// 		handleKeyPressFor(win.navigator.CurrentPageID(), win.navigator.CurrentPage())
-// 	}
-// }
 
 // prepareToDisplayUI creates an operation list and writes the layout of all the
 // window UI components into it. The created ops is returned and may be used to
@@ -350,7 +322,6 @@ func (win *Window) prepareToDisplayUI(gtx layout.Context) {
 func (win *Window) addListenKeyEvent(gtx C) {
 	// Request key events on the top modal, if necessary.
 	// Only request key events on the current page if no modal is displayed.
-	//TODO07
 	if modal := win.navigator.TopModal(); modal != nil {
 		if handler, ok := modal.(load.KeyEventHandler); ok {
 			if len(handler.KeysToHandle()) == 0 || handler.KeysToHandle() == nil {
@@ -386,41 +357,6 @@ func (win *Window) addListenKeyEvent(gtx C) {
 	}
 }
 
-// addKeyEventRequestsToOps checks if the current page or any modal has
-// registered to be notified of certain key events and updates the provided
-// operations list with instructions to generate a FrameEvent if any of the
-// desired keys is pressed on the window.
-// func (win *Window) addKeyEventRequestsToOps(ops *op.Ops) {
-// 	requestKeyEvents := func(tag string, desiredKeys ...key.Name) {
-// 		if len(desiredKeys) == 0 {
-// 			return
-// 		}
-
-// 		// Execute the key.InputOP{}.Add operation after all other operations.
-// 		// This is particularly important because some pages call op.Defer to
-// 		// signify that some operations should be executed after all other
-// 		// operations, which has an undesirable effect of discarding this key
-// 		// operation unless it's done last, after all other defers are done.
-// 		m := op.Record(ops)
-// 		// key.NameReturn
-// 		key.FocusFilter()
-// 		key.InputOp{Tag: tag, Keys: desiredKeys}.Add(ops)
-// 		op.Defer(ops, m.Stop())
-// 	}
-
-// 	// Request key events on the top modal, if necessary.
-// 	// Only request key events on the current page if no modal is displayed.
-// 	if modal := win.navigator.TopModal(); modal != nil {
-// 		if handler, ok := modal.(load.KeyEventHandler); ok {
-// 			requestKeyEvents(modal.ID(), handler.KeysToHandle())
-// 		}
-// 	} else {
-// 		if handler, ok := win.navigator.CurrentPage().(load.KeyEventHandler); ok {
-// 			requestKeyEvents(win.navigator.CurrentPageID(), handler.KeysToHandle())
-// 		}
-// 	}
-// }
-
 func (win *Window) handleEvents(gtx C) {
 	win.handleUserClick(gtx)
 	win.listenSoftKey(gtx)
@@ -428,8 +364,6 @@ func (win *Window) handleEvents(gtx C) {
 
 // handleUserClick listen touch action of user for mobile.
 func (win *Window) handleUserClick(gtx C) {
-	// win.clicker.Update(gtx.Source)
-	// TODO07
 	for {
 		evt, ok := win.clicker.Update(gtx.Source)
 		if !ok {
@@ -439,11 +373,6 @@ func (win *Window) handleUserClick(gtx C) {
 			win.load.Theme.AutoHideSoftKeyBoardAndMenuButton(gtx)
 		}
 	}
-	// for _, evt := range win.clicker.Events(gtx) {
-	// 	if evt.Type == gesture.KindPress {
-	// 		win.load.Theme.AutoHideSoftKeyBoardAndMenuButton(gtx)
-	// 	}
-	// }
 }
 
 // handleShortKeys listen keys pressed.

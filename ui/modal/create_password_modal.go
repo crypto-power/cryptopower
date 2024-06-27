@@ -56,13 +56,13 @@ type CreatePasswordModal struct {
 func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 	cm := &CreatePasswordModal{
 		Load:                   l,
-		Modal:                  l.Theme.ModalFloatTitle("create_password_modal", l.IsMobileView()),
 		passwordStrength:       l.Theme.ProgressBar(0),
 		btnPositive:            l.Theme.Button(values.String(values.StrConfirm)),
 		btnNegative:            l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable:           true,
 		confirmPasswordEnabled: true,
 	}
+	cm.Modal = l.Theme.ModalFloatTitle("create_password_modal", l.IsMobileView(), cm.firstLoad)
 
 	cm.btnPositive.Font.Weight = font.Medium
 
@@ -88,17 +88,16 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 	return cm
 }
 
-// TODO07
 func (cm *CreatePasswordModal) OnResume() {
-	// if cm.walletNameEnabled {
-	// 	gtx.Execute(key.FocusCmd{Tag: &cm.walletName.Editor})
-	// 	// cm.walletName.Editor.Focus()
-	// } else {
-	// 	gtx.Execute(key.FocusCmd{Tag: &cm.passwordEditor.Editor})
-	// 	// cm.passwordEditor.Editor.Focus()
-	// }
-
 	cm.btnPositive.SetEnabled(cm.validToCreate())
+}
+
+func (cm *CreatePasswordModal) firstLoad(gtx C) {
+	if cm.walletNameEnabled {
+		gtx.Execute(key.FocusCmd{Tag: cm.walletName.Editor})
+	} else {
+		gtx.Execute(key.FocusCmd{Tag: cm.passwordEditor.Editor})
+	}
 }
 
 func (cm *CreatePasswordModal) OnDismiss() {}
@@ -272,14 +271,12 @@ func (cm *CreatePasswordModal) Handle(gtx C) {
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (cm *CreatePasswordModal) KeysToHandle() []event.Filter {
-	// return []key.Name{key.ModShift, key.NameTab}
 	return []event.Filter{key.FocusFilter{Target: cm}, key.Filter{Focus: cm, Name: key.NameTab, Optional: key.ModShift}}
-	// return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current

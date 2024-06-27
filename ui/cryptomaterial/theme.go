@@ -296,11 +296,9 @@ func SwitchEditors(gtx C, event *key.Event, editors ...*widget.Editor) {
 		for i := 0; i < len(editors); i++ {
 			if gtx.Source.Focused(&editors[i]) {
 				if i == len(editors)-1 {
-					gtx.Execute(key.FocusCmd{Tag: &editors[0]})
-					// editors[0].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[0]})
 				} else {
-					gtx.Execute(key.FocusCmd{Tag: &editors[i+1]})
-					// editors[i+1].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[i+1]})
 				}
 			}
 		}
@@ -308,11 +306,9 @@ func SwitchEditors(gtx C, event *key.Event, editors ...*widget.Editor) {
 		for i := 0; i < len(editors); i++ {
 			if gtx.Source.Focused(&editors[i]) {
 				if i == 0 {
-					gtx.Execute(key.FocusCmd{Tag: &editors[len(editors)-1]})
-					// editors[len(editors)-1].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[len(editors)-1]})
 				} else {
-					gtx.Execute(key.FocusCmd{Tag: &editors[i-1]})
-					// editors[i-1].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[i-1]})
 				}
 			}
 		}

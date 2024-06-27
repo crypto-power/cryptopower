@@ -364,8 +364,8 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
-// that this page wishes to capture. The HandleKeyPress() method will only be
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
+// that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (swmp *SingleWalletMasterPage) KeysToHandle() []event.Filter {

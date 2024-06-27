@@ -53,13 +53,11 @@ func (t *Theme) ProgressBar(progress int) ProgressBarStyle {
 
 func (t *Theme) MultiLayerProgressBar(total float64, items []ProgressBarItem) *MultiLayerProgressBar {
 	mp := &MultiLayerProgressBar{
-		t: t,
-
+		t:      t,
 		total:  total,
 		Height: values.MarginPadding8,
 		items:  items,
 	}
-
 	return mp
 }
 
@@ -117,8 +115,8 @@ func (p ProgressBarStyle) TextLayout(gtx C, lbl layout.Widget) D {
 	)
 }
 
-func (p ProgressBarStyle) Layout(gtx layout.Context) layout.Dimensions {
-	shader := func(width int, color color.NRGBA) layout.Dimensions {
+func (p ProgressBarStyle) Layout(gtx C) D {
+	shader := func(width int, color color.NRGBA) D {
 		maxHeight := p.Height
 		if p.Height <= 0 {
 			maxHeight = unit.Dp(4)
@@ -140,7 +138,7 @@ func (p ProgressBarStyle) Layout(gtx layout.Context) layout.Dimensions {
 		paint.ColorOp{Color: color}.Add(gtx.Ops)
 		paint.PaintOp{}.Add(gtx.Ops)
 
-		return layout.Dimensions{Size: d}
+		return D{Size: d}
 	}
 
 	if p.Width <= 0 {
@@ -149,16 +147,13 @@ func (p ProgressBarStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 	progressBarWidth := int(p.Width)
 	return layout.Stack{Alignment: layout.W}.Layout(gtx,
-		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+		layout.Stacked(func(gtx C) D {
 			return shader(progressBarWidth, p.TrackColor)
 		}),
-		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+		layout.Stacked(func(gtx C) D {
 			fillWidth := int(float32(progressBarWidth) * clamp1(p.Progress))
 			fillColor := p.Color
-			//TODO07
-			// if gtx.Queue == nil {
 			fillColor = Disabled(fillColor)
-			// }
 			return shader(fillWidth, fillColor)
 		}),
 	)
@@ -170,7 +165,7 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 		mp.Width = unit.Dp(gtx.Constraints.Max.X)
 	}
 
-	pg := func(width int, lbl Label, color color.NRGBA) layout.Dimensions {
+	pg := func(width int, lbl Label, color color.NRGBA) D {
 		return LinearLayout{
 			Width:      width,
 			Height:     gtx.Dp(mp.Height),
@@ -260,7 +255,7 @@ func (t *Theme) ProgressBarCircle(progress int) ProgressCircleStyle {
 	return ProgressCircleStyle{ProgressCircleStyle: material.ProgressCircle(t.Base, float32(progress)/100)}
 }
 
-func (p ProgressCircleStyle) Layout(gtx layout.Context) layout.Dimensions {
+func (p ProgressCircleStyle) Layout(gtx C) D {
 	return p.ProgressCircleStyle.Layout(gtx)
 }
 

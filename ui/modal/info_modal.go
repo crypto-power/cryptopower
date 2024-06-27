@@ -104,10 +104,10 @@ func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked Cl
 	return info
 }
 
-func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *InfoModal {
+func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType, firstLoad ...func(gtx C)) *InfoModal {
 	in := &InfoModal{
 		Load:             l,
-		Modal:            l.Theme.ModalFloatTitle(key, l.IsMobileView()),
+		Modal:            l.Theme.ModalFloatTitle(key, l.IsMobileView(), firstLoad...),
 		btnNegative:      l.Theme.OutlineButton(""),
 		isCancelable:     true,
 		isLoading:        false,
@@ -273,7 +273,7 @@ func (in *InfoModal) UseCustomWidget(layout layout.Widget) *InfoModal {
 	return in
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
@@ -283,7 +283,6 @@ func (in *InfoModal) KeysToHandle() []event.Filter {
 		key.Filter{Focus: in, Name: key.NameEnter},
 		key.Filter{Focus: in, Name: key.NameEscape},
 	}
-	// return cryptomaterial.AnyKey(key.NameReturn, key.NameEnter, key.NameEscape)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
