@@ -7,7 +7,6 @@ import (
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -118,7 +117,7 @@ func (pg *DEXPage) prepareInitialPage() {
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	isMainnet := pg.AssetsManager.NetType() == utils.Mainnet
+	isMainnet := pg.AssetsManager.NetType() == libutils.Mainnet
 	if !isMainnet && (!pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil) { // dexc must have been reset.
 		pg.showSplashPage = true
 		if !pg.dexIsLoading {
@@ -179,7 +178,7 @@ func (pg *DEXPage) HandleUserInteractions(gtx C) {
 		pg.CurrentPage().HandleUserInteractions(gtx)
 	}
 	if pg.splashPageInfoButton.Button.Clicked(gtx) {
-		pg.showInfoModal(gtx)
+		pg.showInfoModal()
 	}
 	if pg.startTradingBtn.Button.Clicked(gtx) {
 		pg.showSplashPage = false

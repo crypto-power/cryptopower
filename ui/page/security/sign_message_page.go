@@ -110,6 +110,7 @@ func (pg *SignMessagePage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SignMessagePage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -257,14 +258,7 @@ func (pg *SignMessagePage) updateButtonColors() {
 	pg.signButton.SetEnabled(pg.isEnabled)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *SignMessagePage) HandleUserInteractions(gtx C) {
-	pg.updateButtonColors()
-
+func (pg *SignMessagePage) handleEditorEvents(gtx C) {
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor)
 	if isChanged {
 		if gtx.Source.Focused(pg.addressEditor.Editor) {
@@ -303,6 +297,15 @@ func (pg *SignMessagePage) HandleUserInteractions(gtx C) {
 			pg.ParentWindow().ShowModal(walletPasswordModal)
 		}
 	}
+}
+
+// HandleUserInteractions is called just before Layout() to determine
+// if any user interaction recently occurred on the page and may be
+// used to update the page's UI components shortly before they are
+// displayed.
+// Part of the load.Page interface.
+func (pg *SignMessagePage) HandleUserInteractions(gtx C) {
+	pg.updateButtonColors()
 }
 
 // KeysToHandle returns a Filter's slice that describes a set of key combinations

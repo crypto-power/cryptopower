@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -354,6 +355,8 @@ func (win *Window) handleUserClick(gtx C) {
 		if !ok {
 			break
 		}
+
+		fmt.Println("AutoHideSoftKeyBoardAndMenuButton")
 		if evt.Kind == gesture.KindPress {
 			win.load.Theme.AutoHideSoftKeyBoardAndMenuButton(gtx)
 		}
@@ -363,7 +366,7 @@ func (win *Window) handleUserClick(gtx C) {
 // handleShortKeys listen keys pressed.
 func (win *Window) listenSoftKey(gtx C) {
 	// clicker use for show and hide soft keyboard and menu button on editor
-	win.clicker.Add(gtx.Ops)
+	// win.clicker.Add(gtx.Ops)
 	// check for presses of the back key.
 	if runtime.GOOS == "android" {
 		for {

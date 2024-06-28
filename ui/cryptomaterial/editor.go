@@ -220,11 +220,6 @@ func (e *Editor) update(gtx C) {
 			break
 		}
 
-		switch ev.Kind {
-		case gesture.KindPress:
-			gtx.Execute(key.FocusCmd{Tag: e.Editor})
-		}
-
 		switch ev.NumClicks {
 		case 1:
 			gtx.Execute(key.FocusCmd{Tag: e.Editor})
@@ -444,7 +439,6 @@ func (e *Editor) editor(gtx C) D {
 }
 
 func (e *Editor) handleEvents(gtx C) {
-	// e.processEvent(gtx)
 	if e.showHidePassword.Button.Clicked(gtx) {
 		if e.Editor.Mask == '*' {
 			e.Editor.Mask = 0

@@ -62,7 +62,7 @@ func (pg *DEXPage) splashPage(gtx C) D {
 	)
 }
 
-func (pg *DEXPage) showInfoModal(gtx C) {
+func (pg *DEXPage) showInfoModal() {
 	info := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrDecentralized)).
 		Body(values.String(values.StrTradeSettingsMsg)).

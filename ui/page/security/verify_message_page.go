@@ -85,6 +85,7 @@ func (pg *VerifyMessagePage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *VerifyMessagePage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -157,14 +158,7 @@ func (pg *VerifyMessagePage) verifyAndClearButtons() layout.Widget {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *VerifyMessagePage) HandleUserInteractions(gtx C) {
-	pg.verifyButton.SetEnabled(pg.updateBtn())
-
+func (pg *VerifyMessagePage) handleEditorEvents(gtx C) {
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
 	if isChanged {
 		if gtx.Source.Focused(pg.addressEditor.Editor) {
@@ -189,6 +183,15 @@ func (pg *VerifyMessagePage) HandleUserInteractions(gtx C) {
 		}
 		pg.ParentWindow().ShowModal(info)
 	}
+}
+
+// HandleUserInteractions is called just before Layout() to determine
+// if any user interaction recently occurred on the page and may be
+// used to update the page's UI components shortly before they are
+// displayed.
+// Part of the load.Page interface.
+func (pg *VerifyMessagePage) HandleUserInteractions(gtx C) {
+	pg.verifyButton.SetEnabled(pg.updateBtn())
 
 	if pg.clearBtn.Clicked(gtx) {
 		pg.clearInputs()

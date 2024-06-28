@@ -114,11 +114,9 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 
 	pg.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
 	pg.passwordEditor.Editor.SingleLine, pg.passwordEditor.Editor.Submit = true, true
-	pg.passwordEditor.Hint = values.String(values.StrSpendingPassword)
 
-	pg.confirmPasswordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
+	pg.confirmPasswordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrConfirmSpendingPassword))
 	pg.confirmPasswordEditor.Editor.SingleLine, pg.confirmPasswordEditor.Editor.Submit = true, true
-	pg.confirmPasswordEditor.Hint = values.String(values.StrConfirmSpendingPassword)
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
@@ -194,6 +192,7 @@ func (pg *CreateWallet) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *CreateWallet) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	return cryptomaterial.UniformPadding(gtx, func(gtx layout.Context) layout.Dimensions {
 		return cryptomaterial.LinearLayout{
 			Width:     cryptomaterial.MatchParent,
@@ -424,25 +423,7 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 	)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *CreateWallet) HandleUserInteractions(gtx C) {
-	// back button action
-	if pg.backButton.Button.Clicked(gtx) {
-		pg.ParentNavigator().CloseCurrentPage()
-	}
-
-	// decred wallet type sub action
-	for i, item := range pg.walletActions {
-		for item.clickable.Clicked(gtx) {
-			pg.selectedWalletAction = i
-		}
-	}
-
-	// editor event listener
+func (pg *CreateWallet) handleEditorEvents(gtx C) {
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.watchOnlyWalletHex.Editor, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
 	if isChanged {
 		// reset error when any editor is modified
@@ -454,67 +435,7 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 
 	// create wallet action
 	if (pg.continueBtn.Clicked(gtx) || isSubmit) && pg.validCreateWalletInputs() {
-		go func() {
-			defer func() {
-				pg.isLoading = false
-			}()
-			pg.isLoading = true
-			walletName := pg.walletName.Editor.Text()
-			pass := pg.passwordEditor.Editor.Text()
-			seedType := GetWordSeedType(pg.seedTypeDropdown.Selected())
-			switch *pg.assetTypeSelector.SelectedAssetType() {
-			case libutils.DCRWalletAsset:
-				_, err := pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
-				if err != nil {
-					if err.Error() == libutils.ErrExist {
-						pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
-						return
-					}
-
-					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(errModal)
-					return
-				}
-
-			case libutils.BTCWalletAsset:
-				_, err := pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
-				if err != nil {
-					if err.Error() == libutils.ErrExist {
-						pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
-						return
-					}
-
-					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(errModal)
-					return
-				}
-
-			case libutils.LTCWalletAsset:
-				_, err := pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
-				if err != nil {
-					if err.Error() == libutils.ErrExist {
-						pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
-						return
-					}
-
-					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(errModal)
-					return
-				}
-			}
-
-			pg.walletCreationSuccessCallback()
-		}()
-	}
-
-	// restore wallet actions
-	if pg.restoreBtn.Clicked(gtx) && pg.validRestoreWalletInputs() {
-		afterRestore := func() {
-			// todo setup mixer for restored accounts automatically
-			pg.walletCreationSuccessCallback()
-		}
-		ast := pg.assetTypeSelector.SelectedAssetType()
-		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
+		go pg.createWallet()
 	}
 
 	// imported wallet click action control
@@ -560,6 +481,87 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 			}
 			pg.walletCreationSuccessCallback()
 		}()
+	}
+}
+
+func (pg *CreateWallet) createWallet() {
+	defer func() {
+		pg.isLoading = false
+	}()
+	pg.isLoading = true
+	walletName := pg.walletName.Editor.Text()
+	pass := pg.passwordEditor.Editor.Text()
+	seedType := GetWordSeedType(pg.seedTypeDropdown.Selected())
+	switch *pg.assetTypeSelector.SelectedAssetType() {
+	case libutils.DCRWalletAsset:
+		_, err := pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		if err != nil {
+			if err.Error() == libutils.ErrExist {
+				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
+				return
+			}
+
+			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
+			return
+		}
+
+	case libutils.BTCWalletAsset:
+		_, err := pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		if err != nil {
+			if err.Error() == libutils.ErrExist {
+				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
+				return
+			}
+
+			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
+			return
+		}
+
+	case libutils.LTCWalletAsset:
+		_, err := pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		if err != nil {
+			if err.Error() == libutils.ErrExist {
+				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
+				return
+			}
+
+			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
+			return
+		}
+	}
+
+	pg.walletCreationSuccessCallback()
+}
+
+// HandleUserInteractions is called just before Layout() to determine
+// if any user interaction recently occurred on the page and may be
+// used to update the page's UI components shortly before they are
+// displayed.
+// Part of the load.Page interface.
+func (pg *CreateWallet) HandleUserInteractions(gtx C) {
+	// back button action
+	if pg.backButton.Button.Clicked(gtx) {
+		pg.ParentNavigator().CloseCurrentPage()
+	}
+
+	// decred wallet type sub action
+	for i, item := range pg.walletActions {
+		for item.clickable.Clicked(gtx) {
+			pg.selectedWalletAction = i
+		}
+	}
+
+	// restore wallet actions
+	if pg.restoreBtn.Clicked(gtx) && pg.validRestoreWalletInputs() {
+		afterRestore := func() {
+			// todo setup mixer for restored accounts automatically
+			pg.walletCreationSuccessCallback()
+		}
+		ast := pg.assetTypeSelector.SelectedAssetType()
+		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
 	}
 }
 
