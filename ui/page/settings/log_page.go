@@ -35,7 +35,6 @@ type LogPage struct {
 	tail *tail.Tail
 
 	copyLog    *cryptomaterial.Clickable
-	copyIcon   *cryptomaterial.Image
 	backButton cryptomaterial.IconButton
 
 	logList *widget.List
@@ -57,7 +56,6 @@ func NewLogPage(l *load.Load, logPath string, pageTitle string) *LogPage {
 		copyLog: l.Theme.NewClickable(true),
 	}
 
-	pg.copyIcon = pg.Theme.Icons.CopyIcon
 	pg.logPath = logPath
 	pg.title = pageTitle
 
@@ -133,14 +131,7 @@ func (pg *LogPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			ExtraItem: pg.copyLog,
-			Extra: func(gtx C) D {
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					return pg.copyLog.Layout(gtx, func(gtx C) D {
-						return pg.copyIcon.Layout24dp(gtx)
-					})
-
-				})
-			},
+			Extra:     pg.Theme.IconButton(pg.Theme.Icons.CopyIcon).Layout,
 			HandleExtra: func() {
 				pg.copyLogEntries(gtx)
 				pg.Toast.Notify(values.String(values.StrCopied))
@@ -148,7 +139,7 @@ func (pg *LogPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 			Body: func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-				return pg.Theme.List(pg.logList).Layout(gtx, 1, func(gtx C, index int) D {
+				return pg.Theme.List(pg.logList).Layout(gtx, 1, func(gtx C, _ int) D {
 					return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 						return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 							return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
@@ -178,14 +169,7 @@ func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			ExtraItem: pg.copyLog,
-			Extra: func(gtx C) D {
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					return pg.copyLog.Layout(gtx, func(gtx C) D {
-						return pg.copyIcon.Layout24dp(gtx)
-					})
-
-				})
-			},
+			Extra:     pg.Theme.IconButton(pg.Theme.Icons.CopyIcon).Layout,
 			HandleExtra: func() {
 				pg.copyLogEntries(gtx)
 				pg.Toast.Notify(values.String(values.StrCopied))
@@ -193,7 +177,7 @@ func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 			Body: func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-				return pg.Theme.List(pg.logList).Layout(gtx, 1, func(gtx C, index int) D {
+				return pg.Theme.List(pg.logList).Layout(gtx, 1, func(gtx C, _ int) D {
 					return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 						return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 							return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
@@ -225,6 +209,6 @@ func (pg *LogPage) HandleUserInteractions(gtx C) {}
 // Part of the load.Page interface.
 func (pg *LogPage) OnNavigatedFrom() {
 	if pg.tail != nil {
-		pg.tail.Stop()
+		_ = pg.tail.Stop()
 	}
 }

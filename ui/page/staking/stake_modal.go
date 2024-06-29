@@ -181,7 +181,7 @@ func (tb *ticketBuyerModal) canSave() bool {
 func (tb *ticketBuyerModal) initializeAccountSelector() {
 	tb.accountSelector = components.NewWalletAndAccountSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {}).
+		AccountSelected(func(_ *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.dcrImpl.IsWatchingOnlyWallet()
@@ -194,7 +194,7 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 
 			return accountIsValid
 		})
-	tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl)
+	_ = tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl)
 }
 
 func (tb *ticketBuyerModal) OnDismiss() {

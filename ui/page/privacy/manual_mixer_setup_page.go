@@ -50,7 +50,7 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 	// Mixed account picker
 	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrMixedAccount)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {}).
+		AccountSelected(func(_ *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			wal := pg.Load.AssetsManager.WalletWithID(account.WalletID)
 
@@ -73,7 +73,7 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrUnmixedAccount)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {}).
+		AccountSelected(func(_ *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			wal := pg.Load.AssetsManager.WalletWithID(account.WalletID)
 
@@ -93,8 +93,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 			return true
 		})
 
-	pg.mixedAccountSelector.SelectFirstValidAccount(dcrWallet)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(dcrWallet)
+	_ = pg.mixedAccountSelector.SelectFirstValidAccount(dcrWallet)
+	_ = pg.unmixedAccountSelector.SelectFirstValidAccount(dcrWallet)
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.backButton = components.GetBackButton(l)
@@ -107,8 +107,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
-	pg.mixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
+	_ = pg.mixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
+	_ = pg.unmixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
 }
 
 // Layout draws the page UI components into the provided layout context

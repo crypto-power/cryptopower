@@ -27,7 +27,6 @@ type destination struct {
 	destinationAccountSelector *components.WalletAndAccountSelector
 	destinationWalletSelector  *components.WalletAndAccountSelector
 
-	sendToAddress bool
 	accountSwitch *cryptomaterial.SegmentedControl
 }
 
@@ -60,13 +59,13 @@ func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetTyp
 	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrAccount))
-	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
+	_ = dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
 }
 
 // destinationAddress validates the destination address obtained from the provided
 // raw address or the selected account address.
 func (dst *destination) destinationAddress() (string, error) {
-	if dst.sendToAddress {
+	if dst.isSendToAddress() {
 		return dst.validateDestinationAddress()
 	}
 
@@ -80,7 +79,7 @@ func (dst *destination) destinationAddress() (string, error) {
 }
 
 func (dst *destination) destinationAccount() *sharedW.Account {
-	if dst.sendToAddress {
+	if dst.isSendToAddress() {
 		return nil
 	}
 
@@ -106,7 +105,7 @@ func (dst *destination) validateDestinationAddress() (string, error) {
 }
 
 func (dst *destination) validate() bool {
-	if dst.sendToAddress {
+	if dst.isSendToAddress() {
 		_, err := dst.validateDestinationAddress()
 		// if err equals to nil then the address is valid.
 		return err == nil
@@ -116,7 +115,7 @@ func (dst *destination) validate() bool {
 }
 
 func (dst *destination) setError(errMsg string) {
-	if dst.sendToAddress {
+	if dst.isSendToAddress() {
 		dst.destinationAddressEditor.SetError(errMsg)
 	} else {
 		dst.destinationAccountSelector.SetError(errMsg)
@@ -128,9 +127,13 @@ func (dst *destination) clearAddressInput() {
 	dst.destinationAddressEditor.Editor.SetText("")
 }
 
-func (dst *destination) handle(gtx C) {
-	dst.sendToAddress = dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
+// isSendToAddress returns the current tab selection status without depending
+// on a buffered state.
+func (dst *destination) isSendToAddress() bool {
+	return dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
+}
 
+func (dst *destination) handle(gtx C) {
 	if dst.accountSwitch.Changed() {
 		dst.addressChanged()
 	}

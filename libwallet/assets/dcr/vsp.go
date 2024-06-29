@@ -106,7 +106,7 @@ type vspDbData struct {
 
 func (asset *Asset) getVSPDBData() *vspDbData {
 	vspDbData := new(vspDbData)
-	asset.ReadUserConfigValue(sharedW.KnownVSPsConfigKey, vspDbData)
+	_ = asset.ReadUserConfigValue(sharedW.KnownVSPsConfigKey, vspDbData)
 	return vspDbData
 }
 

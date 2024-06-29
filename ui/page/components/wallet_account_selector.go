@@ -383,7 +383,7 @@ func (ws *WalletAndAccountSelector) setWalletLogo(gtx C) D {
 // when the page using this WalletAndAccountSelector widget is exited.
 func (ws *WalletAndAccountSelector) ListenForTxNotifications(window app.WindowNavigator) {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		OnTransaction: func(_ int, _ *sharedW.Transaction) {
 			// refresh wallets/Accounts list when new transaction is received
 			if ws.selectorModal == nil {
 				return
@@ -395,7 +395,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(window app.WindowNa
 			}
 			window.Reload()
 		},
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			// refresh wallet and account balance on every new block
 			// only if sync is completed.
 			if !ws.selectedWallet.IsSynced() || ws.selectorModal == nil {

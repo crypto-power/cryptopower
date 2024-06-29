@@ -229,12 +229,12 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 
 func (asset *Asset) SetSpecificPeer(addresses string) {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, addresses)
-	asset.RestartSpvSync()
+	_ = asset.RestartSpvSync()
 }
 
 func (asset *Asset) RemovePeers() {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-	asset.RestartSpvSync()
+	_ = asset.RestartSpvSync()
 }
 
 func (asset *Asset) SpvSync() error {

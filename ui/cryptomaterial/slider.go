@@ -159,10 +159,10 @@ func (s *Slider) buttonLayout(gtx C) D {
 				Orientation: layout.Horizontal,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return s.prevButton.Layout(gtx, s.t.Icons.ChevronLeft.Layout20dp)
+					return s.prevButton.Layout(gtx, s.t.NewIcon(s.t.Icons.ChevronLeft).Layout20dp)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return s.nextButton.Layout(gtx, s.t.Icons.ChevronRight.Layout20dp)
+					return s.nextButton.Layout(gtx, s.t.NewIcon(s.t.Icons.ChevronRight).Layout20dp)
 				}),
 			)
 		})

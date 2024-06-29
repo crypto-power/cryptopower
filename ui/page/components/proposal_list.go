@@ -197,7 +197,7 @@ func layoutProposalSubmission(gtx C, l *load.Load, title string, click *cryptoma
 							Alignment:   layout.Middle,
 							Clickable:   click,
 						}.Layout(gtx,
-							layout.Rigid(l.Theme.Icons.ChevronRight.Layout24dp),
+							layout.Rigid(l.Theme.NewIcon(l.Theme.Icons.ChevronRight).Layout24dp),
 						)
 					})
 				}),

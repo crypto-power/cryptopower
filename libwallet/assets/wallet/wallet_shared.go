@@ -328,7 +328,7 @@ func (wallet *Wallet) SetBirthday(birthday time.Time) {
 	wallet.mu.Lock()
 	wallet.Birthday = birthday
 	// Triggers db update with the new birthday time.
-	wallet.db.Save(wallet)
+	_ = wallet.db.Save(wallet)
 	wallet.mu.Unlock()
 }
 

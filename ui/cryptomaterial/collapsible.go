@@ -89,16 +89,16 @@ func (c *Collapsible) Layout(gtx C, header, body func(C) D) D {
 		c.isExpanded = !c.isExpanded
 	}
 
-	var icon *Image
+	var icon *Icon
 	if c.IconStyle == Caret {
-		icon = c.th.expandIcon
+		icon = c.th.NewIcon(c.th.Icons.ChevronDown)
 		if c.isExpanded {
-			icon = c.th.collapseIcon
+			icon = c.th.NewIcon(c.th.Icons.ChevronUp)
 		}
 	} else if c.IconStyle == Chevron {
-		icon = c.th.Icons.ChevronExpand
+		icon = c.th.NewIcon(c.th.Icons.ChevronDown)
 		if c.isExpanded {
-			icon = c.th.Icons.ChevronCollapse
+			icon = c.th.NewIcon(c.th.Icons.ChevronUp)
 		}
 	}
 

@@ -99,7 +99,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 }
 
 func (vm *voteModal) OnResume() {
-	vm.walletSelector.SelectFirstValidWallet()
+	_ = vm.walletSelector.SelectFirstValidWallet()
 }
 
 func (vm *voteModal) OnDismiss() {
@@ -160,7 +160,7 @@ func (vm *voteModal) sendVotes() {
 			vm.Dismiss()
 			infoModal := modal.NewSuccessModal(vm.Load, values.String(values.StrVoteSent), modal.DefaultClickFunc())
 			vm.ParentWindow().ShowModal(infoModal)
-			go vm.AssetsManager.Politeia.Sync(ctx)
+			go func() { _ = vm.AssetsManager.Politeia.Sync(ctx) }()
 			pm.Dismiss()
 
 			return true
@@ -242,7 +242,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtc C) D {
+					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 								if voteDetails.YesVotes == 0 {

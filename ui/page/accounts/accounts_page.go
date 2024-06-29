@@ -122,7 +122,7 @@ func (pg *Page) fetchExchangeRate() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
-	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
+	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, _ int) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			return components.HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -170,7 +170,7 @@ func (pg *Page) addAccountBtnLayout(gtx C) D {
 		Clickable:  pg.addAccountBtn,
 		Alignment:  layout.Middle,
 	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.AddIcon.Layout16dp),
+		layout.Rigid(pg.Theme.AddIcon().Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddNewAccount))
 			txt.Color = pg.Theme.Color.DefaultThemeColors().Primary

@@ -299,7 +299,7 @@ func (pg *SettingsPage) pageSections(gtx C, title string, body layout.Widget) D 
 									return D{}
 								}
 								return pg.addAccount.Layout(gtx, func(gtx C) D {
-									return pg.Theme.Icons.AddIcon.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+									return pg.Theme.AddIcon().LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
 								})
 							})
 						}
@@ -336,7 +336,7 @@ func (pg *SettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clicka
 				layout.Rigid(textLabel.Layout),
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+						return pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
 					})
 				}),
 			)
@@ -377,7 +377,7 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 		EnableName(false).
 		PasswordHint(values.String(values.StrNewSpendingPassword)).
 		ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
-		SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, newPassword string, m *modal.CreatePasswordModal) bool {
 			err := pg.wallet.ChangePrivatePassphraseForWallet(currentPassword,
 				newPassword, sharedW.PassphraseTypePass)
 			if err != nil {
@@ -389,7 +389,7 @@ func (pg *SettingsPage) changeSpendingPasswordModal() {
 				assetID, _ := dex.BipSymbolID(pg.wallet.GetAssetType().ToStringLower())
 				err := pg.AssetsManager.DexClient().SetWalletPassword([]byte(dexPass), assetID, []byte(newPassword))
 				if err != nil {
-					m.SetError(fmt.Errorf("Failed to update your dex wallet password, try again: %v", err).Error())
+					m.SetError(fmt.Errorf("failed to update your dex wallet password, try again: %v", err).Error())
 
 					// Undo password change.
 					if err = pg.wallet.ChangePrivatePassphraseForWallet(newPassword, currentPassword, sharedW.PassphraseTypePass); err != nil {
@@ -618,7 +618,7 @@ func (pg *SettingsPage) clickableRow(gtx C, row clickableRowData) D {
 				layout.Rigid(lbl.Layout),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+						return pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
 					})
 				}),
 			)
@@ -637,7 +637,7 @@ func (pg *SettingsPage) showWarningModalDialog(title, msg string) {
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			// TODO: Check if deletion happened successfully
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
@@ -661,7 +661,7 @@ func (pg *SettingsPage) HandleUserInteractions(gtx C) {
 
 	for pg.viewSeed.Clicked(gtx) {
 		currentPage := pg.ParentWindow().CurrentPageID()
-		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(load *load.Load, navigator app.WindowNavigator) {
+		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 			navigator.ClosePagesAfter(currentPage)
 		}))
 	}

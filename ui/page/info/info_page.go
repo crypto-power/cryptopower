@@ -118,7 +118,7 @@ func (pg *WalletInfo) reload() {
 
 func (pg *WalletInfo) backup(wallet sharedW.Asset) {
 	currentPage := pg.ParentWindow().CurrentPageID()
-	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(load *load.Load, navigator app.WindowNavigator) {
+	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 		navigator.ClosePagesAfter(currentPage)
 	}))
 }
@@ -128,7 +128,7 @@ func (pg *WalletInfo) backup(wallet sharedW.Asset) {
 // Part of the load.Page interface.
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
-	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
+	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, _ int) D {
 		items := []layout.FlexChild{layout.Rigid(pg.walletSyncInfo.WalletInfoLayout)}
 
 		items = append(items, layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout))
@@ -272,11 +272,11 @@ func (pg *WalletInfo) HandleUserInteractions(gtx C) {
 
 func (pg *WalletInfo) listenForMixerNotifications() {
 	accountMixerNotificationListener := &dcr.AccountMixerNotificationListener{
-		OnAccountMixerStarted: func(walletID int) {
+		OnAccountMixerStarted: func(_ int) {
 			pg.reloadMixerBalances()
 			pg.ParentWindow().Reload()
 		},
-		OnAccountMixerEnded: func(walletID int) {
+		OnAccountMixerEnded: func(_ int) {
 			pg.reloadMixerBalances()
 			pg.ParentWindow().Reload()
 		},
@@ -289,7 +289,7 @@ func (pg *WalletInfo) listenForMixerNotifications() {
 
 	// this is needed to refresh the UI on every block
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			pg.reloadMixerBalances()
 			pg.ParentWindow().Reload()
 		},

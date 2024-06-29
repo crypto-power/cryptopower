@@ -169,7 +169,7 @@ func (pg *Page) addRecipentBtnLayout(gtx C) D {
 		Clickable:  pg.addRecipentBtn,
 		Alignment:  layout.Middle,
 	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.AddIcon.Layout16dp),
+		layout.Rigid(pg.Theme.AddIcon().Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddRecipient))
 			txt.Color = pg.Theme.Color.Primary
@@ -196,7 +196,7 @@ func (pg *Page) notSyncedLayout(gtx C) D {
 			},
 			func(gtx C) D {
 				if pg.selectedWallet.IsSyncing() {
-					syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(a sharedW.Asset) {})
+					syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(_ sharedW.Asset) {})
 					blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 					text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
 					blockInfo := pg.Theme.Label(textSize16, text)
@@ -281,7 +281,7 @@ func (pg *Page) coinSelectionSection(gtx C) D {
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
 					return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
 						layout.Rigid(textLabel.Layout),
-						layout.Rigid(pg.Theme.Icons.ChevronRight.Layout20dp),
+						layout.Rigid(pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).Layout20dp),
 					)
 				})
 

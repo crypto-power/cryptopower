@@ -125,7 +125,7 @@ func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickab
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(pg.Theme.Body1(title).Layout),
 					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+						return layout.E.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).Layout24dp)
 					}),
 				)
 			})
@@ -204,7 +204,7 @@ func (pg *AccountMixerPage) mixerHeaderContent() layout.FlexChild {
 			}),
 			layout.Rigid(func(gtx C) D {
 				if !pg.dcrWallet.IsAccountMixerActive() {
-					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(_ C) D {
 						return D{}
 					})
 				}
@@ -306,7 +306,7 @@ func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 			})
 		}
 
-		return pg.pageContainer.Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.pageContainer.Layout(gtx, 1, func(gtx C, _ int) D {
 			return wdg(gtx)
 		})
 	})
@@ -343,7 +343,7 @@ func (pg *AccountMixerPage) HandleUserInteractions(gtx C) {
 				SetPositiveButtonText(values.String(values.StrYes)).
 				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					pg.toggleMixer.SetChecked(false)
-					go pg.dcrWallet.StopAccountMixer()
+					go func() { _ = pg.dcrWallet.StopAccountMixer() }()
 					return true
 				})
 			pg.ParentWindow().ShowModal(info)
@@ -426,7 +426,7 @@ func (pg *AccountMixerPage) HandleUserInteractions(gtx C) {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrCoordinationServer)).
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-			SetPositiveButtonCallback(func(newName string, tim *modal.TextInputModal) bool {
+			SetPositiveButtonCallback(func(_ string, _ *modal.TextInputModal) bool {
 				// Todo - implement custom CSPP server
 				return true
 			})
@@ -481,12 +481,12 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 
 func (pg *AccountMixerPage) listenForMixerNotifications() {
 	accountMixerNotificationListener := &dcr.AccountMixerNotificationListener{
-		OnAccountMixerStarted: func(walletID int) {
+		OnAccountMixerStarted: func(_ int) {
 			pg.Toast.Notify(values.String(values.StrMixerStart))
 			pg.getMixerBalance()
 			pg.ParentWindow().Reload()
 		},
-		OnAccountMixerEnded: func(walletID int) {
+		OnAccountMixerEnded: func(_ int) {
 			pg.mixerCompleted = true
 			pg.getMixerBalance()
 			pg.ParentWindow().Reload()
@@ -500,7 +500,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 
 	// this is needed to refresh the UI on every block
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			pg.getMixerBalance()
 			pg.ParentWindow().Reload()
 		},

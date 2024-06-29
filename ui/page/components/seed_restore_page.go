@@ -531,7 +531,7 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 			EnableName(false).
 			ShowWalletInfoTip(true).
 			SetParent(pg).
-			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+			SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 				_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
 				if err != nil {
 					errString := err.Error()

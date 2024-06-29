@@ -33,7 +33,7 @@ func TestFormatBalance(t *testing.T) {
 		amount: "DCR",
 	}}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.name, func(_ *testing.T) {
 			formatBalance(gtx, ld, test.amount, 1, color.NRGBA{}, false, false)
 		})
 	}

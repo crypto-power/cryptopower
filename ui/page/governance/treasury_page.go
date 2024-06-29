@@ -203,10 +203,10 @@ func (pg *TreasuryPage) FetchPolicies() {
 
 func (pg *TreasuryPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	overlay := layout.Stacked(func(_ C) D { return D{} })
 	if !pg.isTreasuryAPIAllowed() {
 		gtxCopy := gtx
-		overlay = layout.Stacked(func(gtx C) D {
+		overlay = layout.Stacked(func(_ C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, "", &pg.navigateToSettingsBtn)
 		})
@@ -298,7 +298,7 @@ func (pg *TreasuryPage) layoutVerifyGovernanceKeys(gtx C) D {
 func (pg *TreasuryPage) layoutContent(gtx C) D {
 	return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 		list := layout.List{Axis: layout.Vertical}
-		return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return list.Layout(gtx, len(pg.treasuryItems), func(gtx C, i int) D {
 				return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

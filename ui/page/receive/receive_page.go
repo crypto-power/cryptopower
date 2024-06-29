@@ -44,11 +44,11 @@ type Page struct {
 
 	pageContainer         layout.List
 	scrollContainer       *widget.List
-	isNewAddr, isInfo     bool
+	isNewAddr             bool
 	currentAddress        string
 	qrImage               *image.Image
 	newAddr, copy         *cryptomaterial.Clickable
-	info, more            cryptomaterial.IconButton
+	info                  cryptomaterial.IconButton
 	card                  cryptomaterial.Card
 	sourceAccountselector *components.WalletAndAccountSelector
 	sourceWalletSelector  *components.WalletAndAccountSelector
@@ -73,7 +73,6 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 		info:              l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		copy:              l.Theme.NewClickable(false),
 		newAddr:           l.Theme.NewClickable(false),
-		more:              l.Theme.IconButton(l.Theme.Icons.NavigationMore),
 		card:              l.Theme.Card(),
 		backdrop:          new(widget.Clickable),
 		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
@@ -110,7 +109,7 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 				}
 				return false
 			})
-		pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)
+		_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)
 	}
 
 	return pg
@@ -130,15 +129,15 @@ func (pg *Page) initWalletSelectors() {
 
 			return accountIsValid
 		})
-	pg.sourceAccountselector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
+	_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
 
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.selectedWallet = selectedWallet
-		pg.sourceAccountselector.SelectFirstValidAccount(selectedWallet)
+		_ = pg.sourceAccountselector.SelectFirstValidAccount(selectedWallet)
 		pg.generateQRForAddress()
 	})
 
-	pg.sourceAccountselector.AccountSelected(func(selectedAccount *sharedW.Account) {
+	pg.sourceAccountselector.AccountSelected(func(_ *sharedW.Account) {
 		pg.generateQRForAddress()
 	})
 
@@ -168,8 +167,8 @@ func (pg *Page) OnNavigatedTo() {
 		return
 	}
 
-	pg.sourceAccountselector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
-	pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)  // Want to reset the user's selection everytime this page appears?
+	pg.sourceAccountselector.ListenForTxNotifications(pg.ParentWindow())    // listener is stopped in OnNavigatedFrom()
+	_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
 	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.sourceAccountselector.SelectedAccount().Number)
 	if err != nil {
@@ -237,7 +236,7 @@ func (pg *Page) Layout(gtx C) D {
 func (pg *Page) contentLayout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
-	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 		textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 		uniformSize := values.MarginPadding16
 		if pg.modalLayout != nil {
@@ -299,7 +298,7 @@ func (pg *Page) contentLayout(gtx C) D {
 									},
 									func(gtx C) D {
 										if pg.selectedWallet.IsSyncing() {
-											syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(a sharedW.Asset) {})
+											syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(_ sharedW.Asset) {})
 											blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 											text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
 											blockInfo := pg.Theme.Label(textSize16, text)
@@ -348,17 +347,17 @@ func (pg *Page) copyAndNewAddressLayout(gtx C) D {
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return pg.buttonIconLayout(gtx, pg.Theme.Icons.CopyIcon, values.String(values.StrCopy), pg.copy)
+				return pg.buttonIconLayout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon), values.String(values.StrCopy), pg.copy)
 			}),
 			layout.Rigid(layout.Spacer{Width: values.MarginPadding32}.Layout),
 			layout.Rigid(func(gtx C) D {
-				return pg.buttonIconLayout(gtx, pg.Theme.Icons.Restore, values.String(values.StrRegenerate), pg.newAddr)
+				return pg.buttonIconLayout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh), values.String(values.StrRegenerate), pg.newAddr)
 			}),
 		)
 	})
 }
 
-func (pg *Page) buttonIconLayout(gtx C, icon *cryptomaterial.Image, text string, clickable *cryptomaterial.Clickable) D {
+func (pg *Page) buttonIconLayout(gtx C, icon *cryptomaterial.Icon, text string, clickable *cryptomaterial.Clickable) D {
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			dp40 := gtx.Dp(values.MarginPadding40)
@@ -436,13 +435,6 @@ func (pg *Page) addressLayout(gtx C) D {
 func (pg *Page) HandleUserInteractions(gtx C) {
 	if pg.backdrop.Clicked(gtx) {
 		pg.isNewAddr = false
-	}
-
-	if pg.more.Button.Clicked(gtx) {
-		pg.isNewAddr = !pg.isNewAddr
-		if pg.isInfo {
-			pg.isInfo = false
-		}
 	}
 
 	if pg.newAddr.Clicked(gtx) {

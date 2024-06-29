@@ -27,12 +27,6 @@ func (t *Theme) List(state *widget.List) ListStyle {
 	return list
 }
 
-// layout the scroll track and indicator.
-func (s ScrollbarStyle) layout(gtx layout.Context, axis layout.Axis, viewportStart, viewportEnd float32) layout.Dimensions {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return s.ScrollbarStyle.Layout(gtx, axis, viewportStart, viewportEnd)
-}
-
 // Layout the list and its scrollbar.
 func (l ListStyle) Layout(gtx layout.Context, length int, w layout.ListElement) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X

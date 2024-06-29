@@ -140,7 +140,7 @@ func (sp *startPage) OnNavigatedTo() {
 			sp.unlock()
 		} else {
 			sp.loading = true
-			go sp.openWalletsAndDisplayHomePage("")
+			go func() { _ = sp.openWalletsAndDisplayHomePage("") }()
 		}
 	} else {
 		sp.loading = false
@@ -506,7 +506,7 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 												titleLabel.Font.Weight = font.Bold
 												return layout.Inset{Bottom: values.MarginPadding40}.Layout(gtx, titleLabel.Layout)
 											}),
-											layout.Rigid(func(gtc C) D {
+											layout.Rigid(func(gtx C) D {
 												gtx.Constraints.Max.Y = gtx.Dp(values.MarginPadding48)
 												return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 													layout.Rigid(func(gtx C) D {
@@ -616,9 +616,7 @@ func (sp *startPage) pageHeaderLayout(gtx C) D {
 		Clickable:   sp.backButton,
 		Padding:     layout.UniformInset(values.MarginPadding12),
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return sp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding24)
-		}),
+		layout.Rigid(sp.Theme.NewIcon(sp.Theme.Icons.ChevronLeft).Layout24dp),
 		layout.Rigid(sp.Theme.Label(values.TextSize20, values.String(values.StrBack)).Layout),
 	)
 }

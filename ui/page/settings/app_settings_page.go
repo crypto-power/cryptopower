@@ -471,7 +471,7 @@ func (pg *AppSettingsPage) clickableRow(gtx C, row row) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(row.label.Layout),
 					layout.Rigid(func(gtx C) D {
-						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding20)
+						return pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding20)
 					}),
 				)
 			})
@@ -589,7 +589,7 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 			sharedW.LogLevelConfigKey, libutils.DefaultLogLevel, preference.LogOptions).
 			Title(values.StrLogLevel).
 			UpdateValues(func(val string) {
-				logger.SetLogLevels(val)
+				_ = logger.SetLogLevels(val)
 			})
 		pg.ParentWindow().ShowModal(logLevelSelector)
 		break
@@ -606,7 +606,7 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 			Body(values.String(values.StrResetDEXDataWarning)).
 			SetNegativeButtonText(values.String(values.StrCancel)).
 			SetPositiveButtonText(values.String(values.StrReset)).
-			SetPositiveButtonCallback(func(_ bool, in *modal.InfoModal) bool {
+			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				if pg.AssetsManager.DEXCInitialized() {
 					if err := pg.AssetsManager.DeleteDEXData(); err != nil {
 						return false
@@ -643,7 +643,7 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 					EnableName(false).
 					PasswordHint(values.String(values.StrNewStartupPass)).
 					ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
-					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+					SetPositiveButtonCallback(func(_, newPassword string, m *modal.CreatePasswordModal) bool {
 						if !utils.StringNotEmpty(newPassword) {
 							m.SetError(values.String(values.StrErrPassEmpty))
 							return false
@@ -672,7 +672,7 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 				SetCancelable(false).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmStartupPass)).
-				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+				SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 					if !utils.StringNotEmpty(password) {
 						m.SetError(values.String(values.StrErrPassEmpty))
 						return false
@@ -764,7 +764,7 @@ func (pg *AppSettingsPage) showDEXSeedModal() {
 				layout.Rigid(pg.copyDEXSeed.Layout),
 			)
 		}).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			utils.ZeroBytes(pg.dexSeed)
 			return true
 		})
@@ -797,7 +797,7 @@ func ChangeNetworkType(load *load.Load, windowNav app.WindowNavigator, newNetTyp
 		SetCancelable(true).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
-		SetPositiveButtonCallback(func(isChecked bool, confirmModal *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			newAssetsManager, err := load.ChangeAssetsManagerNetwork(libutils.ToNetworkType(newNetType))
 			if err != nil {
 				errorModal := modal.NewErrorModal(load, err.Error(), modal.DefaultClickFunc())

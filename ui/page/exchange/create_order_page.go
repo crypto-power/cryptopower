@@ -64,7 +64,6 @@ type CreateOrderPage struct {
 	settingsButton                           cryptomaterial.IconButton
 	iconClickable                            *cryptomaterial.Clickable
 	refreshClickable                         *cryptomaterial.Clickable
-	refreshIcon                              *cryptomaterial.Image
 	viewAllButton                            cryptomaterial.Button
 	navToSettingsBtn                         cryptomaterial.Button
 	createWalletBtn                          cryptomaterial.Button
@@ -129,7 +128,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeRate:     -1,
 		refreshClickable: l.Theme.NewClickable(true),
 		iconClickable:    l.Theme.NewClickable(true),
-		refreshIcon:      l.Theme.Icons.Restore,
 		navToSettingsBtn: l.Theme.Button(values.String(values.StrStartTrading)),
 		createWalletBtn:  l.Theme.Button(values.String(values.StrCreateANewWallet)),
 		splashPageContainer: &widget.List{List: layout.List{
@@ -440,7 +438,7 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 		if pg.scheduler.IsChecked() {
 
 			orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
-				OnSettingsSaved(func(params *callbackParams) {
+				OnSettingsSaved(func(_ *callbackParams) {
 					refundAddress, _ := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
 					destinationAddress, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
 					pg.sourceWalletID = pg.sourceWalletSelector.SelectedWallet().GetWalletID()
@@ -714,7 +712,7 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 func (pg *CreateOrderPage) Layout(gtx C) D {
 	pg.handleEditorEvents(gtx)
 	if pg.isFirstVisit {
-		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return pg.splashPage(gtx)
 		})
 	}
@@ -772,10 +770,10 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				Direction: layout.Center,
 				Padding:   layout.Inset{Top: values.MarginPadding0},
 			}.Layout2(gtx, func(gtx C) D {
-				overlay := layout.Stacked(func(gtx C) D { return D{} })
+				overlay := layout.Stacked(func(_ C) D { return D{} })
 				if overlaySet {
 					gtxCopy := gtx
-					overlay = layout.Stacked(func(gtx C) D {
+					overlay = layout.Stacked(func(_ C) D {
 						return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, "", navBtn)
 					})
 					// Disable main page from receiving events.
@@ -1067,8 +1065,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 																	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 																	return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 																}
-																size := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding18)
-																return pg.refreshIcon.LayoutSize(gtx, size)
+																return pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).LayoutTransform(gtx, pg.IsMobileView(), values.MarginPadding18)
 															})
 														}),
 													)
@@ -1185,7 +1182,7 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 	orderItems := pg.scroll.FetchedData()
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.scroll.List().Layout(gtx, 1, func(gtx C, _ int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.ordersList.Layout(gtx, len(orderItems), func(gtx C, i int) D {
 						return cryptomaterial.LinearLayout{
@@ -1363,17 +1360,17 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		if _, err := sourceWallet.GetAccount(sourceAccount); err != nil {
 			log.Error(err)
 		} else {
-			pg.sourceAccountSelector.SelectAccount(sourceWallet, sourceAccount)
+			_ = pg.sourceAccountSelector.SelectAccount(sourceWallet, sourceAccount)
 		}
 	}
 
 	if pg.sourceAccountSelector.SelectedAccount() == nil {
 		isConfigUpdateRequired = true
-		pg.sourceAccountSelector.SelectFirstValidAccount(sourceWallet)
+		_ = pg.sourceAccountSelector.SelectFirstValidAccount(sourceWallet)
 	}
 
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+		_ = pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	// Destination wallet picker
@@ -1399,17 +1396,17 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		if _, err := destinationWallet.GetAccount(destinationAccount); err != nil {
 			log.Error(err)
 		} else {
-			pg.destinationAccountSelector.SelectAccount(destinationWallet, destinationAccount)
+			_ = pg.destinationAccountSelector.SelectAccount(destinationWallet, destinationAccount)
 		}
 	}
 
 	if pg.destinationAccountSelector.SelectedAccount() == nil {
 		isConfigUpdateRequired = true
-		pg.destinationAccountSelector.SelectFirstValidAccount(destinationWallet)
+		_ = pg.destinationAccountSelector.SelectFirstValidAccount(destinationWallet)
 	}
 
 	pg.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		_ = pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	if isConfigUpdateRequired {
@@ -1445,7 +1442,7 @@ func (pg *CreateOrderPage) listenForNotifications() {
 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},
-		OnOrderCreated: func(order *instantswap.Order) {
+		OnOrderCreated: func(_ *instantswap.Order) {
 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},

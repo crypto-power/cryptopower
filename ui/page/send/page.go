@@ -188,7 +188,8 @@ func (pg *Page) initModalWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.selectedWallet = selectedWallet
-		go load.GetAPIFeeRate(pg.selectedWallet)
+		// TODO: @JustinDo Why was this go routine necessary.
+		//go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 		pg.setAssetTypeForRecipients()
 		pg.initializeAccountSelectors()
@@ -218,13 +219,27 @@ func (pg *Page) initializeAccountSelectors() {
 				// only mixed accounts can send to address/wallets for wallet with privacy setup
 				// don't need to check account the same with destination account
 				accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
+
+				// For an Intra-Accounts transfer to happen the bare minimum expected is that:
+				// 1. There is only one recipient instance available.
+				// 2. Both (i.e. source and recipient) must use the same wallet.
+				// 3. Source account selected must have a spendable balance
+				// 4. Recipient's "Wallets" tab option must be active/on display.
+				// 5. The destination and source accounts must be different.
+				if len(pg.recipients) == 1 && !pg.recipients[0].isSendToAddress() && account.Balance.Spendable.ToInt() > 0 {
+					if pg.recipients[0].selectedWallet.GetWalletName() == pg.selectedWallet.GetWalletName() {
+						// If it is same wallet, make accounts different from the destination valid.
+						accountIsValid = account != pg.recipients[0].destinationAccount()
+					}
+				}
 			}
+
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
 	// if a source account exists, don't overwrite it.
 	if pg.sourceAccountSelector.SelectedAccount() == nil {
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		_ = pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	}
 }
 
@@ -275,7 +290,8 @@ func (pg *Page) OnNavigatedTo() {
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
-		go load.GetAPIFeeRate(pg.selectedWallet)
+		// TODO: @Wisdom Why was this line necessary?
+		// go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 	}
 }

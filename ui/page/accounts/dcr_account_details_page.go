@@ -137,7 +137,7 @@ func (pg *AcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(gtx 
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, _ int) D {
 					return layout.Inset{
 						Bottom: values.MarginPadding7,
 						Right:  values.MarginPadding2,
@@ -175,7 +175,7 @@ func (pg *AcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gtx C
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, _ int) D {
 					return layout.Inset{
 						Bottom: values.MarginPadding7,
 						Right:  values.MarginPadding2,
@@ -340,14 +340,14 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								icon := pg.Theme.Icons.RevealIcon
+								icon := pg.Theme.Icons.VisibilityOffIcon
 								if pg.isHiddenExtendedxPubkey {
-									icon = pg.Theme.Icons.ConcealIcon
+									icon = pg.Theme.Icons.VisibilityIcon
 								}
 								return layout.Inset{
 									Right: values.MarginPadding9,
 								}.Layout(gtx, func(gtx C) D {
-									return pg.showExtendedKeyButton.Layout(gtx, icon.Layout16dp)
+									return pg.showExtendedKeyButton.Layout(gtx, pg.Theme.NewIcon(icon).Layout20dp)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {

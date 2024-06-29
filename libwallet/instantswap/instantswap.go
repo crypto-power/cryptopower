@@ -89,7 +89,7 @@ func (instantSwap *InstantSwap) saveOrOverwriteOrder(order *Order) error {
 
 	if oldOrder.UUID != "" {
 		// delete old record before saving new (if it exists)
-		instantSwap.db.DeleteStruct(oldOrder)
+		_ = instantSwap.db.DeleteStruct(oldOrder)
 	}
 
 	return instantSwap.db.Save(order)
@@ -240,7 +240,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 		ExtraID: res.ExtraID, // changenow.io requirement //changelly payinExtraId value
 	}
 
-	instantSwap.saveOrder(order)
+	_ = instantSwap.saveOrder(order)
 	instantSwap.publishOrderCreated(order)
 
 	return order, nil

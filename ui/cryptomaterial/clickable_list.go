@@ -93,7 +93,7 @@ func (cl *ClickableList) row(gtx layout.Context, count int, i int, w layout.List
 	// add divider to all rows except last
 	if i < (count-1) && cl.DividerHeight > 0 {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			layout.Rigid(func(_ layout.Context) layout.Dimensions {
 				return row
 			}),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {

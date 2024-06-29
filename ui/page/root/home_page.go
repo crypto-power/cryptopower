@@ -174,7 +174,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	allWallets := hp.AssetsManager.AllWallets()
 	for _, wallet := range allWallets {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			hp.startSyncing(wallet, func(isUnlock bool) {})
+			hp.startSyncing(wallet, func(_ bool) {})
 		}
 	}
 
@@ -242,7 +242,7 @@ func (hp *HomePage) initDEX() {
 				}).
 				SetNegativeButtonText(values.String(values.StrIWillLoginLater)).
 				SetPositiveButtonText(values.String(values.StrLogin)).
-				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					dexPassEditor.SetError("")
 					err := dexClient.Login([]byte(dexPassEditor.Editor.Text()))
 					if err != nil {
@@ -307,7 +307,7 @@ func (hp *HomePage) initDEX() {
 			SetNegativeButtonText(values.String(values.StrIWillSyncLater)).
 			SetNegativeButtonCallback(showDEXLoginModal).
 			SetPositiveButtonText(values.String(values.StrOkaySync)).
-			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				if !hp.isConnected.Load() {
 					hp.Toast.NotifyError(values.String(values.StrNotConnected))
 				} else {
@@ -460,7 +460,7 @@ func (hp *HomePage) HandleUserInteractions(gtx C) {
 													// clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
 													hp.Toast.Notify(values.String(values.StrCopied))
 												}
-												return hp.copyRedirectURL.Layout(gtx, hp.Theme.Icons.CopyIcon.Layout24dp)
+												return hp.copyRedirectURL.Layout(gtx, hp.Theme.NewIcon(hp.Theme.Icons.CopyIcon).Layout24dp)
 											})
 										}),
 									)
@@ -872,12 +872,12 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
-				icon := hp.Theme.Icons.RevealIcon
+				icon := hp.Theme.Icons.VisibilityOffIcon
 				if hp.isBalanceHidden {
-					icon = hp.Theme.Icons.ConcealIcon
+					icon = hp.Theme.Icons.VisibilityIcon
 				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					return hp.hideBalanceButton.Layout(gtx, icon.Layout20dp)
+					return hp.hideBalanceButton.Layout(gtx, hp.Theme.NewIcon(icon).Layout24dp)
 				})
 			}),
 		)

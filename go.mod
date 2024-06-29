@@ -2,8 +2,6 @@ module github.com/crypto-power/cryptopower
 
 go 1.21
 
-toolchain go1.22.4
-
 require (
 	decred.org/dcrdex v0.6.3
 	decred.org/dcrwallet/v3 v3.0.1

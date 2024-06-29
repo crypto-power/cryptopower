@@ -176,10 +176,10 @@ func (pg *Page) isTicketsPurchaseAllowed() bool {
 func (pg *Page) Layout(gtx C) D {
 	// If Tickets Purchase API is not allowed, display the overlay with the message.
 	isSyncingOrRescanning := !pg.dcrWallet.IsSynced() || pg.dcrWallet.IsRescanning()
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	overlay := layout.Stacked(func(_ C) D { return D{} })
 	if !pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
 		gtxCopy := gtx
-		overlay = layout.Stacked(func(gtx C) D {
+		overlay = layout.Stacked(func(_ C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, "", &pg.navToSettingsBtn)
 		})
@@ -189,7 +189,7 @@ func (pg *Page) Layout(gtx C) D {
 
 	mainChild := layout.Expanded(func(gtx C) D {
 		pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.stakePriceSection),
 				layout.Rigid(pg.stakeStatisticsSection),
@@ -243,7 +243,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 				pg.ticketBuyerSettingsModal()
 			}
 		} else {
-			pg.dcrWallet.StopAutoTicketsPurchase()
+			_ = pg.dcrWallet.StopAutoTicketsPurchase()
 		}
 	}
 

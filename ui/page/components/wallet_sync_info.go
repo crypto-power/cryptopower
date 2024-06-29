@@ -592,10 +592,10 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 	}
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		OnTransaction: func(_ int, _ *sharedW.Transaction) {
 			wsi.reload()
 		},
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			wsi.reload()
 		},
 	}
@@ -606,13 +606,13 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 	}
 
 	blocksRescanProgressListener := &sharedW.BlocksRescanProgressListener{
-		OnBlocksRescanStarted: func(walletID int) {
+		OnBlocksRescanStarted: func(_ int) {
 			wsi.rescanUpdate = nil
 		},
 		OnBlocksRescanProgress: func(progress *sharedW.HeadersRescanProgressReport) {
 			wsi.rescanUpdate = progress
 		},
-		OnBlocksRescanEnded: func(walletID int, err error) {
+		OnBlocksRescanEnded: func(_ int, _ error) {
 			wsi.rescanUpdate = nil
 			wsi.reload()
 		},

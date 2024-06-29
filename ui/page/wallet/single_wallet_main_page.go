@@ -154,7 +154,9 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 			if swmp.AssetsManager.Politeia.IsSyncing() {
 				return
 			}
-			go swmp.AssetsManager.Politeia.Sync(context.TODO()) // TODO: Politeia should be given a ctx when initialized.
+			go func() {
+				_ = swmp.AssetsManager.Politeia.Sync(context.TODO()) // TODO: Politeia should be given a ctx when initialized.
+			}()
 		}
 	}
 }
@@ -439,7 +441,7 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 								privacy.SetupPrivacyPageID, accounts.AccountsPageID:
 								// Disable page functionality if a page is not synced or rescanning is in progress.
 								if swmp.selectedWallet.IsSyncing() {
-									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(a sharedW.Asset) {})
+									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(_ sharedW.Asset) {})
 									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 									title := values.String(values.StrFunctionUnavailable)
 									subTitle := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
@@ -559,15 +561,15 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 										return layoutPosition.Layout(gtx, func(gtx C) D {
 											return layout.Flex{}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
-													icon := swmp.Theme.Icons.RevealIcon
+													icon := swmp.Theme.Icons.VisibilityOffIcon
 													if swmp.isBalanceHidden {
-														icon = swmp.Theme.Icons.ConcealIcon
+														icon = swmp.Theme.Icons.VisibilityIcon
 													}
 													return layout.Inset{
 														Top:   values.MarginPadding5,
 														Right: values.MarginPadding9,
 													}.Layout(gtx, func(gtx C) D {
-														return swmp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
+														return swmp.hideBalanceButton.Layout(gtx, swmp.Theme.NewIcon(icon).Layout20dp)
 													})
 												}),
 												layout.Rigid(swmp.totalAssetBalance),
@@ -614,9 +616,7 @@ func (swmp *SingleWalletMasterPage) LayoutUSDBalance(gtx C) D {
 			Top:  values.MarginPadding7,
 			Left: values.MarginPadding5,
 		}.Layout(gtx, func(gtx C) D {
-			return swmp.refreshExchangeRateBtn.Layout(gtx, func(gtx C) D {
-				return swmp.Theme.Icons.Restore.Layout16dp(gtx)
-			})
+			return swmp.refreshExchangeRateBtn.Layout(gtx, swmp.Theme.NewIcon(swmp.Theme.Icons.NavigationRefresh).Layout16dp)
 		})
 	case len(swmp.totalBalanceUSD) > 0:
 		textSize := values.TextSize20
@@ -702,7 +702,7 @@ func initializeBeepNotification(n string) {
 	}
 
 	err = beeep.Notify(values.String(values.StrAppWallet), n,
-		filepath.Join(absoluteWdPath, "ui/assets/decredicons/qrcodeSymbol.png"))
+		filepath.Join(absoluteWdPath, "ui/assets/decredicons/ic_dcr_qr.png"))
 	if err != nil {
 		log.Info("could not initiate desktop notification, reason:", err.Error())
 	}
@@ -724,7 +724,7 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 	}
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		OnTransaction: func(_ int, transaction *sharedW.Transaction) {
 			swmp.updateBalance()
 			if swmp.AssetsManager.IsTransactionNotificationsOn() {
 				// TODO: SPV wallets only receive mempool tx ntfn for txs that
@@ -738,7 +738,7 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 		// OnBlockAttached is also called whenever OnTransactionConfirmed is
 		// called, so use OnBlockAttached. Also, OnTransactionConfirmed may be
 		// called multiple times whereas OnBlockAttached is only called once.
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			beep := swmp.selectedWallet.ReadBoolConfigValueForKey(sharedW.BeepNewBlocksConfigKey, false)
 			if beep {
 				err := beeep.Beep(5, 1)
@@ -793,8 +793,8 @@ func (swmp *SingleWalletMasterPage) showBackupInfo() {
 		}).
 		PositiveButtonStyle(swmp.Load.Theme.Color.Primary, swmp.Load.Theme.Color.InvText).
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
-		SetPositiveButtonCallback(func(_ bool, m *modal.InfoModal) bool {
-			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(load *load.Load, navigator app.WindowNavigator) {
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(_ *load.Load, _ app.WindowNavigator) {
 				swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
 				swmp.ParentNavigator().ClosePagesAfter(MainPageID)
 			}))

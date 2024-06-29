@@ -374,10 +374,10 @@ func (pg *WalletSelectorPage) dropdownTitleLayout(gtx C, asset libutils.AssetTyp
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 							if pg.assetCollapsibles[asset].IsExpanded() {
-								return pg.Theme.Icons.ChevronCollapse.Layout16dp(gtx)
+								return pg.Theme.NewIcon(pg.Theme.Icons.ChevronUp).Layout16dp(gtx)
 							}
 
-							return pg.Theme.Icons.ChevronExpand.Layout16dp(gtx)
+							return pg.Theme.NewIcon(pg.Theme.Icons.ChevronDown).Layout16dp(gtx)
 						})
 					}),
 				)

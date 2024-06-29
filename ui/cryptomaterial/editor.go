@@ -293,7 +293,7 @@ func (e *Editor) layout(gtx C) D {
 		e.LineColor, e.TitleLabel.Color = e.t.Color.Danger, e.t.Color.Danger
 	}
 
-	overLay := func(gtx C) D { return D{} }
+	overLay := func(_ C) D { return D{} }
 	if e.Editor.ReadOnly {
 		overLay = func(gtx C) D {
 			gtxCopy := gtx

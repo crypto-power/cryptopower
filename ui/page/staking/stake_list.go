@@ -17,10 +17,10 @@ func (pg *Page) initTicketList() {
 
 func (pg *Page) listenForTxNotifications() {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		OnTransaction: func(_ int, _ *sharedW.Transaction) {
 			pg.ParentWindow().Reload()
 		},
-		OnBlockAttached: func(walletID int, blockHeight int32) {
+		OnBlockAttached: func(_ int, _ int32) {
 			pg.ParentWindow().Reload()
 		},
 	}
@@ -56,7 +56,7 @@ func (pg *Page) ticketListLayout(gtx C) D {
 	margin24 := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding24)
 	textSize16 := values.TextSizeTransform(isMobile, values.TextSize16)
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.scroll.List().Layout(gtx, 1, func(gtx C, _ int) D {
 			gtx.Constraints.Max.Y = ticketHeight
 			return layout.Inset{
 				Bottom: values.MarginPadding8,

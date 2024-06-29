@@ -49,8 +49,9 @@ type Theme struct {
 	dropDownMenus    []*DropDown
 	DropdownBackdrop *widget.Clickable
 
-	allEditors  []*Editor
-	backButtons []*widget.Clickable
+	allEditors   []*Editor
+	backButtons  []*widget.Clickable
+	isDarkModeOn bool
 }
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
@@ -62,6 +63,7 @@ func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image
 		Styles:           values.DefaultWidgetStyles(),
 		TextSize:         values.TextSize16,
 		DropdownBackdrop: new(widget.Clickable),
+		isDarkModeOn:     isDarkModeOn,
 	}
 	t.SwitchDarkMode(isDarkModeOn, decredIcons)
 	t.checkBoxCheckedIcon = MustIcon(widget.NewIcon(icons.ToggleCheckBox))
@@ -80,13 +82,14 @@ func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image
 func (t *Theme) SwitchDarkMode(isDarkModeOn bool, decredIcons map[string]image.Image) {
 	t.Color = t.Color.DefaultThemeColors()
 	t.Icons.DefaultIcons()
-	expandIcon := "expand_icon"
+	t.isDarkModeOn = isDarkModeOn
+	expandIcon := "ic_expand"
 	collapseIcon := "collapse_icon"
 	if isDarkModeOn {
 		t.Icons.DarkModeIcons()
 		t.Color.DarkThemeColors() // override defaults with dark themed colors
-		expandIcon = "expand_dm"
-		collapseIcon = "collapse_dm"
+		expandIcon = "dm_expand"
+		collapseIcon = "dm_collapse"
 	}
 
 	t.expandIcon = NewImage(decredIcons[expandIcon])

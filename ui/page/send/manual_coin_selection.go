@@ -427,9 +427,7 @@ func (pg *ManualCoinSelectionPage) topSection(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
 						Right: values.MarginPadding6,
-					}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Icons.ChevronLeft.Layout24dp(gtx)
-					})
+					}.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ChevronLeft).Layout24dp)
 				}),
 				layout.Rigid(func(gtx C) D {
 					lbl := pg.Theme.H6(values.String(values.StrCoinSelection))
@@ -640,10 +638,10 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 
 									if count%2 == 0 { // add ascending icon
 										inset.Bottom = m
-										return inset.Layout(gtx, pg.Theme.Icons.CaretUp.Layout12dp)
+										return inset.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ArrowDropUp).Layout12dp)
 									} // else add descending icon
 									inset.Top = m
-									return inset.Layout(gtx, pg.Theme.Icons.CaretDown.Layout12dp)
+									return inset.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ArrowDropDown).Layout12dp)
 								}
 								return D{}
 							}),
@@ -655,7 +653,7 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 			}
 		default:
 			// create an empty default placeholder for unsupported widgets.
-			widget = func(gtx C) D { return D{} }
+			widget = func(_ C) D { return D{} }
 		}
 		return widget
 	}

@@ -176,7 +176,7 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 		SetCancelable(true).
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		SetPositiveButtonText(values.String(values.StrSave)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
 			im.Dismiss()
 			voteModal := newAgendaVoteModal(pg.Load, pg.selectedDCRWallet, agenda, radiogroupbtns.Value, func() {
 				pg.FetchAgendas() // re-fetch agendas when modal is dismissed
@@ -252,7 +252,7 @@ func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(host))})
 													pg.Toast.Notify(values.String(values.StrCopied))
 												}
-												return pg.copyRedirectURL.Layout(gtx, pg.Theme.Icons.CopyIcon.Layout24dp)
+												return pg.copyRedirectURL.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon).Layout24dp)
 											})
 										}),
 									)
@@ -323,10 +323,10 @@ func (pg *ConsensusPage) FetchAgendas() {
 
 func (pg *ConsensusPage) Layout(gtx C) D {
 	// If Agendas API is not allowed, display the overlay with the message.
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	overlay := layout.Stacked(func(_ C) D { return D{} })
 	if !pg.isAgendaAPIAllowed() {
 		gtxCopy := gtx
-		overlay = layout.Stacked(func(gtx C) D {
+		overlay = layout.Stacked(func(_ C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, "", &pg.navigateToSettingsBtn)
 		})
@@ -497,7 +497,7 @@ func (pg *ConsensusPage) layoutContent(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			list := layout.List{Axis: layout.Vertical}
-			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return list.Layout(gtx, len(pg.consensusItems), func(gtx C, i int) D {
 						return cryptomaterial.LinearLayout{

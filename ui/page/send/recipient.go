@@ -100,17 +100,17 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 		return rp.isAccountValid(sourceAccount, account)
 	})
 
-	rp.sendDestination.destinationAccountSelector.AccountSelected(func(selectedWallet *sharedW.Account) {
+	rp.sendDestination.destinationAccountSelector.AccountSelected(func(_ *sharedW.Account) {
 		rp.sendDestination.addressChanged()
 	})
 
 	rp.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		_ = rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	// destinationAccountSelector does not have a default value,
 	// so assign it an initial value here
-	rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.sendDestination.destinationWalletSelector.SelectedWallet())
+	_ = rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.sendDestination.destinationWalletSelector.SelectedWallet())
 }
 
 func (rp *recipient) isShowSendToWallet() bool {
@@ -148,7 +148,7 @@ func (rp *recipient) isShowSendToWallet() bool {
 }
 
 func (rp *recipient) isSendToAddress() bool {
-	return rp.sendDestination.sendToAddress
+	return rp.sendDestination.isSendToAddress()
 }
 
 func (rp *recipient) isValidated() bool {
@@ -233,7 +233,7 @@ func (rp *recipient) recipientLayout(gtx C, index int, showIcon bool, window app
 					return layoutBody(gtx)
 				}
 
-				if !rp.sendDestination.sendToAddress {
+				if !rp.isSendToAddress() {
 					layoutBody = rp.walletAccountlayout(window)
 				}
 
@@ -254,7 +254,7 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 		layout.Rigid(titleTxt.Layout),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-				return rp.deleteBtn.Layout(gtx, rp.Theme.Icons.DeleteIcon.Layout20dp)
+				return rp.deleteBtn.Layout(gtx, rp.Theme.NewIcon(rp.Theme.Icons.ChevronLeft).Layout20dp)
 			})
 		}),
 	)
@@ -389,7 +389,7 @@ func (rp *recipient) handle(gtx C) {
 	}
 
 	// if destination switch is equal to Address
-	if rp.sendDestination.sendToAddress {
+	if rp.isSendToAddress() {
 		if rp.sendDestination.validate() {
 			if !rp.AssetsManager.ExchangeRateFetchingEnabled() {
 				if len(rp.amount.amountEditor.Editor.Text()) == 0 {

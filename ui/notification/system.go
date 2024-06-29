@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	icon = "ui/assets/decredicons/qrcodeSymbol.png"
+	icon = "ui/assets/decredicons/ic_dcr_qr.png"
 )
 
 var title = values.String(values.StrAppName)

@@ -73,7 +73,7 @@ func prepareDexSupportForDCRWallet() {
 	// This function will be invoked when the DEX client needs to
 	// setup a dcr ExchangeWallet; it allows us to use an existing
 	// wallet instance for wallet operations instead of json-rpc.
-	var walletMaker = func(settings map[string]string, chainParams *dcrcfg.Params, logger dex.Logger) (dexDcr.Wallet, error) {
+	var walletMaker = func(settings map[string]string, chainParams *dcrcfg.Params, _ dex.Logger) (dexDcr.Wallet, error) {
 		walletIDStr := settings[dexc.WalletIDConfigKey]
 		walletID, err := strconv.Atoi(walletIDStr)
 		if err != nil || walletID < 0 {

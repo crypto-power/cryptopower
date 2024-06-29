@@ -269,7 +269,7 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(host))})
 													lp.Toast.Notify(values.String(values.StrCopied))
 												}
-												return lp.copyRedirectURL.Layout(gtx, lp.Theme.Icons.CopyIcon.Layout24dp)
+												return lp.copyRedirectURL.Layout(gtx, lp.Theme.NewIcon(lp.Theme.Icons.CopyIcon).Layout24dp)
 											})
 										}),
 									)

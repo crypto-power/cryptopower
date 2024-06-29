@@ -133,7 +133,7 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 }
 
 func (pg *ProposalsPage) syncAndUpdateProposals() {
-	go pg.AssetsManager.Politeia.Sync(context.Background())
+	go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
 	// Only proceed if allowed make Proposals API call.
 	pg.listenForSyncNotifications()
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
@@ -221,7 +221,7 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 	}
 
 	for pg.syncButton.Clicked(gtx) {
-		go pg.AssetsManager.Politeia.Sync(context.Background())
+		go func() { pg.AssetsManager.Politeia.Sync(context.Background()) }()
 		pg.isSyncing = true
 
 		// TODO: check after 1min if sync does not start, set isSyncing to false and cancel sync
@@ -404,7 +404,7 @@ func (pg *ProposalsPage) rightDropdown(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutContent(gtx C) D {
-	return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+	return pg.scroll.List().Layout(gtx, 1, func(gtx C, _ int) D {
 		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 			if pg.scroll.ItemsCount() <= 0 {
 				isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
@@ -472,7 +472,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 }
 
 func (pg *ProposalsPage) listenForSyncNotifications() {
-	proposalSyncCallback := func(propName string, status libutils.ProposalStatus) {
+	proposalSyncCallback := func(_ string, status libutils.ProposalStatus) {
 		if status == libutils.ProposalStatusSynced {
 			pg.syncCompleted = true
 			pg.isSyncing = false

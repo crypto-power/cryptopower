@@ -151,7 +151,7 @@ func (pg *StatPage) layoutStats(gtx C) D {
 		item(values.String(values.StrAccount)+"s", fmt.Sprintf("%d", len(pg.accounts.Accounts))),
 	}
 
-	return pg.Theme.List(pg.scrollbarList).Layout(gtx, 1, func(gtx C, i int) D {
+	return pg.Theme.List(pg.scrollbarList).Layout(gtx, 1, func(gtx C, _ int) D {
 		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 			return card.Layout(gtx, func(gtx C) D {
 				return layout.Inset{Left: values.MarginPadding16}.Layout(gtx, func(gtx C) D {

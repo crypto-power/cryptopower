@@ -41,7 +41,6 @@ type OrderHistoryPage struct {
 	selectedServer  *instantswap.ExchangeServer
 
 	refreshClickable *cryptomaterial.Clickable
-	refreshIcon      *cryptomaterial.Image
 	statusDropdown   *cryptomaterial.DropDown
 	orderDropdown    *cryptomaterial.DropDown
 	serverDropdown   *cryptomaterial.DropDown
@@ -54,7 +53,6 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OrderHistoryPageID),
 		refreshClickable: l.Theme.NewClickable(true),
-		refreshIcon:      l.Theme.Icons.Restore,
 	}
 
 	pg.backButton = components.GetBackButton(l)
@@ -302,8 +300,8 @@ func (pg *OrderHistoryPage) layoutSectionHeader(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 								}
-								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-									return pg.refreshIcon.LayoutSize(gtx, values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding18))
+								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+									return pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).LayoutTransform(gtx, pg.IsMobileView(), values.MarginPadding18)
 								})
 							}),
 						)
@@ -426,7 +424,7 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 	orderItems := pg.scroll.FetchedData()
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.scroll.List().Layout(gtx, 1, func(gtx C, _ int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.ordersList.Layout(gtx, len(orderItems), func(gtx C, i int) D {
 						return cryptomaterial.LinearLayout{
