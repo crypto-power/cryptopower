@@ -311,6 +311,57 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 	pg.stopNtfnListeners()
 }
 
+func (pg *CreateOrderPage) handleEditorEvents(gtx C) {
+	for {
+		event, ok := pg.fromAmountEditor.Edit.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(pg.fromAmountEditor.Edit.Editor) {
+			switch event.(type) {
+			case widget.ChangeEvent:
+				pg.setToAmount(pg.fromAmountEditor.Edit.Editor.Text())
+			}
+		}
+	}
+
+	for {
+		event, ok := pg.toAmountEditor.Edit.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(pg.toAmountEditor.Edit.Editor) {
+			switch event.(type) {
+			case widget.ChangeEvent:
+				if pg.inputsNotEmpty(pg.toAmountEditor.Edit.Editor) {
+					f, err := strconv.ParseFloat(pg.toAmountEditor.Edit.Editor.Text(), 32)
+					if err != nil {
+						// empty usd input
+						pg.fromAmountEditor.Edit.Editor.SetText("")
+						pg.amountErrorText = values.String(values.StrInvalidAmount)
+						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+						return
+					}
+					pg.amountErrorText = ""
+					if pg.exchangeRate != -1 {
+						value := f * pg.exchangeRate
+						v := strconv.FormatFloat(value, 'f', 8, 64)
+						pg.amountErrorText = ""
+						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+						pg.fromAmountEditor.Edit.Editor.SetText(v)
+					}
+				} else {
+					pg.fromAmountEditor.Edit.Editor.SetText("")
+				}
+			}
+		}
+	}
+}
+
 func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
@@ -380,94 +431,6 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 		pg.isFirstVisit = false
 		pg.AssetsManager.SaveAppConfigValue(sharedW.IsCEXFirstVisitConfigKey, pg.isFirstVisit)
 	}
-
-	for {
-		event, ok := pg.fromAmountEditor.Edit.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(pg.fromAmountEditor.Edit.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				pg.setToAmount(pg.fromAmountEditor.Edit.Editor.Text())
-			}
-		}
-	}
-
-	// for _, evt := range pg.fromAmountEditor.Edit.Editor.Events() {
-	// 	if pg.fromAmountEditor.Edit.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			pg.setToAmount(pg.fromAmountEditor.Edit.Editor.Text())
-	// 		}
-	// 	}
-	// }
-
-	for {
-		event, ok := pg.toAmountEditor.Edit.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(pg.toAmountEditor.Edit.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				if pg.inputsNotEmpty(pg.toAmountEditor.Edit.Editor) {
-					f, err := strconv.ParseFloat(pg.toAmountEditor.Edit.Editor.Text(), 32)
-					if err != nil {
-						// empty usd input
-						pg.fromAmountEditor.Edit.Editor.SetText("")
-						pg.amountErrorText = values.String(values.StrInvalidAmount)
-						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-						return
-					}
-					pg.amountErrorText = ""
-					if pg.exchangeRate != -1 {
-						value := f * pg.exchangeRate
-						v := strconv.FormatFloat(value, 'f', 8, 64)
-						pg.amountErrorText = ""
-						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.fromAmountEditor.Edit.Editor.SetText(v)
-					}
-				} else {
-					pg.fromAmountEditor.Edit.Editor.SetText("")
-				}
-			}
-		}
-	}
-
-	// for _, evt := range pg.toAmountEditor.Edit.Editor.Events() {
-	// 	if pg.toAmountEditor.Edit.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			if pg.inputsNotEmpty(pg.toAmountEditor.Edit.Editor) {
-	// 				f, err := strconv.ParseFloat(pg.toAmountEditor.Edit.Editor.Text(), 32)
-	// 				if err != nil {
-	// 					// empty usd input
-	// 					pg.fromAmountEditor.Edit.Editor.SetText("")
-	// 					pg.amountErrorText = values.String(values.StrInvalidAmount)
-	// 					pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-	// 					pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-	// 					return
-	// 				}
-	// 				pg.amountErrorText = ""
-	// 				if pg.exchangeRate != -1 {
-	// 					value := f * pg.exchangeRate
-	// 					v := strconv.FormatFloat(value, 'f', 8, 64)
-	// 					pg.amountErrorText = ""
-	// 					pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-	// 					pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-	// 					pg.fromAmountEditor.Edit.Editor.SetText(v)
-	// 				}
-	// 			} else {
-	// 				pg.fromAmountEditor.Edit.Editor.SetText("")
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	if pg.refreshClickable.Clicked(gtx) {
 		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
@@ -749,6 +712,7 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	if pg.isFirstVisit {
 		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return pg.splashPage(gtx)

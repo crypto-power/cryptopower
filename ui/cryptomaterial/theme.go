@@ -268,21 +268,11 @@ func approxLuminance(c color.NRGBA) byte {
 	return byte((r*int(c.R) + g*int(c.G) + b*int(c.B)) / t)
 }
 
-func HandleEditorEvents(gtx C, editors ...*widget.Editor) (bool, bool) {
+func HandleEditorEvents(gtx C, editors ...*Editor) (bool, bool) {
 	var submit, changed bool
 	for _, editor := range editors {
-		for {
-			evt, ok := editor.Update(gtx)
-			if !ok {
-				break
-			}
-			switch evt.(type) {
-			case widget.ChangeEvent:
-				changed = true
-			case widget.SubmitEvent:
-				submit = true
-			}
-		}
+		submit = submit || editor.Submitted()
+		changed = changed || editor.Changed()
 	}
 	return submit, changed
 }
@@ -345,7 +335,6 @@ func (t *Theme) WatchOnlyAssetIcon(asset utils.AssetType) *Image {
 func (t *Theme) AutoHideSoftKeyBoardAndMenuButton(gtx C) {
 	isHide := true
 	for _, e := range t.allEditors {
-		e.isShowMenu = false
 		isHide = isHide && !e.Pressed(gtx)
 	}
 	if isHide {

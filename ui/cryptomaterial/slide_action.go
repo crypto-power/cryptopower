@@ -66,10 +66,7 @@ func (s *SlideAction) Draged(drag Dragged) {
 }
 
 func (s *SlideAction) DragLayout(gtx C, w layout.Widget) D {
-	// gtx.Source == nil
-	// if gtx.Source != nil {
 	for {
-		// for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
 		event, ok := s.drag.Update(gtx.Metric, gtx.Source, gesture.Horizontal)
 		if !ok {
 			break
@@ -98,7 +95,6 @@ func (s *SlideAction) DragLayout(gtx C, w layout.Widget) D {
 			s.isPushing = false
 		}
 	}
-	// }
 	var dims layout.Dimensions
 	var call op.CallOp
 	{

@@ -665,14 +665,6 @@ func (pg *TransactionsPage) HandleUserInteractions(gtx C) {
 			}
 		}
 	}
-	// for _, evt := range pg.searchEditor.Editor.Events() {
-	// 	if pg.searchEditor.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
-	// 		}
-	// 	}
-	// }
 }
 
 func exportTxs(assets []sharedW.Asset, fileName string) error {

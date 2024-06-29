@@ -356,7 +356,6 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 									lbl.Color = pg.Theme.Color.GrayText1
 									if !pg.isHiddenExtendedxPubkey {
 										if pg.extendedKeyClickable.Clicked(gtx) {
-											// clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
 											gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.extendedKey))})
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}

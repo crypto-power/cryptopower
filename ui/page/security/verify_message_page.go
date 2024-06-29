@@ -159,7 +159,7 @@ func (pg *VerifyMessagePage) verifyAndClearButtons() layout.Widget {
 }
 
 func (pg *VerifyMessagePage) handleEditorEvents(gtx C) {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor, pg.messageEditor, pg.signatureEditor)
 	if isChanged {
 		if gtx.Source.Focused(pg.addressEditor.Editor) {
 			pg.validateAddress()

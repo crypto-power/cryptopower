@@ -162,7 +162,7 @@ func (pg *ValidateAddressPage) pageSections(gtx C, body layout.Widget) D {
 }
 
 func (pg *ValidateAddressPage) handleEditorEvents(gtx C) {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor)
 	if isChanged {
 		pg.stateValidate = none
 	}

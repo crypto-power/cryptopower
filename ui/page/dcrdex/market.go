@@ -551,6 +551,7 @@ func (pg *DEXMarketPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	if pg.isDEXReset() {
 		pg.ParentNavigator().CloseCurrentPage()
 		return D{}
@@ -1412,45 +1413,12 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 	return values.String(values.StrIWillGet), values.String(values.StrIWillGive)
 }
 
-// HandleUserInteractions is called just before Layout() to determine if any
-// user interaction recently occurred on the page and may be used to update the
-// page's UI components shortly before they are displayed.
-// Part of the load.Page interface.
-func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
-	if pg.isDEXReset() {
-		return
-	}
+func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 
-	dexc := pg.AssetsManager.DexClient()
-	if pg.serverSelector.Changed(gtx) {
-		selectedServer := pg.serverSelector.Selected()
-		xc, err := dexc.Exchange(selectedServer)
-		if err != nil && xc.Auth.EffectiveTier == 0 /* need to post bond now */ {
-			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer))
-		} else {
-			pg.lastSelectedDEXServer = selectedServer
-			pg.setServerMarkets()
-		}
-	}
-
-	for pg.addServerBtn.Clicked(gtx) {
-		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
-	}
-
-	for pg.openOrdersBtn.Clicked(gtx) {
-		pg.orders = nil // clear orders
-		pg.openOrdersDisplayed = true
-		go pg.refreshOrders()
-	}
-
-	if pg.marketSelector.Changed(gtx) {
-		pg.fetchOrderBook()
-	}
-
-	for pg.orderHistoryBtn.Clicked(gtx) {
-		pg.orders = nil // clear orders
-		pg.openOrdersDisplayed = false
-		go pg.refreshOrders()
+	var toggleBuyAndSellBtnChanged bool
+	if pg.toggleBuyAndSellBtn.Changed() {
+		toggleBuyAndSellBtnChanged = true
+		pg.setBuyOrSell()
 	}
 
 	isMktOrder := pg.isMarketOrder()
@@ -1465,29 +1433,6 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		} else {
 			pg.priceEditor.Editor.SetText("")
 		}
-	}
-
-	var toggleBuyAndSellBtnChanged bool
-	if pg.toggleBuyAndSellBtn.Changed() {
-		toggleBuyAndSellBtnChanged = true
-		pg.setBuyOrSell()
-	}
-
-	for pg.seeFullOrderBookBtn.Clicked(gtx) {
-		// TODO: display full order book
-		log.Info("Display full order book")
-	}
-
-	for pg.immediateOrderInfoBtn.Clicked(gtx) {
-		infoModal := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrImmediateOrder)).
-			UseCustomWidget(func(gtx layout.Context) layout.Dimensions {
-				return pg.Theme.Body2(values.String(values.StrImmediateExplanation)).Layout(gtx)
-			}).
-			SetCancelable(true).
-			SetContentAlignment(layout.W, layout.W, layout.Center).
-			SetPositiveButtonText(values.String(values.StrOk))
-		pg.ParentWindow().ShowModal(infoModal)
 	}
 
 	var reEstimateFee bool
@@ -1598,35 +1543,6 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 			pg.totalEditor.Editor.SetText(trimmedAmtString(amt * price))
 		}
 	}
-	// for _, evt := range pg.lotsOrAmountEditor.Editor.Events() {
-	// 	if !isChangeEvent(evt) || pg.lotsOrAmountEditor.Editor.ReadOnly {
-	// 		continue
-	// 	}
-
-	// 	pg.lotsOrAmountEditor.SetError("")
-	// 	lotsOrAmtStr := pg.lotsOrAmountEditor.Editor.Text()
-	// 	if lotsOrAmtStr == "" {
-	// 		continue
-	// 	}
-
-	// 	price := pg.orderPrice(mkt)
-	// 	if pg.orderWithLots() {
-	// 		if lots, err := strconv.Atoi(lotsOrAmtStr); err != nil || lots <= 0 {
-	// 			pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidLot))
-	// 		} else if price > 0 {
-	// 			reEstimateFee = true
-	// 			total := msgRate(price) * mkt.LotSize * uint64(lots)
-	// 			pg.totalEditor.Editor.SetText(trimmedConventionalAmtString(total))
-	// 		}
-	// 	}
-
-	// 	if amt, err := strconv.ParseFloat(lotsOrAmtStr, 64); err != nil || amt <= 0 {
-	// 		pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidAmount))
-	// 	} else if price > 0 {
-	// 		reEstimateFee = true
-	// 		pg.totalEditor.Editor.SetText(trimmedAmtString(amt * price))
-	// 	}
-	// }
 
 	if (reEstimateFee || toggleBuyAndSellBtnChanged) && !pg.showLoader {
 		pg.showLoader = true
@@ -1644,6 +1560,65 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		} else {
 			pg.lotsOrAmountEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
 		}
+	}
+}
+
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
+// Part of the load.Page interface.
+func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
+	if pg.isDEXReset() {
+		return
+	}
+
+	dexc := pg.AssetsManager.DexClient()
+	if pg.serverSelector.Changed(gtx) {
+		selectedServer := pg.serverSelector.Selected()
+		xc, err := dexc.Exchange(selectedServer)
+		if err != nil && xc.Auth.EffectiveTier == 0 /* need to post bond now */ {
+			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer))
+		} else {
+			pg.lastSelectedDEXServer = selectedServer
+			pg.setServerMarkets()
+		}
+	}
+
+	for pg.addServerBtn.Clicked(gtx) {
+		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
+	}
+
+	for pg.openOrdersBtn.Clicked(gtx) {
+		pg.orders = nil // clear orders
+		pg.openOrdersDisplayed = true
+		go pg.refreshOrders()
+	}
+
+	if pg.marketSelector.Changed(gtx) {
+		pg.fetchOrderBook()
+	}
+
+	for pg.orderHistoryBtn.Clicked(gtx) {
+		pg.orders = nil // clear orders
+		pg.openOrdersDisplayed = false
+		go pg.refreshOrders()
+	}
+
+	for pg.seeFullOrderBookBtn.Clicked(gtx) {
+		// TODO: display full order book
+		log.Info("Display full order book")
+	}
+
+	for pg.immediateOrderInfoBtn.Clicked(gtx) {
+		infoModal := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrImmediateOrder)).
+			UseCustomWidget(func(gtx layout.Context) layout.Dimensions {
+				return pg.Theme.Body2(values.String(values.StrImmediateExplanation)).Layout(gtx)
+			}).
+			SetCancelable(true).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			SetPositiveButtonText(values.String(values.StrOk))
+		pg.ParentWindow().ShowModal(infoModal)
 	}
 
 	// TODO: postBondBtn should open a separate page when its design is ready.

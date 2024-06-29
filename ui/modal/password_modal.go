@@ -119,7 +119,7 @@ func (pm *PasswordModal) SetError(err string) {
 }
 
 func (pm *PasswordModal) Handle(gtx C) {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pm.password.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &pm.password)
 	if isChanged {
 		pm.password.SetError("")
 	}

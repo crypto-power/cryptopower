@@ -211,7 +211,7 @@ func (cm *CreatePasswordModal) SetParent(parent app.Page) *CreatePasswordModal {
 func (cm *CreatePasswordModal) Handle(gtx C) {
 	cm.btnPositive.SetEnabled(cm.validToCreate())
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor, cm.walletName.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &cm.passwordEditor, &cm.confirmPasswordEditor, &cm.walletName)
 	if isChanged {
 		// reset all modal errors when any editor is modified
 		cm.serverError = ""

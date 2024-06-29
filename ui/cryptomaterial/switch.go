@@ -20,8 +20,6 @@ import (
 type Switch struct {
 	style    *values.SwitchStyle
 	disabled bool
-	value    bool
-	changed  bool
 	clk      *widget.Bool
 }
 

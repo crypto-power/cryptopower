@@ -424,7 +424,7 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 }
 
 func (pg *CreateWallet) handleEditorEvents(gtx C) {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.watchOnlyWalletHex.Editor, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &pg.watchOnlyWalletHex, &pg.passwordEditor, &pg.confirmPasswordEditor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.walletName.SetError("")

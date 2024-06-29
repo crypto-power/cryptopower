@@ -110,7 +110,7 @@ func (tm *TextInputModal) Handle(gtx C) {
 	// set the positive button state
 	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, tm.textInput.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &tm.textInput)
 	if isChanged {
 		tm.textInput.SetError("")
 	}

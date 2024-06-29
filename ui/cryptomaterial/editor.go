@@ -83,6 +83,10 @@ type Editor struct {
 	isSpaceError bool
 
 	isFirstFocus bool
+
+	submitted bool
+	changed   bool
+	selected  bool
 }
 
 func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
@@ -203,6 +207,24 @@ func (e *Editor) Focus() {
 	e.isFirstFocus = true
 }
 
+func (e *Editor) Changed() bool {
+	changed := e.changed
+	e.changed = false
+	return changed
+}
+
+func (e *Editor) Submitted() bool {
+	submitted := e.submitted
+	e.submitted = false
+	return submitted
+}
+
+func (e *Editor) Selected() bool {
+	selected := e.selected
+	e.selected = false
+	return selected
+}
+
 func (e *Editor) Layout(gtx C) D {
 	if e.isFirstFocus {
 		e.isFirstFocus = false
@@ -227,6 +249,21 @@ func (e *Editor) update(gtx C) {
 			e.isShowMenu = true
 		default:
 			e.isShowMenu = false
+		}
+	}
+	for {
+		ev, ok := e.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		switch ev.(type) {
+		case widget.ChangeEvent:
+			e.changed = true
+		case widget.SubmitEvent:
+			e.submitted = true
+		case widget.SelectEvent:
+			e.selected = true
 		}
 	}
 }

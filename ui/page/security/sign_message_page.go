@@ -259,7 +259,7 @@ func (pg *SignMessagePage) updateButtonColors() {
 }
 
 func (pg *SignMessagePage) handleEditorEvents(gtx C) {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor.Editor, pg.messageEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor, pg.messageEditor)
 	if isChanged {
 		if gtx.Source.Focused(pg.addressEditor.Editor) {
 			pg.validateAddress()

@@ -109,7 +109,7 @@ func (cm *CreateWatchOnlyModal) Handle(gtx C) {
 		cm.isEnabled = false
 	}
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, cm.walletName.Editor, cm.extendedPubKey.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &cm.walletName, &cm.extendedPubKey)
 	if isChanged {
 		// reset editor errors
 		cm.serverError = ""

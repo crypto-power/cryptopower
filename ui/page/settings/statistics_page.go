@@ -190,7 +190,6 @@ func (pg *StatPage) layoutDesktop(gtx C) D {
 
 	// Refresh frames every 1 second
 	gtx.Execute(op.InvalidateCmd{At: time.Now().Add(time.Second * 1)})
-	// op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
 	return container(gtx)
 }
 
@@ -210,7 +209,6 @@ func (pg *StatPage) layoutMobile(gtx C) D {
 
 	// Refresh frames every 1 second
 	gtx.Execute(op.InvalidateCmd{At: time.Now().Add(time.Second * 1)})
-	// op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
 	return components.UniformMobile(gtx, false, true, container)
 }
 

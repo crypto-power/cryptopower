@@ -35,9 +35,9 @@ type Slider struct {
 	SelectedIndicatorColor   color.NRGBA // this is a full color no opacity
 	slideAction              *SlideAction
 	clicker                  gesture.Click
-	// clicked                  bool
-	disableButtonDirection bool
-	ControlInset           layout.Inset
+	clicked                  bool
+	disableButtonDirection   bool
+	ControlInset             layout.Inset
 }
 
 var m4 = values.MarginPadding4
@@ -105,7 +105,7 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 	}
 
 	s.handleClickEvent(gtx)
-	var dims layout.Dimensions
+	var dims D
 	var call op.CallOp
 	{
 		m := op.Record(gtx.Ops)
@@ -208,6 +208,12 @@ func (s *Slider) RefreshItems() {
 	s.isSliderItemsSet = false
 }
 
+func (s *Slider) Clicked() bool {
+	clicked := s.clicked
+	s.clicked = false
+	return clicked
+}
+
 func (s *Slider) handleClickEvent(gtx C) {
 	if s.nextButton.Clicked(gtx) {
 		s.handleActionEvent(true)
@@ -215,6 +221,18 @@ func (s *Slider) handleClickEvent(gtx C) {
 
 	if s.prevButton.Clicked(gtx) {
 		s.handleActionEvent(false)
+	}
+
+	for {
+		e, ok := s.clicker.Update(gtx.Source)
+		if !ok {
+			break
+		}
+		if e.Kind == gesture.KindClick {
+			if !s.clicked {
+				s.clicked = true
+			}
+		}
 	}
 
 	for i, item := range s.slideItems {

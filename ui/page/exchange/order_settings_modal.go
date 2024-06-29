@@ -205,7 +205,6 @@ func (osm *orderSettingsModal) Handle(gtx C) {
 
 func (osm *orderSettingsModal) handleCopyEvent(gtx C) {
 	osm.addressEditor.EditorIconButtonEvent = func() {
-		// clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(gtx.Ops)
 		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(osm.addressEditor.Editor.Text()))})
 		osm.Toast.Notify(values.String(values.StrCopied))
 	}

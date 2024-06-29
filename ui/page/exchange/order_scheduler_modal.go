@@ -199,30 +199,6 @@ func (osm *orderSchedulerModal) Handle(gtx C) {
 			}
 		}
 	}
-
-	// for _, evt := range osm.balanceToMaintain.Editor.Events() {
-	// 	if osm.balanceToMaintain.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			if components.InputsNotEmpty(osm.balanceToMaintain.Editor) {
-	// 				f, err := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
-	// 				if err != nil {
-	// 					osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
-	// 					osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
-	// 					return
-	// 				}
-
-	// 				if f >= osm.sourceAccountSelector.SelectedAccount().Balance.Spendable.ToCoin() || f < 0 {
-	// 					osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
-	// 					osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
-	// 					return
-	// 				}
-	// 				osm.balanceToMaintainErrorText = ""
-
-	// 			}
-	// 		}
-	// 	}
-	// }
 }
 
 func (osm *orderSchedulerModal) canStart() bool {

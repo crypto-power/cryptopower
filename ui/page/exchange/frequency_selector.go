@@ -163,14 +163,12 @@ func (fs *FrequencySelector) buildFrequencyItems() []*frequencyItem {
 func (fm *frequencyModal) OnResume() {}
 
 func (fm *frequencyModal) Handle(gtx C) {
-	// if fm.eventQueue != nil {
 	for _, frequencyItem := range fm.frequencyItems {
 		if frequencyItem.clickable.Clicked(gtx) {
 			fm.onFrequencyClicked(frequencyItem)
 			fm.Dismiss()
 		}
 	}
-	// }
 
 	if fm.Modal.BackdropClicked(gtx, fm.isCancelable) {
 		fm.Dismiss()

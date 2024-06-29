@@ -32,11 +32,6 @@ type (
 	D = layout.Dimensions
 )
 
-type pFilter struct {
-	TypeFilter  int32
-	OrderNewest bool
-}
-
 type ProposalsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -46,7 +41,6 @@ type ProposalsPage struct {
 	*app.GenericPageModal
 
 	scroll         *components.Scroll[*components.ProposalItem]
-	previousFilter pFilter
 	statusDropDown *cryptomaterial.DropDown
 	orderDropDown  *cryptomaterial.DropDown
 	walletDropDown *cryptomaterial.DropDown
@@ -186,6 +180,22 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 	return listItems, len(listItems), true, nil
 }
 
+func (pg *ProposalsPage) handleEditorEvents(gtx C) {
+	for {
+		event, ok := pg.searchEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(pg.searchEditor.Editor) {
+			switch event.(type) {
+			case widget.ChangeEvent:
+				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+			}
+		}
+	}
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -239,29 +249,6 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 		})
 	}
 
-	for {
-		event, ok := pg.searchEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(pg.searchEditor.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
-			}
-		}
-	}
-
-	// for _, evt := range pg.searchEditor.Editor.Events() {
-	// 	if pg.searchEditor.Editor.Focused() {
-	// 		switch evt.(type) {
-	// 		case widget.ChangeEvent:
-	// 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
-	// 		}
-	// 	}
-	// }
-
 	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
@@ -311,6 +298,7 @@ func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.Drop
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 	padding := values.MarginPadding24
 	if pg.IsMobileView() {

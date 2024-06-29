@@ -104,14 +104,4 @@ func (vm *voteModal) handleVoteCountButtons(gtx C, i *inputVoteOptionsWidgets) {
 			}
 		}
 	}
-
-	// for _, e := range i.input.Editor.Events() {
-	// 	switch e.(type) {
-	// 	case widget.ChangeEvent:
-	// 		count := i.voteCount()
-	// 		if count < 0 {
-	// 			i.input.Editor.SetText("0")
-	// 		}
-	// 	}
-	// }
 }

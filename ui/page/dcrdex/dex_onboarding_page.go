@@ -866,7 +866,7 @@ func calculateBondAmount(asset sharedW.Asset, bondAsset *core.BondAsset, tier in
 
 func (pg *DEXOnboarding) handleEditorEvents(gtx C) {
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor, pg.serverURLEditor.Editor, pg.serverCertEditor.Editor, pg.bondStrengthEditor.Editor, pg.seedEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &pg.passwordEditor, &pg.confirmPasswordEditor, &pg.serverURLEditor, &pg.serverCertEditor, &pg.bondStrengthEditor, &pg.seedEditor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.passwordEditor.SetError("")
