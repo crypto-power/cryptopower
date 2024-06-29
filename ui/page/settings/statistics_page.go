@@ -227,7 +227,7 @@ func (pg *StatPage) appStartTime() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *StatPage) HandleUserInteractions(gtx C) {
+func (pg *StatPage) HandleUserInteractions(_ C) {
 	pg.appStartTime()
 }
 

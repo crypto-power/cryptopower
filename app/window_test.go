@@ -93,7 +93,7 @@ func (tPage *testPage) OnNavigatedTo() {
 	tPage.calledMethod(pageMethodOnNavigatedTo)
 }
 
-func (tPage *testPage) HandleUserInteractions(gtx layout.Context) {
+func (tPage *testPage) HandleUserInteractions(_ layout.Context) {
 	tPage.calledMethod(pageMethodHandleUserInteractions)
 }
 
@@ -190,7 +190,7 @@ func (tModal *testModal) OnResume() {
 	tModal.calledMethod(modalMethodOnResume)
 }
 
-func (tModal *testModal) Handle(gtx layout.Context) {
+func (tModal *testModal) Handle(_ layout.Context) {
 	tModal.calledMethod(modalMethodHandle)
 }
 

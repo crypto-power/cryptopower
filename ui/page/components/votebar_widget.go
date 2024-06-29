@@ -187,8 +187,7 @@ func (v *VoteBar) votesIndicatorTooltip(gtx C, r image.Rectangle, tipPos float32
 	inset := layout.Inset{Left: gtx.Metric.PxToDp(int(insetLeft)), Top: values.MarginPadding25}
 	v.passTooltip.Layout(gtx, r, inset, func(gtx C) D {
 		txt := values.StringF(values.StrVoteTooltip, int(v.passPercentage))
-		cap := v.Theme.Caption(txt).Layout(gtx)
-		return cap
+		return v.Theme.Caption(txt).Layout(gtx)
 	})
 }
 

@@ -198,7 +198,7 @@ func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *LogPage) HandleUserInteractions(gtx C) {}
+func (pg *LogPage) HandleUserInteractions(_ C) {}
 
 // OnNavigatedFrom is called when the page is about to be removed from
 // the displayed window. This method should ideally be used to disable

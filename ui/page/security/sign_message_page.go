@@ -301,7 +301,7 @@ func (pg *SignMessagePage) handleEditorEvents(gtx C) {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *SignMessagePage) HandleUserInteractions(gtx C) {
+func (pg *SignMessagePage) HandleUserInteractions(_ C) {
 	pg.updateButtonColors()
 }
 

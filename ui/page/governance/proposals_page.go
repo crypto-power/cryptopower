@@ -221,7 +221,7 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 	}
 
 	for pg.syncButton.Clicked(gtx) {
-		go func() { pg.AssetsManager.Politeia.Sync(context.Background()) }()
+		go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
 		pg.isSyncing = true
 
 		// TODO: check after 1min if sync does not start, set isSyncing to false and cancel sync

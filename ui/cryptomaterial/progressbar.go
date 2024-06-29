@@ -147,10 +147,10 @@ func (p ProgressBarStyle) Layout(gtx C) D {
 
 	progressBarWidth := int(p.Width)
 	return layout.Stack{Alignment: layout.W}.Layout(gtx,
-		layout.Stacked(func(gtx C) D {
+		layout.Stacked(func(_ C) D {
 			return shader(progressBarWidth, p.TrackColor)
 		}),
-		layout.Stacked(func(gtx C) D {
+		layout.Stacked(func(_ C) D {
 			fillWidth := int(float32(progressBarWidth) * clamp1(p.Progress))
 			fillColor := p.Color
 			fillColor = Disabled(fillColor)
