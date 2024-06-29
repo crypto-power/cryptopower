@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"sync"
 
+	"decred.org/dcrwallet/v4/vsp"
 	dcrW "decred.org/dcrwallet/v4/wallet"
 	"decred.org/dcrwallet/v4/wallet/txrules"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/dcr"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
 )

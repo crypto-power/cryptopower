@@ -103,8 +103,9 @@ func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, pa
 	policyMap := map[string]string{
 		PiKey: newVotingPolicy,
 	}
+
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := asset.DCRVSPTicketInfo(ctx, tHash)
+		vspTicket, err := asset.Internal().DCR.NewVSPTicket(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
@@ -114,13 +115,22 @@ func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, pa
 			continue // try next tHash
 		}
 
-		// Update the vote policy for the ticket with the associated VSP.
-		vspClient, err := asset.VSPClient(vspTicketInfo.Host, vspTicketInfo.PubKey)
+		vspTicketInfo, err := vspTicket.VSPTicketInfo(ctx)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash
 		}
-		err = vspClient.SetVoteChoice(ctx, tHash, nil, nil, policyMap)
+
+		// Update the vote policy for the ticket with the associated VSP.
+		// Account being set to -1 means the client isn't being used to purchase
+		// tickets as the account policy configuration won't be set.
+		vspClient, err := asset.VSPClient(-1, vspTicketInfo.Host, vspTicketInfo.PubKey)
+		if err != nil && firstErr == nil {
+			firstErr = err
+			continue // try next tHash
+		}
+
+		err = vspClient.SetVoteChoice(ctx, vspTicket, nil, nil, policyMap)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash

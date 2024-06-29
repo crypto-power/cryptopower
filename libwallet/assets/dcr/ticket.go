@@ -10,11 +10,11 @@ import (
 	"decred.org/dcrwallet/v4/errors"
 	w "decred.org/dcrwallet/v4/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
+	vspd "github.com/decred/vspd/types/v2"
 )
 
 func (asset *Asset) TotalStakingRewards() (int64, error) {
@@ -107,7 +107,7 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 		return nil, utils.ErrDCRNotInitialized
 	}
 
-	vspClient, err := asset.VSPClient(vspHost, vspPubKey)
+	vspClient, err := asset.VSPClient(account, vspHost, vspPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("VSP Server instance failed to start: %v", err)
 	}
@@ -129,7 +129,7 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 		MinConf:       asset.RequiredConfirmations(),
 		VSPFeePercent: vspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
-			return vspClient.Process(ctx, ticket, feeTx, asset.GetvspPolicy(account))
+			return vspClient.Process(ctx, ticket, feeTx)
 		},
 	}
 
@@ -154,28 +154,6 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	return ticketsResponse.TicketHashes, err
 }
 
-// GetvspPolicy creates the VSP policy using the account number provided.
-// Uses the user-specified instructions for processing fee payments
-// on a ticket, rather than some default policy.
-func (asset *Asset) GetvspPolicy(account int32) vsp.Policy {
-	return vsp.Policy{
-		MaxFee:     0.2e8,
-		FeeAcct:    uint32(account),
-		ChangeAcct: uint32(account),
-	}
-}
-
-// DCRVSPTicketInfo masks the upstream VSPTicketInfo method that has been split
-// into two methods. Namely NewVSPTicket and VSPTicketInfo.
-func (asset *Asset) DCRVSPTicketInfo(ctx context.Context, ticketHash *chainhash.Hash) (*w.TicketInfo, error) {
-	ticket, err := asset.Internal().DCR.NewVSPTicket(ctx, ticketHash)
-	if err != nil {
-		return nil, err
-	}
-
-	return ticket.VSPTicketInfo(ctx)
-}
-
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
 func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
@@ -190,7 +168,12 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	// Read the VSP info for this ticket from the wallet db.
 	ctx, _ := asset.ShutdownContextWithCancel()
-	walletTicketInfo, err := asset.DCRVSPTicketInfo(ctx, ticketHash)
+	ticket, err := asset.Internal().DCR.NewVSPTicket(ctx, ticketHash)
+	if err != nil {
+		return nil, err
+	}
+
+	walletTicketInfo, err := ticket.VSPTicketInfo(ctx)
 	if err != nil {
 		log.Warnf("unable to getWallet info using ticket: %s Error: %v", hash, err)
 		return nil, err
@@ -209,15 +192,19 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		return ticketInfo, nil
 	}
 
-	vspClient, err := asset.VSPClient(walletTicketInfo.Host, walletTicketInfo.PubKey)
+	// Account being set to -1 means the client isn't being used to purchase
+	// tickets as the account policy configuration won't be set.
+	vspClient, err := asset.VSPClient(-1, walletTicketInfo.Host, walletTicketInfo.PubKey)
 	if err != nil {
 		log.Warnf("unable to connect to host: %s Error: %v", walletTicketInfo.Host, err)
 		return ticketInfo, nil
 	}
 
-	ticketInfo.Client = vspClient
+	req := vspd.TicketStatusRequest{
+		TicketHash: ticket.Hash().String(),
+	}
 
-	vspTicketStatus, err := vspClient.GetTicketStatus(ctx, ticketHash)
+	vspTicketStatus, err := vspClient.TicketStatus(ctx, req, ticket.CommitmentAddr())
 	if err != nil {
 		log.Warnf("unable to get vsp ticket: %s Error: %v", hash, err)
 		return ticketInfo, nil
@@ -229,6 +216,8 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 			ticketInfo.FeeTxHash, vspTicketStatus.FeeTxHash, ticketHash)
 	}
 
+	ticketInfo.VSPTicket = ticket
+	ticketInfo.Client = vspClient
 	ticketInfo.FeeTxHash = vspTicketStatus.FeeTxHash
 	ticketInfo.ConfirmedByVSP = vspTicketStatus.TicketConfirmed
 
@@ -273,7 +262,7 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 	// Check the VSP.
 	vspInfo, err := vspInfo(cfg.VspHost)
 	if err == nil {
-		cfg.VspClient, err = asset.VSPClient(cfg.VspHost, vspInfo.PubKey)
+		cfg.VspClient, err = asset.VSPClient(cfg.PurchaseAccount, cfg.VspHost, vspInfo.PubKey)
 	}
 	if err != nil {
 		return fmt.Errorf("error setting up vsp client: %v", err)
@@ -465,11 +454,6 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	// Count is 1 to prevent combining multiple split outputs in one tx,
 	// which can be used to link the tickets eventually purchased with the
 	// split outputs.
-	vspPolicy := vsp.Policy{
-		MaxFee:     0.2e8,
-		FeeAcct:    uint32(cfg.PurchaseAccount),
-		ChangeAcct: uint32(cfg.PurchaseAccount),
-	}
 	request := &w.PurchaseTicketsRequest{
 		Count:         1,
 		SourceAccount: uint32(cfg.PurchaseAccount),
@@ -477,7 +461,7 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 		MinConf:       asset.RequiredConfirmations(),
 		VSPFeePercent: cfg.VspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
-			return cfg.VspClient.Process(ctx, ticket, feeTx, vspPolicy)
+			return cfg.VspClient.Process(ctx, ticket, feeTx)
 		},
 	}
 

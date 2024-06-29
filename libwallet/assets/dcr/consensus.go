@@ -83,8 +83,8 @@ func AgendaStatusFromStr(status string) AgendaStatusType {
 // hash is provided, the voting choice is also updated with the VSP controlling
 // the ticket. If a ticket hash isn't provided, the vote choice is saved to the
 // local wallet database and the VSPs controlling all unspent, unexpired tickets
-// are updated to use the specified vote choice.
-func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) error {
+// are updated to use the specified vote choice. The account to use must be provided.
+func (asset *Asset) SetVoteChoice(account int32, agendaID, choiceID, hash, passphrase string) error {
 	var ticketHash *chainhash.Hash
 	if hash != "" {
 		hash, err := chainhash.NewHashFromStr(hash)
@@ -162,7 +162,7 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 	// The first error will be returned to the caller.
 	var firstErr error
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := asset.DCRVSPTicketInfo(ctx, tHash)
+		vspTicket, err := asset.Internal().DCR.NewVSPTicket(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
@@ -172,13 +172,19 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 			continue // try next tHash
 		}
 
-		// Update the vote choice for the ticket with the associated VSP.
-		vspClient, err := asset.VSPClient(vspTicketInfo.Host, vspTicketInfo.PubKey)
+		vspTicketInfo, err := vspTicket.VSPTicketInfo(ctx)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash
 		}
-		err = vspClient.SetVoteChoice(ctx, tHash, newChoice, nil, nil)
+
+		// Update the vote choice for the ticket with the associated VSP.
+		vspClient, err := asset.VSPClient(account, vspTicketInfo.Host, vspTicketInfo.PubKey)
+		if err != nil && firstErr == nil {
+			firstErr = err
+			continue // try next tHash
+		}
+		err = vspClient.SetVoteChoice(ctx, vspTicket, newChoice, nil, nil)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash

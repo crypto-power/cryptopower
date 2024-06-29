@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"decred.org/dcrwallet/v4/errors"
+	"decred.org/dcrwallet/v4/vsp"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
@@ -20,7 +20,7 @@ const (
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
-func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
+func (asset *Asset) VSPClient(account int32, host string, pubKey []byte) (*vsp.Client, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -34,14 +34,26 @@ func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
 
 	cfg := vsp.Config{
 		URL:    host,
-		PubKey: pubKey,
+		PubKey: string(pubKey),
 		Dialer: nil, // optional, but consider providing a value
 		Wallet: asset.Internal().DCR,
 	}
-	client, err := vsp.New(cfg)
+
+	// When the account number provided is greater than -1, it means that the
+	// client will be used to purchase tickets with the provided account.
+	if account != -1 {
+		cfg.Policy = &vsp.Policy{
+			MaxFee:     0.2e8,
+			FeeAcct:    uint32(account),
+			ChangeAcct: uint32(account),
+		}
+	}
+
+	client, err := vsp.New(cfg, log)
 	if err != nil {
 		return nil, err
 	}
+
 	asset.vspClients[host] = client
 	return client, nil
 }

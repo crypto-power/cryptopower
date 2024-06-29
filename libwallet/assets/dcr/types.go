@@ -3,9 +3,10 @@ package dcr
 import (
 	"fmt"
 
+	"decred.org/dcrwallet/v4/vsp"
+	"decred.org/dcrwallet/v4/wallet"
 	"decred.org/dcrwallet/v4/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
@@ -138,6 +139,8 @@ type VSPTicketInfo struct {
 	// VoteChoices is only set if the ticket status was obtained from the
 	// VSP.
 	VoteChoices map[string]string
+
+	VSPTicket *wallet.VSPTicket
 }
 
 /** end ticket-related types */

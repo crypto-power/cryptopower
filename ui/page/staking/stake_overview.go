@@ -21,7 +21,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	tpage "github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
@@ -303,14 +302,7 @@ func (pg *Page) HandleUserInteractions() {
 
 				log.Infof("Attempting to process the unconfirmed VSP fee for tx: %v", ticketTx.Hash)
 
-				txHash, err := chainhash.NewHashFromStr(ticketTx.Hash)
-				if err != nil {
-					log.Errorf("convert hex to hash failed: %v", ticketTx.Hash)
-					return
-				}
-
-				account := ticketTx.Inputs[0].AccountNumber
-				err = ticketInfo.Client.ProcessTicket(context.TODO(), txHash, pg.dcrWallet.GetvspPolicy(account))
+				err = ticketInfo.Client.Process(context.TODO(), ticketInfo.VSPTicket, nil)
 				if err != nil {
 					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
 				}

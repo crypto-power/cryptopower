@@ -39,6 +39,7 @@ require (
 	github.com/decred/dcrdata/v8 v8.0.0-20240606003156-1f13820ad44a
 	github.com/decred/politeia v1.4.0
 	github.com/decred/slog v1.2.0
+	github.com/decred/vspd/types/v2 v2.1.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/gen2brain/beeep v0.0.0-20220402123239-6a3042f4b71a
 	github.com/gomarkdown/markdown v0.0.0-20230922105210-14b16010c2ee
@@ -117,7 +118,6 @@ require (
 	github.com/decred/vspd/client/v2 v2.1.0 // indirect
 	github.com/decred/vspd/client/v3 v3.0.0 // indirect
 	github.com/decred/vspd/types v1.1.0 // indirect
-	github.com/decred/vspd/types/v2 v2.1.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.1-0.20210705192016-249ff6c91207 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect

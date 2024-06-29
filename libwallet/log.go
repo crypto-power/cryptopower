@@ -11,7 +11,6 @@ import (
 	"decred.org/dcrwallet/v4/errors"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
@@ -75,7 +74,6 @@ func initLogRotator(logFile string) error {
 func UseLogger(logger slog.Logger) {
 	log = logger
 	loader.UseLogger(logger)
-	vsp.UseLogger(vspcLog)
 	politeia.UseLogger(politeiaLog)
 }
 
