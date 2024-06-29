@@ -13,7 +13,6 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/decred/dcrd/wire"
 	vspd "github.com/decred/vspd/types/v2"
 )
 
@@ -124,13 +123,15 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	defer asset.LockWallet()
 
 	request := &w.PurchaseTicketsRequest{
-		Count:         int(numTickets),
-		SourceAccount: uint32(account),
-		MinConf:       asset.RequiredConfirmations(),
-		VSPFeePercent: vspClient.FeePercentage,
-		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
-			return vspClient.Process(ctx, ticket, feeTx)
-		},
+		Count:                int(numTickets),
+		SourceAccount:        uint32(account),
+		MinConf:              asset.RequiredConfirmations(),
+		VSPFeePercent:        vspClient.FeePercentage,
+		VSPFeePaymentProcess: vspClient.Process,
+
+		// VotingAccount used to derive addresses for specifying voting rights.
+		// It is used when VotingAddress == nil, or Mixing == true
+		VotingAccount: uint32(account),
 	}
 
 	csppCfg := asset.readCSPPConfig()
@@ -240,9 +241,7 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 		return errors.New("Negative balance to maintain in ticket buyer config")
 	}
 
-	asset.cancelAutoTicketBuyerMu.Lock()
-	if asset.cancelAutoTicketBuyer != nil {
-		asset.cancelAutoTicketBuyerMu.Unlock()
+	if asset.IsAutoTicketsPurchaseActive() {
 		return errors.New("Ticket buyer already running")
 	}
 
@@ -250,29 +249,31 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 	if len(passphrase) > 0 && asset.IsLocked() {
 		err := asset.UnlockWallet(passphrase)
 		if err != nil {
-			asset.cancelAutoTicketBuyerMu.Unlock()
 			return utils.TranslateError(err)
 		}
 	}
 
 	ctx, cancel := asset.ShutdownContextWithCancel()
+	asset.cancelAutoTicketBuyerMu.Lock()
 	asset.cancelAutoTicketBuyer = cancel
 	asset.cancelAutoTicketBuyerMu.Unlock()
 
 	// Check the VSP.
 	vspInfo, err := vspInfo(cfg.VspHost)
-	if err == nil {
-		cfg.VspClient, err = asset.VSPClient(cfg.PurchaseAccount, cfg.VspHost, vspInfo.PubKey)
-	}
 	if err != nil {
 		return fmt.Errorf("error setting up vsp client: %v", err)
+	}
+
+	cfg.VspClient, err = asset.VSPClient(cfg.PurchaseAccount, cfg.VspHost, vspInfo.PubKey)
+	if err != nil {
+		log.Errorf("[%d] VSP Client instance failed error: %v", asset.ID, err)
+		return errors.New("VSP Client failed to start due to incorrect configuration")
 	}
 
 	go func() {
 		log.Infof("[%d] Running ticket buyer", asset.ID)
 
-		err := asset.runTicketBuyer(ctx, passphrase, cfg)
-		if err != nil {
+		if err = asset.runTicketBuyer(ctx, passphrase, cfg); err != nil {
 			if ctx.Err() != nil {
 				log.Errorf("[%d] Ticket buyer instance canceled", asset.ID)
 			} else {
@@ -280,9 +281,9 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 			}
 		}
 
-		asset.cancelAutoTicketBuyerMu.Lock()
-		asset.cancelAutoTicketBuyer = nil
-		asset.cancelAutoTicketBuyerMu.Unlock()
+		if err = asset.StopAutoTicketsPurchase(); err != nil {
+			log.Errorf("[%d] Stopping auto ticket purchase errored: %v", asset.ID, err)
+		}
 	}()
 
 	return nil
@@ -455,14 +456,16 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	// which can be used to link the tickets eventually purchased with the
 	// split outputs.
 	request := &w.PurchaseTicketsRequest{
-		Count:         1,
-		SourceAccount: uint32(cfg.PurchaseAccount),
-		Expiry:        expiry,
-		MinConf:       asset.RequiredConfirmations(),
-		VSPFeePercent: cfg.VspClient.FeePercentage,
-		VSPFeePaymentProcess: func(ctx context.Context, ticket *w.VSPTicket, feeTx *wire.MsgTx) error {
-			return cfg.VspClient.Process(ctx, ticket, feeTx)
-		},
+		Count:                1,
+		SourceAccount:        uint32(cfg.PurchaseAccount),
+		Expiry:               expiry,
+		MinConf:              asset.RequiredConfirmations(),
+		VSPFeePercent:        cfg.VspClient.FeePercentage,
+		VSPFeePaymentProcess: cfg.VspClient.Process,
+
+		// VotingAccount used to derive addresses for specifying voting rights.
+		// It is used when VotingAddress == nil, or Mixing == true
+		VotingAccount: uint32(cfg.PurchaseAccount),
 	}
 
 	csppCfg := asset.readCSPPConfig()

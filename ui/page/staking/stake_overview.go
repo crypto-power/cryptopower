@@ -66,6 +66,11 @@ type Page struct {
 	processingTicket uint32
 
 	dcrWallet *dcr.Asset
+
+	// ticketContext is a managed context instance that is shut once a shutdown
+	// request is made. It helps avoid the use of context.TODO() that isn't
+	// responsive to the shutdown request.
+	ticketContext context.Context
 }
 
 func NewStakingPage(l *load.Load, dcrWallet *dcr.Asset) *Page {
@@ -80,6 +85,9 @@ func NewStakingPage(l *load.Load, dcrWallet *dcr.Asset) *Page {
 		},
 		dcrWallet: dcrWallet,
 	}
+
+	// context will list for a shutdown request.
+	pg.ticketContext, _ = dcrWallet.ShutdownContextWithCancel()
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
 	pg.materialLoader = material.Loader(l.Theme.Base)
@@ -302,7 +310,7 @@ func (pg *Page) HandleUserInteractions() {
 
 				log.Infof("Attempting to process the unconfirmed VSP fee for tx: %v", ticketTx.Hash)
 
-				err = ticketInfo.Client.Process(context.TODO(), ticketInfo.VSPTicket, nil)
+				err = ticketInfo.Client.Process(pg.ticketContext, ticketInfo.VSPTicket, nil)
 				if err != nil {
 					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
 				}
@@ -388,26 +396,30 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 				}),
 			)
 		}).
-		SetNegativeButtonCallback(func() { pg.stake.SetChecked(false) }).
+		SetNegativeButtonCallback(func() {
+			_ = pg.dcrWallet.StopAutoTicketsPurchase()
+			pg.stake.SetChecked(false)
+		}).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			pg.stake.SetChecked(false)
+
 			if !pg.dcrWallet.IsConnectedToNetwork() {
 				pm.SetError(values.String(values.StrNotConnected))
-				pg.stake.SetChecked(false)
+				_ = pg.dcrWallet.StopAutoTicketsPurchase() // Halt auto tickets purchase.
 				return false
 			}
 
-			err := pg.dcrWallet.StartTicketBuyer(password)
-			if err != nil {
+			if err := pg.dcrWallet.StartTicketBuyer(password); err != nil {
 				pm.SetError(err.Error())
+				_ = pg.dcrWallet.StopAutoTicketsPurchase() // Halt auto tickets purchase.
 				return false
 			}
 
 			pg.stake.SetChecked(pg.dcrWallet.IsAutoTicketsPurchaseActive())
 			pg.ParentWindow().Reload()
-
 			pm.Dismiss()
 
-			return false
+			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
 }

@@ -9,6 +9,7 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
+	vspd "github.com/decred/vspd/types/v2"
 )
 
 // Amount implements the Asset amount interface for the DCR asset
@@ -148,22 +149,10 @@ type VSPTicketInfo struct {
 /** end politea proposal types */
 
 /** begin vspd-related types */
-type VspInfoResponse struct {
-	APIVersions   []int64 `json:"apiversions"`
-	Timestamp     int64   `json:"timestamp"`
-	PubKey        []byte  `json:"pubkey"`
-	FeePercentage float64 `json:"feepercentage"`
-	VspClosed     bool    `json:"vspclosed"`
-	Network       string  `json:"network"`
-	VspdVersion   string  `json:"vspdversion"`
-	Voting        int64   `json:"voting"`
-	Voted         int64   `json:"voted"`
-	Revoked       int64   `json:"revoked"`
-}
 
 type VSP struct {
 	Host string
-	*VspInfoResponse
+	*vspd.VspInfoResponse
 }
 
 /** end vspd-related types */

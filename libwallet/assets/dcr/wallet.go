@@ -31,10 +31,10 @@ type Asset struct {
 
 	TxAuthoredInfo *TxAuthor
 
-	vspClientsMu sync.Mutex
-	vspClients   map[string]*vsp.Client
-	vspMu        sync.RWMutex
-	vsps         []*VSP
+	// VSP data
+	vspClients map[string]*vsp.Client
+	vspMu      sync.RWMutex
+	vsps       []*VSP
 
 	notificationListenersMu           sync.RWMutex
 	syncData                          *SyncData
