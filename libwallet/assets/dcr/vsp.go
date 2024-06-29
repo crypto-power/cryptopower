@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"decred.org/dcrwallet/v4/vsp"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -151,11 +152,17 @@ func (asset *Asset) ReloadVSPList(ctx context.Context) {
 		}
 	}
 
-	otherVSPHosts, err := defaultVSPs(string(asset.NetType()))
+	network := string(asset.NetType())
+	otherVSPHosts, err := defaultVSPs()
 	if err != nil {
 		log.Debugf("get default vsp list error: %v", err)
 	}
+
 	for url, VSPInfo := range otherVSPHosts {
+		if !strings.Contains(network, VSPInfo.Network) {
+			continue
+		}
+
 		host := "https://" + url
 		if _, wasAdded := vspList[host]; wasAdded {
 			continue
@@ -199,7 +206,7 @@ func vspInfo(vspHost string) (*vspd.VspInfoResponse, error) {
 }
 
 // defaultVSPs returns a list of known VSPs.
-func defaultVSPs(network string) (map[string]*vspd.VspInfoResponse, error) {
+func defaultVSPs() (map[string]*vspd.VspInfoResponse, error) {
 	var vspInfoResponse map[string]*vspd.VspInfoResponse
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
