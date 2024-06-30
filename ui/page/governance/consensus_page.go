@@ -211,7 +211,7 @@ func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 		}
 	}
 
-	for pg.syncButton.Clicked(gtx) {
+	if pg.syncButton.Clicked(gtx) {
 		pg.FetchAgendas()
 	}
 
@@ -224,7 +224,7 @@ func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
-	for pg.viewVotingDashboard.Clicked(gtx) {
+	if pg.viewVotingDashboard.Clicked(gtx) {
 		host := "https://voting.decred.org"
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://voting.decred.org/testnet"
@@ -283,7 +283,7 @@ func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 		})
 	}
 
-	for pg.filterBtn.Clicked(gtx) {
+	if pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }

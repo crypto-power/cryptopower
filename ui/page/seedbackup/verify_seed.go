@@ -212,13 +212,13 @@ func (pg *VerifySeedPage) verifySeed() {
 func (pg *VerifySeedPage) HandleUserInteractions(gtx C) {
 	for i, multiSeed := range pg.multiSeedList {
 		for j, clickable := range multiSeed.clickables {
-			for clickable.Clicked(gtx) {
+			if clickable.Clicked(gtx) {
 				pg.multiSeedList[i].selectedIndex = j
 			}
 		}
 	}
 
-	for pg.actionButton.Clicked(gtx) {
+	if pg.actionButton.Clicked(gtx) {
 		if pg.allSeedsSelected() {
 			pg.verifySeed()
 		}

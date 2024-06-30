@@ -267,7 +267,7 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 	}
 
 	for i, item := range sp.settingsOptions {
-		for item.clickable.Clicked(gtx) {
+		if item.clickable.Clicked(gtx) {
 			sp.selectedSettingsOptionIndex = i
 			if item.title == values.String(values.StrAdvanced) {
 				sp.ParentWindow().Display(settings.NewAppSettingsPage(sp.Load))

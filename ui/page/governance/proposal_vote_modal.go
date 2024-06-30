@@ -169,10 +169,7 @@ func (vm *voteModal) sendVotes() {
 }
 
 func (vm *voteModal) Handle(gtx C) {
-	for vm.cancelBtn.Clicked(gtx) {
-		if vm.isVoting {
-			continue
-		}
+	if vm.cancelBtn.Clicked(gtx) && !vm.isVoting {
 		vm.Dismiss()
 	}
 
@@ -183,15 +180,7 @@ func (vm *voteModal) Handle(gtx C) {
 	validToVote := totalVotes > 0 && totalVotes <= vm.eligibleVotes()
 	vm.voteBtn.SetEnabled(validToVote)
 
-	for vm.voteBtn.Clicked(gtx) {
-		if vm.isVoting {
-			break
-		}
-
-		if !validToVote {
-			break
-		}
-
+	if vm.voteBtn.Clicked(gtx) && !vm.isVoting && validToVote {
 		vm.isVoting = true
 		vm.sendVotes()
 	}

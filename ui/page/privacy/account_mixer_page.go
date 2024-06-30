@@ -366,7 +366,7 @@ func (pg *AccountMixerPage) HandleUserInteractions(gtx C) {
 		return num
 	}
 
-	for pg.mixedAccount.Clicked(gtx) {
+	if pg.mixedAccount.Clicked(gtx) {
 		name, err := pg.dcrWallet.AccountName(pg.dcrWallet.MixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
@@ -394,7 +394,7 @@ func (pg *AccountMixerPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(mixedAccountModal)
 	}
 
-	for pg.unmixedAccount.Clicked(gtx) {
+	if pg.unmixedAccount.Clicked(gtx) {
 		name, err := pg.dcrWallet.AccountName(pg.dcrWallet.UnmixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
@@ -422,7 +422,7 @@ func (pg *AccountMixerPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
 	}
 
-	for pg.coordinationServer.Clicked(gtx) {
+	if pg.coordinationServer.Clicked(gtx) {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrCoordinationServer)).
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).

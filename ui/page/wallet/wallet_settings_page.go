@@ -654,12 +654,11 @@ func (pg *SettingsPage) showWarningModalDialog(title, msg string) {
 // displayed.
 // Part of the load.Page interface.
 func (pg *SettingsPage) HandleUserInteractions(gtx C) {
-	for pg.changePass.Clicked(gtx) {
+	if pg.changePass.Clicked(gtx) {
 		pg.changeSpendingPasswordModal()
-		break
 	}
 
-	for pg.viewSeed.Clicked(gtx) {
+	if pg.viewSeed.Clicked(gtx) {
 		currentPage := pg.ParentWindow().CurrentPageID()
 		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 			navigator.ClosePagesAfter(currentPage)
@@ -691,18 +690,16 @@ func (pg *SettingsPage) HandleUserInteractions(gtx C) {
 		}()
 	}
 
-	for pg.setGapLimit.Clicked(gtx) {
+	if pg.setGapLimit.Clicked(gtx) {
 		pg.gapLimitModal()
 	}
 
-	for pg.deleteWallet.Clicked(gtx) {
+	if pg.deleteWallet.Clicked(gtx) {
 		pg.deleteWalletModal()
-		break
 	}
 
-	for pg.changeWalletName.Clicked(gtx) {
+	if pg.changeWalletName.Clicked(gtx) {
 		pg.renameWalletModal()
-		break
 	}
 
 	if pg.infoButton.Button.Clicked(gtx) {

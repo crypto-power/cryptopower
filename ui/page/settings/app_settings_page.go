@@ -491,7 +491,7 @@ func (pg *AppSettingsPage) subSectionLabel(title string) layout.Widget {
 // displayed.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
-	for pg.network.Clicked(gtx) {
+	if pg.network.Clicked(gtx) {
 		currentNetType := string(pg.AssetsManager.NetType())
 		networkSelectorModal := preference.NewListPreference(pg.Load, "", currentNetType, preference.NetworkTypes).
 			Title(values.StrNetwork).
@@ -501,10 +501,9 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 				}
 			})
 		pg.ParentWindow().ShowModal(networkSelectorModal)
-		break
 	}
 
-	for pg.language.Clicked(gtx) {
+	if pg.language.Clicked(gtx) {
 		langSelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.LanguagePreferenceKey, values.DefaultLanguage, preference.LangOptions).
 			Title(values.StrLanguage).
@@ -512,24 +511,22 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 				values.SetUserLanguage(pg.AssetsManager.GetLanguagePreference())
 			})
 		pg.ParentWindow().ShowModal(langSelectorModal)
-		break
 	}
 
-	for pg.backButton.Button.Clicked(gtx) {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
-	for pg.currency.Clicked(gtx) {
+	if pg.currency.Clicked(gtx) {
 		currencySelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.CurrencyConversionConfigKey, values.DefaultExchangeValue,
 			preference.ExchOptions).
 			Title(values.StrExchangeRate).
 			UpdateValues(func(_ string) {})
 		pg.ParentWindow().ShowModal(currencySelectorModal)
-		break
 	}
 
-	for pg.appearanceMode.Clicked(gtx) {
+	if pg.appearanceMode.Clicked(gtx) {
 		pg.isDarkModeOn = !pg.isDarkModeOn
 		pg.AssetsManager.SetDarkMode(pg.isDarkModeOn)
 		pg.RefreshTheme(pg.ParentWindow())
@@ -584,7 +581,7 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 		pg.ParentNavigator().Display(NewAboutPage(pg.Load))
 	}
 
-	for pg.logLevel.Clicked(gtx) {
+	if pg.logLevel.Clicked(gtx) {
 		logLevelSelector := preference.NewListPreference(pg.Load,
 			sharedW.LogLevelConfigKey, libutils.DefaultLogLevel, preference.LogOptions).
 			Title(values.StrLogLevel).
@@ -592,7 +589,6 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 				_ = logger.SetLogLevels(val)
 			})
 		pg.ParentWindow().ShowModal(logLevelSelector)
-		break
 	}
 
 	if pg.viewLog.Clicked(gtx) {
@@ -619,7 +615,7 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(deleteDEXModal)
 	}
 
-	for pg.changeStartupPass.Clicked(gtx) {
+	if pg.changeStartupPass.Clicked(gtx) {
 		currentPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			EnableName(false).
 			EnableConfirmPassword(false).
@@ -661,7 +657,6 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 				return true
 			})
 		pg.ParentWindow().ShowModal(currentPasswordModal)
-		break
 	}
 
 	if pg.startupPassword.Changed(gtx) {

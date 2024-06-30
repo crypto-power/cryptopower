@@ -549,7 +549,7 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 
 	// decred wallet type sub action
 	for i, item := range pg.walletActions {
-		for item.clickable.Clicked(gtx) {
+		if item.clickable.Clicked(gtx) {
 			pg.selectedWalletAction = i
 		}
 	}

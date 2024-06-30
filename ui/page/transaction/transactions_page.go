@@ -616,11 +616,11 @@ func (pg *TransactionsPage) HandleUserInteractions(gtx C) {
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	for pg.filterBtn.Clicked(gtx) {
+	if pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 
-	for pg.exportBtn.Clicked(gtx) {
+	if pg.exportBtn.Clicked(gtx) {
 		exportModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrExportTransaction)).
 			Body(values.String(values.StrExportTransactionsMsg)).

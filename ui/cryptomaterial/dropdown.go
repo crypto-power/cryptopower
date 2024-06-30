@@ -178,7 +178,7 @@ func (d *DropDown) handleEvents(gtx C) {
 		for i := range d.items {
 			index := i
 			item := d.items[index]
-			for item.clickable.Clicked(gtx) {
+			if item.clickable.Clicked(gtx) {
 				d.expanded = false
 				if !item.PreventSelection {
 					d.selectedIndex = index
@@ -187,7 +187,7 @@ func (d *DropDown) handleEvents(gtx C) {
 			}
 		}
 	} else {
-		for d.clickable.Clicked(gtx) {
+		if d.clickable.Clicked(gtx) {
 			d.expanded = true
 		}
 	}
@@ -198,7 +198,7 @@ func (d *DropDown) Changed(gtx C) bool {
 		for i := range d.items {
 			index := i
 			item := d.items[index]
-			for item.clickable.Clicked(gtx) {
+			if item.clickable.Clicked(gtx) {
 				d.expanded = false
 				if item.PreventSelection {
 					return false

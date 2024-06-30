@@ -85,7 +85,7 @@ func (t *Theme) CollapsibleWithOption() *CollapsibleWithOption {
 }
 
 func (c *Collapsible) Layout(gtx C, header, body func(C) D) D {
-	for c.button.Clicked(gtx) {
+	if c.button.Clicked(gtx) {
 		c.isExpanded = !c.isExpanded
 	}
 

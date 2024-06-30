@@ -291,7 +291,7 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 		go swmp.fetchExchangeRate()
 	}
 
-	for swmp.openWalletSelector.Button.Clicked(gtx) {
+	if swmp.openWalletSelector.Button.Clicked(gtx) {
 		swmp.showNavigationFunc()
 	}
 
@@ -360,7 +360,7 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 		})
 	}
 
-	for swmp.hideBalanceButton.Clicked(gtx) {
+	if swmp.hideBalanceButton.Clicked(gtx) {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
 		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
 	}

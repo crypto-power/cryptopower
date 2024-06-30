@@ -131,7 +131,7 @@ func (tm *TextInputModal) Handle(gtx C) {
 		}()
 	}
 
-	for tm.btnNegative.Clicked(gtx) {
+	if tm.btnNegative.Clicked(gtx) {
 		if !tm.isLoading {
 			tm.Dismiss()
 			tm.negativeButtonClicked()

@@ -175,11 +175,11 @@ func (com *confirmOrderModal) Handle(gtx C) {
 		}
 	}
 
-	for com.confirmButton.Clicked(gtx) {
+	if com.confirmButton.Clicked(gtx) {
 		com.confirmOrder()
 	}
 
-	for com.closeConfirmationModalButton.Clicked(gtx) {
+	if com.closeConfirmationModalButton.Clicked(gtx) {
 		if !com.isCreating {
 			com.Dismiss()
 		}

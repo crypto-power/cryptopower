@@ -186,7 +186,7 @@ func (lp *ListPreferenceModal) UpdateValues(clicked func(val string)) *ListPrefe
 }
 
 func (lp *ListPreferenceModal) Handle(gtx C) {
-	for lp.btnSave.Button.Clicked(gtx) {
+	if lp.btnSave.Button.Clicked(gtx) {
 		lp.currentValue = lp.optionsRadioGroup.Value
 		lp.SavePreferenceKeyedValue()
 		lp.updateButtonClicked(lp.optionsRadioGroup.Value)
@@ -194,7 +194,7 @@ func (lp *ListPreferenceModal) Handle(gtx C) {
 		lp.Dismiss()
 	}
 
-	for lp.btnCancel.Button.Clicked(gtx) {
+	if lp.btnCancel.Button.Clicked(gtx) {
 		lp.Modal.Dismiss()
 	}
 
@@ -239,7 +239,7 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 		w = append(w, items[i])
 	}
 
-	for lp.viewWarningAction.Clicked(gtx) {
+	if lp.viewWarningAction.Clicked(gtx) {
 		host := ""
 		currentValue := lp.optionsRadioGroup.Value
 		for _, v := range lp.preferenceItems {

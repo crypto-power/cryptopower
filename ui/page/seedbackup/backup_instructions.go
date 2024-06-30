@@ -86,7 +86,7 @@ func (pg *BackupInstructionsPage) OnNavigatedTo() {}
 // displayed.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) HandleUserInteractions(gtx C) {
-	for pg.viewSeedBtn.Clicked(gtx) {
+	if pg.viewSeedBtn.Clicked(gtx) {
 		if pg.verifyCheckBoxes() {
 			// TODO: Will repeat the paint cycle, just queue the next fragment to be displayed
 			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet, pg.redirectCallback))

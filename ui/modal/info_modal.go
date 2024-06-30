@@ -294,7 +294,7 @@ func (in *InfoModal) HandleKeyPress(_ *key.Event) {
 }
 
 func (in *InfoModal) Handle(gtx C) {
-	for in.btnPositive.Clicked(gtx) {
+	if in.btnPositive.Clicked(gtx) {
 		if in.isLoading {
 			return
 		}
@@ -313,7 +313,7 @@ func (in *InfoModal) Handle(gtx C) {
 		}()
 	}
 
-	for in.btnNegative.Clicked(gtx) {
+	if in.btnNegative.Clicked(gtx) {
 		if !in.isLoading {
 			in.Dismiss()
 			in.negativeButtonClicked()

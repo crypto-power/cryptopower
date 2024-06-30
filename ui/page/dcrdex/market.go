@@ -1584,11 +1584,11 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		}
 	}
 
-	for pg.addServerBtn.Clicked(gtx) {
+	if pg.addServerBtn.Clicked(gtx) {
 		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
 	}
 
-	for pg.openOrdersBtn.Clicked(gtx) {
+	if pg.openOrdersBtn.Clicked(gtx) {
 		pg.orders = nil // clear orders
 		pg.openOrdersDisplayed = true
 		go pg.refreshOrders()
@@ -1598,18 +1598,18 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		pg.fetchOrderBook()
 	}
 
-	for pg.orderHistoryBtn.Clicked(gtx) {
+	if pg.orderHistoryBtn.Clicked(gtx) {
 		pg.orders = nil // clear orders
 		pg.openOrdersDisplayed = false
 		go pg.refreshOrders()
 	}
 
-	for pg.seeFullOrderBookBtn.Clicked(gtx) {
+	if pg.seeFullOrderBookBtn.Clicked(gtx) {
 		// TODO: display full order book
 		log.Info("Display full order book")
 	}
 
-	for pg.immediateOrderInfoBtn.Clicked(gtx) {
+	if pg.immediateOrderInfoBtn.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrImmediateOrder)).
 			UseCustomWidget(func(gtx layout.Context) layout.Dimensions {
@@ -1630,7 +1630,7 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, nil))
 	}
 
-	for pg.addWalletToDEX.Clicked(gtx) {
+	if pg.addWalletToDEX.Clicked(gtx) {
 		pg.handleMissingMarketWallet()
 	}
 

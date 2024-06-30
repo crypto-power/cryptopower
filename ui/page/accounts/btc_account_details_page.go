@@ -402,7 +402,7 @@ func (pg *BTCAcctDetailsPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	for pg.showExtendedKeyButton.Clicked(gtx) {
+	if pg.showExtendedKeyButton.Clicked(gtx) {
 		if pg.extendedKey != "" {
 			pg.isHiddenExtendedxPubkey = !pg.isHiddenExtendedxPubkey
 		}

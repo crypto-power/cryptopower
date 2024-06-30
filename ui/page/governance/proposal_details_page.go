@@ -223,7 +223,7 @@ func (pg *ProposalDetails) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(newVoteModal(pg.Load, pg.proposal))
 	}
 
-	for pg.viewInPoliteiaBtn.Clicked(gtx) {
+	if pg.viewInPoliteiaBtn.Clicked(gtx) {
 		host := "https://proposals.decred.org/record/" + pg.proposal.Token
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "http://45.32.108.164:3000/record/" + pg.proposal.Token

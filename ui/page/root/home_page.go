@@ -366,7 +366,7 @@ func (hp *HomePage) HandleUserInteractions(gtx C) {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrGovernance))
 	}
 	for i, item := range hp.sendReceiveNavItems {
-		for item.Clickable.Clicked(gtx) {
+		if item.Clickable.Clicked(gtx) {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
@@ -417,7 +417,7 @@ func (hp *HomePage) HandleUserInteractions(gtx C) {
 	hp.bottomNavigationBar.CurrentPage = hp.CurrentPageID()
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
 	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
-		for item.Clickable.Clicked(gtx) {
+		if item.Clickable.Clicked(gtx) {
 			if hp.ID() == hp.CurrentPageID() {
 				continue
 			}
@@ -426,7 +426,7 @@ func (hp *HomePage) HandleUserInteractions(gtx C) {
 	}
 
 	for _, item := range hp.floatingActionButton.FloatingActionButton {
-		for item.Clickable.Clicked(gtx) {
+		if item.Clickable.Clicked(gtx) {
 			if strings.ToLower(item.PageID) == values.StrReceive {
 				hp.ParentWindow().ShowModal(receive.NewReceivePage(hp.Load, nil))
 			}

@@ -143,7 +143,7 @@ func (pm *PasswordModal) Handle(gtx C) {
 	}
 
 	pm.btnNegative.SetEnabled(!pm.isLoading)
-	for pm.btnNegative.Clicked(gtx) {
+	if pm.btnNegative.Clicked(gtx) {
 		if !pm.isLoading {
 			pm.Dismiss()
 			pm.negativeButtonClicked()

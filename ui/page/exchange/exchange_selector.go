@@ -141,7 +141,7 @@ func (es *ExSelector) SetSelectedExchangeName(name string) {
 }
 
 func (es *ExSelector) Handle(gtx C, window app.WindowNavigator) {
-	for es.openSelectorDialog.Clicked(gtx) {
+	if es.openSelectorDialog.Clicked(gtx) {
 		es.title(es.dialogTitle)
 		window.ShowModal(es.exchangeModal)
 	}

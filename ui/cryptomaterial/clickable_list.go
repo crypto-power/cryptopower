@@ -54,7 +54,7 @@ func (cl *ClickableList) handleClickables(gtx C, count int) {
 	}
 
 	for index, clickable := range cl.clickables {
-		for clickable.Clicked(gtx) {
+		if clickable.Clicked(gtx) {
 			cl.selectedItem = index
 		}
 	}

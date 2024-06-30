@@ -72,7 +72,6 @@ type Editor struct {
 	m2 unit.Dp
 	m5 unit.Dp
 
-	// clickable *widget.Clickable
 	click gesture.Click
 
 	copy, paste   Button

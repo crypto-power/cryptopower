@@ -145,7 +145,7 @@ func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetTypeItem) bo
 }
 
 func (ats *AssetTypeSelector) Handle(gtx C, window app.WindowNavigator) {
-	for ats.openSelectorDialog.Clicked(gtx) {
+	if ats.openSelectorDialog.Clicked(gtx) {
 		ats.title(ats.dialogTitle)
 		window.ShowModal(ats.assetTypeModal)
 	}
@@ -226,7 +226,7 @@ func (atm *assetTypeModal) OnResume() {}
 
 func (atm *assetTypeModal) Handle(gtx C) {
 	for _, assetTypeItem := range atm.assetTypeItems {
-		for assetTypeItem.clickable.Clicked(gtx) {
+		if assetTypeItem.clickable.Clicked(gtx) {
 			atm.onAssetTypeClicked(assetTypeItem)
 			atm.Dismiss()
 		}

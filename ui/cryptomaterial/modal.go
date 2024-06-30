@@ -39,6 +39,8 @@ type Modal struct {
 	firstLoadWithContext func(gtx C)
 }
 
+// The firstLoad() parameter is used to perform actions
+// that require Context before Layout() is called.
 func (t *Theme) ModalFloatTitle(id string, isMobileView bool, firstLoad ...func(gtx C)) *Modal {
 	mod := t.Modal(id, isMobileView, firstLoad...)
 	mod.isFloatTitle = true

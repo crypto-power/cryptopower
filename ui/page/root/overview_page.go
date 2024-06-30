@@ -67,7 +67,6 @@ type OverviewPage struct {
 	orders                    []*instantswap.Order
 	transactions              []*multiWalletTx
 	stakes                    []*multiWalletTx
-	sliderRedirectBtn         *cryptomaterial.Clickable
 	mktValues                 []assetMarketData
 
 	card cryptomaterial.Card
@@ -163,10 +162,9 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 		mixerSlider:           l.Theme.Slider(),
 		infoSyncWalletsSlider: l.Theme.Slider(),
 		card:                  l.Theme.Card(),
-		// sliderRedirectBtn:     l.Theme.NewClickable(false),
-		forceRefreshRates:  l.Theme.NewClickable(false),
-		showNavigationFunc: showNavigationFunc,
-		listInfoWallets:    make([]*components.WalletSyncInfo, 0),
+		forceRefreshRates:     l.Theme.NewClickable(false),
+		showNavigationFunc:    showNavigationFunc,
+		listInfoWallets:       make([]*components.WalletSyncInfo, 0),
 	}
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
@@ -227,12 +225,6 @@ func (pg *OverviewPage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *OverviewPage) HandleUserInteractions(gtx C) {
-	// for pg.sliderRedirectBtn.Clicked(gtx) {
-	// 	walPage := NewWalletSelectorPage(pg.Load)
-	// 	walPage.showNavigationFunc = pg.showNavigationFunc
-	// 	pg.ParentNavigator().Display(walPage)
-	// }
-
 	if pg.assetBalanceSlider.Clicked() {
 		walPage := NewWalletSelectorPage(pg.Load)
 		walPage.showNavigationFunc = pg.showNavigationFunc
@@ -474,7 +466,6 @@ func (pg *OverviewPage) assetBalanceSliderLayout(gtx C, rowHeigh int) D {
 func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem, rowHeigh int) layout.Widget {
 	return func(gtx C) D {
 		return utils.RadiusLayout(gtx, 8, func(gtx C) D {
-			// return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
 			size := pg.contentSliderLayout(item)(gtx).Size
 			if size.Y < rowHeigh {
 				size.Y = rowHeigh
@@ -493,7 +484,6 @@ func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem, row
 					return layout.Center.Layout(gtx, pg.contentSliderLayout(item))
 				}),
 			)
-			// })
 		})
 	}
 }

@@ -61,7 +61,7 @@ func (as *WalletSelector) WalletSelected(callback func(sharedW.Asset)) *WalletSe
 }
 
 func (as *WalletSelector) Handle(gtx C, window app.WindowNavigator) {
-	for as.openSelectorDialog.Clicked(gtx) {
+	if as.openSelectorDialog.Clicked(gtx) {
 		walletSelectorModal := newWalletSelectorModal(as.Load, as.selectedWallet).
 			title(as.dialogTitle).
 			accountValidator(as.walletIsValid).

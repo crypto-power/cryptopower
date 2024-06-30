@@ -230,7 +230,7 @@ func (ws *WalletAndAccountSelector) Changed() bool {
 }
 
 func (ws *WalletAndAccountSelector) Handle(gtx C, window app.WindowNavigator) {
-	for ws.openSelectorDialog.Clicked(gtx) {
+	if ws.openSelectorDialog.Clicked(gtx) {
 		ws.title(ws.dialogTitle).accountValidator(ws.accountIsValid)
 		window.ShowModal(ws.selectorModal)
 	}
@@ -523,9 +523,8 @@ func (sm *selectorModal) accountValidator(accountIsValid func(*sharedW.Account) 
 }
 
 func (sm *selectorModal) Handle(gtx C) {
-	// if sm.eventQueue != nil {
 	for _, selectorItem := range sm.selectorItems {
-		for selectorItem.clickable.Clicked(gtx) {
+		if selectorItem.clickable.Clicked(gtx) {
 			switch item := selectorItem.item.(type) {
 			case *sharedW.Account:
 				if sm.onAccountClicked != nil {
@@ -547,7 +546,6 @@ func (sm *selectorModal) Handle(gtx C) {
 	if sm.infoButton.IconButtonStyle.Button.Clicked(gtx) {
 		sm.infoModalOpen = !sm.infoModalOpen
 	}
-	// }
 
 	if sm.Modal.BackdropClicked(gtx, sm.isCancelable) {
 		sm.Dismiss()

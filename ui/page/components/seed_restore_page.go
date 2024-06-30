@@ -556,7 +556,7 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 		pg.window.ShowModal(walletPasswordModal)
 	}
 
-	for pg.resetSeedFields.Clicked(gtx) {
+	if pg.resetSeedFields.Clicked(gtx) {
 		pg.resetSeeds()
 	}
 

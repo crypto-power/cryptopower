@@ -48,7 +48,7 @@ func (pg *BackupSuccessPage) OnNavigatedTo() {}
 // displayed.
 // Part of the load.Page interface.
 func (pg *BackupSuccessPage) HandleUserInteractions(gtx C) {
-	for pg.actionButton.Clicked(gtx) {
+	if pg.actionButton.Clicked(gtx) {
 		pg.redirectCallback(pg.Load, pg.ParentWindow())
 	}
 }

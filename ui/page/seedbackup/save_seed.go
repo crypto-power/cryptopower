@@ -184,7 +184,7 @@ func divideWordsIntoRows(words []string, numberOfColumns int) []saveSeedRow {
 // displayed.
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) HandleUserInteractions(gtx C) {
-	for pg.actionButton.Clicked(gtx) {
+	if pg.actionButton.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.wallet, pg.seed, pg.wordSeedType, pg.redirectCallback))
 	}
 }
