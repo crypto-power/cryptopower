@@ -23,7 +23,7 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4
-	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
+	github.com/dcrlabs/ltcwallet v0.0.0-20240518141247-13553c8fce6a
 	github.com/decred/dcrd/addrmgr/v2 v2.0.2
 	github.com/decred/dcrd/blockchain/stake/v5 v5.0.0
 	github.com/decred/dcrd/chaincfg/chainhash v1.0.4
@@ -45,15 +45,10 @@ require (
 	github.com/jrick/logrotate v1.0.0
 	github.com/kevinburke/nacl v0.0.0-20190829012316-f3ed23dbd7f8
 	github.com/lightninglabs/neutrino v0.15.0
-	github.com/ltcsuite/ltcd v0.22.1-beta.0.20230329025258-1ea035d2e665
-	github.com/ltcsuite/ltcd/btcec/v2 v2.1.0
-	github.com/ltcsuite/ltcd/ltcutil v1.1.0
-	github.com/ltcsuite/ltcwallet v0.13.1
-	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.1.0
-	github.com/ltcsuite/ltcwallet/wallet/txrules v1.2.0
-	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.1.0
-	github.com/ltcsuite/ltcwallet/walletdb v1.3.5
-	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0
+	github.com/ltcsuite/ltcd v0.23.6-0.20240131072528-64dfa402637a
+	github.com/ltcsuite/ltcd/btcec/v2 v2.3.2
+	github.com/ltcsuite/ltcd/chaincfg/chainhash v1.0.2
+	github.com/ltcsuite/ltcd/ltcutil v1.1.4-0.20240131072528-64dfa402637a
 	github.com/nxadm/tail v1.4.8
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
@@ -131,6 +126,8 @@ require (
 	github.com/gcash/bchd v0.19.0 // indirect
 	github.com/gcash/bchlog v0.0.0-20180913005452-b4f036f92fa6 // indirect
 	github.com/gcash/bchutil v0.0.0-20210113190856-6ea28dff4000 // indirect
+	github.com/gcash/bchwallet v0.10.0 // indirect
+	github.com/gcash/bchwallet/walletdb v0.0.0-20210524114850-4837f9798568 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -170,10 +167,10 @@ require (
 	github.com/lightningnetwork/lnd/ticker v1.0.0 // indirect
 	github.com/lightningnetwork/lnd/tlv v1.0.2 // indirect
 	github.com/ltcsuite/lnd/clock v0.0.0-20200822020009-1a001cbb895a // indirect
-	github.com/ltcsuite/lnd/queue v1.0.3 // indirect
+	github.com/ltcsuite/lnd/queue v1.1.0 // indirect
 	github.com/ltcsuite/lnd/ticker v1.0.1 // indirect
-	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.0-1 // indirect
-	github.com/ltcsuite/neutrino v0.13.2 // indirect
+	github.com/ltcsuite/lnd/tlv v0.0.0-20240222214433-454d35886119 // indirect
+	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.1-0.20240131072528-64dfa402637a // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
@@ -207,7 +204,7 @@ require (
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/protobuf v1.29.1 // indirect
+	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
@@ -228,4 +225,5 @@ replace github.com/lib/pq => github.com/lib/pq v1.10.4
 // github.com/btcsuite/btcwallet.
 replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
-replace decred.org/dcrdex v0.6.3 => github.com/decred/dcrdex v0.0.0-20240207234259-462dcb6e0736
+// https://github.com/ukane-philemon/dcrdex/tree/btc-node
+replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240610032745-5750210859cb

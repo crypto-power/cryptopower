@@ -897,7 +897,8 @@ func (pg *DEXOnboarding) handleEditorEvents(gtx C) {
 				}
 				defer utils.ZeroBytes(seed)
 
-				err := dexc.InitWithPassword(pg.dexPass, seed)
+				seedStr := string(seed)
+				err := dexc.InitWithPassword(pg.dexPass, &seedStr)
 				if err != nil {
 					pg.seedEditor.SetError(fmt.Sprintf("Error initializing dex with seed: %s", err.Error()))
 					return

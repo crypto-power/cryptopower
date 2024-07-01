@@ -724,7 +724,7 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 					return false
 				}
 
-				pg.dexSeed = dexSeed
+				pg.dexSeed = dex.Bytes(dexSeed)
 				pg.showDEXSeedModal()
 				return true
 			})

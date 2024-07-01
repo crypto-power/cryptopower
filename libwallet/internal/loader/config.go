@@ -9,7 +9,7 @@ import (
 	dcrW "decred.org/dcrwallet/v3/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	ltcW "github.com/ltcsuite/ltcwallet/wallet"
+	ltcW "github.com/dcrlabs/ltcwallet/wallet"
 
 	_ "github.com/crypto-power/cryptopower/libwallet/badgerdb" // initialize badger driver
 )

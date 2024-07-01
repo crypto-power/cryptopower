@@ -4,9 +4,9 @@ import (
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	btctxauthor "github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/crypto-power/cryptopower/libwallet/addresshelper"
+	ltctxauthor "github.com/dcrlabs/ltcwallet/wallet/txauthor"
 	"github.com/decred/dcrd/dcrutil/v4"
 	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
-	ltctxauthor "github.com/ltcsuite/ltcwallet/wallet/txauthor"
 )
 
 const scriptVersion = 0

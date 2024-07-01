@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dcrlabs/ltcwallet/waddrmgr"
+	"github.com/dcrlabs/ltcwallet/wallet"
+	_ "github.com/dcrlabs/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
-	"github.com/ltcsuite/ltcwallet/waddrmgr"
-	"github.com/ltcsuite/ltcwallet/wallet"
-	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/utils"

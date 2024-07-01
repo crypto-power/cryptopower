@@ -315,7 +315,6 @@ func (asset *Asset) IsWaiting() bool {
 func (asset *Asset) IsSyncing() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
-
 	return asset.syncData.syncing
 }
 

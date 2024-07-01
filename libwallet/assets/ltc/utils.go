@@ -5,10 +5,10 @@ import (
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/dcrlabs/ltcwallet/waddrmgr"
 	"github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
-	"github.com/ltcsuite/ltcwallet/waddrmgr"
 )
 
 const (
@@ -31,7 +31,7 @@ func GetScope() waddrmgr.KeyScope {
 	// Construct the key scope that will be used within the waddrmgr to
 	// create an HD chain for deriving all of our required keys. A different
 	// scope is used for each specific coin type.
-	return waddrmgr.KeyScopeBIP0084
+	return waddrmgr.KeyScopeBIP0084WithBitcoinCoinID
 }
 
 // AmountLTC converts a litoshi amount to a LTC amount.

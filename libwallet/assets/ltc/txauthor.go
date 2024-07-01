@@ -12,13 +12,14 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+
+	"github.com/dcrlabs/ltcwallet/wallet/txauthor"
+	"github.com/dcrlabs/ltcwallet/wallet/txrules"
+	"github.com/dcrlabs/ltcwallet/wallet/txsizes"
 	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/txscript"
 	"github.com/ltcsuite/ltcd/wire"
-	"github.com/ltcsuite/ltcwallet/wallet/txauthor"
-	"github.com/ltcsuite/ltcwallet/wallet/txrules"
-	"github.com/ltcsuite/ltcwallet/wallet/txsizes"
 )
 
 // TxAuthor holds the information required to construct a transaction that
@@ -295,10 +296,10 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 			return nil, err
 		}
 
-		// prevOutScript := unsignedTx.PrevScripts[index]
+		prevOutScript := unsignedTx.PrevScripts[index]
 		prevOutAmount := int64(asset.TxAuthoredInfo.inputValues[index])
-		// prevOutFetcher := txscript.NewCannedPrevOutputFetcher(prevOutScript, prevOutAmount)
-		sigHashes := txscript.NewTxSigHashes(msgTx)
+		prevOutFetcher := txscript.NewCannedPrevOutputFetcher(prevOutScript, prevOutAmount)
+		sigHashes := txscript.NewTxSigHashes(msgTx, prevOutFetcher)
 
 		witness, signature, err := asset.Internal().LTC.ComputeInputScript(
 			msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
@@ -316,7 +317,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 		flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
 			txscript.ScriptStrictMultiSig | txscript.ScriptDiscourageUpgradableNops
 		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0, flags, nil, nil,
-			prevOutAmount)
+			prevOutAmount, prevOutFetcher)
 		if err != nil {
 			log.Errorf("creating validation engine failed: %v", err)
 			return nil, err

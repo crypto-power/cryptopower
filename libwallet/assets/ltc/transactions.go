@@ -9,7 +9,7 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/ltcsuite/ltcwallet/wallet"
+	"github.com/dcrlabs/ltcwallet/wallet"
 )
 
 // txCache helps to cache the transactions fetched.

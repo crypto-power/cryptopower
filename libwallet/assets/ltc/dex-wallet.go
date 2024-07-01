@@ -9,25 +9,37 @@ package ltc
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"sync"
 	"time"
 
 	"decred.org/dcrdex/client/asset"
 	dexbtc "decred.org/dcrdex/client/asset/btc"
+	"decred.org/dcrdex/dex"
+	dexbtchelper "decred.org/dcrdex/dex/networks/btc"
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/gcs"
 	"github.com/btcsuite/btcd/btcutil/psbt"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	btcwallet "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/wtxmgr"
-	neutrino "github.com/dcrlabs/neutrino-ltc"
-	"github.com/dcrlabs/neutrino-ltc/chain"
+	"github.com/dcrlabs/ltcwallet/chain"
+	neutrino "github.com/dcrlabs/ltcwallet/spv"
+	ltcwaddrmgr "github.com/dcrlabs/ltcwallet/waddrmgr"
+	"github.com/dcrlabs/ltcwallet/wallet"
+	"github.com/dcrlabs/ltcwallet/wallet/txauthor"
+	ltcwtxmgr "github.com/dcrlabs/ltcwallet/wtxmgr"
+	"github.com/decred/slog"
+	"github.com/jrick/logrotate/rotator"
 	btcneutrino "github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
@@ -35,11 +47,10 @@ import (
 	"github.com/ltcsuite/ltcd/ltcutil"
 	ltctxscript "github.com/ltcsuite/ltcd/txscript"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
-	ltcwaddrmgr "github.com/ltcsuite/ltcwallet/waddrmgr"
-	"github.com/ltcsuite/ltcwallet/wallet"
-	"github.com/ltcsuite/ltcwallet/wallet/txauthor"
-	ltcwtxmgr "github.com/ltcsuite/ltcwallet/wtxmgr"
 )
+
+// dexLogLevel is used to reactivate logger after metered logging.
+var dexLogLevel = dex.LevelError
 
 const (
 	DefaultM uint64 = 784931 // From ltcutil. Used for gcs filters.
@@ -47,53 +58,1010 @@ const (
 
 // DEXWallet wraps *wallet.Wallet and implements dexbtc.BTCWallet.
 type DEXWallet struct {
-	w          *wallet.Wallet
-	acctNum    int32
-	spvService *ltcChainService
-	btcParams  *chaincfg.Params
+	w                 *wallet.Wallet
+	acctNum           int32
+	cl                *ChainService
+	btcParams         *chaincfg.Params
+	syncStatusChecker SyncStatusChecker
+	*dexbtc.BlockFiltersScanner
 }
 
-var _ dexbtc.BTCWallet = (*DEXWallet)(nil)
+// dexLogger satisfies dex.Logger.
+type dexLogger struct {
+	meterMtx *sync.RWMutex
+	meters   map[string]time.Time
+	btclog.Logger
+}
+
+func (dl dexLogger) Level() slog.Level {
+	return slog.Level(dl.Logger.Level())
+}
+
+func (dl dexLogger) SetLevel(lvl slog.Level) {
+	dexLogLevel = lvl
+	dl.Logger.SetLevel(btclog.Level(lvl))
+}
+
+func (dl dexLogger) SubLogger(string) dex.Logger {
+	return dl
+}
+
+// FileLogger creates a logger that logs to a file rotator. Subloggers will also
+// log to the file only.
+func (dl dexLogger) FileLogger(_ *rotator.Rotator) dex.Logger {
+	return dl
+}
+
+// Meter enforces a time delay on logging. The first call to a metered logger
+// always logs. Subsequent calls for the same callerID are ignored until the
+// delay is surpassed.
+func (dl dexLogger) Meter(callerID string, delay time.Duration) dex.Logger {
+	if dl.meterMtx == nil {
+		dl.meterMtx = &sync.RWMutex{}
+	}
+
+	dl.meterMtx.Lock()
+	defer dl.meterMtx.Unlock()
+	if dl.meters == nil {
+		dl.meters = make(map[string]time.Time)
+	}
+
+	if lastLog, exists := dl.meters[callerID]; exists && time.Since(lastLog) < delay {
+		dl.Logger.SetLevel(btclog.Level(slog.Disabled.Level()))
+		return dl
+	}
+
+	dl.Logger.SetLevel(btclog.Level(dexLogLevel))
+	dl.meters[callerID] = time.Now()
+	return dl
+}
+
+type SyncStatusChecker interface {
+	IsSyncing() bool
+	IsSynced() bool
+}
+
+var _ dexbtc.CustomWallet = (*DEXWallet)(nil)
+var _ dexbtc.BlockInfoReader = (*DEXWallet)(nil)
 
 // NewDEXWallet returns a new *DEXWallet.
-func NewDEXWallet(w *wallet.Wallet, acctNum int32, nc *chain.NeutrinoClient, btcParams *chaincfg.Params) *DEXWallet {
-	return &DEXWallet{
-		w:       w,
-		acctNum: acctNum,
-		spvService: &ltcChainService{
-			NeutrinoClient: nc,
-		},
-		btcParams: btcParams,
-	}
-}
-
-// AccountInfo returns the account information of the wallet for use by the
-// exchange wallet.
-func (dw *DEXWallet) AccountInfo() dexbtc.XCWalletAccount {
-	acct := dexbtc.XCWalletAccount{
-		AccountNumber: uint32(dw.acctNum),
+func NewDEXWallet(w *wallet.Wallet, acctNum int32, cl *ChainService, btcParams *chaincfg.Params, syncStatusChecker SyncStatusChecker) *DEXWallet {
+	dw := &DEXWallet{
+		w:                 w,
+		acctNum:           acctNum,
+		cl:                cl,
+		btcParams:         btcParams,
+		syncStatusChecker: syncStatusChecker,
 	}
 
-	accountName, err := dw.w.AccountName(GetScope(), acct.AccountNumber)
-	if err == nil {
-		acct.AccountName = accountName
-	} else {
-		log.Errorf("error checking selected DEX account name: %v", err)
-	}
-
-	return acct
+	dw.BlockFiltersScanner = dexbtc.NewBlockFiltersScanner(dw, dexLogger{Logger: log})
+	return dw
 }
 
-func (dw *DEXWallet) Start() (dexbtc.SPVService, error) {
-	return dw.spvService, nil
-}
-
-func (dw *DEXWallet) Birthday() time.Time {
-	return dw.w.Manager.Birthday()
-}
-
+// Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) Reconfigure(*asset.WalletConfig, string) (bool, error) {
-	return false, errors.New("Reconfigure not supported for Cyptopower ltc wallet")
+	return false, errors.New("Reconfigure not supported for Cyptopower btc wallet")
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) RawRequest(_ context.Context, _ string, _ []json.RawMessage) (json.RawMessage, error) {
+	// Not needed for spv wallet.
+	return nil, errors.New("RawRequest not available on spv")
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) OwnsAddress(addr btcutil.Address) (bool, error) {
+	ltcAddr, err := dw.addrBTC2LTC(addr)
+	if err != nil {
+		return false, err
+	}
+
+	return dw.w.HaveAddress(ltcAddr)
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) SendRawTransaction(tx *wire.MsgTx) (*chainhash.Hash, error) {
+	/*
+		Note:
+
+		The upstream *spvWallet implementation of this method expects that this
+		w.PublishTransaction method may take quite some time to return, so it calls the
+		method in a goroutine and assumes the method call was successful if the method
+		does not complete after waiting for some seconds.
+
+		The upstream implementation also unlocks the tx inputs to ensure that the locked
+		balance computation isn't affected by coins that were previously locked but are
+		now spent.
+	*/
+
+	ltcTx, err := convertMsgTxToLTC(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dw.w.PublishTransaction(ltcTx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	txHash := tx.TxHash()
+	return &txHash, nil
+}
+
+// Part of dexbtc.TipRedemptionWallet interface.
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) GetBlock(blockHash chainhash.Hash) (*wire.MsgBlock, error) {
+	block, err := dw.cl.GetBlock(blockHash)
+	if err != nil {
+		return nil, fmt.Errorf("neutrino GetBlock error: %v", err)
+	}
+
+	return block.MsgBlock(), nil
+}
+
+// Part of dexbtc.Wallet interface.
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) GetBlockHash(blockHeight int64) (*chainhash.Hash, error) {
+	return dw.cl.GetBlockHash(blockHeight)
+}
+
+// Part of dexbtc.TipRedemptionWallet interface.
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) GetBlockHeight(h *chainhash.Hash) (int32, error) {
+	return dw.cl.GetBlockHeight(h)
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) GetBestBlockHash() (*chainhash.Hash, error) {
+	blk := dw.syncedTo()
+	return &blk.Hash, nil
+}
+
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) GetBlockHeaderVerbose(blockHash *chainhash.Hash) (*wire.BlockHeader, error) {
+	return dw.cl.GetBlockHeader(blockHash)
+}
+
+// GetBestBlockHeight returns the height of the best block processed by the
+// wallet, which indicates the height at which the compact filters have been
+// retrieved and scanned for wallet addresses. This is may be less than
+// getChainHeight, which indicates the height that the chain service has reached
+// in its retrieval of block headers and compact filter headers.
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) GetBestBlockHeight() (int32, error) {
+	return dw.syncedTo().Height, nil
+}
+
+// getChainStamp satisfies dexbtc.chainStamper for manual median time
+// calculations.
+func (dw *DEXWallet) getChainStamp(blockHash *chainhash.Hash) (stamp time.Time, prevHash *chainhash.Hash, err error) {
+	hdr, err := dw.cl.GetBlockHeader(blockHash)
+	if err != nil {
+		return
+	}
+	return hdr.Timestamp, &hdr.PrevBlock, nil
+}
+
+// MedianTime is the median time for the current best block.
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) MedianTime() (time.Time, error) {
+	blk := dw.syncedTo()
+	return dexbtc.CalcMedianTime(dw.getChainStamp, &blk.Hash)
+}
+
+// GetChainHeight is only for confirmations since it does not reflect the wallet
+// manager's sync height, just the chain service.
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) GetChainHeight() (int32, error) {
+	blk, err := dw.cl.BestBlock()
+	if err != nil {
+		return -1, err
+	}
+	return blk.Height, err
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) PeerCount() (uint32, error) {
+	if !dw.syncStatusChecker.IsSyncing() && !dw.syncStatusChecker.IsSynced() {
+		return 0, nil // avoid expensive call to dw.cl.Peers()
+	}
+
+	return uint32(len(dw.cl.Peers())), nil
+}
+
+// syncHeight is the best known sync height among peers.
+func (dw *DEXWallet) syncHeight() int32 {
+	if !dw.syncStatusChecker.IsSyncing() && !dw.syncStatusChecker.IsSynced() {
+		return 0 // avoid expensive call to dw.cl.Peers()
+	}
+
+	var maxHeight int32
+	for _, p := range dw.cl.Peers() {
+		tipHeight := p.StartingHeight()
+		lastBlockHeight := p.LastBlock()
+		if lastBlockHeight > tipHeight {
+			tipHeight = lastBlockHeight
+		}
+		if tipHeight > maxHeight {
+			maxHeight = tipHeight
+		}
+	}
+	return maxHeight
+}
+
+// SyncStatus is information about the wallet's sync status.
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) SyncStatus() (*dexbtc.SyncStatus, error) {
+	walletBlock := dw.syncedTo()
+	return &dexbtc.SyncStatus{
+		Target:  dw.syncHeight(),
+		Height:  walletBlock.Height,
+		Syncing: dw.syncStatusChecker.IsSyncing(),
+	}, nil
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) Balances() (*dexbtc.GetBalancesResult, error) {
+	// Determine trusted vs untrusted coins with listunspent.
+	unspents, err := dw.w.ListUnspent(0, math.MaxInt32, dw.accountName())
+	if err != nil {
+		return nil, fmt.Errorf("error listing unspent outputs: %w", err)
+	}
+	var trusted, untrusted ltcutil.Amount
+	for _, txout := range unspents {
+		if txout.Confirmations > 0 || dw.ownsInputs(txout.TxID) {
+			trusted += ltcutil.Amount(AmountLitoshi(txout.Amount))
+			continue
+		}
+		untrusted += ltcutil.Amount(AmountLitoshi(txout.Amount))
+	}
+
+	// listunspent does not include immature coinbase outputs or locked outputs.
+	bals, err := dw.w.CalculateAccountBalances(uint32(dw.acctNum), 0 /* confs */)
+	if err != nil {
+		return nil, err
+	}
+	log.Tracef("Bals: spendable = %v (%v trusted, %v untrusted, %v assumed locked), immature = %v",
+		bals.Spendable, trusted, untrusted, bals.Spendable-trusted-untrusted, bals.ImmatureReward)
+	// Locked outputs would be in wallet.Balances.Spendable. Assume they would
+	// be considered trusted and add them back in.
+	if all := trusted + untrusted; bals.Spendable > all {
+		trusted += bals.Spendable - all
+	}
+
+	return &dexbtc.GetBalancesResult{
+		Mine: dexbtc.Balances{
+			Trusted:   trusted.ToBTC(),
+			Untrusted: untrusted.ToBTC(),
+			Immature:  bals.ImmatureReward.ToBTC(),
+		},
+	}, nil
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) ListUnspent() ([]*dexbtc.ListUnspentResult, error) {
+	acctName := dw.accountName()
+	unspents, err := dw.w.ListUnspent(0, math.MaxInt32, acctName)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*dexbtc.ListUnspentResult, 0, len(unspents))
+	for _, utxo := range unspents {
+		// ltcwallet's ListUnspent takes either a list of addresses, or else
+		// returns all non-locked unspent outputs for all accounts. We need to
+		// iterate the results anyway to convert type.
+		if utxo.Account != acctName {
+			continue
+		}
+
+		// If the utxo is unconfirmed, we should determine whether it's "safe"
+		// by seeing if we control the inputs of its transaction.
+		safe := utxo.Confirmations > 0 || dw.ownsInputs(utxo.TxID)
+
+		// These hex decodings are unlikely to fail because they come directly
+		// from the listunspent result. Regardless, they should not result in an
+		// error for the caller as we can return the valid utxos.
+		pkScript, err := hex.DecodeString(utxo.ScriptPubKey)
+		if err != nil {
+			log.Warnf("ScriptPubKey decode failure: %v", err)
+			continue
+		}
+
+		redeemScript, err := hex.DecodeString(utxo.RedeemScript)
+		if err != nil {
+			log.Warnf("ScriptPubKey decode failure: %v", err)
+			continue
+		}
+
+		res = append(res, &dexbtc.ListUnspentResult{
+			TxID:    utxo.TxID,
+			Vout:    utxo.Vout,
+			Address: utxo.Address,
+			// Label: ,
+			ScriptPubKey:  pkScript,
+			Amount:        utxo.Amount,
+			Confirmations: uint32(utxo.Confirmations),
+			RedeemScript:  redeemScript,
+			Spendable:     utxo.Spendable,
+			// Solvable: ,
+			SafePtr: &safe,
+		})
+	}
+	return res, nil
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) LockUnspent(unlock bool, ops []*dexbtc.Output) error {
+	switch {
+	case unlock && len(ops) == 0:
+		dw.w.ResetLockedOutpoints()
+	default:
+		for _, op := range ops {
+			op := ltcwire.OutPoint{Hash: ltcchainhash.Hash(op.Pt.TxHash), Index: op.Pt.Vout}
+			if unlock {
+				dw.w.UnlockOutpoint(op)
+			} else {
+				dw.w.LockOutpoint(op)
+			}
+		}
+	}
+	return nil
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) ListLockUnspent() ([]*dexbtc.RPCOutpoint, error) {
+	outpoints := dw.w.LockedOutpoints()
+	pts := make([]*dexbtc.RPCOutpoint, 0, len(outpoints))
+	for _, pt := range outpoints {
+		pts = append(pts, &dexbtc.RPCOutpoint{
+			TxID: pt.Txid,
+			Vout: pt.Vout,
+		})
+	}
+	return pts, nil
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) ChangeAddress() (btcutil.Address, error) {
+	ltcAddr, err := dw.w.NewChangeAddress(uint32(dw.acctNum), ltcwaddrmgr.KeyScopeBIP0084WithBitcoinCoinID)
+	if err != nil {
+		return nil, err
+	}
+	return dw.addrLTC2BTC(ltcAddr)
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) ExternalAddress() (btcutil.Address, error) {
+	ltcAddr, err := dw.w.NewAddress(uint32(dw.acctNum), ltcwaddrmgr.KeyScopeBIP0084WithBitcoinCoinID)
+	if err != nil {
+		return nil, err
+	}
+	return dw.addrLTC2BTC(ltcAddr)
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) SignTx(btcTx *wire.MsgTx) (*wire.MsgTx, error) {
+	ltcTx, err := convertMsgTxToLTC(btcTx)
+	if err != nil {
+		return nil, err
+	}
+
+	var prevPkScripts [][]byte
+	var inputValues []ltcutil.Amount
+	for _, txIn := range btcTx.TxIn {
+		_, txOut, _, _, err := dw.fetchInputInfo(&txIn.PreviousOutPoint)
+		if err != nil {
+			return nil, err
+		}
+		inputValues = append(inputValues, ltcutil.Amount(txOut.Value))
+		prevPkScripts = append(prevPkScripts, txOut.PkScript)
+		// Zero the previous witness and signature script or else
+		// AddAllInputScripts does some weird stuff.
+		txIn.SignatureScript = nil
+		txIn.Witness = nil
+	}
+
+	err = txauthor.AddAllInputScripts(ltcTx, prevPkScripts, inputValues, &secretSource{dw, dw.w.ChainParams()})
+	if err != nil {
+		return nil, err
+	}
+	if len(ltcTx.TxIn) != len(btcTx.TxIn) {
+		return nil, fmt.Errorf("txin count mismatch")
+	}
+	for i, txIn := range btcTx.TxIn {
+		ltcIn := ltcTx.TxIn[i]
+		txIn.SignatureScript = ltcIn.SignatureScript
+		txIn.Witness = make(wire.TxWitness, len(ltcIn.Witness))
+		copy(txIn.Witness, ltcIn.Witness)
+	}
+	return btcTx, nil
+}
+
+// PrivKeyForAddress retrieves the private key associated with the specified
+// address.
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) PrivKeyForAddress(addr string) (*btcec.PrivateKey, error) {
+	a, err := decodeAddress(addr, dw.w.ChainParams())
+	if err != nil {
+		return nil, err
+	}
+
+	ltcKey, err := dw.w.PrivKeyForAddress(a)
+	if err != nil {
+		return nil, err
+	}
+
+	priv, _ /* pub */ := btcec.PrivKeyFromBytes(ltcKey.Serialize())
+	return priv, nil
+}
+
+// Part of dexbtc.TxFeeEstimator interface.
+func (dw *DEXWallet) EstimateSendTxFee(tx *wire.MsgTx, feeRate uint64, subtract bool) (fee uint64, err error) {
+	minTxSize := uint64(tx.SerializeSize())
+	var sendAmount uint64
+	for _, txOut := range tx.TxOut {
+		sendAmount += uint64(txOut.Value)
+	}
+
+	unspents, err := dw.ListUnspent()
+	if err != nil {
+		return 0, fmt.Errorf("error listing unspent outputs: %w", err)
+	}
+
+	utxos, _, _, err := dexbtc.ConvertUnspent(0, unspents, dw.btcParams)
+	if err != nil {
+		return 0, fmt.Errorf("error converting unspent outputs: %w", err)
+	}
+
+	enough := dexbtc.SendEnough(sendAmount, feeRate, subtract, minTxSize, true, false)
+	sum, _, inputsSize, _, _, _, _, err := dexbtc.TryFund(utxos, enough)
+	if err != nil {
+		return 0, err
+	}
+
+	txSize := minTxSize + inputsSize
+	estFee := feeRate * txSize
+	remaining := sum - sendAmount
+
+	// Check if there will be a change output if there is enough remaining.
+	estFeeWithChange := (txSize + dexbtchelper.P2WPKHOutputSize) * feeRate
+	var changeValue uint64
+	if remaining > estFeeWithChange {
+		changeValue = remaining - estFeeWithChange
+	}
+
+	if subtract {
+		// fees are already included in sendAmount, anything else is change.
+		changeValue = remaining
+	}
+
+	var finalFee uint64
+	if dexbtchelper.IsDustVal(dexbtchelper.P2WPKHOutputSize, changeValue, feeRate, true) {
+		// remaining cannot cover a non-dust change and the fee for the change.
+		finalFee = estFee + remaining
+	} else {
+		// additional fee will be paid for non-dust change
+		finalFee = estFeeWithChange
+	}
+
+	if subtract {
+		sendAmount -= finalFee
+	}
+	if dexbtchelper.IsDustVal(minTxSize, sendAmount, feeRate, true) {
+		return 0, errors.New("output value is dust")
+	}
+
+	return finalFee, nil
+}
+
+// SwapConfirmations attempts to get the number of confirmations and the spend
+// status for the specified tx output. For swap outputs that were not generated
+// by this wallet, startTime must be supplied to limit the search. Use the match
+// time assigned by the server.
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) SwapConfirmations(txHash *chainhash.Hash, vout uint32, pkScript []byte,
+	startTime time.Time) (confs uint32, spent bool, err error) {
+
+	// First, check if it's a wallet transaction. We probably won't be able
+	// to see the spend status, since the wallet doesn't track the swap contract
+	// output, but we can get the block if it's been mined.
+	blockHash, confs, spent, err := dw.confirmations(txHash, vout)
+	if err == nil {
+		return confs, spent, nil
+	}
+	var assumedMempool bool
+	switch err {
+	case dexbtc.WalletTransactionNotFound:
+		log.Tracef("swapConfirmations - WalletTransactionNotFound: %v:%d", txHash, vout)
+	case dexbtc.SpentStatusUnknown:
+		log.Tracef("swapConfirmations - SpentStatusUnknown: %v:%d (block %v, confs %d)",
+			txHash, vout, blockHash, confs)
+		if blockHash == nil {
+			// We generated this swap, but it probably hasn't been mined yet.
+			// It's SpentStatusUnknown because the wallet doesn't track the
+			// spend status of the swap contract output itself, since it's not
+			// recognized as a wallet output. We'll still try to find the
+			// confirmations with other means, but if we can't find it, we'll
+			// report it as a zero-conf unspent output. This ignores the remote
+			// possibility that the output could be both in mempool and spent.
+			assumedMempool = true
+		}
+	default:
+		return 0, false, err
+	}
+
+	// If we still don't have the block hash, we may have it stored. Check the
+	// dex database first. This won't give us the confirmations and spent
+	// status, but it will allow us to short circuit a longer scan if we already
+	// know the output is spent.
+	if blockHash == nil {
+		blockHash, _ = dw.MainchainBlockForStoredTx(txHash)
+	}
+
+	// Our last option is neutrino.
+	log.Tracef("swapConfirmations - scanFilters: %v:%d (block %v, start time %v)",
+		txHash, vout, blockHash, startTime)
+	walletBlock := dw.syncedTo() // where cfilters are received and processed
+	walletTip := walletBlock.Height
+	utxo, err := dw.ScanFilters(txHash, vout, pkScript, walletTip, startTime, blockHash)
+	if err != nil {
+		return 0, false, err
+	}
+
+	if utxo.Spend == nil && utxo.BlockHash == nil {
+		if assumedMempool {
+			log.Tracef("swapConfirmations - scanFilters did not find %v:%d, assuming in mempool.",
+				txHash, vout)
+			// NOT asset.CoinNotFoundError since this is normal for mempool
+			// transactions with an SPV wallet.
+			return 0, false, nil
+		}
+		return 0, false, fmt.Errorf("output %s:%v not found with search parameters startTime = %s, pkScript = %x",
+			txHash, vout, startTime, pkScript)
+	}
+
+	if utxo.BlockHash != nil {
+		bestHeight, err := dw.GetChainHeight()
+		if err != nil {
+			return 0, false, fmt.Errorf("getBestBlockHeight error: %v", err)
+		}
+		confs = uint32(bestHeight) - utxo.BlockHeight + 1
+	}
+
+	if utxo.Spend != nil {
+		// In the off-chance that a spend was found but not the output itself,
+		// confs will be incorrect here.
+		// In situations where we're looking for the counter-party's swap, we
+		// revoke if it's found to be spent, without inspecting the confs, so
+		// accuracy of confs is not significant. When it's our output, we'll
+		// know the block and won't end up here. (even if we did, we just end up
+		// sending out some inaccurate Data-severity notifications to the UI
+		// until the match progresses)
+		return confs, true, nil
+	}
+
+	// unspent
+	return confs, false, nil
+}
+
+// confirmations looks for the confirmation count and spend status on a
+// transaction output that pays to this wallet.
+func (dw *DEXWallet) confirmations(txHash *chainhash.Hash, vout uint32) (blockHash *chainhash.Hash, confs uint32, spent bool, err error) {
+	details, err := dw.walletTransaction(txHash)
+	if err != nil {
+		return nil, 0, false, err
+	}
+
+	if details.Block.Hash != (chainhash.Hash{}) {
+		blockHash = &details.Block.Hash
+		height, err := dw.GetChainHeight()
+		if err != nil {
+			return nil, 0, false, err
+		}
+		confs = uint32(confirms(details.Block.Height, height))
+	}
+
+	spent, found := outputSpendStatus(details, vout)
+	if found {
+		return blockHash, confs, spent, nil
+	}
+
+	return blockHash, confs, false, dexbtc.SpentStatusUnknown
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) Locked() bool {
+	return dw.w.Locked()
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) WalletLock() error {
+	dw.w.Lock()
+	return nil
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) WalletUnlock(pw []byte) error {
+	return dw.w.Unlock(pw, nil)
+}
+
+// GetBlockHeader gets the *dexbtc.BlockHeader for the specified block hash. It also
+// returns a bool value to indicate whether this block is a part of main chain.
+// For orphaned blocks header.Confirmations is negative.
+// Part of dexbtc.TipRedemptionWallet interface.
+func (dw *DEXWallet) GetBlockHeader(blockHash *chainhash.Hash) (header *dexbtc.BlockHeader, mainchain bool, err error) {
+	hdr, err := dw.cl.GetBlockHeader(blockHash)
+	if err != nil {
+		return nil, false, err
+	}
+
+	tip, err := dw.cl.BestBlock()
+	if err != nil {
+		return nil, false, fmt.Errorf("BestBlock error: %v", err)
+	}
+
+	blockHeight, err := dw.cl.GetBlockHeight(blockHash)
+	if err != nil {
+		return nil, false, err
+	}
+
+	confirmations := int64(-1)
+	mainchain = dw.blockIsMainchain(blockHash, blockHeight)
+	if mainchain {
+		confirmations = int64(confirms(blockHeight, tip.Height))
+	}
+
+	return &dexbtc.BlockHeader{
+		Hash:              hdr.BlockHash().String(),
+		Confirmations:     confirmations,
+		Height:            int64(blockHeight),
+		Time:              hdr.Timestamp.Unix(),
+		PreviousBlockHash: hdr.PrevBlock.String(),
+	}, mainchain, nil
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) GetBestBlockHeader() (*dexbtc.BlockHeader, error) {
+	hash, err := dw.GetBestBlockHash()
+	if err != nil {
+		return nil, err
+	}
+	hdr, _, err := dw.GetBlockHeader(hash)
+	return hdr, err
+}
+
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) Connect(ctx context.Context, wg *sync.WaitGroup) (err error) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ticker := time.NewTicker(time.Minute * 20)
+		defer ticker.Stop()
+		expiration := time.Hour * 2
+		for {
+			select {
+			case <-ticker.C:
+				dw.CleanCaches(expiration)
+
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return nil
+}
+
+// GetTxOut finds an unspent transaction output and its number of confirmations.
+// To match the behavior of the RPC method, even if an output is found, if it's
+// known to be spent, no *wire.TxOut and no error will be returned.
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) GetTxOut(txHash *chainhash.Hash, vout uint32, pkScript []byte, startTime time.Time) (*wire.TxOut, uint32, error) {
+	// Check for a wallet transaction first
+	txDetails, err := dw.walletTransaction(txHash)
+	var blockHash *chainhash.Hash
+	if err != nil && !errors.Is(err, dexbtc.WalletTransactionNotFound) {
+		return nil, 0, fmt.Errorf("walletTransaction error: %w", err)
+	}
+
+	if txDetails != nil {
+		spent, found := outputSpendStatus(txDetails, vout)
+		if found {
+			if spent {
+				return nil, 0, nil
+			}
+			if len(txDetails.MsgTx.TxOut) <= int(vout) {
+				return nil, 0, fmt.Errorf("wallet transaction %s doesn't have enough outputs for vout %d", txHash, vout)
+			}
+
+			var confs uint32
+			if txDetails.Block.Height > 0 {
+				tip, err := dw.cl.BestBlock()
+				if err != nil {
+					return nil, 0, fmt.Errorf("BestBlock error: %v", err)
+				}
+				confs = uint32(confirms(txDetails.Block.Height, tip.Height))
+			}
+
+			msgTx := &txDetails.MsgTx
+			if len(msgTx.TxOut) <= int(vout) {
+				return nil, 0, fmt.Errorf("wallet transaction %s found, but not enough outputs for vout %d", txHash, vout)
+			}
+			return msgTx.TxOut[vout], confs, nil
+		}
+		if txDetails.Block.Hash != (chainhash.Hash{}) {
+			blockHash = &txDetails.Block.Hash
+		}
+	}
+
+	// We don't really know if it's spent, so we'll need to scan.
+	walletBlock := dw.syncedTo() // where cfilters are received and processed
+	walletTip := walletBlock.Height
+	utxo, err := dw.ScanFilters(txHash, vout, pkScript, walletTip, startTime, blockHash)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if utxo == nil || utxo.Spend != nil || utxo.BlockHash == nil {
+		return nil, 0, nil
+	}
+
+	tip, err := dw.cl.CS.BestBlock()
+	if err != nil {
+		return nil, 0, fmt.Errorf("BestBlock error: %v", err)
+	}
+
+	confs := uint32(confirms(int32(utxo.BlockHeight), tip.Height))
+
+	return utxo.TxOut, confs, nil
+}
+
+// SearchBlockForRedemptions attempts to find spending info for the specified
+// contracts by searching every input of all txs in the provided block range.
+// Part of dexbtc.TipRedemptionWallet interface.
+func (dw *DEXWallet) SearchBlockForRedemptions(ctx context.Context, reqs map[dexbtc.OutPoint]*dexbtc.FindRedemptionReq,
+	blockHash chainhash.Hash) (discovered map[dexbtc.OutPoint]*dexbtc.FindRedemptionResult) {
+
+	// Just match all the scripts together.
+	scripts := make([][]byte, 0, len(reqs))
+	for _, req := range reqs {
+		scripts = append(scripts, req.PkScript())
+	}
+
+	discovered = make(map[dexbtc.OutPoint]*dexbtc.FindRedemptionResult, len(reqs))
+
+	matchFound, err := dw.MatchPkScript(&blockHash, scripts)
+	if err != nil {
+		log.Errorf("matchPkScript error: %v", err)
+		return
+	}
+
+	if !matchFound {
+		return
+	}
+
+	// There is at least one match. Pull the block.
+	block, err := dw.cl.GetBlock(blockHash)
+	if err != nil {
+		log.Errorf("neutrino GetBlock error: %v", err)
+		return
+	}
+
+	for _, msgTx := range block.MsgBlock().Transactions {
+		newlyDiscovered := dexbtc.FindRedemptionsInTxWithHasher(ctx, true, reqs, msgTx, dw.btcParams, hashTx)
+		for outPt, res := range newlyDiscovered {
+			discovered[outPt] = res
+		}
+	}
+	return
+}
+
+// FindRedemptionsInMempool is unsupported for SPV.
+func (dw *DEXWallet) FindRedemptionsInMempool(_ context.Context, _ map[dexbtc.OutPoint]*dexbtc.FindRedemptionReq) (discovered map[dexbtc.OutPoint]*dexbtc.FindRedemptionResult) {
+	return
+}
+
+// GetWalletTransaction checks the wallet database for the specified
+// transaction. Only transactions with output scripts that pay to the wallet or
+// transactions that spend wallet outputs are stored in the wallet database.
+// This is pretty much copy-paste from btcwallet 'gettransaction' JSON-RPC
+// handler.
+// Part of dexbtc.Wallet interface.
+func (dw *DEXWallet) GetWalletTransaction(txHash *chainhash.Hash) (*dexbtc.GetTransactionResult, error) {
+	details, err := dw.walletTransaction(txHash)
+	if err != nil {
+		if errors.Is(err, dexbtc.WalletTransactionNotFound) {
+			return nil, asset.CoinNotFoundError // for the asset.Wallet interface
+		}
+		return nil, err
+	}
+
+	syncBlock := dw.syncedTo()
+
+	// TODO: The serialized transaction is already in the DB, so reserializing
+	// might be avoided here. According to btcwallet, details.SerializedTx is
+	// "optional" (?), but we might check for it.
+	txRaw, err := serializeMsgTx(&details.MsgTx)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &dexbtc.GetTransactionResult{
+		TxID:         txHash.String(),
+		Bytes:        txRaw, // 'Hex' field name is a lie, kinda
+		Time:         uint64(details.Received.Unix()),
+		TimeReceived: uint64(details.Received.Unix()),
+	}
+
+	if details.Block.Height >= 0 {
+		ret.BlockHash = details.Block.Hash.String()
+		ret.BlockTime = uint64(details.Block.Time.Unix())
+		// ret.BlockHeight = uint64(details.Block.Height)
+		ret.Confirmations = uint64(confirms(details.Block.Height, syncBlock.Height))
+	}
+
+	return ret, nil
+}
+
+// Implements TxLister.
+func (dw *DEXWallet) ListTransactionsSinceBlock(blockHeight int32) ([]*dexbtc.ListTransactionsResult, error) {
+	tip, err := dw.cl.CS.BestBlock()
+	if err != nil {
+		return nil, fmt.Errorf("BestBlock error: %v", err)
+	}
+
+	// We use GetTransactions instead of ListSinceBlock, because ListSinceBlock
+	// does not include transactions that pay to a change address, which
+	// Redeem, Refund, and RedeemBond do.
+	startHeight := wallet.NewBlockIdentifierFromHeight(blockHeight)
+	endHeight := wallet.NewBlockIdentifierFromHeight(tip.Height)
+	res, err := dw.w.GetTransactions(startHeight, endHeight, dw.accountName(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	txs := make([]*dexbtc.ListTransactionsResult, 0, len(res.MinedTransactions)+len(res.UnminedTransactions))
+
+	toLTR := func(tx *wallet.TransactionSummary, blockHeight uint32, blockTime uint64) *dexbtc.ListTransactionsResult {
+		fee := tx.Fee.ToBTC()
+		return &dexbtc.ListTransactionsResult{
+			TxID:        tx.Hash.String(),
+			BlockHeight: blockHeight,
+			BlockTime:   blockTime,
+			Fee:         &fee,
+			Send:        len(tx.MyInputs) > 0,
+		}
+	}
+
+	for _, block := range res.MinedTransactions {
+		for _, tx := range block.Transactions {
+			txs = append(txs, toLTR(&tx, uint32(block.Height), uint64(block.Timestamp)))
+		}
+	}
+
+	for _, tx := range res.UnminedTransactions {
+		txs = append(txs, toLTR(&tx, 0, 0))
+	}
+
+	return txs, nil
+}
+
+func hashTx(tx *wire.MsgTx) *chainhash.Hash {
+	h := tx.TxHash()
+	return &h
+}
+
+// MatchPkScript pulls the filter for the block and attempts to match the
+// supplied scripts.
+// Part of dexbtc.BlockInfoReader interface.
+func (dw *DEXWallet) MatchPkScript(blockHash *chainhash.Hash, scripts [][]byte) (bool, error) {
+	filter, err := dw.cl.GetCFilter(*blockHash, wire.GCSFilterRegular)
+	if err != nil {
+		return false, fmt.Errorf("GetCFilter error: %w", err)
+	}
+
+	if filter.N() == 0 {
+		return false, fmt.Errorf("unexpected empty filter for %s", blockHash)
+	}
+
+	var filterKey [gcs.KeySize]byte
+	copy(filterKey[:], blockHash[:gcs.KeySize])
+
+	matchFound, err := filter.MatchAny(filterKey, scripts)
+	if err != nil {
+		return false, fmt.Errorf("MatchAny error: %w", err)
+	}
+	return matchFound, nil
+}
+
+// blockIsMainchain will be true if the blockHash is that of a mainchain block.
+func (dw *DEXWallet) blockIsMainchain(blockHash *chainhash.Hash, blockHeight int32) bool {
+	if blockHeight < 0 {
+		var err error
+		blockHeight, err = dw.cl.GetBlockHeight(blockHash)
+		if err != nil {
+			log.Errorf("Error getting block height for hash %s", blockHash)
+			return false
+		}
+	}
+	checkHash, err := dw.cl.GetBlockHash(int64(blockHeight))
+	if err != nil {
+		log.Errorf("Error retrieving block hash for height %d", blockHeight)
+		return false
+	}
+
+	return *checkHash == *blockHash
+}
+
+// ownsInputs determines if we own the inputs of the tx.
+func (dw *DEXWallet) ownsInputs(txid string) bool {
+	txHash, err := chainhash.NewHashFromStr(txid)
+	if err != nil {
+		log.Warnf("Error decoding txid %q: %v", txid, err)
+		return false
+	}
+	txDetails, err := dw.walletTransaction(txHash)
+	if err != nil {
+		log.Warnf("walletTransaction(%v) error: %v", txid, err)
+		return false
+	}
+
+	for _, txIn := range txDetails.MsgTx.TxIn {
+		ltcOp := &ltcwire.OutPoint{
+			Hash:  ltcchainhash.Hash(txIn.PreviousOutPoint.Hash),
+			Index: txIn.PreviousOutPoint.Index,
+		}
+		_, _, _, _, err = dw.w.FetchInputInfo(ltcOp)
+		if err != nil {
+			if !errors.Is(err, wallet.ErrNotMine) {
+				log.Warnf("FetchInputInfo error: %v", err)
+			}
+			return false
+		}
+	}
+	return true
+}
+
+// outputSpendStatus will return the spend status of the output if it's found
+// in the TxDetails.Credits.
+func outputSpendStatus(details *wtxmgr.TxDetails, vout uint32) (spend, found bool) {
+	for _, credit := range details.Credits {
+		if credit.Index == vout {
+			return credit.Spent, true
+		}
+	}
+	return false, false
+}
+
+func confirms(txHeight, curHeight int32) int32 {
+	switch {
+	case txHeight == -1, txHeight > curHeight:
+		return 0
+	default:
+		return curHeight - txHeight + 1
+	}
+}
+
+// accountInfo returns the account name of the wallet.
+func (dw *DEXWallet) accountName() string {
+	accountName, err := dw.w.AccountName(GetScope(), uint32(dw.acctNum))
+	if err == nil {
+		return accountName
+	}
+
+	log.Errorf("error checking selected DEX account name: %v", err)
+	return "" // return "default"?
+}
+
+// serializeMsgTx serializes the wire.MsgTx.
+func serializeMsgTx(msgTx *wire.MsgTx) ([]byte, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, msgTx.SerializeSize()))
+	err := msgTx.Serialize(buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func (dw *DEXWallet) txDetails(txHash *ltcchainhash.Hash) (*ltcwtxmgr.TxDetails, error) {
@@ -116,100 +1084,12 @@ func (dw *DEXWallet) addrBTC2LTC(addr btcutil.Address) (ltcutil.Address, error) 
 	return ltcutil.DecodeAddress(addr.String(), dw.w.ChainParams())
 }
 
-func (dw *DEXWallet) PublishTransaction(btcTx *wire.MsgTx, label string) error {
-	ltcTx, err := convertMsgTxToLTC(btcTx)
-	if err != nil {
-		return err
-	}
-
-	return dw.w.PublishTransaction(ltcTx, label)
-}
-
-func (dw *DEXWallet) CalculateAccountBalances(account uint32, confirms int32) (btcwallet.Balances, error) {
-	bals, err := dw.w.CalculateAccountBalances(account, confirms)
-	if err != nil {
-		return btcwallet.Balances{}, err
-	}
-	return btcwallet.Balances{
-		Total:          btcutil.Amount(bals.Total),
-		Spendable:      btcutil.Amount(bals.Spendable),
-		ImmatureReward: btcutil.Amount(bals.ImmatureReward),
-	}, nil
-}
-
-func (dw *DEXWallet) ListSinceBlock(start, end, syncHeight int32) ([]btcjson.ListTransactionsResult, error) {
-	res, err := dw.w.ListSinceBlock(start, end, syncHeight)
-	if err != nil {
-		return nil, err
-	}
-
-	btcRes := make([]btcjson.ListTransactionsResult, len(res))
-	for i, r := range res {
-		btcRes[i] = btcjson.ListTransactionsResult{
-			Abandoned:         r.Abandoned,
-			Account:           r.Account,
-			Address:           r.Address,
-			Amount:            r.Amount,
-			BIP125Replaceable: r.BIP125Replaceable,
-			BlockHash:         r.BlockHash,
-			BlockHeight:       r.BlockHeight,
-			BlockIndex:        r.BlockIndex,
-			BlockTime:         r.BlockTime,
-			Category:          r.Category,
-			Confirmations:     r.Confirmations,
-			Fee:               r.Fee,
-			Generated:         r.Generated,
-			InvolvesWatchOnly: r.InvolvesWatchOnly,
-			Label:             r.Label,
-			Time:              r.Time,
-			TimeReceived:      r.TimeReceived,
-			Trusted:           r.Trusted,
-			TxID:              r.TxID,
-			Vout:              r.Vout,
-			WalletConflicts:   r.WalletConflicts,
-			Comment:           r.Comment,
-			OtherAccount:      r.OtherAccount,
-		}
-	}
-
-	return btcRes, nil
-}
-
-func (dw *DEXWallet) ListUnspent(minconf, maxconf int32, acctName string) ([]*btcjson.ListUnspentResult, error) {
-	// ltcwallet's ListUnspent takes either a list of addresses, or else returns
-	// all non-locked unspent outputs for all accounts. We need to iterate the
-	// results anyway to convert type.
-	uns, err := dw.w.ListUnspent(minconf, maxconf, acctName)
-	if err != nil {
-		return nil, err
-	}
-
-	outs := make([]*btcjson.ListUnspentResult, len(uns))
-	for i, u := range uns {
-		if u.Account != acctName {
-			continue
-		}
-		outs[i] = &btcjson.ListUnspentResult{
-			TxID:          u.TxID,
-			Vout:          u.Vout,
-			Address:       u.Address,
-			Account:       u.Account,
-			ScriptPubKey:  u.ScriptPubKey,
-			RedeemScript:  u.RedeemScript,
-			Amount:        u.Amount,
-			Confirmations: u.Confirmations,
-			Spendable:     u.Spendable,
-		}
-	}
-
-	return outs, nil
-}
-
-// FetchInputInfo is not actually implemented in ltcwallet. This is based on the
-// btcwallet implementation. As this is used by btc.spvWallet, we really only
-// need the TxOut, and to show ownership.
-func (dw *DEXWallet) FetchInputInfo(prevOut *wire.OutPoint) (*wire.MsgTx, *wire.TxOut, *psbt.Bip32Derivation, int64, error) {
-
+// fetchInputInfo is not actually implemented in ltcwallet. This is based on the
+// btcwallet implementation. We really only need the TxOut, and to show
+// ownership.
+//
+//nolint:all
+func (dw *DEXWallet) fetchInputInfo(prevOut *wire.OutPoint) (*wire.MsgTx, *wire.TxOut, *psbt.Bip32Derivation, int64, error) {
 	td, err := dw.txDetails((*ltcchainhash.Hash)(&prevOut.Hash))
 	if err != nil {
 		return nil, nil, nil, 0, err
@@ -240,144 +1120,10 @@ func (dw *DEXWallet) FetchInputInfo(prevOut *wire.OutPoint) (*wire.MsgTx, *wire.
 		PkScript: ltcTxOut.PkScript,
 	}
 
-	return nil, btcTxOut, nil, 0, nil
+	return nil, btcTxOut, nil, 0, err
 }
 
-func (dw *DEXWallet) LockOutpoint(op wire.OutPoint) {
-	dw.w.LockOutpoint(ltcwire.OutPoint{
-		Hash:  ltcchainhash.Hash(op.Hash),
-		Index: op.Index,
-	})
-}
-
-func (dw *DEXWallet) UnlockOutpoint(op wire.OutPoint) {
-	dw.w.UnlockOutpoint(ltcwire.OutPoint{
-		Hash:  ltcchainhash.Hash(op.Hash),
-		Index: op.Index,
-	})
-}
-
-func (dw *DEXWallet) LockedOutpoints() []btcjson.TransactionInput {
-	locks := dw.w.LockedOutpoints()
-	locked := make([]btcjson.TransactionInput, len(locks))
-	for i, lock := range locks {
-		locked[i] = btcjson.TransactionInput{
-			Txid: lock.Txid,
-			Vout: lock.Vout,
-		}
-	}
-	return locked
-}
-
-func (dw *DEXWallet) ResetLockedOutpoints() {
-	dw.w.ResetLockedOutpoints()
-}
-
-func (dw *DEXWallet) NewChangeAddress(account uint32, _ waddrmgr.KeyScope) (btcutil.Address, error) {
-	ltcAddr, err := dw.w.NewChangeAddress(account, ltcwaddrmgr.KeyScopeBIP0084)
-	if err != nil {
-		return nil, err
-	}
-	return dw.addrLTC2BTC(ltcAddr)
-}
-
-func (dw *DEXWallet) NewAddress(account uint32, _ waddrmgr.KeyScope) (btcutil.Address, error) {
-	ltcAddr, err := dw.w.NewAddress(account, ltcwaddrmgr.KeyScopeBIP0084)
-	if err != nil {
-		return nil, err
-	}
-	return dw.addrLTC2BTC(ltcAddr)
-}
-
-func (dw *DEXWallet) PrivKeyForAddress(a btcutil.Address) (*btcec.PrivateKey, error) {
-	ltcAddr, err := dw.addrBTC2LTC(a)
-	if err != nil {
-		return nil, err
-	}
-
-	ltcKey, err := dw.w.PrivKeyForAddress(ltcAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	priv, _ /* pub */ := btcec.PrivKeyFromBytes(ltcKey.Serialize())
-	return priv, nil
-}
-
-func (dw *DEXWallet) Unlock(passphrase []byte, lock <-chan time.Time) error {
-	return dw.w.Unlock(passphrase, lock)
-}
-
-func (dw *DEXWallet) Lock() {
-	dw.w.Lock()
-}
-
-func (dw *DEXWallet) Locked() bool {
-	return dw.w.Locked()
-}
-
-func (dw *DEXWallet) SendOutputs(outputs []*wire.TxOut, _ *waddrmgr.KeyScope, account uint32, minconf int32,
-	satPerKb btcutil.Amount, coinSelectionStrategy btcwallet.CoinSelectionStrategy, label string) (*wire.MsgTx, error) {
-	ltcOuts := make([]*ltcwire.TxOut, len(outputs))
-	for i, op := range outputs {
-		ltcOuts[i] = &ltcwire.TxOut{
-			Value:    op.Value,
-			PkScript: op.PkScript,
-		}
-	}
-
-	ltcTx, err := dw.w.SendOutputs(ltcOuts, &ltcwaddrmgr.KeyScopeBIP0084, account,
-		minconf, ltcutil.Amount(satPerKb), wallet.CoinSelectionStrategy(coinSelectionStrategy), label)
-	if err != nil {
-		return nil, err
-	}
-
-	btcTx, err := convertMsgTxToBTC(ltcTx)
-	if err != nil {
-		return nil, err
-	}
-
-	return btcTx, nil
-}
-
-func (dw *DEXWallet) HaveAddress(a btcutil.Address) (bool, error) {
-	ltcAddr, err := dw.addrBTC2LTC(a)
-	if err != nil {
-		return false, err
-	}
-
-	return dw.w.HaveAddress(ltcAddr)
-}
-
-func (dw *DEXWallet) Stop() {}
-
-func (dw *DEXWallet) AccountProperties(_ waddrmgr.KeyScope, acct uint32) (*waddrmgr.AccountProperties, error) {
-	props, err := dw.w.AccountProperties(ltcwaddrmgr.KeyScopeBIP0084, acct)
-	if err != nil {
-		return nil, err
-	}
-	return &waddrmgr.AccountProperties{
-		AccountNumber:        props.AccountNumber,
-		AccountName:          props.AccountName,
-		ExternalKeyCount:     props.ExternalKeyCount,
-		InternalKeyCount:     props.InternalKeyCount,
-		ImportedKeyCount:     props.ImportedKeyCount,
-		MasterKeyFingerprint: props.MasterKeyFingerprint,
-		KeyScope:             waddrmgr.KeyScopeBIP0084,
-		IsWatchOnly:          props.IsWatchOnly,
-		// The last two would need conversion but aren't currently used.
-		// AccountPubKey:        props.AccountPubKey,
-		// AddrSchema:           props.AddrSchema,
-	}, nil
-}
-
-func (dw *DEXWallet) RescanAsync() error {
-	return errors.New("RescanAsync not implemented for Cyptopower ltc wallet")
-}
-
-func (dw *DEXWallet) ForceRescan() {}
-
-func (dw *DEXWallet) WalletTransaction(txHash *chainhash.Hash) (*wtxmgr.TxDetails, error) {
+func (dw *DEXWallet) walletTransaction(txHash *chainhash.Hash) (*wtxmgr.TxDetails, error) {
 	txDetails, err := dw.txDetails((*ltcchainhash.Hash)(txHash))
 	if err != nil {
 		return nil, err
@@ -425,7 +1171,7 @@ func (dw *DEXWallet) WalletTransaction(txHash *chainhash.Hash) (*wtxmgr.TxDetail
 	}, nil
 }
 
-func (dw *DEXWallet) SyncedTo() waddrmgr.BlockStamp {
+func (dw *DEXWallet) syncedTo() waddrmgr.BlockStamp {
 	bs := dw.w.Manager.SyncedTo()
 	return waddrmgr.BlockStamp{
 		Height:    bs.Height,
@@ -434,108 +1180,19 @@ func (dw *DEXWallet) SyncedTo() waddrmgr.BlockStamp {
 	}
 }
 
-func (dw *DEXWallet) SignTx(btcTx *wire.MsgTx) error {
-	ltcTx, err := convertMsgTxToLTC(btcTx)
-	if err != nil {
-		return err
-	}
-
-	var prevPkScripts [][]byte
-	var inputValues []ltcutil.Amount
-	for _, txIn := range btcTx.TxIn {
-		_, txOut, _, _, err := dw.FetchInputInfo(&txIn.PreviousOutPoint)
-		if err != nil {
-			return err
-		}
-		inputValues = append(inputValues, ltcutil.Amount(txOut.Value))
-		prevPkScripts = append(prevPkScripts, txOut.PkScript)
-		// Zero the previous witness and signature script or else
-		// AddAllInputScripts does some weird stuff.
-		txIn.SignatureScript = nil
-		txIn.Witness = nil
-	}
-
-	err = txauthor.AddAllInputScripts(ltcTx, prevPkScripts, inputValues, &secretSource{dw, dw.w.ChainParams()})
-	if err != nil {
-		return err
-	}
-	if len(ltcTx.TxIn) != len(btcTx.TxIn) {
-		return fmt.Errorf("txin count mismatch")
-	}
-	for i, txIn := range btcTx.TxIn {
-		ltcIn := ltcTx.TxIn[i]
-		txIn.SignatureScript = ltcIn.SignatureScript
-		txIn.Witness = make(wire.TxWitness, len(ltcIn.Witness))
-		copy(txIn.Witness, ltcIn.Witness)
-	}
-	return nil
+func (dw *DEXWallet) Fingerprint() (string, error) {
+	return "", errors.New("Fingerprint not supported for Cyptopower btc wallet")
 }
 
-func (dw *DEXWallet) BlockNotifications(ctx context.Context) <-chan *dexbtc.BlockNotification {
-	cl := dw.w.NtfnServer.TransactionNotifications()
-	ch := make(chan *dexbtc.BlockNotification, 1)
-	go func() {
-		defer cl.Done()
-		for {
-			select {
-			case note := <-cl.C:
-				if len(note.AttachedBlocks) > 0 {
-					lastBlock := note.AttachedBlocks[len(note.AttachedBlocks)-1]
-					select {
-					case ch <- &dexbtc.BlockNotification{
-						Hash:   chainhash.Hash(*lastBlock.Hash),
-						Height: lastBlock.Height,
-					}:
-					default:
-					}
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	return ch
-}
-
-func (dw *DEXWallet) WaitForShutdown() {}
-
-// currently unused
-func (dw *DEXWallet) ChainSynced() bool {
-	return dw.w.ChainSynced()
-}
-
-func (dw *DEXWallet) Peers() ([]*asset.WalletPeer, error) {
-	peers := dw.spvService.CS.Peers()
-	var walletPeers []*asset.WalletPeer
-	for i := range peers {
-		p := peers[i]
-		walletPeers = append(walletPeers, &asset.WalletPeer{
-			Addr:      p.Addr(),
-			Connected: p.Connected(),
-			Source:    asset.WalletDefault,
-		})
-	}
-	return walletPeers, nil
-}
-
-func (dw *DEXWallet) AddPeer(_ string) error {
-	return errors.New("AddPeer not implemented by DEX wallet")
-}
-
-func (dw *DEXWallet) RemovePeer(_ string) error {
-	return errors.New("RemovePeer not implemented by DEX wallet")
-}
-
-// ltcChainService wraps ltcsuite *neutrino.ChainService in order to translate the
-// neutrino.ServerPeer to the SPVPeer interface type as required by the dex btc
-// pkg.
-type ltcChainService struct {
+// ChainService wraps ltcsuite *neutrino.ChainService in order to translate
+// the neutrino.ServerPeer to the SPVPeer interface and implement required chain
+// service methods for ltc.
+type ChainService struct {
+	*neutrino.ChainService
 	*chain.NeutrinoClient
 }
 
-var _ dexbtc.SPVService = (*ltcChainService)(nil)
-
-func (s *ltcChainService) GetBlockHash(height int64) (*chainhash.Hash, error) {
+func (s *ChainService) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	ltcHash, err := s.CS.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -543,7 +1200,7 @@ func (s *ltcChainService) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	return (*chainhash.Hash)(ltcHash), nil
 }
 
-func (s *ltcChainService) BestBlock() (*headerfs.BlockStamp, error) {
+func (s *ChainService) BestBlock() (*headerfs.BlockStamp, error) {
 	bs, err := s.CS.BestBlock()
 	if err != nil {
 		return nil, err
@@ -555,14 +1212,14 @@ func (s *ltcChainService) BestBlock() (*headerfs.BlockStamp, error) {
 	}, nil
 }
 
-func (s *ltcChainService) Peers() []dexbtc.SPVPeer {
+func (s *ChainService) Peers() []dexbtc.SPVPeer {
 	// *neutrino.ChainService.Peers() may stall, especially if the wallet hasn't
 	// started sync yet. Call the method in a goroutine and wait below to see if
 	// we get a response. Return an empty slice if we don't get a response after
 	// waiting briefly.
 	rawPeersChan := make(chan []*neutrino.ServerPeer)
 	go func() {
-		rawPeersChan <- s.CS.Peers()
+		rawPeersChan <- s.ChainService.Peers()
 	}()
 
 	select {
@@ -574,23 +1231,15 @@ func (s *ltcChainService) Peers() []dexbtc.SPVPeer {
 		return peers
 
 	case <-time.After(2 * time.Second):
-		return nil // CS.Peers() is taking too long to respond
+		return nil // ChainService.Peers() is taking too long to respond
 	}
 }
 
-func (s *ltcChainService) AddPeer(addr string) error {
-	return s.CS.ConnectNode(addr, true)
-}
-
-func (s *ltcChainService) RemovePeer(addr string) error {
-	return s.CS.RemoveNodeByAddr(addr)
-}
-
-func (s *ltcChainService) GetBlockHeight(h *chainhash.Hash) (int32, error) {
+func (s *ChainService) GetBlockHeight(h *chainhash.Hash) (int32, error) {
 	return s.CS.GetBlockHeight((*ltcchainhash.Hash)(h))
 }
 
-func (s *ltcChainService) GetBlockHeader(h *chainhash.Hash) (*wire.BlockHeader, error) {
+func (s *ChainService) GetBlockHeader(h *chainhash.Hash) (*wire.BlockHeader, error) {
 	hdr, err := s.CS.GetBlockHeader((*ltcchainhash.Hash)(h))
 	if err != nil {
 		return nil, err
@@ -605,7 +1254,7 @@ func (s *ltcChainService) GetBlockHeader(h *chainhash.Hash) (*wire.BlockHeader, 
 	}, nil
 }
 
-func (s *ltcChainService) GetCFilter(blockHash chainhash.Hash, _ wire.FilterType, _ ...btcneutrino.QueryOption) (*gcs.Filter, error) {
+func (s *ChainService) GetCFilter(blockHash chainhash.Hash, _ wire.FilterType, _ ...btcneutrino.QueryOption) (*gcs.Filter, error) {
 	f, err := s.CS.GetCFilter(ltcchainhash.Hash(blockHash), ltcwire.GCSFilterRegular)
 	if err != nil {
 		return nil, err
@@ -619,7 +1268,7 @@ func (s *ltcChainService) GetCFilter(blockHash chainhash.Hash, _ wire.FilterType
 	return gcs.FromBytes(f.N(), f.P(), DefaultM, b)
 }
 
-func (s *ltcChainService) GetBlock(blockHash chainhash.Hash, _ ...btcneutrino.QueryOption) (*btcutil.Block, error) {
+func (s *ChainService) GetBlock(blockHash chainhash.Hash, _ ...btcneutrino.QueryOption) (*btcutil.Block, error) {
 	blk, err := s.CS.GetBlock(ltcchainhash.Hash(blockHash))
 	if err != nil {
 		return nil, err
@@ -631,10 +1280,6 @@ func (s *ltcChainService) GetBlock(blockHash chainhash.Hash, _ ...btcneutrino.Qu
 	}
 
 	return btcutil.NewBlockFromBytes(b)
-}
-
-func (s *ltcChainService) Stop() error {
-	return s.CS.Stop()
 }
 
 // secretSource is used to locate keys and redemption scripts while signing a
