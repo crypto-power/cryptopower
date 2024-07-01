@@ -26,7 +26,7 @@ const (
 
 var (
 	// Version is the application version. It is set using the -ldflags
-	Version = "1.1.3"
+	Version = "1.1.4"
 	// BuildDate is the date the application was built. It is set using the -ldflags
 	BuildDate string
 	// BuildEnv is the build environment. It is set using the -ldflags
