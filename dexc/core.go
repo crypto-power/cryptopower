@@ -43,8 +43,9 @@ type DEXClient struct {
 	log             dex.Logger
 }
 
-func (dc *DEXClient) InitWithPassword(pw []byte, seed []byte) error {
-	return dc.InitializeClient(pw, seed)
+func (dc *DEXClient) InitWithPassword(pw []byte, seed *string) error {
+	_, err := dc.InitializeClient(pw, seed)
+	return err
 }
 
 func (dc *DEXClient) IsInitialized() bool {

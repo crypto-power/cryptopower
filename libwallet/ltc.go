@@ -7,8 +7,8 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/dcrlabs/ltcwallet/waddrmgr"
 	"github.com/ltcsuite/ltcd/chaincfg"
-	"github.com/ltcsuite/ltcwallet/waddrmgr"
 )
 
 // initializeLTCWalletParameters initializes the fields each LTC wallet is going to need to be setup

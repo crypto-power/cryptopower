@@ -5,9 +5,9 @@ import (
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
+	w "github.com/dcrlabs/ltcwallet/wallet"
 	"github.com/ltcsuite/ltcd/blockchain"
 	"github.com/ltcsuite/ltcd/ltcutil"
-	w "github.com/ltcsuite/ltcwallet/wallet"
 )
 
 func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary w.TransactionSummary) *sharedW.Transaction {

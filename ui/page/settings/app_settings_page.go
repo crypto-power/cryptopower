@@ -728,7 +728,7 @@ func (pg *AppSettingsPage) HandleUserInteractions() {
 					return false
 				}
 
-				pg.dexSeed = dexSeed
+				pg.dexSeed = dex.Bytes(dexSeed)
 				pg.showDEXSeedModal()
 				return true
 			})

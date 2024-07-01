@@ -14,9 +14,10 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/ltc"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	neutrino "github.com/dcrlabs/neutrino-ltc"
-	labschain "github.com/dcrlabs/neutrino-ltc/chain"
-	"github.com/dcrlabs/neutrino-ltc/headerfs"
+	"github.com/dcrlabs/ltcwallet/chain"
+	neutrino "github.com/dcrlabs/ltcwallet/spv"
+	"github.com/dcrlabs/ltcwallet/spv/headerfs"
+	_ "github.com/dcrlabs/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/ltcsuite/ltcd/btcec/v2/ecdsa"
 	"github.com/ltcsuite/ltcd/chaincfg"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
@@ -25,7 +26,6 @@ import (
 	"github.com/ltcsuite/ltcd/ltcutil/gcs"
 	"github.com/ltcsuite/ltcd/wire"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
-	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 )
 
 // Asset confirm that LTC implements that shared assets interface.
@@ -39,7 +39,8 @@ var _ sharedW.Asset = (*Asset)(nil)
 type Asset struct {
 	*sharedW.Wallet
 
-	chainClient    *labschain.NeutrinoClient
+	cl             *neutrino.ChainService
+	chainClient    *chain.NeutrinoClient
 	chainParams    *ltcchaincfg.Params
 	TxAuthoredInfo *TxAuthor
 
@@ -147,7 +148,7 @@ func walletParams(chainParams *ltcchaincfg.Params) *ltcchaincfg.Params {
 		return chainParams
 	}
 	spoofParams := *chainParams
-	spoofParams.Net = ltcwire.TestNet3
+	spoofParams.Net = ltcwire.TestNet4
 	return &spoofParams
 }
 
@@ -156,7 +157,7 @@ func walletParams(chainParams *ltcchaincfg.Params) *ltcchaincfg.Params {
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the LTC asset. It then generates the LTC loader interface
 // that is passed to be used upstream while creating the watch only wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -308,8 +309,11 @@ func (asset *Asset) SafelyCancelSync() {
 	}
 }
 
-func (asset *Asset) NeutrinoClient() *labschain.NeutrinoClient {
-	return asset.chainClient
+func (asset *Asset) NeutrinoClient() *ChainService {
+	return &ChainService{
+		ChainService:   asset.cl,
+		NeutrinoClient: asset.chainClient,
+	}
 }
 
 // IsSynced returns true if the wallet is synced.
@@ -330,7 +334,6 @@ func (asset *Asset) IsWaiting() bool {
 func (asset *Asset) IsSyncing() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
-
 	return asset.syncData.syncing
 }
 
@@ -350,7 +353,8 @@ func (asset *Asset) ConnectedPeers() int32 {
 	if !asset.IsConnectedToNetwork() {
 		return -1
 	}
-	return asset.chainClient.CS.ConnectedCount()
+
+	return int32(len(asset.cl.Peers()))
 }
 
 // IsConnectedToNetwork returns true if the wallet is connected to the network.
@@ -512,9 +516,10 @@ func (asset *Asset) SetSpecificPeer(addresses string) {
 	}()
 }
 
-// GetExtendedPubKey returns the extended public key of the given account,
-// to do that it calls LTCwallet's AccountProperties method, using KeyScopeBIP0084
-// and the account number. On failure it returns error.
+// GetExtendedPubKey returns the extended public key of the given account, to do
+// that it calls LTCwallet's AccountProperties method, using
+// KeyScopeBIP0084WithBitcoinCoinID and the account number. On failure it
+// returns error.
 func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 	loadedAsset := asset.Internal().LTC
 	if loadedAsset == nil {

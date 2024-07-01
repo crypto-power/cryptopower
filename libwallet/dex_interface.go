@@ -13,7 +13,7 @@ type DEXClient interface {
 	IsInitialized() bool
 	InitializedWithPassword() bool
 	IsLoggedIn() bool
-	InitWithPassword(pw, seed []byte) error
+	InitWithPassword(pw []byte, seed *string) error
 	Login(pw []byte) error
 	Logout() error
 	DBPath() string
@@ -27,7 +27,7 @@ type DEXClient interface {
 	NotificationFeed() *core.NoteFeed
 	Exchanges() map[string]*core.Exchange
 	Exchange(host string) (*core.Exchange, error)
-	ExportSeed(pw []byte) ([]byte, error)
+	ExportSeed(pw []byte) (string, error)
 	SyncBook(dex string, base, quote uint32) (*orderbook.OrderBook, core.BookFeed, error)
 	Orders(filter *core.OrderFilter) ([]*core.Order, error)
 	ActiveOrders() (map[string][]*core.Order, map[string][]*core.InFlightOrder, error)
