@@ -11,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
+	"gioui.org/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -69,7 +70,7 @@ type startPage struct {
 
 	addWalletButton     cryptomaterial.Button
 	nextButton          cryptomaterial.Button
-	backButton          *cryptomaterial.Clickable
+	backButton          cryptomaterial.IconButton
 	networkSwitchButton *cryptomaterial.Clickable
 
 	settingsOptions []*settingsOption
@@ -97,7 +98,7 @@ func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app
 
 		addWalletButton:     l.Theme.Button(values.String(values.StrAddWallet)),
 		nextButton:          l.Theme.Button(values.String(values.StrNext)),
-		backButton:          l.Theme.NewClickable(true),
+		backButton:          getBackButton(l),
 		networkSwitchButton: l.Theme.NewClickable(true),
 		introductionSlider:  l.Theme.Slider(),
 	}
@@ -117,6 +118,19 @@ func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app
 	sp.initPage()
 
 	return sp
+}
+
+func getBackButton(l *load.Load) cryptomaterial.IconButton {
+	backClickable := new(widget.Clickable)
+	backButton := l.Theme.NewIconButton(l.Theme.Icons.NavigationArrowBack, backClickable)
+	size := values.MarginPadding24
+	if l.IsMobileView() {
+		size = values.MarginPadding16
+	}
+	backButton.Size = size
+	backButton.Inset = layout.UniformInset(values.MarginPadding0)
+	l.Theme.AddBackClick(backClickable)
+	return backButton
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -154,7 +168,6 @@ func (sp *startPage) initPage() {
 		{Text: titler.String(values.StrSpanish)},
 	}, nil, values.StartPageDropdownGroup, true)
 
-	sp.languageDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
 	sp.languageDropdown.Background = &sp.Theme.Color.Surface
 	sp.languageDropdown.FontWeight = font.SemiBold
 	sp.languageDropdown.SelectedItemIconColor = &sp.Theme.Color.Primary
@@ -295,7 +308,7 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 		sp.RefreshTheme(sp.ParentWindow())
 	}
 
-	if sp.backButton.Clicked(gtx) {
+	for sp.backButton.Button.Clicked(gtx) {
 		sp.currentPageIndex--
 	}
 
@@ -445,7 +458,7 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 			if sp.currentPageIndex != startupSettingsPageIndex {
 				return D{}
 			}
-			return layout.Inset{Bottom: values.MarginPaddingMinus145}.Layout(gtx, sp.pageHeaderLayout)
+			return sp.pageHeaderLayout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return sp.pageLayout(gtx, func(gtx C) D {
@@ -472,58 +485,28 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 						}),
 					)
 				}
-
-				return layout.Flex{
-					Alignment: layout.Middle,
-					Axis:      layout.Vertical,
-				}.Layout(gtx,
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPaddingMinus195}.Layout(gtx, sp.pageHeaderLayout)
+						if !sp.IsMobileView() {
+							return D{}
+						}
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceAround}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								titleLabel := sp.Theme.Label(values.TextSize16, values.String(values.StrChooseSetupType))
+								titleLabel.Font.Weight = font.Bold
+								return titleLabel.Layout(gtx)
+							}),
+						)
 					}),
+					layout.Rigid(sp.settingsOptionsLayout),
 					layout.Rigid(func(gtx C) D {
-						return sp.pageLayout(gtx, func(gtx C) D {
-							return layout.Stack{Alignment: layout.Center}.Layout(gtx,
-								layout.Expanded(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPadding250}.Layout(gtx, func(gtx C) D {
-										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-											layout.Rigid(sp.settingsOptionsLayout),
-											layout.Rigid(func(gtx C) D {
-												gtx.Constraints.Min.X = gtx.Dp(settingsOptionPageWidth)
-												inset := layout.Inset{Top: values.MarginPadding90}
-												if !sp.IsMobileView() {
-													inset.Top = values.MarginPadding20
-												}
-												return inset.Layout(gtx, sp.nextButton.Layout)
-											}),
-										)
-									})
-								}),
-								layout.Stacked(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPaddingMinus200}.Layout(gtx, func(gtx C) D {
-										return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												titleLabel := sp.Theme.Label(values.TextSize16, values.String(values.StrChooseSetupType))
-												titleLabel.Font.Weight = font.Bold
-												return layout.Inset{Bottom: values.MarginPadding40}.Layout(gtx, titleLabel.Layout)
-											}),
-											layout.Rigid(func(gtx C) D {
-												gtx.Constraints.Max.Y = gtx.Dp(values.MarginPadding48)
-												return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-													layout.Rigid(func(gtx C) D {
-														langTitle := sp.Theme.Label(values.TextSize16, values.String(values.StrLanguage))
-														langTitle.Font.Weight = font.Bold
-														return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, langTitle.Layout)
-													}),
-													layout.Rigid(func(gtx C) D {
-														return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, sp.languageDropdown.Layout)
-													}),
-												)
-											}),
-										)
-									})
-								}),
-							)
-						})
+						gtx.Constraints.Min.X = gtx.Dp(settingsOptionPageWidth)
+						inset := layout.Inset{Top: values.MarginPadding90}
+						if !sp.IsMobileView() {
+							inset.Top = values.MarginPadding20
+						}
+						return inset.Layout(gtx, sp.nextButton.Layout)
 					}),
 				)
 			})
@@ -565,7 +548,7 @@ func (sp *startPage) settingsOptionsLayout(gtx C) D {
 
 				inset := layout.Inset{}
 				if i == 0 && sp.IsMobileView() {
-					inset.Top = values.MarginPadding150
+					inset.Top = values.MarginPadding40
 				}
 				if i == 0 && !sp.IsMobileView() {
 					inset.Right = padding
@@ -613,11 +596,43 @@ func (sp *startPage) pageHeaderLayout(gtx C) D {
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
-		Clickable:   sp.backButton,
 		Padding:     layout.UniformInset(values.MarginPadding12),
 	}.Layout(gtx,
-		layout.Rigid(sp.Theme.NewIcon(sp.Theme.Icons.ChevronLeft).Layout24dp),
-		layout.Rigid(sp.Theme.Label(values.TextSize20, values.String(values.StrBack)).Layout),
+		layout.Rigid(func(gtx C) D {
+			return layout.Stack{}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Left: values.MarginPadding10, Right: values.MarginPadding10}.Layout(gtx, sp.backButton.Layout)
+						}),
+
+						layout.Rigid(func(gtx C) D {
+							lbl := sp.Theme.H6(values.String(values.StrChooseSetupType))
+							lbl.TextSize = values.TextSizeTransform(sp.IsMobileView(), values.TextSize20)
+							if sp.IsMobileView() { // hide title when size is not fit
+								return D{}
+							}
+
+							return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, lbl.Layout)
+						}),
+					)
+				}),
+				layout.Stacked(func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					gtx.Constraints.Max.Y = gtx.Dp(values.MarginPadding44)
+					return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceStart, Alignment: layout.Middle}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							langTitle := sp.Theme.Label(values.TextSize16, values.String(values.StrLanguage))
+							langTitle.Font.Weight = font.Bold
+							return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, langTitle.Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, sp.languageDropdown.Layout)
+						}),
+					)
+				}),
+			)
+		}),
 	)
 }
 

@@ -11,4 +11,5 @@ const (
 	DEXCurrencyPairGroup
 	DEXOrderTypes
 	StartPageDropdownGroup
+	AssetTypeDropdownGroup
 )
