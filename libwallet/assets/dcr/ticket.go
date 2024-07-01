@@ -452,6 +452,10 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 		return err
 	}
 
+	if !asset.IsTicketBuyerAccountSet() {
+		return errors.New("Ticket purchase account is not set")
+	}
+
 	// Count is 1 to prevent combining multiple split outputs in one tx,
 	// which can be used to link the tickets eventually purchased with the
 	// split outputs.
@@ -535,6 +539,11 @@ func (asset *Asset) AutoTicketsBuyerConfig() *TicketBuyerConfig {
 // TicketBuyerConfigIsSet checks if ticket buyer config is set for the asset.
 func (asset *Asset) TicketBuyerConfigIsSet() bool {
 	return asset.ReadStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "") != ""
+}
+
+// IsTicketBuyerAccountSet checks if ticket buyer account is set for the asset.
+func (asset *Asset) IsTicketBuyerAccountSet() bool {
+	return asset.ReadInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, -1) != -1
 }
 
 // ClearTicketBuyerConfig clears the wallet's ticket buyer config.

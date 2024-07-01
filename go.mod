@@ -24,7 +24,7 @@ require (
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4
-	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
+	github.com/dcrlabs/ltcwallet v0.0.0-20240518141247-13553c8fce6a
 	github.com/decred/dcrd/addrmgr/v2 v2.0.4
 	github.com/decred/dcrd/blockchain/stake/v5 v5.0.1
 	github.com/decred/dcrd/chaincfg/chainhash v1.0.4
