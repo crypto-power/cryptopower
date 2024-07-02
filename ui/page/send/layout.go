@@ -61,7 +61,7 @@ func (pg *Page) contentLayout(gtx C) D {
 	// Always include the sendLayout
 	pageContent = append(pageContent, pg.sendLayout)
 
-	if pg.selectedWallet.IsSynced() {
+	if pg.selectedWallet != nil && pg.selectedWallet.IsSynced() {
 		// Include these layouts only if the wallet is synced
 		pageContent = append(pageContent, pg.recipientsLayout)
 		pageContent = append(pageContent, pg.advanceOptionsLayout)
@@ -108,20 +108,16 @@ func (pg *Page) sendLayout(gtx C) D {
 				}.Layout(gtx, pg.titleLayout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				if pg.modalLayout != nil {
-					return layout.Inset{
-						Bottom: values.MarginPadding16,
-					}.Layout(gtx, func(gtx C) D {
-						return pg.contentWrapper(gtx, values.String(values.StrSourceWallet), false, func(gtx C) D {
-							return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
-						})
-					})
+				if pg.hideWalletDropdown {
+					return D{}
 				}
-				return D{}
+				return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					return pg.walletDropdown.Layout(gtx, values.String(values.StrSourceWallet))
+				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				return pg.contentWrapper(gtx, values.String(values.StrSourceAccount), true, func(gtx C) D {
-					return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
+				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					return pg.accountDropdown.Layout(gtx, values.String(values.StrSourceAccount))
 				})
 			}),
 		)
@@ -148,7 +144,7 @@ func (pg *Page) recipientsLayout(gtx C) D {
 			re := pg.recipients[i]
 			j := i
 			flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
-				return re.recipientLayout(gtx, j+1, len(pg.recipients) > 1, pg.ParentWindow())(gtx)
+				return re.recipientLayout(j+1, len(pg.recipients) > 1)(gtx)
 			}))
 		}
 		if pg.modalLayout == nil && len(pg.recipients) < 3 {
@@ -195,7 +191,7 @@ func (pg *Page) notSyncedLayout(gtx C) D {
 
 			},
 			func(gtx C) D {
-				if pg.selectedWallet.IsSyncing() {
+				if pg.selectedWallet != nil && pg.selectedWallet.IsSyncing() {
 					syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(_ sharedW.Asset) {})
 					blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
 					text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
@@ -255,7 +251,7 @@ func (pg *Page) advanceOptionsLayout(gtx C) D {
 
 func (pg *Page) coinSelectionSection(gtx C) D {
 	selectedOption := automaticCoinSelection
-	sourceAcc := pg.sourceAccountSelector.SelectedAccount()
+	sourceAcc := pg.accountDropdown.SelectedAccount()
 	if len(pg.selectedUTXOs.selectedUTXOs) > 0 && pg.selectedUTXOs.sourceAccount == sourceAcc {
 		selectedOption = manualCoinSelection
 	}

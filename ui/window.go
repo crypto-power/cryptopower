@@ -280,17 +280,15 @@ func (win *Window) prepareToDisplayUI(gtx layout.Context) {
 		if win.navigator.CurrentPage() == nil {
 			win.navigator.Display(page.NewStartPage(win.ctx, win.load))
 		}
-		return win.load.Theme.DropdownBackdrop.Layout(gtx, func(gtx C) D {
-			return win.navigator.CurrentPage().Layout(gtx)
-		})
+		return win.load.Theme.DropdownBackdrop.Layout(gtx, win.navigator.CurrentPage().Layout)
 	})
 
 	topModalLayout := layout.Stacked(func(gtx C) D {
 		modal := win.navigator.TopModal()
 		if modal == nil {
-			return layout.Dimensions{}
+			return D{}
 		}
-		return modal.Layout(gtx)
+		return win.load.Theme.DropdownBackdrop.Layout(gtx, modal.Layout)
 	})
 
 	win.clicker.Add(gtx.Ops)

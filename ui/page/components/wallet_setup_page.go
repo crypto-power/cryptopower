@@ -2,6 +2,7 @@ package components
 
 import (
 	"errors"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -96,11 +97,9 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 		}
 	}
 
-	bg := l.Theme.Color.White
-	if l.AssetsManager.IsDarkModeOn() {
-		bg = l.Theme.Color.Background
+	if len(assetType) > 0 {
+		pg.assetTypeDropdown.SetSelectedValue(assetType[0].String())
 	}
-	pg.assetTypeDropdown.Background = &bg
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
 	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true
@@ -120,12 +119,7 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 		Text: values.String(values.Str12WordSeed),
 	}
 
-	pg.seedTypeDropdown = pg.Theme.DropDown(GetWordSeedTypeDropdownItems(), defaultWordSeedType, values.TxDropdownGroup, false)
-	pg.seedTypeDropdown.SetConvertTextSize(pg.ConvertTextSize)
-	pg.seedTypeDropdown.FontWeight = font.SemiBold
-	pg.seedTypeDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
-	pg.seedTypeDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
-	pg.seedTypeDropdown.Background = &pg.Theme.Color.Surface
+	pg.seedTypeDropdown = pg.Theme.NewCommonDropDown(GetWordSeedTypeDropdownItems(), defaultWordSeedType, values.MarginPadding130, values.TxDropdownGroup, false)
 
 	pg.backButton = GetBackButton(l)
 
@@ -144,32 +138,8 @@ func NewAssetTypeDropDown(l *load.Load) *cryptomaterial.DropDown {
 		items = append(items, item)
 	}
 
-	assetTypeDropdown := l.Theme.DropDown(items, nil, values.AssetTypeDropdownGroup, false)
-	settingCommonDropdown(l.Theme, assetTypeDropdown)
-	assetTypeDropdown.SetConvertTextSize(l.ConvertTextSize)
+	assetTypeDropdown := l.Theme.NewCommonDropDown(items, nil, values.MarginPadding340, values.AssetTypeDropdownGroup, false)
 	return assetTypeDropdown
-}
-
-func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.DropDown) {
-	drodown.FontWeight = font.SemiBold
-	drodown.Hoverable = false
-	drodown.SelectedItemIconColor = &t.Color.Primary
-	drodown.Background = &t.Color.Surface
-	drodown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding50}
-	drodown.Width = values.MarginPadding340
-	drodown.MakeCollapsedLayoutVisibleWhenExpanded = true
-}
-
-func getAssetType(assetTypeStr string) libutils.AssetType {
-	switch assetTypeStr {
-	case libutils.DCRWalletAsset.String():
-		return libutils.DCRWalletAsset
-	case libutils.BTCWalletAsset.String():
-		return libutils.BTCWalletAsset
-	case libutils.LTCWalletAsset.String():
-		return libutils.BTCWalletAsset
-	}
-	return libutils.NilAsset
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -265,16 +235,8 @@ func (pg *CreateWallet) Layout(gtx C) D {
 								Right: values.MarginPadding20,
 							}.Layout(gtx, func(gtx C) D {
 								return layout.Stack{}.Layout(gtx,
-									layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-											layout.Rigid(pg.walletOptions),
-										)
-									}),
-									layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-											layout.Rigid(pg.walletTypeSection),
-										)
-									}),
+									layout.Expanded(pg.walletOptions),
+									layout.Expanded(pg.walletTypeSection),
 								)
 							})
 						})
@@ -295,7 +257,7 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 					return titleLabel.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					pg.assetTypeDropdown.Width = unit.Dp(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding340))
+					pg.assetTypeDropdown.Width = values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding340)
 					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return pg.assetTypeDropdown.Layout(gtx)
 					})
@@ -319,10 +281,7 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 					title.Color = pg.Theme.Color.Gray1
 
 					radius := cryptomaterial.Radius(8)
-					borderColor := pg.Theme.Color.White
-					if pg.AssetsManager.IsDarkModeOn() {
-						borderColor = pg.Theme.Color.Background
-					}
+					borderColor := pg.Theme.Color.LightGray
 					item.border = cryptomaterial.Border{
 						Radius: radius,
 						Color:  borderColor,
@@ -330,13 +289,8 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 					}
 
 					if pg.selectedWalletAction == i {
-						col = pg.Theme.Color.White
+						col = pg.Theme.Color.LightGray
 						title.Color = pg.Theme.Color.Primary
-
-						if pg.AssetsManager.IsDarkModeOn() {
-							col = pg.Theme.Color.Gray2
-							title.Color = pg.Theme.Color.White
-						}
 
 						item.border.Color = pg.Theme.Color.Primary
 					}
@@ -488,8 +442,8 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 		pg.showLoader = true
 		var err error
 		go func() {
-			switch getAssetType(pg.assetTypeDropdown.Selected()) {
-			case libutils.DCRWalletAsset:
+			switch strings.ToLower(pg.assetTypeDropdown.Selected()) {
+			case libutils.DCRWalletAsset.ToStringLower():
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -497,7 +451,7 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
-			case libutils.BTCWalletAsset:
+			case libutils.BTCWalletAsset.ToStringLower():
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -505,7 +459,7 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
-			case libutils.LTCWalletAsset:
+			case libutils.LTCWalletAsset.ToStringLower():
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.LTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -537,8 +491,8 @@ func (pg *CreateWallet) createWallet() {
 	walletName := pg.walletName.Editor.Text()
 	pass := pg.passwordEditor.Editor.Text()
 	seedType := GetWordSeedType(pg.seedTypeDropdown.Selected())
-	switch getAssetType(pg.assetTypeDropdown.Selected()) {
-	case libutils.DCRWalletAsset:
+	switch strings.ToLower(pg.assetTypeDropdown.Selected()) {
+	case libutils.DCRWalletAsset.ToStringLower():
 		_, err := pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
@@ -551,7 +505,7 @@ func (pg *CreateWallet) createWallet() {
 			return
 		}
 
-	case libutils.BTCWalletAsset:
+	case libutils.BTCWalletAsset.ToStringLower():
 		_, err := pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
@@ -564,7 +518,7 @@ func (pg *CreateWallet) createWallet() {
 			return
 		}
 
-	case libutils.LTCWalletAsset:
+	case libutils.LTCWalletAsset.ToStringLower():
 		_, err := pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
@@ -592,6 +546,13 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
+	if pg.assetTypeDropdown.Changed(gtx) {
+		pg.assetTypeError.Text = ""
+	}
+	if pg.seedTypeDropdown.Changed(gtx) {
+		pg.assetTypeError.Text = ""
+	}
+
 	// decred wallet type sub action
 	for i, item := range pg.walletActions {
 		if item.clickable.Clicked(gtx) {
@@ -605,7 +566,7 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 			// todo setup mixer for restored accounts automatically
 			pg.walletCreationSuccessCallback()
 		}
-		ast := getAssetType(pg.assetTypeDropdown.Selected())
+		ast := libutils.AssetType(pg.assetTypeDropdown.Selected())
 		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), ast, afterRestore))
 	}
 }

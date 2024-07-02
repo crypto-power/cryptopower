@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
@@ -42,16 +41,18 @@ type Page struct {
 	*app.GenericPageModal
 	modalLayout *cryptomaterial.Modal
 
-	pageContainer         layout.List
-	scrollContainer       *widget.List
-	isNewAddr             bool
-	currentAddress        string
-	qrImage               *image.Image
-	newAddr, copy         *cryptomaterial.Clickable
-	info                  cryptomaterial.IconButton
-	card                  cryptomaterial.Card
-	sourceAccountselector *components.WalletAndAccountSelector
-	sourceWalletSelector  *components.WalletAndAccountSelector
+	pageContainer   layout.List
+	scrollContainer *widget.List
+	isNewAddr       bool
+	currentAddress  string
+	qrImage         *image.Image
+	newAddr, copy   *cryptomaterial.Clickable
+	info            cryptomaterial.IconButton
+	card            cryptomaterial.Card
+
+	walletDropdown     *components.WalletDropdown
+	accountDropdown    *components.AccountDropdown
+	hideWalletDropdown bool
 
 	isCopying         bool
 	backdrop          *widget.Clickable
@@ -85,63 +86,51 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 	if wallet == nil {
 		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrReceive), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
-		pg.initWalletSelectors() // will auto select the first wallet in the dropdown as pg.selectedWallet
+		pg.hideWalletDropdown = false
 	} else {
-		pg.sourceAccountselector = components.NewWalletAndAccountSelector(pg.Load).
-			Title(values.String(values.StrTo)).
-			AccountSelected(func(selectedAccount *sharedW.Account) {
-				currentAddress, err := pg.selectedWallet.CurrentAddress(selectedAccount.Number)
-				if err != nil {
-					log.Errorf("Error getting current address: %v", err)
-				} else {
-					pg.currentAddress = currentAddress
-				}
-
-				pg.generateQRForAddress()
-			}).
-			AccountValidator(func(account *sharedW.Account) bool {
-				// Filter out imported account and mixed.
-				if account.Number == load.MaxInt32 {
-					return false
-				}
-				if account.Number != load.MixedAccountNumber(pg.selectedWallet) {
-					return true
-				}
-				return false
-			})
-		_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet)
+		pg.hideWalletDropdown = true
 	}
+	pg.initWalletSelectors(wallet)
 
 	return pg
 }
 
-func (pg *Page) initWalletSelectors() {
-	// Source wallet picker
-	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load).
-		Title(values.String(values.StrSelectWallet))
-	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
+func (pg *Page) initWalletSelectors(wallet sharedW.Asset) {
+	pg.walletDropdown = components.NewWalletDropdown(pg.Load).
+		SetChangedCallback(func(wallet sharedW.Asset) {
+			pg.selectedWallet = wallet
+			if pg.accountDropdown != nil {
+				pg.accountDropdown.Setup(wallet)
+			}
+		}).
+		Setup()
+	pg.accountDropdown = components.NewAccountDropdown(pg.Load).
+		SetChangedCallback(func(account *sharedW.Account) {
+			currentAddress, err := pg.selectedWallet.CurrentAddress(account.Number)
+			if err != nil {
+				log.Errorf("Error getting current address: %v", err)
+			} else {
+				pg.currentAddress = currentAddress
+			}
 
-	// Source account picker
-	pg.sourceAccountselector = components.NewWalletAndAccountSelector(pg.Load).
-		Title(values.String(values.StrSelectAcc)).
+			pg.generateQRForAddress()
+		}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			accountIsValid := account.Number != load.MaxInt32
-
-			return accountIsValid
-		})
-	_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
-
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.selectedWallet = selectedWallet
-		_ = pg.sourceAccountselector.SelectFirstValidAccount(selectedWallet)
-		pg.generateQRForAddress()
-	})
-
-	pg.sourceAccountselector.AccountSelected(func(_ *sharedW.Account) {
-		pg.generateQRForAddress()
-	})
-
-	pg.generateQRForAddress()
+			if account.Number == load.MaxInt32 {
+				return false
+			}
+			if account.Number != load.MixedAccountNumber(pg.selectedWallet) {
+				return true
+			}
+			return false
+		}).
+		Setup(wallet)
+	pg.selectedWallet = pg.walletDropdown.SelectedWallet()
+	if wallet != nil {
+		pg.selectedWallet = wallet
+	}
+	pg.walletDropdown.SetSelectedWallet(pg.selectedWallet)
+	_ = pg.accountDropdown.Setup(pg.selectedWallet)
 }
 
 // OnResume is called to initialize data and get UI elements ready to be
@@ -162,15 +151,14 @@ func (pg *Page) OnResume() {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
-	if !pg.selectedWallet.IsSynced() {
+	if pg.selectedWallet == nil || !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
 
-	pg.sourceAccountselector.ListenForTxNotifications(pg.ParentWindow())    // listener is stopped in OnNavigatedFrom()
-	_ = pg.sourceAccountselector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
-	// might be better to track the last selection in a variable and reselect it.
-	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.sourceAccountselector.SelectedAccount().Number)
+	pg.walletDropdown.ListenForTxNotifications(pg.ParentWindow())
+	_ = pg.accountDropdown.Setup(pg.selectedWallet)
+	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.accountDropdown.SelectedAccount().Number)
 	if err != nil {
 		errStr := fmt.Sprintf("Error getting current address: %v", err)
 		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
@@ -248,28 +236,18 @@ func (pg *Page) contentLayout(gtx C) D {
 					layout.Rigid(pg.headerLayout),
 					layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
 					layout.Rigid(func(gtx C) D {
-						if pg.modalLayout == nil {
+						if pg.hideWalletDropdown {
 							return D{}
 						}
-						lbl := pg.Theme.Label(textSize16, values.String(values.StrDestinationWallet))
-						lbl.Font.Weight = font.Bold
-						return lbl.Layout(gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if pg.modalLayout == nil {
-							return D{}
-						}
-						return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-							return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+
+						return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+							return pg.walletDropdown.Layout(gtx, values.StrDestinationWallet)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						lbl := pg.Theme.Label(textSize16, values.String(values.StrAccount))
-						lbl.Font.Weight = font.Bold
-						return lbl.Layout(gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return pg.sourceAccountselector.Layout(pg.ParentWindow(), gtx)
+						return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+							return pg.accountDropdown.Layout(gtx, values.String(values.StrAccount))
+						})
 					}),
 					layout.Rigid(func(gtx C) D {
 						return components.VerticalInset(values.MarginPadding24).Layout(gtx, pg.Theme.Separator().Layout)
@@ -433,6 +411,8 @@ func (pg *Page) addressLayout(gtx C) D {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions(gtx C) {
+	pg.walletDropdown.Handle(gtx)
+	pg.accountDropdown.Handle(gtx)
 	if pg.backdrop.Clicked(gtx) {
 		pg.isNewAddr = false
 	}
@@ -466,7 +446,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 }
 
 func (pg *Page) generateNewAddress() (string, error) {
-	selectedAccount := pg.sourceAccountselector.SelectedAccount()
+	selectedAccount := pg.accountDropdown.SelectedAccount()
 	selectedWallet := pg.AssetsManager.WalletWithID(selectedAccount.WalletID)
 
 generateAddress:
@@ -498,7 +478,7 @@ func (pg *Page) handleCopyEvent(gtx C) {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
-	pg.sourceAccountselector.StopTxNtfnListener()
+	pg.walletDropdown.StopTxNtfnListener()
 }
 
 func (pg *Page) Handle(gtx C) {

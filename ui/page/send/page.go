@@ -45,8 +45,9 @@ type Page struct {
 
 	pageContainer *widget.List
 
-	sourceWalletSelector  *components.WalletAndAccountSelector
-	sourceAccountSelector *components.WalletAndAccountSelector
+	walletDropdown     *components.WalletDropdown
+	accountDropdown    *components.AccountDropdown
+	hideWalletDropdown bool
 
 	// recipient  *recipient
 	recipients []*recipient
@@ -119,25 +120,31 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		// will be displayed.
 		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
-		pg.initModalWalletSelector() // will auto select the first wallet in the dropdown as pg.selectedWallet
+		pg.hideWalletDropdown = false
 	} else {
 		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
 		pg.selectedWallet = wallet
+		pg.hideWalletDropdown = true
 	}
-
+	pg.initModalWalletSelector(wallet) // will auto select the first wallet in the dropdown as pg.selectedWallet
 	callbackFunc := func() libUtil.AssetType {
+		if pg.selectedWallet == nil {
+			return libUtil.NilAsset
+		}
 		return pg.selectedWallet.GetAssetType()
 	}
 	pg.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc).ShowSizeAndCost()
 	pg.addRecipient()
-
-	pg.initializeAccountSelectors()
 	pg.initLayoutWidgets()
-
+	pg.setAssetTypeForRecipients()
+	_ = pg.accountDropdown.Setup(pg.selectedWallet)
 	return pg
 }
 
 func (pg *Page) addRecipient() {
+	if pg.selectedWallet == nil {
+		return
+	}
 	rc := newRecipient(pg.Load, pg.selectedWallet, pg.pageFields, pg.currentIDRecipient)
 	rc.onAddressChanged(func() {
 		pg.validateAndConstructTx()
@@ -151,8 +158,8 @@ func (pg *Page) addRecipient() {
 		pg.removeRecipient(id)
 	})
 
-	if pg.sourceAccountSelector != nil {
-		rc.initializeAccountSelectors(pg.sourceAccountSelector.SelectedAccount())
+	if pg.accountDropdown != nil && pg.accountDropdown.SelectedAccount() != nil {
+		rc.initializeAccountSelectors(pg.accountDropdown.SelectedAccount())
 	}
 	rc.amount.setExchangeRate(pg.exchangeRate)
 	pg.recipients = append(pg.recipients, rc)
@@ -179,35 +186,12 @@ func (pg *Page) pageFields() pageFields {
 }
 
 // initWalletSelector is used for the send modal for wallet selection.
-func (pg *Page) initModalWalletSelector() {
-	// initialize wallet selector
-	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load).
-		Title(values.String(values.StrSelectWallet))
-	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
-
-	// Source wallet picker
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.selectedWallet = selectedWallet
-		// TODO: @JustinDo Why was this go routine necessary.
-		//go load.GetAPIFeeRate(pg.selectedWallet)
-		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
-		pg.setAssetTypeForRecipients()
-		pg.initializeAccountSelectors()
-	})
-}
-
-func (pg *Page) initializeAccountSelectors() {
-	// Source account picker
-	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
-		Title(values.String(values.StrFrom)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {
-			// this resets the selected destination account based on the
-			// selected source account. This is done to prevent sending to
-			// an account that is invalid either because the destination
-			// account is the same as the source account or because the
-			// destination account needs to change based on if the selected
-			// wallet has privacy enabled.
-			pg.initAccountsSelectorForRecipients(selectedAccount)
+func (pg *Page) initModalWalletSelector(wallet sharedW.Asset) {
+	pg.accountDropdown = components.NewAccountDropdown(pg.Load).
+		SetChangedCallback(func(account *sharedW.Account) {
+			pg.initAccountsSelectorForRecipients(account)
+			pg.validateAllRecipientsAmount()
+			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
@@ -235,12 +219,24 @@ func (pg *Page) initializeAccountSelectors() {
 			}
 
 			return accountIsValid
+		})
+	pg.walletDropdown = components.NewWalletDropdown(pg.Load).
+		SetChangedCallback(func(wallet sharedW.Asset) {
+			pg.selectedWallet = wallet
+			if pg.accountDropdown != nil {
+				pg.accountDropdown.Setup(wallet)
+				go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
+				pg.setAssetTypeForRecipients()
+			}
+
 		}).
-		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	// if a source account exists, don't overwrite it.
-	if pg.sourceAccountSelector.SelectedAccount() == nil {
-		_ = pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		Setup()
+
+	pg.selectedWallet = pg.walletDropdown.SelectedWallet()
+	if wallet != nil {
+		pg.selectedWallet = wallet
 	}
+	pg.walletDropdown.SetSelectedWallet(pg.selectedWallet)
 }
 
 // RestyleWidgets restyles select widgets to match the current theme. This is
@@ -255,7 +251,7 @@ func (pg *Page) RestyleWidgets() {
 func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
 	pg.selectedUTXOs = selectedUTXOsInfo{
 		selectedUTXOs: utxos,
-		sourceAccount: pg.sourceAccountSelector.SelectedAccount(),
+		sourceAccount: pg.accountDropdown.SelectedAccount(),
 	}
 	if len(utxos) > 0 {
 		for _, elem := range utxos {
@@ -270,13 +266,16 @@ func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
 	pg.RestyleWidgets()
+	if pg.selectedWallet == nil {
+		return
+	}
 
 	if !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
 
-	pg.sourceAccountSelector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
+	pg.walletDropdown.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
 
 	pg.usdExchangeSet = false
 	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
@@ -342,7 +341,10 @@ func (pg *Page) validateAndConstructTx() {
 }
 
 func (pg *Page) constructTx() {
-	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
+	sourceAccount := pg.accountDropdown.SelectedAccount()
+	if sourceAccount == nil {
+		return
+	}
 	selectedUTXOs := make([]*sharedW.UnspentOutput, 0)
 	if sourceAccount == pg.selectedUTXOs.sourceAccount {
 		selectedUTXOs = pg.selectedUTXOs.selectedUTXOs
@@ -398,7 +400,7 @@ func (pg *Page) constructTx() {
 func (pg *Page) addSendDestination() (sharedW.AssetAmount, sharedW.AssetAmount, int64, error) {
 	var totalCost int64
 
-	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
+	sourceAccount := pg.accountDropdown.SelectedAccount()
 	selectedUTXOs := make([]*sharedW.UnspentOutput, 0)
 	if sourceAccount == pg.selectedUTXOs.sourceAccount {
 		selectedUTXOs = pg.selectedUTXOs.selectedUTXOs
@@ -490,7 +492,7 @@ func (pg *Page) setRecipientsAmountErr(err error) {
 }
 
 func (pg *Page) allRecipientsIsValid() bool {
-	isValid := true
+	isValid := pg.selectedWallet != nil && pg.selectedWallet.IsSynced()
 	for i := range pg.recipients {
 		recipient := pg.recipients[i]
 		isValid = isValid && recipient.isValidated()
@@ -539,9 +541,9 @@ func (pg *Page) getDestinationAddresses() []string {
 }
 
 func (pg *Page) showBalanceAfterSend() {
-	if pg.sourceAccountSelector != nil {
-		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-		if sourceAccount.Balance == nil {
+	if pg.accountDropdown != nil {
+		sourceAccount := pg.accountDropdown.SelectedAccount()
+		if sourceAccount == nil || sourceAccount.Balance == nil {
 			return
 		}
 		balanceAfterSend := sourceAccount.Balance.Spendable
@@ -570,6 +572,8 @@ func (pg *Page) clearEstimates() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions(gtx C) {
+	pg.walletDropdown.Handle(gtx)
+	pg.accountDropdown.Handle(gtx)
 	if pg.feeRateSelector.SaveRate.Clicked(gtx) {
 		pg.feeRateSelector.OnEditRateClicked(pg.selectedWallet)
 	}
@@ -623,11 +627,6 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 		}
 	}
 
-	if pg.sourceAccountSelector.Changed() {
-		pg.validateAllRecipientsAmount()
-		pg.validateAndConstructTx()
-	}
-
 	if pg.navigateToSyncBtn.Button.Clicked(gtx) {
 		pg.ToggleSync(pg.selectedWallet, func(b bool) {
 			pg.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
@@ -636,6 +635,11 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 
 	if pg.addRecipentBtn.Clicked(gtx) {
 		pg.addRecipient()
+	}
+
+	// handle recipient user interactions
+	for _, re := range pg.recipients {
+		re.handle(gtx)
 	}
 }
 
@@ -698,7 +702,7 @@ func (pg *Page) HandleKeyPress(_ *key.Event) {}
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
-	pg.sourceAccountSelector.StopTxNtfnListener()
+	pg.walletDropdown.StopTxNtfnListener()
 }
 
 func (pg *Page) isFeerateAPIApproved() bool {

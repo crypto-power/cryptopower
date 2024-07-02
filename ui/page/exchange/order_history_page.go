@@ -77,7 +77,7 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 		{Text: api.OrderStatusNew.String()},
 		{Text: api.OrderStatusCompleted.String()},
 		{Text: api.OrderStatusExpired.String()},
-	}, values.OrderStatusDropdownGroup, 1, 0, true)
+	}, values.OrderStatusDropdownGroup, 1, 0, false)
 
 	// Calculate the width of the dropdown based on the longest text.
 	maxTextWidth := 0
@@ -94,16 +94,11 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 	pg.orderDropdown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
-	}, values.ProposalDropdownGroup, 1, 0, true)
-
-	pg.statusDropdown.ExpandedLayoutInset.Right = values.MarginPadding10
+	}, values.ProposalDropdownGroup, 1, 0, false)
 
 	pg.statusDropdown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropdown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropdown.Width = values.MarginPadding100
-	if l.IsMobileView() {
-		pg.orderDropdown.Width = values.MarginPadding85
-	}
 	useCommonDropdownSettings(pg.Theme, pg.statusDropdown)
 	useCommonDropdownSettings(pg.Theme, pg.orderDropdown)
 	pg.statusDropdown.SetConvertTextSize(pg.ConvertTextSize)

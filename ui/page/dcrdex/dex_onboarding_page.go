@@ -128,8 +128,8 @@ type DEXOnboarding struct {
 	// TODO: add a file selector to choose server cert.
 
 	// Step Post Bond
-	bondSourceWalletSelector  *components.WalletAndAccountSelector
-	bondSourceAccountSelector *components.WalletAndAccountSelector
+	bondSourceWalletSelector  *components.WalletDropdown
+	bondSourceAccountSelector *components.AccountDropdown
 	bondStrengthEditor        cryptomaterial.Editor
 	bondStrengthMoreInfo      *cryptomaterial.Clickable
 	newTier                   int
@@ -243,8 +243,8 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 	utils.ZeroBytes(pg.dexPass) // Empty dex pass
 
 	// Remove bond confirmation listener if any.
-	if pg.bondSourceAccountSelector != nil {
-		pg.bondSourceAccountSelector.SelectedWallet().RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
+	if pg.bondSourceWalletSelector != nil {
+		pg.bondSourceWalletSelector.SelectedWallet().RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
 	}
 }
 
@@ -588,25 +588,13 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 			return centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrSelectBondWalletMsg)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: dp20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrSupportedWallets)).Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
-				if pg.bondSourceWalletSelector == nil {
-					return D{} // TODO: return btn to create wallet
-				}
-				return pg.bondSourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+				return pg.bondSourceWalletSelector.Layout(gtx, values.StrSupportedWallets)
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: dp20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrAccount)).Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
-				if pg.bondSourceAccountSelector == nil {
-					return D{}
-				}
-				return pg.bondSourceAccountSelector.Layout(pg.ParentWindow(), gtx)
+			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+				return pg.bondSourceAccountSelector.Layout(gtx, values.StrAccount)
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
@@ -669,7 +657,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 						}),
 						layout.Rigid(func(gtx C) D {
 							return pg.viewOnlyCard(&pg.Theme.Color.Gray2, func(gtx C) D {
-								assetType := pg.bondSourceAccountSelector.SelectedWallet().GetAssetType()
+								assetType := pg.bondSourceWalletSelector.SelectedWallet().GetAssetType()
 								icon := pg.Theme.AssetIcon(assetType)
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
@@ -843,7 +831,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 }
 
 func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
-	asset := pg.bondSourceAccountSelector.SelectedWallet()
+	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	assetType := asset.GetAssetType()
 	icon := pg.Theme.AssetIcon(assetType)
 	bondAsset := pg.bondServer.bondAssets[assetType]
@@ -1167,28 +1155,22 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	// TODO: pg.bondSourceWalletSelector should be an asset type
 	// selector so users can easily create missing wallets and fund
 	// it with the required bond amount.
-	pg.bondSourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, supportedBondAssets...).
-		Title(values.String(values.StrSelectWallet)).
-		WalletSelected(func(asset sharedW.Asset) {
-			if err := pg.bondSourceAccountSelector.SelectFirstValidAccount(asset); err != nil {
-				log.Error(err)
-			}
-		}).WalletValidator(func(a sharedW.Asset) bool {
-		return !a.IsWatchingOnlyWallet() && pg.validateBondWalletOrAccount(a.GetAssetType(), dexc.WalletIDConfigKey, fmt.Sprint(a.GetWalletID()))
-	})
-	pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, supportedBondAssets...).
-		Title(values.String(values.StrSelectAcc)).
+	pg.bondSourceWalletSelector = components.NewWalletDropdown(pg.Load, supportedBondAssets...).
+		SetChangedCallback(func(asset sharedW.Asset) {
+			_ = pg.bondSourceAccountSelector.Setup(asset)
+		}).
+		WalletValidator(func(a sharedW.Asset) bool {
+			return !a.IsWatchingOnlyWallet() && pg.validateBondWalletOrAccount(a.GetAssetType(), dexc.WalletIDConfigKey, fmt.Sprint(a.GetWalletID()))
+		}).
+		Setup()
+	pg.bondSourceAccountSelector = components.NewAccountDropdown(pg.Load).
 		AccountValidator(func(a *sharedW.Account) bool {
 			return !a.IsWatchOnly && pg.validateBondWalletOrAccount(pg.bondSourceWalletSelector.SelectedWallet().GetAssetType(), dexc.WalletAccountNumberConfigKey, fmt.Sprint(a.AccountNumber))
 		}).
-		AccountSelected(func(_ *sharedW.Account) {
+		SetChangedCallback(func(_ *sharedW.Account) {
 			pg.bondAccountHasEnough()
-		})
-	pg.bondSourceAccountSelector.HideLogo = true
-	if err := pg.bondSourceAccountSelector.SelectFirstValidAccount(pg.bondSourceWalletSelector.SelectedWallet()); err != nil {
-		log.Error(err)
-	}
-
+		}).
+		Setup(pg.bondSourceWalletSelector.SelectedWallet())
 	pg.currentStep = onboardingPostBond
 	pg.bondStrengthEditor.Editor.SetText(fmt.Sprintf("%d", minimumBondStrength))
 	pg.newTier = minimumBondStrength
@@ -1329,7 +1311,7 @@ func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
 
 	// Listen for new block updates. This listener is removed in
 	// OnNavigateFrom().
-	asset := pg.bondSourceAccountSelector.SelectedWallet()
+	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	asset.RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
 	_ = asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
 		OnBlockAttached: func(_ int, _ int32) {
@@ -1370,12 +1352,9 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 			bondAssetType: bondAsset,
 		}
 		pg.bondServer.url = xcHost
-		pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
-		ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
-		if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.
-			pg.notifyError(values.String(values.StrNoWalletLoaded))
-			return
-		}
+		pg.bondSourceAccountSelector = components.
+			NewAccountDropdown(pg.Load).
+			Setup(pg.bondSourceWalletSelector.SelectedWallet())
 
 		pg.waitForConfirmationAndListenForBlockNotifications()
 	}
@@ -1406,12 +1385,7 @@ func (pg *DEXOnboarding) bondAccountHasEnough() bool {
 	bondCost := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	bondAmt := asset.ToAmount(int64(bondCost))
 	ac := pg.bondSourceAccountSelector.SelectedAccount()
-	if ac.Balance.Spendable.ToInt() < bondAmt.ToInt() {
-		pg.bondSourceAccountSelector.SetError(values.StringF(values.StrInsufficientBondAmount, bondAmt.String()))
-		return false
-	}
-	pg.bondSourceAccountSelector.SetError("")
-	return true
+	return ac.Balance.Spendable.ToInt() >= bondAmt.ToInt()
 }
 
 func (pg *DEXOnboarding) validateBondStrength() bool {

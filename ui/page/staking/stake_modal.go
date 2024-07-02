@@ -28,9 +28,9 @@ type ticketBuyerModal struct {
 	saveSettingsBtn cryptomaterial.Button
 
 	balToMaintainEditor cryptomaterial.Editor
+	accountDropdown     *components.AccountDropdown
 
-	accountSelector *components.WalletAndAccountSelector
-	vspSelector     *components.VSPSelector
+	vspSelector *components.VSPSelector
 
 	dcrImpl *dcr.Asset
 }
@@ -74,8 +74,8 @@ func (tb *ticketBuyerModal) OnResume() {
 		return
 	}
 
-	tb.initializeAccountSelector()
-	tb.accountSelector.ListenForTxNotifications(tb.ParentWindow()) // listener is stopped in OnDismissed()
+	tb.initializeAccountSelector(tb.dcrImpl)
+	tb.accountDropdown.ListenForTxNotifications(tb.ParentWindow()) // listener is stopped in OnDismissed()
 
 	if len(tb.dcrImpl.KnownVSPs()) == 0 {
 		// TODO: Does this modal need this list?
@@ -95,13 +95,9 @@ func (tb *ticketBuyerModal) OnResume() {
 		}
 
 		if account != nil {
-			tb.accountSelector.SetSelectedAccount(account)
+			tb.accountDropdown.SetSelectedAccount(account)
 		} else {
-			// If a valid account is not set, choose one from available the valid accounts.
-			if err := tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl); err != nil {
-				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
-				tb.ParentWindow().ShowModal(errModal)
-			}
+			_ = tb.accountDropdown.Setup(tb.dcrImpl)
 		}
 
 		tb.vspSelector.SelectVSP(tbConfig.VspHost)
@@ -109,12 +105,8 @@ func (tb *ticketBuyerModal) OnResume() {
 		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(w.ToAmount(tbConfig.BalanceToMaintain).ToCoin(), 'f', 0, 64))
 	}
 
-	if tb.accountSelector.SelectedAccount() == nil {
-		err := tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl)
-		if err != nil {
-			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
-			tb.ParentWindow().ShowModal(errModal)
-		}
+	if tb.accountDropdown.SelectedAccount() == nil {
+		_ = tb.accountDropdown.Setup(tb.dcrImpl)
 	}
 }
 
@@ -133,7 +125,7 @@ func (tb *ticketBuyerModal) Layout(gtx C) D {
 						Top:    values.MarginPadding8,
 						Bottom: values.MarginPadding16,
 					}.Layout(gtx, func(gtx C) D {
-						return tb.accountSelector.Layout(tb.ParentWindow(), gtx)
+						return tb.accountDropdown.Layout(gtx, "")
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
@@ -178,10 +170,9 @@ func (tb *ticketBuyerModal) canSave() bool {
 	return true
 }
 
-func (tb *ticketBuyerModal) initializeAccountSelector() {
-	tb.accountSelector = components.NewWalletAndAccountSelector(tb.Load).
-		Title(values.String(values.StrPurchasingAcct)).
-		AccountSelected(func(_ *sharedW.Account) {}).
+func (tb *ticketBuyerModal) initializeAccountSelector(wallet *dcr.Asset) {
+	tb.accountDropdown = components.NewAccountDropdown(tb.Load).
+		SetChangedCallback(func(_ *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.dcrImpl.IsWatchingOnlyWallet()
@@ -193,15 +184,16 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 			}
 
 			return accountIsValid
-		})
-	_ = tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl)
+		}).
+		Setup(wallet)
 }
 
 func (tb *ticketBuyerModal) OnDismiss() {
-	tb.accountSelector.StopTxNtfnListener()
+	tb.accountDropdown.StopTxNtfnListener()
 }
 
 func (tb *ticketBuyerModal) Handle(gtx C) {
+	tb.accountDropdown.Handle(gtx)
 	tb.saveSettingsBtn.SetEnabled(tb.canSave())
 
 	if tb.cancel.Clicked(gtx) || tb.Modal.BackdropClicked(gtx, true) {
@@ -218,7 +210,7 @@ func (tb *ticketBuyerModal) Handle(gtx C) {
 		}
 
 		balToMaintain := dcr.AmountAtom(amount)
-		account := tb.accountSelector.SelectedAccount()
+		account := tb.accountDropdown.SelectedAccount()
 
 		tb.dcrImpl.SetAutoTicketsBuyerConfig(vspHost, account.Number, balToMaintain)
 		tb.settingsSaved()

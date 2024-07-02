@@ -12,4 +12,5 @@ const (
 	DEXOrderTypes
 	StartPageDropdownGroup
 	AssetTypeDropdownGroup
+	AccountsDropdownGroup
 )
