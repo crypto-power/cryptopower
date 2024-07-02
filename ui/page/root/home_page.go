@@ -468,7 +468,6 @@ func (hp *HomePage) HandleUserInteractions(gtx C) {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												if hp.copyRedirectURL.Clicked(gtx) {
 													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(hp.releaseResponse.URL))})
-													// clipboard.WriteOp{Text: hp.releaseResponse.URL}.Add(gtx.Ops)
 													hp.Toast.Notify(values.String(values.StrCopied))
 												}
 												return hp.copyRedirectURL.Layout(gtx, hp.Theme.NewIcon(hp.Theme.Icons.CopyIcon).Layout24dp)

@@ -209,7 +209,6 @@ func (pg *SignMessagePage) drawResult() layout.Widget {
 												return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
 													if pg.copySignature.Clicked(gtx) {
 														gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.signedMessageLabel.Text))})
-														// clipboard.WriteOp{Text: pg.signedMessageLabel.Text}.Add(gtx.Ops)
 														pg.Toast.Notify(values.String(values.StrSignCopied))
 													}
 													return pg.copySignature.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon).Layout24dp)

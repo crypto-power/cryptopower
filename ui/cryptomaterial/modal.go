@@ -35,19 +35,18 @@ type Modal struct {
 	isDisabled           bool
 	showScrollBar        bool
 	isMobileView         bool
-	isFirstDisplay       bool
 	firstLoadWithContext func(gtx C)
 }
 
 // The firstLoad() parameter is used to perform actions
 // that require Context before Layout() is called.
-func (t *Theme) ModalFloatTitle(id string, isMobileView bool, firstLoad ...func(gtx C)) *Modal {
-	mod := t.Modal(id, isMobileView, firstLoad...)
+func (t *Theme) ModalFloatTitle(id string, isMobileView bool, firstLoad func(gtx C)) *Modal {
+	mod := t.Modal(id, isMobileView, firstLoad)
 	mod.isFloatTitle = true
 	return mod
 }
 
-func (t *Theme) Modal(id string, isMobileView bool, firstLoad ...func(gtx C)) *Modal {
+func (t *Theme) Modal(id string, isMobileView bool, firstLoad func(gtx C)) *Modal {
 	overlayColor := t.Color.Black
 	overlayColor.A = 200
 
@@ -64,11 +63,8 @@ func (t *Theme) Modal(id string, isMobileView bool, firstLoad ...func(gtx C)) *M
 		card:           t.Card(),
 		padding:        values.MarginPadding24,
 		isMobileView:   isMobileView,
-		isFirstDisplay: true,
 	}
-	if len(firstLoad) > 0 {
-		m.firstLoadWithContext = firstLoad[0]
-	}
+	m.firstLoadWithContext = firstLoad
 
 	m.scroll = t.List(m.list)
 
@@ -100,9 +96,9 @@ func (m *Modal) IsShown() bool {
 // Layout renders the modal widget to screen. The modal assumes the size of
 // its content plus padding.
 func (m *Modal) Layout(gtx C, widgets []layout.Widget, width ...float32) D {
-	if m.firstLoadWithContext != nil && m.isFirstDisplay {
+	if m.firstLoadWithContext != nil {
 		m.firstLoadWithContext(gtx)
-		m.isFirstDisplay = false
+		m.firstLoadWithContext = nil
 	}
 	mGtx := gtx
 	if m.isDisabled {

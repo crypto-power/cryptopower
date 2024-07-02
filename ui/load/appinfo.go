@@ -8,11 +8,13 @@ import (
 
 	giouiApp "gioui.org/app"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -280,6 +282,7 @@ func (app *AppInfo) ConvertIconSize(size unit.Dp) unit.Dp {
 
 func networkSwitchTempPage(currentNetType, newNetType utils.NetworkType) app.Page {
 	theme := material.NewTheme()
+	theme.Shaper = text.NewShaper(text.WithCollection(assets.FontCollection()))
 	text := fmt.Sprintf("Switching from %s to %s, please wait...", currentNetType, newNetType)
 	lbl := material.Body1(theme, text)
 	return app.NewWidgetDisplayPage(func(gtx layout.Context) layout.Dimensions {

@@ -266,7 +266,6 @@ func (pg *HelpPage) HandleUserInteractions(gtx C) {
 													return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
 														if pg.copyRedirectURL.Clicked(gtx) {
 															gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(decredURL))})
-															// clipboard.WriteOp{Text: decredURL}.Add(gtx.Ops)
 															pg.Toast.Notify(values.String(values.StrCopied))
 														}
 														return pg.copyRedirectURL.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon).Layout24dp)

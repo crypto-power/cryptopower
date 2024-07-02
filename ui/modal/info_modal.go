@@ -66,7 +66,7 @@ const (
 
 // NewCustomModal returns a modal that can be customized.
 func NewCustomModal(l *load.Load) *InfoModal {
-	return newInfoModalWithKey(l, "info_modal", InfoBtn)
+	return newInfoModalWithKey(l, "info_modal", InfoBtn, nil)
 }
 
 // NewSuccessModal returns the default success modal UI component.
@@ -94,7 +94,7 @@ func DefaultClickFunc() ClickFunc {
 }
 
 func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked ClickFunc) *InfoModal {
-	info := newInfoModalWithKey(l, "info_modal", InfoBtn)
+	info := newInfoModalWithKey(l, "info_modal", InfoBtn, nil)
 	info.positiveButtonClicked = clicked
 	info.btnPositiveWidth = values.MarginPadding100
 	info.dialogIcon = icon
@@ -104,10 +104,10 @@ func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked Cl
 	return info
 }
 
-func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType, firstLoad ...func(gtx C)) *InfoModal {
+func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType, firstLoad func(gtx C)) *InfoModal {
 	in := &InfoModal{
 		Load:             l,
-		Modal:            l.Theme.ModalFloatTitle(key, l.IsMobileView(), firstLoad...),
+		Modal:            l.Theme.ModalFloatTitle(key, l.IsMobileView(), firstLoad),
 		btnNegative:      l.Theme.OutlineButton(""),
 		isCancelable:     true,
 		isLoading:        false,

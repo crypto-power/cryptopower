@@ -614,7 +614,6 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 							// copy destination Address
 							if clickable.Clicked(gtx) {
 								gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(address))})
-								// clipboard.WriteOp{Text: address}.Add(gtx.Ops)
 								pg.Toast.Notify(values.String(values.StrTxHashCopied))
 							}
 							lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(address, 0))
@@ -778,7 +777,6 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				// copy transaction hash
 				if pg.hashClickable.Clicked(gtx) {
 					gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.transaction.Hash))})
-					// clipboard.WriteOp{Text: pg.transaction.Hash}.Add(gtx.Ops)
 					pg.Toast.Notify(values.String(values.StrTxHashCopied))
 				}
 				return pg.hashClickable.Layout(gtx, lbl.Layout)
@@ -872,7 +870,6 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 						// copy address
 						if pg.txnWidgets.copyTextButtons[i].Clicked(gtx) {
 							gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(address))})
-							// clipboard.WriteOp{Text: address}.Add(gtx.Ops)
 							pg.Toast.Notify(values.String(values.StrCopied))
 						}
 

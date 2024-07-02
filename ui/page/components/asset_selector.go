@@ -43,7 +43,7 @@ type assetTypeModal struct {
 	onAssetTypeClicked func(*AssetTypeItem)
 	assetTypeList      layout.List
 	assetTypeItems     []*AssetTypeItem
-	eventSoruce        input.Source
+	eventSoruce        input.Source // Interface between the interface state and widgets
 	isCancelable       bool
 }
 
@@ -204,7 +204,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 func newAssetTypeModal(l *load.Load) *assetTypeModal {
 	atm := &assetTypeModal{
 		Load:          l,
-		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer), l.IsMobileView()),
+		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer), l.IsMobileView(), nil),
 		assetTypeList: layout.List{Axis: layout.Vertical},
 		isCancelable:  true,
 		dialogTitle:   values.String(values.StrSelectAssetType),

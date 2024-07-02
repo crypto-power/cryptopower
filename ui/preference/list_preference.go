@@ -112,7 +112,7 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items [
 
 		preferenceItems:   items,
 		optionsRadioGroup: new(widget.Enum),
-		Modal:             l.Theme.ModalFloatTitle("list_preference", l.IsMobileView()),
+		Modal:             l.Theme.ModalFloatTitle("list_preference", l.IsMobileView(), nil),
 		redirectIcon:      l.Theme.Icons.RedirectIcon,
 		viewWarningAction: l.Theme.NewClickable(true),
 		copyRedirectURL:   l.Theme.NewClickable(false),
@@ -265,7 +265,6 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												if lp.copyRedirectURL.Clicked(gtx) {
-													// clipboard.WriteOp{Text: host}.Add(gtx.Ops)
 													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(host))})
 													lp.Toast.Notify(values.String(values.StrCopied))
 												}

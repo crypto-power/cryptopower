@@ -737,7 +737,6 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 func (pg *AppSettingsPage) handleDEXSeedCopyEvent(gtx C) {
 	if pg.copyDEXSeed.Clicked(gtx) {
 		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.dexSeed.String()))})
-		// clipboard.WriteOp{Text: pg.dexSeed.String()}.Add(gtx.Ops)
 		pg.copyDEXSeed.Text = values.String(values.StrCopied)
 		pg.copyDEXSeed.Color = pg.Theme.Color.Success
 		time.AfterFunc(time.Second*3, func() {

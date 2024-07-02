@@ -127,7 +127,7 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	}
 
 	if sendPage.modalLayout != nil {
-		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrCoinSelection), pg.IsMobileView())
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrCoinSelection), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 	} else {
 		pg.GenericPageModal = app.NewGenericPageModal(ManualCoinSelectionPageID)
@@ -582,7 +582,6 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 							// copy destination Address
 							if v.addressCopy.Clicked(gtx) {
 								gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(v.Address))})
-								// clipboard.WriteOp{Text: v.Address}.Add(gtx.Ops)
 								pg.Toast.Notify(values.String(values.StrAddressCopied))
 							}
 

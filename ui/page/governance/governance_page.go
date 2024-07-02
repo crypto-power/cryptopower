@@ -37,7 +37,7 @@ func NewGovernancePage(l *load.Load) *Page {
 	pg := &Page{
 		Load:            l,
 		MasterPage:      app.NewMasterPage(GovernancePageID),
-		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView()),
+		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView(), nil),
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
 

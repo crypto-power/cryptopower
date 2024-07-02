@@ -149,7 +149,7 @@ type vspSelectorModal struct {
 func newVSPSelectorModal(l *load.Load, dcrWallet *dcr.Asset) *vspSelectorModal {
 	v := &vspSelectorModal{
 		Load:  l,
-		Modal: l.Theme.ModalFloatTitle("VSPSelectorModal", l.IsMobileView()),
+		Modal: l.Theme.ModalFloatTitle("VSPSelectorModal", l.IsMobileView(), nil),
 
 		inputVSP:       l.Theme.Editor(new(widget.Editor), values.String(values.StrAddVSP)),
 		addVSP:         l.Theme.Button(values.String(values.StrSave)),

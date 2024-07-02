@@ -61,7 +61,7 @@ type orderSchedulerModal struct {
 func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerModal {
 	osm := &orderSchedulerModal{
 		Load:              l,
-		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrOrderScheduler), l.IsMobileView()),
+		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrOrderScheduler), l.IsMobileView(), nil),
 		exchangeSelector:  NewExSelector(l, instantswap.FlypMe),
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,

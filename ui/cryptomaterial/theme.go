@@ -27,7 +27,6 @@ type (
 )
 
 type Theme struct {
-	Shaper text.Shaper
 	Base   *material.Theme
 	Color  *values.Color
 	Styles *values.WidgetStyles
@@ -55,9 +54,11 @@ type Theme struct {
 }
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
+	base := material.NewTheme()
+	base.Shaper = text.NewShaper(text.WithCollection(fontCollection))
+
 	t := &Theme{
-		Shaper:           *text.NewShaper(text.WithCollection(fontCollection)),
-		Base:             material.NewTheme(),
+		Base:             base,
 		Color:            &values.Color{},
 		Icons:            &Icons{},
 		Styles:           values.DefaultWidgetStyles(),

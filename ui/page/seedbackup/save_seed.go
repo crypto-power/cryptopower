@@ -348,11 +348,9 @@ func (pg *SaveSeedPage) copyButtonLayout(gtx C) D {
 func (pg *SaveSeedPage) handleCopyEvent(gtx C) {
 	if pg.copy.Clicked(gtx) {
 		if pg.seedFormatRadioGroup.Value == seedWordFormat {
-			// clipboard.WriteOp{Text: pg.seed}.Add(gtx.Ops)
 			gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.seed))})
 		} else {
 			gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.hexLabel.Text))})
-			// clipboard.WriteOp{Text: pg.hexLabel.Text}.Add(gtx.Ops)
 		}
 
 		pg.copy.Text = values.String(values.StrCopied)

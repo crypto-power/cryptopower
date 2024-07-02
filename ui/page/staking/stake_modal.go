@@ -38,7 +38,7 @@ type ticketBuyerModal struct {
 func newTicketBuyerModal(l *load.Load, wallet *dcr.Asset) *ticketBuyerModal {
 	tb := &ticketBuyerModal{
 		Load:  l,
-		Modal: l.Theme.ModalFloatTitle("staking_modal", l.IsMobileView()),
+		Modal: l.Theme.ModalFloatTitle("staking_modal", l.IsMobileView(), nil),
 
 		cancel:          l.Theme.OutlineButton(values.String(values.StrCancel)),
 		saveSettingsBtn: l.Theme.Button(values.String(values.StrSave)),

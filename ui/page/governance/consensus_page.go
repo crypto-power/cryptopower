@@ -248,7 +248,6 @@ func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
 												if pg.copyRedirectURL.Clicked(gtx) {
-													// clipboard.WriteOp{Text: host}.Add(gtx.Ops)
 													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(host))})
 													pg.Toast.Notify(values.String(values.StrCopied))
 												}

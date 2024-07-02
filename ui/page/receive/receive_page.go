@@ -83,7 +83,7 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	if wallet == nil {
-		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrReceive), pg.IsMobileView())
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrReceive), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 		pg.initWalletSelectors() // will auto select the first wallet in the dropdown as pg.selectedWallet
 	} else {
@@ -485,7 +485,6 @@ generateAddress:
 func (pg *Page) handleCopyEvent(gtx C) {
 	// Prevent copying again if the timer hasn't expired
 	if pg.copy.Clicked(gtx) && !pg.isCopying {
-		// clipboard.WriteOp{Text: pg.currentAddress}.Add(gtx.Ops)
 		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.currentAddress))})
 		pg.Toast.Notify(values.String(values.StrCopied))
 	}

@@ -45,7 +45,7 @@ type voteModal struct {
 func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 	vm := &voteModal{
 		Load:           l,
-		Modal:          l.Theme.ModalFloatTitle("input_vote_modal", l.IsMobileView()),
+		Modal:          l.Theme.ModalFloatTitle("input_vote_modal", l.IsMobileView(), nil),
 		proposal:       proposal,
 		materialLoader: material.Loader(l.Theme.Base),
 		voteBtn:        l.Theme.Button(values.String(values.StrVote)),

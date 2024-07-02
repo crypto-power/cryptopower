@@ -61,7 +61,7 @@ type orderSettingsModal struct {
 func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
 	osm := &orderSettingsModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView()),
+		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView(), nil),
 		orderData:    data,
 		copyRedirect: l.Theme.NewClickable(false),
 	}
@@ -373,7 +373,6 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																									mGtx = gtx.Disabled()
 																								}
 																								if osm.copyRedirect.Clicked(gtx) {
-																									// clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(mGtx.Ops)
 																									gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(osm.addressEditor.Editor.Text()))})
 																									osm.Load.Toast.Notify(values.String(values.StrCopied))
 																								}

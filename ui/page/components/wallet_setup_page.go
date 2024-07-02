@@ -107,7 +107,6 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
 	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true
-	pg.confirmPasswordEditor.Hint = values.String(values.StrWalletName)
 
 	pg.watchOnlyWalletHex = l.Theme.Editor(new(widget.Editor), values.String(values.StrExtendedPubKey))
 	pg.watchOnlyWalletHex.Editor.SingleLine, pg.watchOnlyWalletHex.Editor.Submit, pg.watchOnlyWalletHex.IsTitleLabel = false, true, false
