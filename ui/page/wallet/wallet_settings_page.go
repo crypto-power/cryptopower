@@ -653,20 +653,19 @@ func (pg *SettingsPage) showWarningModalDialog(title, msg string) {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *SettingsPage) HandleUserInteractions() {
-	for pg.changePass.Clicked() {
+func (pg *SettingsPage) HandleUserInteractions(gtx C) {
+	if pg.changePass.Clicked(gtx) {
 		pg.changeSpendingPasswordModal()
-		break
 	}
 
-	for pg.viewSeed.Clicked() {
+	if pg.viewSeed.Clicked(gtx) {
 		currentPage := pg.ParentWindow().CurrentPageID()
 		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(_ *load.Load, navigator app.WindowNavigator) {
 			navigator.ClosePagesAfter(currentPage)
 		}))
 	}
 
-	if pg.rescan.Clicked() {
+	if pg.rescan.Clicked(gtx) {
 		go func() {
 			info := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrRescanBlockchain)).
@@ -691,21 +690,19 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		}()
 	}
 
-	for pg.setGapLimit.Clicked() {
+	if pg.setGapLimit.Clicked(gtx) {
 		pg.gapLimitModal()
 	}
 
-	for pg.deleteWallet.Clicked() {
+	if pg.deleteWallet.Clicked(gtx) {
 		pg.deleteWalletModal()
-		break
 	}
 
-	for pg.changeWalletName.Clicked() {
+	if pg.changeWalletName.Clicked(gtx) {
 		pg.renameWalletModal()
-		break
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(pg.Load).
 			PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
@@ -714,11 +711,11 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.spendUnconfirmed.Changed() {
+	if pg.spendUnconfirmed.Changed(gtx) {
 		pg.wallet.SaveUserConfigValue(sharedW.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
 	}
 
-	if pg.spendUnmixedFunds.Changed() {
+	if pg.spendUnmixedFunds.Changed(gtx) {
 		if pg.spendUnmixedFunds.IsChecked() {
 			textModal := modal.NewTextInputModal(pg.Load).
 				SetTextWithTemplate(modal.AllowUnmixedSpendingTemplate).
@@ -753,7 +750,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.connectToPeer.Changed() && !pg.isPrivacyModeOn() {
+	if pg.connectToPeer.Changed(gtx) && !pg.isPrivacyModeOn() {
 		if pg.connectToPeer.IsChecked() {
 			pg.showSPVPeerDialog()
 			return
@@ -764,31 +761,31 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		pg.showWarningModalDialog(title, msg)
 	}
 
-	if pg.updateConnectToPeer.Clicked() && !pg.isPrivacyModeOn() {
+	if pg.updateConnectToPeer.Clicked(gtx) && !pg.isPrivacyModeOn() {
 		pg.showSPVPeerDialog()
 	}
 
-	if pg.verifyMessage.Clicked() {
+	if pg.verifyMessage.Clicked(gtx) {
 		pg.ParentNavigator().Display(security.NewVerifyMessagePage(pg.Load, pg.wallet))
 	}
 
-	if pg.validateAddr.Clicked() {
+	if pg.validateAddr.Clicked(gtx) {
 		pg.ParentNavigator().Display(security.NewValidateAddressPage(pg.Load, pg.wallet))
 	}
 
-	if pg.signMessage.Clicked() {
+	if pg.signMessage.Clicked(gtx) {
 		pg.ParentNavigator().Display(security.NewSignMessagePage(pg.Load, pg.wallet))
 	}
 
-	if pg.checklog.Clicked() {
+	if pg.checklog.Clicked(gtx) {
 		pg.ParentNavigator().Display(s.NewLogPage(pg.Load, pg.wallet.LogFile(), values.String(values.StrWalletLog)))
 	}
 
-	if pg.checkStats.Clicked() {
+	if pg.checkStats.Clicked(gtx) {
 		pg.ParentNavigator().Display(s.NewStatPage(pg.Load, pg.wallet))
 	}
 
-	for pg.addAccount.Clicked() {
+	for pg.addAccount.Clicked(gtx) {
 		newPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrCreateNewAccount)).
 			EnableName(true).

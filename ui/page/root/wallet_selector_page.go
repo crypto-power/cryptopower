@@ -159,7 +159,7 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *WalletSelectorPage) HandleUserInteractions() {
+func (pg *WalletSelectorPage) HandleUserInteractions(gtx C) {
 	pg.listLock.Lock()
 	defer pg.listLock.Unlock()
 
@@ -187,7 +187,7 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 
 	for _, walletsOfType := range pg.badWalletsList {
 		for _, badWallet := range walletsOfType {
-			if badWallet.deleteBtn.Clicked() {
+			if badWallet.deleteBtn.Clicked(gtx) {
 				pg.deleteBadWallet(badWallet.Wallet.ID)
 				pg.ParentWindow().Reload()
 			}
@@ -197,7 +197,7 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 	for asset, clickable := range pg.addWalClickable {
 		// Create a local copy of asset for each iteration
 		asset := asset
-		if clickable.Clicked() {
+		if clickable.Clicked(gtx) {
 			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
 				pg.ParentNavigator().ClosePagesAfter(WalletSelectorPageID)
 				// enable sync for the newly created wallet

@@ -2,6 +2,8 @@ package exchange
 
 import (
 	"context"
+	"io"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
@@ -59,7 +61,7 @@ type orderSettingsModal struct {
 func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
 	osm := &orderSettingsModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView()),
+		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView(), nil),
 		orderData:    data,
 		copyRedirect: l.Theme.NewClickable(false),
 	}
@@ -147,10 +149,10 @@ func (osm *orderSettingsModal) OnDismiss() {
 	osm.ctxCancel()
 }
 
-func (osm *orderSettingsModal) Handle() {
+func (osm *orderSettingsModal) Handle(gtx C) {
 	osm.saveBtn.SetEnabled(osm.canSave())
 
-	if osm.saveBtn.Clicked() {
+	if osm.saveBtn.Clicked(gtx) {
 		params := &callbackParams{
 			sourceAccountSelector: osm.sourceAccountSelector,
 			sourceWalletSelector:  osm.sourceWalletSelector,
@@ -173,12 +175,12 @@ func (osm *orderSettingsModal) Handle() {
 		osm.Dismiss()
 	}
 
-	if osm.cancelBtn.Clicked() || osm.Modal.BackdropClicked(true) {
+	if osm.cancelBtn.Clicked(gtx) || osm.Modal.BackdropClicked(gtx, true) {
 		osm.onCancel()
 		osm.Dismiss()
 	}
 
-	if osm.sourceInfoButton.Button.Clicked() {
+	if osm.sourceInfoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(osm.Load).
 			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
@@ -187,7 +189,7 @@ func (osm *orderSettingsModal) Handle() {
 		osm.ParentWindow().ShowModal(info)
 	}
 
-	if osm.destinationInfoButton.Button.Clicked() {
+	if osm.destinationInfoButton.Button.Clicked(gtx) {
 		info := modal.NewCustomModal(osm.Load).
 			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
@@ -196,14 +198,14 @@ func (osm *orderSettingsModal) Handle() {
 		osm.ParentWindow().ShowModal(info)
 	}
 
-	if osm.feeRateSelector.SaveRate.Clicked() {
+	if osm.feeRateSelector.SaveRate.Clicked(gtx) {
 		osm.feeRateSelector.OnEditRateClicked(osm.sourceWalletSelector.SelectedWallet())
 	}
 }
 
 func (osm *orderSettingsModal) handleCopyEvent(gtx C) {
 	osm.addressEditor.EditorIconButtonEvent = func() {
-		clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(gtx.Ops)
+		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(osm.addressEditor.Editor.Text()))})
 		osm.Toast.Notify(values.String(values.StrCopied))
 	}
 }
@@ -370,8 +372,8 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																								if osm.addressEditor.Editor.Text() == "" {
 																									mGtx = gtx.Disabled()
 																								}
-																								if osm.copyRedirect.Clicked() {
-																									clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(mGtx.Ops)
+																								if osm.copyRedirect.Clicked(gtx) {
+																									gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(osm.addressEditor.Editor.Text()))})
 																									osm.Load.Toast.Notify(values.String(values.StrCopied))
 																								}
 																								return osm.copyRedirect.Layout(mGtx, osm.Theme.NewIcon(osm.Theme.Icons.CopyIcon).Layout24dp)

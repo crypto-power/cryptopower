@@ -27,7 +27,6 @@ type (
 )
 
 type Theme struct {
-	Shaper text.Shaper
 	Base   *material.Theme
 	Color  *values.Color
 	Styles *values.WidgetStyles
@@ -55,9 +54,11 @@ type Theme struct {
 }
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
+	base := material.NewTheme()
+	base.Shaper = text.NewShaper(text.WithCollection(fontCollection))
+
 	t := &Theme{
-		Shaper:           *text.NewShaper(fontCollection),
-		Base:             material.NewTheme(fontCollection),
+		Base:             base,
 		Color:            &values.Color{},
 		Icons:            &Icons{},
 		Styles:           values.DefaultWidgetStyles(),
@@ -271,39 +272,33 @@ func approxLuminance(c color.NRGBA) byte {
 	return byte((r*int(c.R) + g*int(c.G) + b*int(c.B)) / t)
 }
 
-func HandleEditorEvents(editors ...*widget.Editor) (bool, bool) {
+func HandleEditorEvents(_ C, editors ...*Editor) (bool, bool) {
 	var submit, changed bool
 	for _, editor := range editors {
-		for _, evt := range editor.Events() {
-			switch evt.(type) {
-			case widget.ChangeEvent:
-				changed = true
-			case widget.SubmitEvent:
-				submit = true
-			}
-		}
+		submit = submit || editor.Submitted()
+		changed = changed || editor.Changed()
 	}
 	return submit, changed
 }
 
-func SwitchEditors(event *key.Event, editors ...*widget.Editor) {
+func SwitchEditors(gtx C, event *key.Event, editors ...*widget.Editor) {
 	if event.Modifiers != key.ModShift {
 		for i := 0; i < len(editors); i++ {
-			if editors[i].Focused() {
+			if gtx.Source.Focused(editors[i]) {
 				if i == len(editors)-1 {
-					editors[0].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[0]})
 				} else {
-					editors[i+1].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[i+1]})
 				}
 			}
 		}
 	} else {
 		for i := 0; i < len(editors); i++ {
-			if editors[i].Focused() {
+			if gtx.Source.Focused(editors[i]) {
 				if i == 0 {
-					editors[len(editors)-1].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[len(editors)-1]})
 				} else {
-					editors[i-1].Focus()
+					gtx.Execute(key.FocusCmd{Tag: editors[i-1]})
 				}
 			}
 		}
@@ -344,11 +339,10 @@ func (t *Theme) WatchOnlyAssetIcon(asset utils.AssetType) *Image {
 func (t *Theme) AutoHideSoftKeyBoardAndMenuButton(gtx C) {
 	isHide := true
 	for _, e := range t.allEditors {
-		e.isShowMenu = false
-		isHide = isHide && !e.Pressed()
+		isHide = isHide && !e.Pressed(gtx)
 	}
 	if isHide {
-		key.SoftKeyboardOp{Show: false}.Add(gtx.Ops)
+		gtx.Execute(key.SoftKeyboardCmd{Show: false})
 	}
 }
 

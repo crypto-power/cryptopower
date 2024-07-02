@@ -154,8 +154,7 @@ func (sc *SegmentedControl) layoutContent(body layout.Widget) layout.Widget {
 }
 
 func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
-	sc.handleEvents()
-
+	sc.handleEvents(gtx)
 	return LinearLayout{
 		Width:      WrapContent,
 		Height:     WrapContent,
@@ -192,7 +191,7 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 }
 
 func (sc *SegmentedControl) splitTileLayout(gtx C) D {
-	sc.handleEvents()
+	sc.handleEvents(gtx)
 	flexWidthLeft := float32(.035)
 	flexWidthCenter := float32(.8)
 	flexWidthRight := float32(.035)
@@ -253,7 +252,7 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 }
 
 func (sc *SegmentedControl) groupTileMaxLayout(gtx C) D {
-	sc.handleEvents()
+	sc.handleEvents(gtx)
 	layoutSize := gtx.Constraints.Max.X
 	return LinearLayout{
 		Width:      layoutSize,
@@ -293,7 +292,7 @@ func (sc *SegmentedControl) groupTileMaxLayout(gtx C) D {
 }
 
 func (sc *SegmentedControl) dynamicSplitTileLayout(gtx C) D {
-	sc.handleEvents()
+	sc.handleEvents(gtx)
 	return LinearLayout{
 		Width:       MatchParent,
 		Height:      WrapContent,
@@ -336,7 +335,7 @@ func (sc *SegmentedControl) dynamicSplitTileLayout(gtx C) D {
 	})
 }
 
-func (sc *SegmentedControl) handleEvents() {
+func (sc *SegmentedControl) handleEvents(gtx C) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	if segmentItemClicked, clickedSegmentIndex := sc.list.ItemClicked(); segmentItemClicked {
@@ -346,13 +345,13 @@ func (sc *SegmentedControl) handleEvents() {
 		sc.selectedIndex = clickedSegmentIndex
 	}
 
-	if sc.leftNavBtn.Clicked() {
+	if sc.leftNavBtn.Clicked(gtx) {
 		sc.list.Position.First = 0
 		sc.list.Position.Offset = 0
 		sc.list.Position.BeforeEnd = true
 		sc.list.ScrollToEnd = false
 	}
-	if sc.rightNavBtn.Clicked() {
+	if sc.rightNavBtn.Clicked(gtx) {
 		sc.list.Position.OffsetLast = 0
 		sc.list.Position.BeforeEnd = false
 		sc.list.ScrollToEnd = true

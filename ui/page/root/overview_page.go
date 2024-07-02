@@ -67,7 +67,6 @@ type OverviewPage struct {
 	orders                    []*instantswap.Order
 	transactions              []*multiWalletTx
 	stakes                    []*multiWalletTx
-	sliderRedirectBtn         *cryptomaterial.Clickable
 	mktValues                 []assetMarketData
 
 	card cryptomaterial.Card
@@ -163,7 +162,6 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 		mixerSlider:           l.Theme.Slider(),
 		infoSyncWalletsSlider: l.Theme.Slider(),
 		card:                  l.Theme.Card(),
-		sliderRedirectBtn:     l.Theme.NewClickable(false),
 		forceRefreshRates:     l.Theme.NewClickable(false),
 		showNavigationFunc:    showNavigationFunc,
 		listInfoWallets:       make([]*components.WalletSyncInfo, 0),
@@ -226,14 +224,14 @@ func (pg *OverviewPage) OnNavigatedTo() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *OverviewPage) HandleUserInteractions() {
-	for pg.sliderRedirectBtn.Clicked() {
+func (pg *OverviewPage) HandleUserInteractions(gtx C) {
+	if pg.assetBalanceSlider.Clicked() {
 		walPage := NewWalletSelectorPage(pg.Load)
 		walPage.showNavigationFunc = pg.showNavigationFunc
 		pg.ParentNavigator().Display(walPage)
 	}
 
-	if pg.forceRefreshRates.Clicked() {
+	if pg.forceRefreshRates.Clicked(gtx) {
 		go pg.AssetsManager.RateSource.Refresh(true)
 	}
 
@@ -256,7 +254,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
-	if pg.forwardButton.Button.Clicked() {
+	if pg.forwardButton.Button.Clicked(gtx) {
 		curSliderIndex := pg.mixerSlider.GetSelectedIndex()
 		mixerData := pg.mixerSliderData[pg.sortedMixerSlideKeys[curSliderIndex]]
 		selectedWallet := mixerData.Asset
@@ -273,7 +271,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 
 	for _, info := range pg.listInfoWallets {
-		if info.ForwardButton.Button.Clicked() {
+		if info.ForwardButton.Button.Clicked(gtx) {
 			pg.showNavigationFunc(true)
 			callback := func() {
 				pg.showNavigationFunc(false)
@@ -469,26 +467,24 @@ func (pg *OverviewPage) assetBalanceSliderLayout(gtx C, rowHeigh int) D {
 func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem, rowHeigh int) layout.Widget {
 	return func(gtx C) D {
 		return utils.RadiusLayout(gtx, 8, func(gtx C) D {
-			return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
-				size := pg.contentSliderLayout(item)(gtx).Size
-				if size.Y < rowHeigh {
-					size.Y = rowHeigh
-				}
-				return layout.Stack{}.Layout(gtx,
-					layout.Stacked(func(gtx C) D {
-						width := gtx.Constraints.Max.X
-						height := width / item.backgroundImage.AspectRatio() // maintain aspect ratio
-						if height < size.Y {
-							height = size.Y
-							width = height * item.backgroundImage.AspectRatio()
-						}
-						return item.backgroundImage.LayoutSize2(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height))
-					}),
-					layout.Expanded(func(gtx C) D {
-						return layout.Center.Layout(gtx, pg.contentSliderLayout(item))
-					}),
-				)
-			})
+			size := pg.contentSliderLayout(item)(gtx).Size
+			if size.Y < rowHeigh {
+				size.Y = rowHeigh
+			}
+			return layout.Stack{}.Layout(gtx,
+				layout.Stacked(func(gtx C) D {
+					width := gtx.Constraints.Max.X
+					height := width / item.backgroundImage.AspectRatio() // maintain aspect ratio
+					if height < size.Y {
+						height = size.Y
+						width = height * item.backgroundImage.AspectRatio()
+					}
+					return item.backgroundImage.LayoutSize2(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height))
+				}),
+				layout.Expanded(func(gtx C) D {
+					return layout.Center.Layout(gtx, pg.contentSliderLayout(item))
+				}),
+			)
 		})
 	}
 }
@@ -1043,7 +1039,8 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 		return pg.recentProposalList.Layout(gtx, len(pg.proposalItems), func(gtx C, i int) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.ProposalsList(gtx, pg.Load, pg.proposalItems[i])
+					list := components.ProposalsList(gtx, pg.Load, pg.proposalItems[i])
+					return list
 				}),
 				layout.Rigid(func(gtx C) D {
 					// No divider for last row

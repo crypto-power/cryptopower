@@ -1,7 +1,9 @@
 package load
 
 import (
+	"gioui.org/io/event"
 	"gioui.org/io/key"
+	"gioui.org/layout"
 )
 
 // AppSettingsChangeHandler defines a method that can be implemented by pages and
@@ -26,8 +28,7 @@ type KeyEventHandler interface {
 	// combinations that the implementer of this interface wishes to capture.
 	// The HandleKeyPress() method will only be called when any of these key
 	// combinations is pressed.
-	KeysToHandle() key.Set
-	// HandleKeyPress is called when one or more keys are pressed on the current
-	// window that match any of the key combinations returned by KeysToHandle().
-	HandleKeyPress(*key.Event)
+	KeysToHandle() []event.Filter
+	// HandleKeyPress used to handle events from the keyboard.
+	HandleKeyPress(gtx layout.Context, event *key.Event)
 }

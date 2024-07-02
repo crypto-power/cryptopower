@@ -1,6 +1,9 @@
 package preference
 
 import (
+	"io"
+	"strings"
+
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -109,7 +112,7 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items [
 
 		preferenceItems:   items,
 		optionsRadioGroup: new(widget.Enum),
-		Modal:             l.Theme.ModalFloatTitle("list_preference", l.IsMobileView()),
+		Modal:             l.Theme.ModalFloatTitle("list_preference", l.IsMobileView(), nil),
 		redirectIcon:      l.Theme.Icons.RedirectIcon,
 		viewWarningAction: l.Theme.NewClickable(true),
 		copyRedirectURL:   l.Theme.NewClickable(false),
@@ -182,8 +185,8 @@ func (lp *ListPreferenceModal) UpdateValues(clicked func(val string)) *ListPrefe
 	return lp
 }
 
-func (lp *ListPreferenceModal) Handle() {
-	for lp.btnSave.Button.Clicked() {
+func (lp *ListPreferenceModal) Handle(gtx C) {
+	if lp.btnSave.Button.Clicked(gtx) {
 		lp.currentValue = lp.optionsRadioGroup.Value
 		lp.SavePreferenceKeyedValue()
 		lp.updateButtonClicked(lp.optionsRadioGroup.Value)
@@ -191,11 +194,11 @@ func (lp *ListPreferenceModal) Handle() {
 		lp.Dismiss()
 	}
 
-	for lp.btnCancel.Button.Clicked() {
+	if lp.btnCancel.Button.Clicked(gtx) {
 		lp.Modal.Dismiss()
 	}
 
-	if lp.Modal.BackdropClicked(true) {
+	if lp.Modal.BackdropClicked(gtx, true) {
 		lp.Modal.Dismiss()
 	}
 }
@@ -236,7 +239,7 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 		w = append(w, items[i])
 	}
 
-	for lp.viewWarningAction.Clicked() {
+	if lp.viewWarningAction.Clicked(gtx) {
 		host := ""
 		currentValue := lp.optionsRadioGroup.Value
 		for _, v := range lp.preferenceItems {
@@ -261,8 +264,8 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 										layout.Flexed(0.9, lp.Theme.Body1(host).Layout),
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
-												if lp.copyRedirectURL.Clicked() {
-													clipboard.WriteOp{Text: host}.Add(gtx.Ops)
+												if lp.copyRedirectURL.Clicked(gtx) {
+													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(host))})
 													lp.Toast.Notify(values.String(values.StrCopied))
 												}
 												return lp.copyRedirectURL.Layout(gtx, lp.Theme.NewIcon(lp.Theme.Icons.CopyIcon).Layout24dp)

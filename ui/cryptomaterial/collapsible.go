@@ -85,7 +85,7 @@ func (t *Theme) CollapsibleWithOption() *CollapsibleWithOption {
 }
 
 func (c *Collapsible) Layout(gtx C, header, body func(C) D) D {
-	for c.button.Clicked() {
+	if c.button.Clicked(gtx) {
 		c.isExpanded = !c.isExpanded
 	}
 
@@ -158,7 +158,7 @@ func (c *CollapsibleWithOption) Layout(gtx C, header, body func(C) D, more func(
 		rememberExpand = make(map[int]bool)
 	}
 
-	if c.button.Clicked() {
+	if c.button.Clicked(gtx) {
 		rememberExpand[rowID] = !rememberExpand[rowID]
 	}
 
@@ -200,6 +200,6 @@ func (c *CollapsibleWithOption) Layout(gtx C, header, body func(C) D, more func(
 	})
 }
 
-func (c *CollapsibleWithOption) MoreTriggered() bool {
-	return c.moreIconButton.Button.Clicked()
+func (c *CollapsibleWithOption) MoreTriggered(gtx C) bool {
+	return c.moreIconButton.Button.Clicked(gtx)
 }

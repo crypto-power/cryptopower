@@ -10,7 +10,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -38,8 +37,7 @@ type VoteBar struct {
 	yesColor color.NRGBA
 	noColor  color.NRGBA
 
-	passTooltip   *cryptomaterial.Tooltip
-	quorumTooltip *cryptomaterial.Tooltip
+	passTooltip *cryptomaterial.Tooltip
 
 	legendIcon *cryptomaterial.Icon
 	infoButton cryptomaterial.IconButton
@@ -53,11 +51,10 @@ func NewVoteBar(l *load.Load) *VoteBar {
 	vb := &VoteBar{
 		Load: l,
 
-		yesColor:      l.Theme.Color.Success,
-		noColor:       l.Theme.Color.Danger,
-		passTooltip:   l.Theme.Tooltip(),
-		quorumTooltip: l.Theme.Tooltip(),
-		legendIcon:    cryptomaterial.NewIcon(l.Theme.Icons.DotIcon),
+		yesColor:    l.Theme.Color.Success,
+		noColor:     l.Theme.Color.Danger,
+		passTooltip: l.Theme.Tooltip(),
+		legendIcon:  cryptomaterial.NewIcon(l.Theme.Icons.DotIcon),
 	}
 
 	_, vb.infoButton = SubpageHeaderButtons(l)
@@ -186,8 +183,8 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 }
 
 func (v *VoteBar) votesIndicatorTooltip(gtx C, r image.Rectangle, tipPos float32) {
-	insetLeft := tipPos - float32(voteBarThumbWidth/2) - 205
-	inset := layout.Inset{Left: unit.Dp(insetLeft), Top: values.MarginPadding25}
+	insetLeft := tipPos - float32(voteBarThumbWidth/2)
+	inset := layout.Inset{Left: gtx.Metric.PxToDp(int(insetLeft)), Top: values.MarginPadding25}
 	v.passTooltip.Layout(gtx, r, inset, func(gtx C) D {
 		txt := values.StringF(values.StrVoteTooltip, int(v.passPercentage))
 		return v.Theme.Caption(txt).Layout(gtx)
@@ -209,7 +206,6 @@ func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
 	defer clip.Rect(rect).Push(gtx.Ops).Pop()
 	paint.Fill(gtx.Ops, v.Theme.Color.Gray3)
 	v.votesIndicatorTooltip(gtx, rect, thumbLeftPos)
-
 	return D{
 		Size: rect.Max,
 	}

@@ -49,11 +49,10 @@ func (t *Tooltip) Layout(gtx C, rect image.Rectangle, pos layout.Inset, wdgt lay
 	if t.hoverable.Hovered() {
 		m := op.Record(gtx.Ops)
 		t.layout(gtx, pos, wdgt)
-		op.Defer(gtx.Ops, m.Stop())
+		call := m.Stop()
+		ops := gtx.Ops
+		op.Defer(ops, call)
 	}
-
 	t.hoverable.Layout(gtx, rect)
-	return D{
-		Size: rect.Min,
-	}
+	return D{Size: rect.Min}
 }

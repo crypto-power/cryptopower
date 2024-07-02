@@ -133,14 +133,19 @@ func (dst *destination) isSendToAddress() bool {
 	return dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
 }
 
-func (dst *destination) handle() {
+func (dst *destination) handle(gtx C) {
 	if dst.accountSwitch.Changed() {
 		dst.addressChanged()
 	}
 
-	for _, evt := range dst.destinationAddressEditor.Editor.Events() {
-		if dst.destinationAddressEditor.Editor.Focused() {
-			switch evt.(type) {
+	for {
+		event, ok := dst.destinationAddressEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(dst.destinationAddressEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				dst.addressChanged()
 			}

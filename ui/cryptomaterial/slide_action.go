@@ -66,31 +66,33 @@ func (s *SlideAction) Draged(drag Dragged) {
 }
 
 func (s *SlideAction) DragLayout(gtx C, w layout.Widget) D {
-	if gtx.Queue != nil {
-		for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
-			switch event.Type {
-			case pointer.Press:
-				s.dragStarted = event.Position
-				s.dragOffset = 0
-			case pointer.Drag:
-				newOffset := int(s.dragStarted.X - event.Position.X)
-				if newOffset > s.dragEffect {
-					if !s.isPushing && s.draged != nil {
-						s.isPushing = true
-						s.draged(SwipeLeft)
-					}
-				} else if newOffset < -s.dragEffect {
-					if !s.isPushing && s.draged != nil {
-						s.isPushing = true
-						s.draged(SwipeRight)
-					}
+	for {
+		event, ok := s.drag.Update(gtx.Metric, gtx.Source, gesture.Horizontal)
+		if !ok {
+			break
+		}
+		switch event.Kind {
+		case pointer.Press:
+			s.dragStarted = event.Position
+			s.dragOffset = 0
+		case pointer.Drag:
+			newOffset := int(s.dragStarted.X - event.Position.X)
+			if newOffset > s.dragEffect {
+				if !s.isPushing && s.draged != nil {
+					s.isPushing = true
+					s.draged(SwipeLeft)
 				}
-				s.dragOffset = newOffset
-			case pointer.Release:
-				fallthrough
-			case pointer.Cancel:
-				s.isPushing = false
+			} else if newOffset < -s.dragEffect {
+				if !s.isPushing && s.draged != nil {
+					s.isPushing = true
+					s.draged(SwipeRight)
+				}
 			}
+			s.dragOffset = newOffset
+		case pointer.Release:
+			fallthrough
+		case pointer.Cancel:
+			s.isPushing = false
 		}
 	}
 	var dims layout.Dimensions
@@ -145,7 +147,7 @@ func (s *SlideAction) TransformLayout(gtx C, w layout.Widget) D {
 			}
 		}
 
-		op.InvalidateOp{}.Add(gtx.Ops)
+		gtx.Execute(op.InvalidateCmd{})
 	}
 
 	// Record the widget presentation

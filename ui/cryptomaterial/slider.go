@@ -105,7 +105,7 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 	}
 
 	s.handleClickEvent(gtx)
-	var dims layout.Dimensions
+	var dims D
 	var call op.CallOp
 	{
 		m := op.Record(gtx.Ops)
@@ -215,16 +215,28 @@ func (s *Slider) Clicked() bool {
 }
 
 func (s *Slider) handleClickEvent(gtx C) {
-	if s.nextButton.Clicked() {
+	if s.nextButton.Clicked(gtx) {
 		s.handleActionEvent(true)
 	}
 
-	if s.prevButton.Clicked() {
+	if s.prevButton.Clicked(gtx) {
 		s.handleActionEvent(false)
 	}
 
+	for {
+		e, ok := s.clicker.Update(gtx.Source)
+		if !ok {
+			break
+		}
+		if e.Kind == gesture.KindClick {
+			if !s.clicked {
+				s.clicked = true
+			}
+		}
+	}
+
 	for i, item := range s.slideItems {
-		if item.button.Clicked() {
+		if item.button.Clicked(gtx) {
 			if i == s.selected {
 				continue
 			}
@@ -236,15 +248,6 @@ func (s *Slider) handleClickEvent(gtx C) {
 				s.slideAction.PushRight()
 			}
 			break
-		}
-	}
-
-	for _, events := range s.clicker.Events(gtx) {
-		switch events.Type {
-		case gesture.TypeClick:
-			if !s.clicked {
-				s.clicked = true
-			}
 		}
 	}
 }

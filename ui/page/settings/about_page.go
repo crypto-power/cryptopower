@@ -193,12 +193,12 @@ func (pg *AboutPage) layoutRows(gtx C) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *AboutPage) HandleUserInteractions() {
-	if pg.licenseRow.Clicked() {
+func (pg *AboutPage) HandleUserInteractions(gtx C) {
+	if pg.licenseRow.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewLicensePage(pg.Load))
 	}
 
-	if pg.backButton.Button.Clicked() {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 }

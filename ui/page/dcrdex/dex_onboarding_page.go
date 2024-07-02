@@ -252,6 +252,7 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	if !pg.AssetsManager.DEXCInitialized() {
 		pg.ParentNavigator().CloseCurrentPage()
 		return D{}
@@ -863,56 +864,9 @@ func calculateBondAmount(asset sharedW.Asset, bondAsset *core.BondAsset, tier in
 	return fmt.Sprintf("%v", asset.ToAmount(int64(amt)))
 }
 
-// HandleUserInteractions is called just before Layout() to determine if any
-// user interaction recently occurred on the page and may be used to update the
-// page's UI components shortly before they are displayed.
-// Part of the load.Page interface.
-func (pg *DEXOnboarding) HandleUserInteractions() {
-	if pg.addServerBtn.Clicked() {
-		pg.wantCustomServer = true
-		pg.currentStep = onBoardingStepAddServer
-
-		// Clear the add server form
-		pg.serverURLEditor.Editor.SetText("")
-		pg.serverCertEditor.Editor.SetText("")
-	}
-
-	if pg.goBackToChooseServer.Clicked() {
-		pg.wantCustomServer = false
-		pg.currentStep = onboardingChooseServer
-		pg.serverURLEditor.SetError("")
-		pg.serverCertEditor.SetError("")
-	}
-
-	if pg.goBackBtn.Clicked() {
-		switch pg.currentStep {
-		case onboardingPostBond:
-			if pg.wantCustomServer {
-				pg.currentStep = onBoardingStepAddServer
-			} else {
-				pg.currentStep = onboardingChooseServer
-			}
-		case onboardingChooseServer, onBoardingStepAddServer:
-			if host := pg.dexServerWithEffectTier(); host != "" {
-				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, host)) // Show market page with the server selected.
-			} else {
-				pg.currentStep = onboardingSetPassword
-			}
-		}
-	}
-
-	if pg.bondStrengthMoreInfo.Clicked() {
-		infoModal := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrBondStrength)).
-			SetupWithTemplate(modal.BondStrengthInfoTemplate).
-			SetCancelable(true).
-			SetContentAlignment(layout.W, layout.W, layout.Center).
-			SetPositiveButtonText(values.String(values.StrOk))
-		pg.ParentWindow().ShowModal(infoModal)
-	}
-
+func (pg *DEXOnboarding) handleEditorEvents(gtx C) {
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor, pg.serverURLEditor.Editor, pg.serverCertEditor.Editor, pg.bondStrengthEditor.Editor, pg.seedEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &pg.passwordEditor, &pg.confirmPasswordEditor, &pg.serverURLEditor, &pg.serverCertEditor, &pg.bondStrengthEditor, &pg.seedEditor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.passwordEditor.SetError("")
@@ -923,7 +877,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.seedEditor.SetError("")
 	}
 
-	if (pg.nextBtn.Clicked() || isSubmit) && !pg.isLoading {
+	if (pg.nextBtn.Clicked(gtx) || isSubmit) && !pg.isLoading {
 		dexc := pg.AssetsManager.DexClient()
 		switch pg.currentStep {
 		case onboardingSetPassword:
@@ -946,7 +900,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				seedStr := string(seed)
 				err := dexc.InitWithPassword(pg.dexPass, &seedStr)
 				if err != nil {
-					pg.seedEditor.SetError(fmt.Errorf("Error initializing dex with seed: %w", err).Error())
+					pg.seedEditor.SetError(fmt.Sprintf("Error initializing dex with seed: %s", err.Error()))
 					return
 				}
 
@@ -1056,7 +1010,6 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 					pg.notifyError(err.Error())
 					return
 				}
-
 				pg.postBond()
 			}()
 
@@ -1093,6 +1046,55 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				pg.isLoading = false
 			}()
 		}
+	}
+}
+
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
+// Part of the load.Page interface.
+func (pg *DEXOnboarding) HandleUserInteractions(gtx C) {
+	if pg.addServerBtn.Clicked(gtx) {
+		pg.wantCustomServer = true
+		pg.currentStep = onBoardingStepAddServer
+
+		// Clear the add server form
+		pg.serverURLEditor.Editor.SetText("")
+		pg.serverCertEditor.Editor.SetText("")
+	}
+
+	if pg.goBackToChooseServer.Clicked(gtx) {
+		pg.wantCustomServer = false
+		pg.currentStep = onboardingChooseServer
+		pg.serverURLEditor.SetError("")
+		pg.serverCertEditor.SetError("")
+	}
+
+	if pg.goBackBtn.Clicked(gtx) {
+		switch pg.currentStep {
+		case onboardingPostBond:
+			if pg.wantCustomServer {
+				pg.currentStep = onBoardingStepAddServer
+			} else {
+				pg.currentStep = onboardingChooseServer
+			}
+		case onboardingChooseServer, onBoardingStepAddServer:
+			if host := pg.dexServerWithEffectTier(); host != "" {
+				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, host)) // Show market page with the server selected.
+			} else {
+				pg.currentStep = onboardingSetPassword
+			}
+		}
+	}
+
+	if pg.bondStrengthMoreInfo.Clicked(gtx) {
+		infoModal := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrBondStrength)).
+			SetupWithTemplate(modal.BondStrengthInfoTemplate).
+			SetCancelable(true).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			SetPositiveButtonText(values.String(values.StrOk))
+		pg.ParentWindow().ShowModal(infoModal)
 	}
 }
 
@@ -1142,7 +1144,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		xc, err = dexClient.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
 	}
 	if err != nil {
-		pg.notifyError(fmt.Errorf("Error retrieving DEX server info: %w", err).Error())
+		pg.notifyError(fmt.Sprintf("Error retrieving DEX server info: %s", err.Error()))
 		return
 	}
 

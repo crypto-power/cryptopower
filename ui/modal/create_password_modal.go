@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -55,13 +56,13 @@ type CreatePasswordModal struct {
 func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 	cm := &CreatePasswordModal{
 		Load:                   l,
-		Modal:                  l.Theme.ModalFloatTitle("create_password_modal", l.IsMobileView()),
 		passwordStrength:       l.Theme.ProgressBar(0),
 		btnPositive:            l.Theme.Button(values.String(values.StrConfirm)),
 		btnNegative:            l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable:           true,
 		confirmPasswordEnabled: true,
 	}
+	cm.Modal = l.Theme.ModalFloatTitle("create_password_modal", l.IsMobileView(), cm.firstLoad)
 
 	cm.btnPositive.Font.Weight = font.Medium
 
@@ -88,13 +89,15 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 }
 
 func (cm *CreatePasswordModal) OnResume() {
-	if cm.walletNameEnabled {
-		cm.walletName.Editor.Focus()
-	} else {
-		cm.passwordEditor.Editor.Focus()
-	}
-
 	cm.btnPositive.SetEnabled(cm.validToCreate())
+}
+
+func (cm *CreatePasswordModal) firstLoad(gtx C) {
+	if cm.walletNameEnabled {
+		gtx.Execute(key.FocusCmd{Tag: cm.walletName.Editor})
+	} else {
+		gtx.Execute(key.FocusCmd{Tag: cm.passwordEditor.Editor})
+	}
 }
 
 func (cm *CreatePasswordModal) OnDismiss() {}
@@ -205,10 +208,10 @@ func (cm *CreatePasswordModal) SetParent(parent app.Page) *CreatePasswordModal {
 	return cm
 }
 
-func (cm *CreatePasswordModal) Handle() {
+func (cm *CreatePasswordModal) Handle(gtx C) {
 	cm.btnPositive.SetEnabled(cm.validToCreate())
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor, cm.walletName.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &cm.passwordEditor, &cm.confirmPasswordEditor, &cm.walletName)
 	if isChanged {
 		// reset all modal errors when any editor is modified
 		cm.serverError = ""
@@ -217,7 +220,7 @@ func (cm *CreatePasswordModal) Handle() {
 		cm.confirmPasswordEditor.SetError("")
 	}
 
-	if cm.btnPositive.Clicked() || isSubmit {
+	if cm.btnPositive.Clicked(gtx) || isSubmit {
 		if cm.walletNameEnabled {
 			if !utils.EditorsNotEmpty(cm.walletName.Editor) {
 				cm.walletName.SetError(values.String(values.StrEnterWalletName))
@@ -247,7 +250,7 @@ func (cm *CreatePasswordModal) Handle() {
 	}
 
 	cm.btnNegative.SetEnabled(!cm.isLoading)
-	if cm.btnNegative.Clicked() {
+	if cm.btnNegative.Clicked(gtx) {
 		if !cm.isLoading {
 			if cm.parent != nil {
 				cm.parent.OnNavigatedTo()
@@ -257,7 +260,7 @@ func (cm *CreatePasswordModal) Handle() {
 		}
 	}
 
-	if cm.Modal.BackdropClicked(cm.isCancelable) {
+	if cm.Modal.BackdropClicked(gtx, cm.isCancelable) {
 		if !cm.isLoading {
 			cm.Dismiss()
 		}
@@ -268,26 +271,26 @@ func (cm *CreatePasswordModal) Handle() {
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (cm *CreatePasswordModal) KeysToHandle() key.Set {
-	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+func (cm *CreatePasswordModal) KeysToHandle() []event.Filter {
+	return []event.Filter{key.FocusFilter{Target: cm}, key.Filter{Focus: cm, Name: key.NameTab, Optional: key.ModShift}}
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (cm *CreatePasswordModal) HandleKeyPress(evt *key.Event) {
+func (cm *CreatePasswordModal) HandleKeyPress(gtx C, evt *key.Event) {
 	if cm.walletNameEnabled {
 		if cm.confirmPasswordEnabled {
-			cryptomaterial.SwitchEditors(evt, cm.walletName.Editor, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
+			cryptomaterial.SwitchEditors(gtx, evt, cm.walletName.Editor, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
 		} else {
-			cryptomaterial.SwitchEditors(evt, cm.walletName.Editor, cm.passwordEditor.Editor)
+			cryptomaterial.SwitchEditors(gtx, evt, cm.walletName.Editor, cm.passwordEditor.Editor)
 		}
 	} else {
-		cryptomaterial.SwitchEditors(evt, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
+		cryptomaterial.SwitchEditors(gtx, evt, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
 	}
 }
 

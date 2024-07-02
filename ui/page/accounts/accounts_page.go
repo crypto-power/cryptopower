@@ -256,8 +256,8 @@ func (pg *Page) accountBalanceLayout(title string, bal sharedW.AssetAmount, balA
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *Page) HandleUserInteractions() {
-	if pg.addAccountBtn.Clicked() {
+func (pg *Page) HandleUserInteractions(gtx C) {
+	if pg.addAccountBtn.Clicked(gtx) {
 		createAccountModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrCreateNewAccount)).
 			EnableName(true).

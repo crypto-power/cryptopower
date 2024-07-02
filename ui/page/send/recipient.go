@@ -207,8 +207,8 @@ func (rp *recipient) addressValidationError(err string) {
 	rp.sendDestination.setError(err)
 }
 
-func (rp *recipient) recipientLayout(index int, showIcon bool, window app.WindowNavigator) layout.Widget {
-	rp.handle()
+func (rp *recipient) recipientLayout(gtx C, index int, showIcon bool, window app.WindowNavigator) layout.Widget {
+	rp.handle(gtx)
 	return func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.WrapContent,
@@ -374,17 +374,17 @@ func (rp *recipient) restyleWidgets() {
 	rp.sendDestination.styleWidgets()
 }
 
-func (rp *recipient) handle() {
-	rp.sendDestination.handle()
-	rp.amount.handle()
+func (rp *recipient) handle(gtx C) {
+	rp.sendDestination.handle(gtx)
+	rp.amount.handle(gtx)
 
-	if rp.amount.IsMaxClicked() {
+	if rp.amount.IsMaxClicked(gtx) {
 		rp.amount.setError("")
 		rp.amount.SendMax = true
 		rp.amount.amountChanged()
 	}
 
-	if rp.deleteBtn.Clicked() {
+	if rp.deleteBtn.Clicked(gtx) {
 		rp.deleteRecipient(rp.id)
 	}
 

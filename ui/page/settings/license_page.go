@@ -143,8 +143,8 @@ func (pg *LicensePage) pageContentLayout(gtx layout.Context) layout.Dimensions {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *LicensePage) HandleUserInteractions() {
-	if pg.backButton.Button.Clicked() {
+func (pg *LicensePage) HandleUserInteractions(gtx C) {
+	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 }

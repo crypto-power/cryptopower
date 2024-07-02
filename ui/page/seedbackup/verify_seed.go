@@ -209,16 +209,16 @@ func (pg *VerifySeedPage) verifySeed() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *VerifySeedPage) HandleUserInteractions() {
+func (pg *VerifySeedPage) HandleUserInteractions(gtx C) {
 	for i, multiSeed := range pg.multiSeedList {
 		for j, clickable := range multiSeed.clickables {
-			for clickable.Clicked() {
+			if clickable.Clicked(gtx) {
 				pg.multiSeedList[i].selectedIndex = j
 			}
 		}
 	}
 
-	for pg.actionButton.Clicked() {
+	if pg.actionButton.Clicked(gtx) {
 		if pg.allSeedsSelected() {
 			pg.verifySeed()
 		}
@@ -228,7 +228,7 @@ func (pg *VerifySeedPage) HandleUserInteractions() {
 		pg.verifySeedButton.SetEnabled(true)
 	}
 
-	if pg.verifySeedButton.Clicked() {
+	if pg.verifySeedButton.Clicked(gtx) {
 		pg.verifySeed()
 	}
 }

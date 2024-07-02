@@ -142,8 +142,8 @@ func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
 	return layout.Dimensions{Size: dims}
 }
 
-func (s *Switch) Changed() bool {
-	return s.clk.Changed()
+func (s *Switch) Changed(gtx C) bool {
+	return s.clk.Update(gtx)
 }
 
 func (s *Switch) IsChecked() bool {
@@ -159,7 +159,7 @@ func (s *Switch) SetEnabled(value bool) {
 }
 
 func (s *SwitchButtonText) Layout(gtx layout.Context) layout.Dimensions {
-	s.handleClickEvent()
+	s.handleClickEvent(gtx)
 	m8 := unit.Dp(8)
 	m4 := unit.Dp(4)
 	card := s.t.Card()
@@ -188,10 +188,10 @@ func (s *SwitchButtonText) Layout(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (s *SwitchButtonText) handleClickEvent() {
+func (s *SwitchButtonText) handleClickEvent(gtx C) {
 	for index := range s.items {
 		if index != 0 {
-			if s.items[index].button.Clicked() {
+			if s.items[index].button.Clicked(gtx) {
 				if s.selected != index {
 					s.changed = true
 				}

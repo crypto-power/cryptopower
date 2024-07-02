@@ -117,7 +117,7 @@ func (t *Toast) handleToastDisplay(gtx layout.Context) {
 	select {
 	case <-t.timer.C:
 		t.timer = nil
-		op.InvalidateOp{}.Add(gtx.Ops)
+		gtx.Execute(op.InvalidateCmd{})
 	default:
 	}
 }

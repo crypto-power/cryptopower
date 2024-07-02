@@ -148,7 +148,7 @@ func (pg *Page) recipientsLayout(gtx C) D {
 			re := pg.recipients[i]
 			j := i
 			flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
-				return re.recipientLayout(j+1, len(pg.recipients) > 1, pg.ParentWindow())(gtx)
+				return re.recipientLayout(gtx, j+1, len(pg.recipients) > 1, pg.ParentWindow())(gtx)
 			}))
 		}
 		if pg.modalLayout == nil && len(pg.recipients) < 3 {

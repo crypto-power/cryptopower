@@ -295,12 +295,12 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *ManualMixerSetupPage) HandleUserInteractions() {
-	if pg.backClickable.Clicked() {
+func (pg *ManualMixerSetupPage) HandleUserInteractions(gtx C) {
+	if pg.backClickable.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
-	if pg.toPrivacySetup.Clicked() {
+	if pg.toPrivacySetup.Clicked(gtx) {
 		go pg.showModalSetupMixerAcct()
 	}
 

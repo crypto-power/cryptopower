@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"io"
 	"net/http"
 	"os/exec"
 	"runtime"
@@ -839,8 +840,8 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 							layout.Flexed(0.9, l.Theme.Body1(url).Layout),
 							layout.Flexed(0.1, func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
-									if copyRedirect.Clicked() {
-										clipboard.WriteOp{Text: url}.Add(gtx.Ops)
+									if copyRedirect.Clicked(gtx) {
+										gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(url))})
 										l.Toast.Notify(values.String(values.StrCopied))
 									}
 									return copyRedirect.Layout(gtx, l.Theme.NewIcon(l.Theme.Icons.CopyIcon).Layout24dp)

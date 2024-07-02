@@ -217,14 +217,14 @@ func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *Page) HandleUserInteractions() {
+func (pg *Page) HandleUserInteractions(gtx C) {
 	pg.setStakingButtonsState()
 
-	if pg.navToSettingsBtn.Clicked() {
+	if pg.navToSettingsBtn.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
-	if pg.stake.Changed() {
+	if pg.stake.Changed(gtx) {
 		if pg.stake.IsChecked() {
 			if pg.dcrWallet.TicketBuyerConfigIsSet() {
 				// get ticket buyer config to check if the saved wallet account is mixed
@@ -247,7 +247,7 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 
-	if pg.stakeSettings.Clicked() && !pg.dcrWallet.IsWatchingOnlyWallet() {
+	if pg.stakeSettings.Clicked(gtx) && !pg.dcrWallet.IsWatchingOnlyWallet() {
 		if pg.dcrWallet.IsAutoTicketsPurchaseActive() {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrAutoTicketWarn), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(errModal)
@@ -321,7 +321,7 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		backupNowOrLaterModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrStatistics)).
 			SetCancelable(true).
