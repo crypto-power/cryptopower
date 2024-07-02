@@ -101,6 +101,9 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 		bg = l.Theme.Color.Background
 	}
 	pg.assetTypeDropdown.Background = &bg
+	if len(assetType) > 0 {
+		pg.assetTypeDropdown.SetSelectedValue(assetType[0].String())
+	}
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
 	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true

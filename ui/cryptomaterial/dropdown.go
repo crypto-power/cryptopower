@@ -149,6 +149,15 @@ func (d *DropDown) Selected() string {
 	return d.items[d.SelectedIndex()].Text
 }
 
+func (d *DropDown) SetSelectedValue(selectedValue string) {
+	for index, item := range d.items {
+		if item.Text == selectedValue {
+			d.selectedIndex = index
+			return
+		}
+	}
+}
+
 func (d *DropDown) ClearWithSelectedItem(item DropDownItem) {
 	d.selectedIndex = -1
 	d.noSelectedItem = item
