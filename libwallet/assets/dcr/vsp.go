@@ -49,14 +49,20 @@ func (asset *Asset) createVspClient(account int32, host string, pubKey []byte) (
 		Params: asset.Internal().DCR.ChainParams(),
 	}
 
-	// When the account number provided is greater than -1, it means that the
-	// client will be used to purchase tickets with the provided account.
+	// When the account number provided is greater than -1, the provided account
+	// will be used to purchase tickets otherwise the default tickets purchase
+	// account will be used.
 	if account != -1 {
-		cfg.Policy = &vsp.Policy{
-			MaxFee:     0.2e8,
-			FeeAcct:    uint32(account),
-			ChangeAcct: uint32(account),
+		if !asset.IsTicketBuyerAccountSet() {
+			return nil, utils.ErrTicketPurchaseAccMissing
 		}
+		account = asset.AutoTicketsBuyerConfig().PurchaseAccount
+	}
+
+	cfg.Policy = &vsp.Policy{
+		MaxFee:     0.2e8,
+		FeeAcct:    uint32(account),
+		ChangeAcct: uint32(account),
 	}
 
 	return vsp.New(cfg, log)

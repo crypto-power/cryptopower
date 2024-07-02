@@ -60,6 +60,8 @@ var (
 	ErrNetConnectionTimeout    = errors.New("Timeout on network connection")
 	ErrPeerConnectionRejected  = errors.New("Peer connection rejected")
 	ErrStakingAccountsMissing  = errors.New("Mixing and Unmixing Accounts are not set")
+
+	ErrTicketPurchaseAccMissing = errors.New("ticket purchase account is not set")
 )
 
 // todo, should update this method to translate more error kinds.

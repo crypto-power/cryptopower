@@ -121,9 +121,8 @@ func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, pa
 			continue // try next tHash
 		}
 
-		// Update the vote policy for the ticket with the associated VSP.
-		// Account being set to -1 means the client isn't being used to purchase
-		// tickets as the account policy configuration won't be set.
+		// Account being set to -1 means the default ticket purchase account will be
+		// used in the ticket policy configuration.
 		vspClient, err := asset.VSPClient(-1, vspTicketInfo.Host, vspTicketInfo.PubKey)
 		if err != nil && firstErr == nil {
 			firstErr = err

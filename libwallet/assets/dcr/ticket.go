@@ -193,8 +193,8 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		return ticketInfo, nil
 	}
 
-	// Account being set to -1 means the client isn't being used to purchase
-	// tickets as the account policy configuration won't be set.
+	// Account being set to -1 means the default ticket purchase account will be
+	// used in the ticket policy configuration.
 	vspClient, err := asset.VSPClient(-1, walletTicketInfo.Host, walletTicketInfo.PubKey)
 	if err != nil {
 		log.Warnf("unable to connect to host: %s Error: %v", walletTicketInfo.Host, err)
@@ -453,7 +453,7 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	}
 
 	if !asset.IsTicketBuyerAccountSet() {
-		return errors.New("Ticket purchase account is not set")
+		return utils.ErrTicketPurchaseAccMissing
 	}
 
 	// Count is 1 to prevent combining multiple split outputs in one tx,
