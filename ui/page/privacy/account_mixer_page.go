@@ -32,7 +32,6 @@ type AccountMixerPage struct {
 	settingsCollapsible *cryptomaterial.Collapsible
 	unmixedAccount      *cryptomaterial.Clickable
 	mixedAccount        *cryptomaterial.Clickable
-	coordinationServer  *cryptomaterial.Clickable
 	toggleMixer         *cryptomaterial.Switch
 	mixerProgress       cryptomaterial.ProgressBarStyle
 
@@ -55,7 +54,6 @@ func NewAccountMixerPage(l *load.Load, wallet *dcr.Asset) *AccountMixerPage {
 		settingsCollapsible: l.Theme.Collapsible(),
 		unmixedAccount:      l.Theme.NewClickable(false),
 		mixedAccount:        l.Theme.NewClickable(false),
-		coordinationServer:  l.Theme.NewClickable(false),
 		pageContainer:       layout.List{Axis: layout.Vertical},
 	}
 }
@@ -281,7 +279,6 @@ func (pg *AccountMixerPage) mixerSettings(l *load.Load) layout.FlexChild {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(pg.bottomSectionLabel(pg.mixedAccount, values.String(values.StrMixedAccount))),
 									layout.Rigid(pg.bottomSectionLabel(pg.unmixedAccount, values.String(values.StrUnmixedAccount))),
-									layout.Rigid(pg.bottomSectionLabel(pg.coordinationServer, values.String(values.StrCoordinationServer))),
 								)
 							})
 						},
@@ -420,21 +417,6 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				}
 			})
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
-	}
-
-	for pg.coordinationServer.Clicked() {
-		textModal := modal.NewTextInputModal(pg.Load).
-			Hint(values.String(values.StrCoordinationServer)).
-			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-			SetPositiveButtonCallback(func(_ string, _ *modal.TextInputModal) bool {
-				// Todo - implement custom CSPP server
-				return true
-			})
-
-		textModal.SetNegativeButtonCallback(func() {}).
-			SetPositiveButtonText(values.String(values.StrSave))
-
-		pg.ParentWindow().ShowModal(textModal)
 	}
 }
 

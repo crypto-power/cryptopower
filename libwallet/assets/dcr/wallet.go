@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"sync"
 
-	dcrW "decred.org/dcrwallet/v3/wallet"
-	"decred.org/dcrwallet/v3/wallet/txrules"
+	"decred.org/dcrwallet/v4/vsp"
+	dcrW "decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v4/wallet/txrules"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/dcr"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
 )
@@ -31,10 +31,10 @@ type Asset struct {
 
 	TxAuthoredInfo *TxAuthor
 
-	vspClientsMu sync.Mutex
-	vspClients   map[string]*vsp.Client
-	vspMu        sync.RWMutex
-	vsps         []*VSP
+	// VSP data
+	vspClients map[string]*vsp.Client
+	vspMu      sync.RWMutex
+	vsps       []*VSP
 
 	notificationListenersMu           sync.RWMutex
 	syncData                          *SyncData
@@ -65,7 +65,6 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 
 	stakeOptions := &dcr.StakeOptions{
 		VotingEnabled: false,
-		AddressReuse:  false,
 		VotingAddress: nil,
 	}
 

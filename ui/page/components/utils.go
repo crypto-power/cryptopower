@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"decred.org/dcrwallet/v3/pgpwordlist"
+	"decred.org/dcrwallet/v4/pgpwordlist"
 	"gioui.org/layout"
 	"gioui.org/unit"
 

@@ -2,17 +2,17 @@ package dcr
 
 import (
 	"context"
-	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/vsp"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	vspdClient "github.com/decred/vspd/client/v3"
+	vspd "github.com/decred/vspd/types/v2"
 )
 
 const (
@@ -20,30 +20,52 @@ const (
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
-func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
+func (asset *Asset) VSPClient(account int32, host string, pubKey []byte) (*vsp.Client, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
 
-	asset.vspClientsMu.Lock()
-	defer asset.vspClientsMu.Unlock()
-	client, ok := asset.vspClients[host]
-	if ok {
+	asset.vspMu.Lock()
+	defer asset.vspMu.Unlock()
+	if client, ok := asset.vspClients[host]; ok {
 		return client, nil
 	}
 
-	cfg := vsp.Config{
-		URL:    host,
-		PubKey: pubKey,
-		Dialer: nil, // optional, but consider providing a value
-		Wallet: asset.Internal().DCR,
-	}
-	client, err := vsp.New(cfg)
+	client, err := asset.createVspClient(account, host, pubKey)
 	if err != nil {
 		return nil, err
 	}
+
 	asset.vspClients[host] = client
 	return client, nil
+}
+
+func (asset *Asset) createVspClient(account int32, host string, pubKey []byte) (*vsp.Client, error) {
+	cfg := vsp.Config{
+		URL:    host,
+		PubKey: base64.StdEncoding.EncodeToString(pubKey),
+		Dialer: nil, // optional, but consider providing a value
+		Wallet: asset.Internal().DCR,
+		Params: asset.Internal().DCR.ChainParams(),
+	}
+
+	// When the account number provided is greater than -1, the provided account
+	// will be used to purchase tickets otherwise the default tickets purchase
+	// account will be used.
+	if account != -1 {
+		if !asset.IsTicketBuyerAccountSet() {
+			return nil, utils.ErrTicketPurchaseAccMissing
+		}
+		account = asset.AutoTicketsBuyerConfig().PurchaseAccount
+	}
+
+	cfg.Policy = &vsp.Policy{
+		MaxFee:     0.2e8,
+		FeeAcct:    uint32(account),
+		ChangeAcct: uint32(account),
+	}
+
+	return vsp.New(cfg, log)
 }
 
 // KnownVSPs returns a list of known VSPs. This list may be updated by calling
@@ -51,7 +73,7 @@ func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
 func (asset *Asset) KnownVSPs() []*VSP {
 	asset.vspMu.RLock()
 	defer asset.vspMu.RUnlock()
-	return asset.vsps // TODO: Return a copy.
+	return asset.vsps
 }
 
 // SaveVSP marks a VSP as known and will be susbequently included as part of
@@ -122,7 +144,7 @@ func (asset *Asset) ReloadVSPList(ctx context.Context) {
 	defer log.Debugf("Reloaded list of known VSPs")
 
 	vspDbData := asset.getVSPDBData()
-	vspList := make(map[string]*VspInfoResponse)
+	vspList := make(map[string]*vspd.VspInfoResponse)
 	for _, host := range vspDbData.SavedHosts {
 		vspInfo, err := vspInfo(host)
 		if err != nil {
@@ -136,20 +158,23 @@ func (asset *Asset) ReloadVSPList(ctx context.Context) {
 		}
 	}
 
-	otherVSPHosts, err := defaultVSPs(string(asset.NetType()))
+	network := string(asset.NetType())
+	otherVSPHosts, err := defaultVSPs()
 	if err != nil {
 		log.Debugf("get default vsp list error: %v", err)
 	}
-	for _, host := range otherVSPHosts {
+
+	for url, VSPInfo := range otherVSPHosts {
+		if !strings.Contains(network, VSPInfo.Network) {
+			continue
+		}
+
+		host := "https://" + url
 		if _, wasAdded := vspList[host]; wasAdded {
 			continue
 		}
-		vspInfo, err := vspInfo(host)
-		if err != nil {
-			log.Debugf("vsp info error for %s: %v\n", host, err) // debug only, user didn't request this VSP
-		} else {
-			vspList[host] = vspInfo
-		}
+
+		vspList[host] = VSPInfo
 		if ctx.Err() != nil {
 			return // context canceled, abort
 		}
@@ -163,7 +188,7 @@ func (asset *Asset) ReloadVSPList(ctx context.Context) {
 	asset.vspMu.Unlock()
 }
 
-func vspInfo(vspHost string) (*VspInfoResponse, error) {
+func vspInfo(vspHost string) (*vspd.VspInfoResponse, error) {
 	req := &utils.ReqConfig{
 		Method:    http.MethodGet,
 		HTTPURL:   vspHost + "/api/v3/vspinfo",
@@ -176,27 +201,19 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 		return nil, err
 	}
 
-	vspInfoResponse := new(VspInfoResponse)
+	vspInfoResponse := new(vspd.VspInfoResponse)
 	if err := json.Unmarshal(respBytes, vspInfoResponse); err != nil {
 		return nil, err
 	}
 
 	// Validate server response.
-	sigStr := resp.Header.Get("VSP-Server-Signature")
-	sig, err := base64.StdEncoding.DecodeString(sigStr)
-	if err != nil {
-		return nil, fmt.Errorf("error validating VSP signature: %v", err)
-	}
-	if !ed25519.Verify(vspInfoResponse.PubKey, respBytes, sig) {
-		return nil, errors.New("bad signature from VSP")
-	}
-
-	return vspInfoResponse, nil
+	err = vspdClient.ValidateServerSignature(resp, respBytes, vspInfoResponse.PubKey)
+	return vspInfoResponse, err
 }
 
 // defaultVSPs returns a list of known VSPs.
-func defaultVSPs(network string) ([]string, error) {
-	var vspInfoResponse map[string]*VspInfoResponse
+func defaultVSPs() (map[string]*vspd.VspInfoResponse, error) {
+	var vspInfoResponse map[string]*vspd.VspInfoResponse
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HTTPURL: defaultVSPsURL,
@@ -206,14 +223,6 @@ func defaultVSPs(network string) ([]string, error) {
 		return nil, err
 	}
 
-	// The above API does not return the pubKeys for the
-	// VSPs. Only return the host since we'll still need
-	// to make another API call to get the VSP pubKeys.
-	vsps := make([]string, 0)
-	for url, vspInfo := range vspInfoResponse {
-		if strings.Contains(network, vspInfo.Network) {
-			vsps = append(vsps, "https://"+url)
-		}
-	}
-	return vsps, nil
+	// The above API does not return the pubKeys for the VSPs.
+	return vspInfoResponse, nil
 }

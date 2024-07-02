@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"decred.org/dcrwallet/v3/errors"
-	"decred.org/dcrwallet/v3/walletseed"
+	"decred.org/dcrwallet/v4/errors"
+	"decred.org/dcrwallet/v4/walletseed"
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/crypto-power/cryptopower/libwallet/utils"

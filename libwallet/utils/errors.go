@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	"github.com/asdine/storm"
 )
 
@@ -59,6 +59,9 @@ var (
 	ErrUnsupporttedIPV6Address = errors.New("IPv6 addresses unsupportted by the current network")
 	ErrNetConnectionTimeout    = errors.New("Timeout on network connection")
 	ErrPeerConnectionRejected  = errors.New("Peer connection rejected")
+	ErrStakingAccountsMissing  = errors.New("Mixing and Unmixing Accounts are not set")
+
+	ErrTicketPurchaseAccMissing = errors.New("ticket purchase account is not set")
 )
 
 // todo, should update this method to translate more error kinds.

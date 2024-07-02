@@ -245,7 +245,6 @@ const (
 	StrConsensusChange                       = "consensusChange"
 	StrConsensusDashboard                    = "consensusDashboard"
 	StrContinue                              = "continue"
-	StrCoordinationServer                    = "coordinationServer"
 	StrCopied                                = "copied"
 	StrCopy                                  = "copy"
 	StrCopyBlockLink                         = "copyBlockLink"

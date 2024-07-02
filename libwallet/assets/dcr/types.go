@@ -1,15 +1,15 @@
 package dcr
 
 import (
-	"context"
 	"fmt"
-	"net"
 
-	"decred.org/dcrwallet/v3/wallet/udb"
+	"decred.org/dcrwallet/v4/vsp"
+	"decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v4/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
+	vspd "github.com/decred/vspd/types/v2"
 )
 
 // Amount implements the Asset amount interface for the DCR asset
@@ -52,8 +52,10 @@ type WalletsIterator struct {
 }
 
 type CSPPConfig struct {
-	CSPPServer         string
-	DialCSPPServer     func(ctx context.Context, network, addr string) (net.Conn, error)
+	// Mixing option activates the new version of the coins mixer which is a
+	// replacement of the old client-server mechanism. Now peer to peer
+	// mechanism is in place. Ref: https://github.com/decred/dcrwallet/pull/2351
+	Mixing             bool
 	MixedAccount       uint32
 	MixedAccountBranch uint32
 	TicketSplitAccount uint32
@@ -138,6 +140,8 @@ type VSPTicketInfo struct {
 	// VoteChoices is only set if the ticket status was obtained from the
 	// VSP.
 	VoteChoices map[string]string
+
+	VSPTicket *wallet.VSPTicket
 }
 
 /** end ticket-related types */
@@ -145,22 +149,10 @@ type VSPTicketInfo struct {
 /** end politea proposal types */
 
 /** begin vspd-related types */
-type VspInfoResponse struct {
-	APIVersions   []int64 `json:"apiversions"`
-	Timestamp     int64   `json:"timestamp"`
-	PubKey        []byte  `json:"pubkey"`
-	FeePercentage float64 `json:"feepercentage"`
-	VspClosed     bool    `json:"vspclosed"`
-	Network       string  `json:"network"`
-	VspdVersion   string  `json:"vspdversion"`
-	Voting        int64   `json:"voting"`
-	Voted         int64   `json:"voted"`
-	Revoked       int64   `json:"revoked"`
-}
 
 type VSP struct {
 	Host string
-	*VspInfoResponse
+	*vspd.VspInfoResponse
 }
 
 /** end vspd-related types */
