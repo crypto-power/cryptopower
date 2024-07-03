@@ -37,6 +37,15 @@ type SyncInfo struct {
 	syncInfoMu   sync.RWMutex
 }
 
+// NewSyncProgressInfo returns an instance of the SyncInfo with the respective
+// maps initialized.
+func NewSyncProgressInfo() *SyncInfo {
+	return &SyncInfo{
+		progressInfo: make(map[sharedW.Asset]*ProgressInfo),
+		rescanInfo:   make(map[sharedW.Asset]*sharedW.HeadersRescanProgressReport),
+	}
+}
+
 // IsSyncProgressSet returns true if a sync progress instance of the provided wallet
 // exists.
 func (si *SyncInfo) IsSyncProgressSet(wallet sharedW.Asset) bool {
