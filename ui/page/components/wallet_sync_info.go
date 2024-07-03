@@ -73,7 +73,9 @@ func (wsi *WalletSyncInfo) Init() {
 	autoSync := wsi.wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	wsi.syncSwitch.SetChecked(autoSync)
 	go func() {
+		wsi.statusMu.Lock()
 		wsi.isStatusConnected = libutils.IsOnline()
+		wsi.statusMu.Unlock()
 	}()
 }
 
@@ -260,7 +262,8 @@ func (wsi *WalletSyncInfo) syncStatusSection(gtx C) D {
 }
 
 func (wsi *WalletSyncInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
-	if !wsi.wallet.IsRescanning() || wsi.rescanUpdate == nil {
+	rescanUpdate := wsi.FetchRescanUpdate()
+	if rescanUpdate == nil {
 		return D{}
 	}
 	return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
@@ -278,14 +281,14 @@ func (wsi *WalletSyncInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 					layout.Rigid(func(gtx C) D {
 						return inset.Layout(gtx, func(gtx C) D {
 							headersFetchedTitleLabel := wsi.labelTexSize16Layout(values.String(values.StrBlocksScanned), 0, true)
-							blocksScannedLabel := wsi.labelTexSize16Layout(fmt.Sprint(wsi.rescanUpdate.CurrentRescanHeight), 0, false)
+							blocksScannedLabel := wsi.labelTexSize16Layout(fmt.Sprint(rescanUpdate.CurrentRescanHeight), 0, false)
 							return EndToEndRow(gtx, headersFetchedTitleLabel, blocksScannedLabel)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
 						return inset.Layout(gtx, func(gtx C) D {
 							progressTitleLabel := wsi.labelTexSize16Layout(values.String(values.StrSyncingProgress), 0, true)
-							rescanProgress := values.StringF(values.StrBlocksLeft, wsi.rescanUpdate.TotalHeadersToScan-wsi.rescanUpdate.CurrentRescanHeight)
+							rescanProgress := values.StringF(values.StrBlocksLeft, rescanUpdate.TotalHeadersToScan-rescanUpdate.CurrentRescanHeight)
 							blocksScannedLabel := wsi.labelTexSize16Layout(rescanProgress, 0, false)
 							return EndToEndRow(gtx, progressTitleLabel, blocksScannedLabel)
 						})
@@ -355,7 +358,7 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
 								return D{}
 							}
-							header := wsi.FetchSyncProgress().HeadersToFetchOrScan
+							header := wsi.FetchSyncProgress().HeadersToFetchOrScan()
 							// When progress's state is rescan header is a header of rescan and not fetch
 							// this is a workaround display block for user
 							if header < bestBlock.Height {
@@ -443,7 +446,7 @@ func (wsi *WalletSyncInfo) syncBoxTitleRow(gtx C) D {
 						return wsi.labelSize(textSize14, values.StringF(values.StrConnectedTo, connectedPeers)).Layout(gtx)
 					}
 
-					if !wsi.isStatusConnected {
+					if !wsi.safeIsStatusConnected() {
 						return wsi.labelSize(textSize14, values.String(values.StrNoInternet)).Layout(gtx)
 					}
 					return wsi.labelSize(textSize14, values.String(values.StrNoConnectedPeer)).Layout(gtx)
@@ -492,13 +495,14 @@ func (wsi *WalletSyncInfo) progressBarRow(gtx C) D {
 func (wsi *WalletSyncInfo) progressStatusDetails() (int, string) {
 	timeLeftLabel := ""
 	pgrss := wsi.FetchSyncProgress()
-	timeLeft := pgrss.remainingSyncTime
-	progress := pgrss.syncProgress
+	timeLeft := pgrss.RemainingSyncTime()
+	progress := pgrss.SyncProgress()
 
 	walletIsRescanning := wsi.wallet.IsRescanning()
-	if walletIsRescanning && wsi.rescanUpdate != nil {
-		progress = int(wsi.rescanUpdate.RescanProgress)
-		timeLeft = pageutils.TimeFormat(int(wsi.rescanUpdate.RescanTimeRemaining), true)
+
+	if rescanUpdate := wsi.FetchRescanUpdate(); rescanUpdate != nil {
+		progress = int(rescanUpdate.RescanProgress)
+		timeLeft = pageutils.TimeFormat(int(rescanUpdate.RescanTimeRemaining), true)
 	}
 
 	if wsi.wallet.IsSyncing() || walletIsRescanning {
@@ -521,23 +525,33 @@ func (wsi *WalletSyncInfo) layoutAutoSyncSection(gtx C) D {
 	)
 }
 
-func (wsi *WalletSyncInfo) FetchSyncProgress() ProgressInfo {
-	pgrss, ok := syncProgressInfo.Load(wsi.wallet)
-	if !ok {
-		return ProgressInfo{}
-	}
+// FetchSyncProgress the sync progress of associated with the current wallet type.
+// Once synced, progress is no longer persisted.
+func (wsi *WalletSyncInfo) FetchSyncProgress() pageutils.ProgressInfo {
+	pgrss := syncProgressInfo.GetSyncProgress(wsi.wallet)
 
 	// remove the unnecessary sync progress data if already synced.
-	wsi.deleteSyncProgress()
-	return pgrss.(ProgressInfo)
+	if wsi.wallet.IsSynced() {
+		syncProgressInfo.DeleteSyncProgress(wsi.wallet)
+	}
+	return pgrss
 }
 
-// deleteSyncProgress removes the map entry after the data persisted is no longer necessary.
-func (wsi *WalletSyncInfo) deleteSyncProgress() {
-	wal := wsi.wallet
-	if wal.IsSynced() {
-		syncProgressInfo.Delete(wal)
+// FetchRescanUpdate returns the rescan update if the wallet is rescanning and
+// an update exists. If rescanning isn't running, clear the rescan data for the
+// current asset type
+func (wsi *WalletSyncInfo) FetchRescanUpdate() *sharedW.HeadersRescanProgressReport {
+	walletIsRescanning := wsi.wallet.IsRescanning()
+	isRescanUpdateAvailable := syncProgressInfo.IsRescanProgressSet(wsi.wallet)
+
+	if walletIsRescanning && isRescanUpdateAvailable {
+		return syncProgressInfo.GetRescanProgress(wsi.wallet)
 	}
+
+	if !walletIsRescanning {
+		syncProgressInfo.DeleteRescanProgress(wsi.wallet)
+	}
+	return nil
 }
 
 func (wsi *WalletSyncInfo) syncStatusIcon(gtx C) D {
@@ -563,49 +577,41 @@ func (wsi *WalletSyncInfo) syncStatusIcon(gtx C) D {
 // ensure that the StopListeningForNotifications() method is called whenever the
 // the page or modal using these notifications is closed.
 func (wsi *WalletSyncInfo) ListenForNotifications() {
-	updateSyncProgress := func(progress ProgressInfo) {
+	updateSyncProgress := func(timeRemaining int64, headersFetched int32,
+		stepFetchProgress int32, totalSyncProgress int32) {
 		// Update sync progress fields which will be displayed
 		// when the next UI invalidation occurs.
 
 		previousProgress := wsi.FetchSyncProgress()
+
 		// headers to fetch cannot be less than the previously fetched.
 		// Page refresh only needed if there is new data to update the UI.
-		if progress.HeadersToFetchOrScan >= previousProgress.HeadersToFetchOrScan {
+		if headersFetched >= previousProgress.HeadersToFetchOrScan() {
 			// set the new progress against the associated asset.
-			syncProgressInfo.Store(wsi.wallet, progress)
+			syncProgressInfo.SetSyncProgress(wsi.wallet, timeRemaining, headersFetched,
+				stepFetchProgress, totalSyncProgress)
 
 			// We only care about sync state changes here, to
 			// refresh the window display.
-			wsi.reload()
+			wsi.safeReload()
 		}
 	}
 
 	syncProgressListener := &sharedW.SyncProgressListener{
 		OnHeadersFetchProgress: func(t *sharedW.HeadersFetchProgressReport) {
-			progress := ProgressInfo{}
-			progress.stepFetchProgress = t.HeadersFetchProgress
-			progress.HeadersToFetchOrScan = t.TotalHeadersToFetch
-			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = pageutils.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-			updateSyncProgress(progress)
+			updateSyncProgress(t.TotalTimeRemainingSeconds, t.TotalHeadersToFetch,
+				t.HeadersFetchProgress, t.TotalSyncProgress)
 		},
 		OnAddressDiscoveryProgress: func(t *sharedW.AddressDiscoveryProgressReport) {
-			progress := ProgressInfo{}
-			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = pageutils.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-			progress.stepFetchProgress = t.AddressDiscoveryProgress
-			updateSyncProgress(progress)
+			updateSyncProgress(t.TotalTimeRemainingSeconds, 0,
+				t.AddressDiscoveryProgress, t.TotalSyncProgress)
 		},
 		OnHeadersRescanProgress: func(t *sharedW.HeadersRescanProgressReport) {
-			progress := ProgressInfo{}
-			progress.HeadersToFetchOrScan = t.TotalHeadersToScan
-			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = pageutils.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-			progress.stepFetchProgress = t.RescanProgress
-			updateSyncProgress(progress)
+			updateSyncProgress(t.TotalTimeRemainingSeconds, t.TotalHeadersToScan,
+				t.RescanProgress, t.TotalSyncProgress)
 		},
 		OnSyncCompleted: func() {
-			wsi.reload()
+			wsi.safeReload()
 		},
 	}
 
@@ -617,10 +623,10 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(_ int, _ *sharedW.Transaction) {
-			wsi.reload()
+			wsi.safeReload()
 		},
 		OnBlockAttached: func(_ int, _ int32) {
-			wsi.reload()
+			wsi.safeReload()
 		},
 	}
 	err = wsi.wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, WalletSyncInfoID)
@@ -630,15 +636,14 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 	}
 
 	blocksRescanProgressListener := &sharedW.BlocksRescanProgressListener{
-		OnBlocksRescanStarted: func(_ int) {
-			wsi.rescanUpdate = nil
-		},
+		OnBlocksRescanStarted: func(_ int) {},
 		OnBlocksRescanProgress: func(progress *sharedW.HeadersRescanProgressReport) {
-			wsi.rescanUpdate = progress
+			syncProgressInfo.SetRescanProgress(wsi.wallet, progress)
+			wsi.safeReload()
 		},
 		OnBlocksRescanEnded: func(_ int, _ error) {
-			wsi.rescanUpdate = nil
-			wsi.reload()
+			syncProgressInfo.DeleteRescanProgress(wsi.wallet)
+			wsi.safeReload()
 		},
 	}
 	wsi.wallet.SetBlocksRescanProgressListener(blocksRescanProgressListener)
@@ -654,9 +659,11 @@ func (wsi *WalletSyncInfo) StopListeningForNotifications() {
 
 func (wsi *WalletSyncInfo) handle(gtx C) {
 	// As long as the internet connection hasn't been established keep checking.
-	if !wsi.isStatusConnected {
+	if !wsi.safeIsStatusConnected() {
 		go func() {
+			wsi.statusMu.Lock()
 			wsi.isStatusConnected = libutils.IsOnline()
+			wsi.statusMu.Unlock()
 		}()
 	}
 
