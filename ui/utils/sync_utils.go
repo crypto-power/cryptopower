@@ -60,7 +60,7 @@ func (si *SyncInfo) IsSyncProgressSet(wallet sharedW.Asset) bool {
 // asset type.
 func (si *SyncInfo) GetSyncProgress(wallet sharedW.Asset) ProgressInfo {
 	si.syncInfoMu.RLock()
-	data, _ := si.progressInfo[wallet]
+	data := si.progressInfo[wallet]
 	si.syncInfoMu.RUnlock()
 
 	if data == nil {
@@ -109,7 +109,7 @@ func (si *SyncInfo) IsRescanProgressSet(wallet sharedW.Asset) bool {
 // asset type.
 func (si *SyncInfo) GetRescanProgress(wallet sharedW.Asset) *sharedW.HeadersRescanProgressReport {
 	si.syncInfoMu.RLock()
-	data, _ := si.rescanInfo[wallet]
+	data := si.rescanInfo[wallet]
 	si.syncInfoMu.RUnlock()
 
 	return data

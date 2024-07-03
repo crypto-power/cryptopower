@@ -21,8 +21,8 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
-	"github.com/crypto-power/cryptopower/ui/values"
 	pageutils "github.com/crypto-power/cryptopower/ui/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 
 	api "github.com/crypto-power/instantswap/instantswap"
 )
