@@ -325,7 +325,7 @@ func (asset *Asset) CancelSync() {
 	asset.syncData.mu.RUnlock()
 
 	if cancelSync != nil {
-		log.Info("Canceling sync. May take a while for sync to fully cancel.")
+		log.Info("Cancelling sync. May take a while for sync to fully cancel.")
 
 		// Stop running cspp mixers
 		if asset.IsAccountMixerActive() {
@@ -343,9 +343,12 @@ func (asset *Asset) CancelSync() {
 
 		// When sync terminates and syncer.Run returns, we will get notified on this channel.
 		<-asset.syncData.syncCanceled
-
-		log.Info("Sync fully canceled.")
 	}
+
+	// Indicate that the sync shutdown process is fully complete.
+	asset.EndSyncShuttingDown()
+
+	log.Info("Sync fully cancelled.")
 }
 
 func (asset *Asset) IsWaiting() bool {
@@ -366,11 +369,6 @@ func (asset *Asset) IsConnectedToDecredNetwork() bool {
 
 func (asset *Asset) IsSynced() bool {
 	return asset.syncData.isSynced()
-}
-
-func (asset *Asset) IsSyncShuttingDown() bool {
-	// TODO: implement for DCR if synchronous shutdown takes a long time
-	return false
 }
 
 func (asset *Asset) CurrentSyncStage() utils.SyncStage {

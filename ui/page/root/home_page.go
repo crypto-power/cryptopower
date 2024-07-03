@@ -101,7 +101,9 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 		if wallet == nil {
 			return
 		}
-		if wallet.IsConnectedToNetwork() {
+		if wallet.IsConnectedToNetwork() { // True if asset is synced or already synced.
+			wallet.EnableSyncShuttingDown() // Initiate sync shutdown process
+
 			go wallet.CancelSync()
 			unlock(false)
 		} else {

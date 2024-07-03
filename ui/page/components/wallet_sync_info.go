@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/font"
@@ -35,6 +36,8 @@ type WalletSyncInfo struct {
 	reload            func()
 	isSlider          bool
 	statusMu          sync.RWMutex
+
+	switchEnabled atomic.Bool
 
 	progressTime   time.Time
 	progressTimeMu sync.RWMutex
@@ -74,18 +77,7 @@ func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload func(), backup
 func (wsi *WalletSyncInfo) Init() {
 	autoSync := wsi.wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	wsi.syncSwitch.SetChecked(autoSync)
-	go func() {
-		wsi.statusMu.Lock()
-		wsi.isStatusConnected = libutils.IsOnline()
-		wsi.statusMu.Unlock()
-	}()
-}
-
-// safeReload adds mutex protection to the reload function call.
-func (wsi *WalletSyncInfo) safeReload() {
-	wsi.statusMu.Lock()
-	wsi.reload()
-	wsi.statusMu.Unlock()
+	go wsi.CheckConnectivity()
 }
 
 // safeIsStatusConnected adds read mutex protection to isStatusConnected check.
@@ -115,8 +107,6 @@ func (wsi *WalletSyncInfo) GetWallet() sharedW.Asset {
 }
 
 func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
-	wsi.handle(gtx)
-
 	return wsi.pageContentWrapper(gtx, "", nil, func(gtx C) D {
 		items := []layout.FlexChild{
 			layout.Rigid(wsi.walletNameAndBackupInfo),
@@ -604,7 +594,7 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 				stepFetchProgress, totalSyncProgress)
 
 			// After new sync state changes, refresh the display.
-			wsi.safeReload()
+			wsi.reload()
 		}
 	}
 
@@ -622,7 +612,7 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 				t.RescanProgress, t.TotalSyncProgress)
 		},
 		OnSyncCompleted: func() {
-			wsi.safeReload()
+			wsi.reload()
 		},
 	}
 
@@ -634,10 +624,10 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(_ int, _ *sharedW.Transaction) {
-			wsi.safeReload()
+			wsi.reload()
 		},
 		OnBlockAttached: func(_ int, _ int32) {
-			wsi.safeReload()
+			wsi.reload()
 		},
 	}
 	err = wsi.wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, WalletSyncInfoID)
@@ -650,11 +640,11 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 		OnBlocksRescanStarted: func(_ int) {},
 		OnBlocksRescanProgress: func(progress *sharedW.HeadersRescanProgressReport) {
 			syncProgressInfo.SetRescanProgress(wsi.wallet, progress)
-			wsi.safeReload()
+			wsi.reload()
 		},
 		OnBlocksRescanEnded: func(_ int, _ error) {
 			syncProgressInfo.DeleteRescanProgress(wsi.wallet)
-			wsi.safeReload()
+			wsi.reload()
 		},
 	}
 	wsi.wallet.SetBlocksRescanProgressListener(blocksRescanProgressListener)
@@ -668,14 +658,14 @@ func (wsi *WalletSyncInfo) StopListeningForNotifications() {
 	wsi.wallet.SetBlocksRescanProgressListener(nil)
 }
 
-func (wsi *WalletSyncInfo) handle(gtx C) {
+// HandleUserInteractions is called just before Layout() to determine
+// if any user interaction recently occurred on the page and may be
+// used to update the page's UI components shortly before they are
+// displayed.
+func (wsi *WalletSyncInfo) HandleUserInteractions(gtx C) {
 	// As long as the internet connection hasn't been established keep checking.
 	if !wsi.safeIsStatusConnected() {
-		go func() {
-			wsi.statusMu.Lock()
-			wsi.isStatusConnected = libutils.IsOnline()
-			wsi.statusMu.Unlock()
-		}()
+		go wsi.CheckConnectivity()
 	}
 
 	isSyncShutting := wsi.wallet.IsSyncShuttingDown()
@@ -685,15 +675,37 @@ func (wsi *WalletSyncInfo) handle(gtx C) {
 			wsi.wallet.CancelRescan()
 		}
 
+		// Toggle switch states is handled in the layout() method.
 		go func() {
 			wsi.ToggleSync(wsi.wallet, func(b bool) {
-				wsi.syncSwitch.SetChecked(b)
 				wsi.wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
+				wsi.reload()
 			})
 		}()
 	}
 
+	// Manage the Disabled sync toggle button during sync shutdown process.
+	isSyncShuttingDown := wsi.wallet.IsSyncShuttingDown()
+	if isSyncShuttingDown {
+		wsi.switchEnabled.Store(true)
+		wsi.syncSwitch.SetEnabled(false)
+		wsi.reload()
+	} else if !isSyncShuttingDown && wsi.switchEnabled.CompareAndSwap(true, false) {
+		wsi.syncSwitch.SetEnabled(true)
+		wsi.reload()
+	}
+
 	if wsi.toBackup.Button.Clicked(gtx) {
 		wsi.backup(wsi.wallet)
+	}
+}
+
+// CheckConnectivity checks for internet connectivity.
+func (wsi *WalletSyncInfo) CheckConnectivity() {
+	status := libutils.IsOnline()
+	if status {
+		wsi.statusMu.Lock()
+		wsi.isStatusConnected = status
+		wsi.statusMu.Unlock()
 	}
 }

@@ -271,6 +271,9 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 	}
 
 	for _, info := range pg.listInfoWallets {
+		// Process subpage events too.
+		info.HandleUserInteractions(gtx)
+
 		if info.ForwardButton.Button.Clicked(gtx) {
 			pg.showNavigationFunc(true)
 			callback := func() {

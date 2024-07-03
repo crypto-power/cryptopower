@@ -36,12 +36,11 @@ type SyncData struct {
 	syncstarted         uint32
 	chainServiceStopped bool
 
-	syncing            bool
-	synced             bool
-	isRescan           bool
-	rescanStartTime    time.Time
-	rescanStartHeight  *int32
-	isSyncShuttingDown bool
+	syncing           bool
+	synced            bool
+	isRescan          bool
+	rescanStartTime   time.Time
+	rescanStartHeight *int32
 	// forcedRescanActive is set to true if forcedRescan is activated.
 	forcedRescanActive bool
 
@@ -381,6 +380,9 @@ func (asset *Asset) CancelSync() {
 	asset.syncData.wg.Add(1)
 	go asset.stopSync()
 
+	// Indicate that the sync shutdown process is fully complete.
+	asset.EndSyncShuttingDown()
+
 	log.Infof("(%v) SPV wallet closed", asset.GetWalletName())
 }
 
@@ -388,12 +390,10 @@ func (asset *Asset) CancelSync() {
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
 func (asset *Asset) stopSync() {
-	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().LTC
 	if asset.WalletOpened() {
 		// If wallet shutdown is in progress ignore the current request to shutdown.
 		if loadedAsset.ShuttingDown() {
-			asset.syncData.isSyncShuttingDown = false
 			asset.syncData.wg.Done()
 			return
 		}
@@ -430,7 +430,6 @@ func (asset *Asset) stopSync() {
 	// context but we do it early to avoid panics that happen after db has been
 	// closed but some goroutines still interact with the db.
 	asset.cancelSync()
-	asset.syncData.isSyncShuttingDown = false
 
 	log.Infof("Stopping (%s) wallet and its neutrino interface", asset.GetWalletName())
 
