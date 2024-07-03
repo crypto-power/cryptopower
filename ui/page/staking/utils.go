@@ -13,6 +13,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -76,7 +77,7 @@ func (pg *Page) stakeToTransactionItems(txs []*sharedW.Transaction, newestFirst 
 			txStatus.TicketStatus == dcr.TicketStatusLive {
 
 			ticketAgeDuration := time.Since(time.Unix(tx.Timestamp, 0)).Seconds()
-			ticketAge = components.TimeFormat(int(ticketAgeDuration), true)
+			ticketAge = pageutils.TimeFormat(int(ticketAgeDuration), true)
 		}
 
 		showTime := showProgress && txStatus.TicketStatus != dcr.TicketStatusLive
@@ -147,7 +148,7 @@ func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transact
 
 	switch tx.status.TicketStatus {
 	case dcr.TicketStatusUnmined:
-		lbl := l.Theme.Label(textSize16, values.StringF(values.StrUnminedInfo, components.TimeAgo(tx.transaction.Timestamp)))
+		lbl := l.Theme.Label(textSize16, values.StringF(values.StrUnminedInfo, pageutils.TimeAgo(tx.transaction.Timestamp)))
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusImmature:
@@ -181,13 +182,13 @@ func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transact
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusVotedOrRevoked:
 		if tx.ticketSpender.Type == dcr.TxTypeVote {
-			return multiContent(gtx, l, dateTime, fmt.Sprintf("%s %v", values.String(values.StrVoted), components.TimeAgo(tx.transaction.Timestamp)))
+			return multiContent(gtx, l, dateTime, fmt.Sprintf("%s %v", values.String(values.StrVoted), pageutils.TimeAgo(tx.transaction.Timestamp)))
 		}
 		lbl := l.Theme.Label(textSize16, dateTime)
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusExpired:
-		return multiContent(gtx, l, dateTime, fmt.Sprintf("%s %v", values.String(values.StrExpired), components.TimeAgo(tx.transaction.Timestamp)))
+		return multiContent(gtx, l, dateTime, fmt.Sprintf("%s %v", values.String(values.StrExpired), pageutils.TimeAgo(tx.transaction.Timestamp)))
 	default:
 		return D{}
 	}

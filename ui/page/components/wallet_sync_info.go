@@ -14,6 +14,7 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -22,35 +23,28 @@ const WalletSyncInfoID = "WalletSyncInfo"
 type WalletSyncInfo struct {
 	*load.Load
 	wallet           sharedW.Asset
-	rescanUpdate     *sharedW.HeadersRescanProgressReport
 	walletStatusIcon *cryptomaterial.Icon
 	syncSwitch       *cryptomaterial.Switch
 	toBackup         cryptomaterial.Button
+	ForwardButton    cryptomaterial.IconButton
 
+	backup func(sharedW.Asset)
+
+	// Sync data fields that needs mutex protection.
 	isStatusConnected bool
-	reload            Reload
-	backup            func(sharedW.Asset)
-	ForwardButton     cryptomaterial.IconButton
+	reload            func()
+	isSlider          bool
 
-	IsSlider bool
+	statusMu sync.RWMutex
 }
 
-// SyncProgressInfo is made independent of the walletInfo struct so that once
-// set with a value, it always persists till unset. This will help address the
-// progress bar issue where, changing UI pages alters the progress on the sync
-// status progress percentage. Stores sharedW.Asset : ProgressInfo.
-var syncProgressInfo = sync.Map{}
+// SyncInfo is made independent of the WalletSyncInfo struct so that once
+// set with a value, it persists till unset or the app is killed. This
+// will help address the progress bar issue where, changing UI pages alters the
+// progress on the sync status progress percentage.
+var syncProgressInfo *pageutils.SyncInfo
 
-type ProgressInfo struct {
-	remainingSyncTime    string
-	HeadersToFetchOrScan int32
-	stepFetchProgress    int32
-	syncProgress         int
-}
-
-type Reload func()
-
-func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload Reload, backup func(sharedW.Asset)) *WalletSyncInfo {
+func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload func(), backup func(sharedW.Asset)) *WalletSyncInfo {
 	wsi := &WalletSyncInfo{
 		Load:             l,
 		wallet:           wallet,
@@ -67,6 +61,11 @@ func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload Reload, backup
 	wsi.ForwardButton, _ = SubpageHeaderButtons(l)
 	wsi.ForwardButton.Icon = wsi.Theme.Icons.NavigationArrowForward
 	wsi.ForwardButton.Size = values.MarginPadding20
+
+	// Initialize sync progress info if an active instance did not exist.
+	if syncProgressInfo == nil {
+		syncProgressInfo = new(pageutils.SyncInfo)
+	}
 	return wsi
 }
 
@@ -76,6 +75,35 @@ func (wsi *WalletSyncInfo) Init() {
 	go func() {
 		wsi.isStatusConnected = libutils.IsOnline()
 	}()
+}
+
+// safeReload adds mutex protection to the reload function call.
+func (wsi *WalletSyncInfo) safeReload() {
+	wsi.statusMu.Lock()
+	wsi.reload()
+	wsi.statusMu.Unlock()
+}
+
+// safeIsStatusConnected adds read mutex protection to isStatusConnected check.
+func (wsi *WalletSyncInfo) safeIsStatusConnected() bool {
+	defer wsi.statusMu.RUnlock()
+	wsi.statusMu.RLock()
+	return wsi.isStatusConnected
+}
+
+// IsSliderOn adds read mutex protection to isSlider check. If true a progress
+// bar is displayed on the UI
+func (wsi *WalletSyncInfo) IsSliderOn() bool {
+	defer wsi.statusMu.RUnlock()
+	wsi.statusMu.RLock()
+	return wsi.isSlider
+}
+
+// SetSliderOn safely sets the progress bar to be displayed.
+func (wsi *WalletSyncInfo) SetSliderOn() {
+	wsi.statusMu.Lock()
+	wsi.isSlider = true
+	wsi.statusMu.Unlock()
 }
 
 func (wsi *WalletSyncInfo) GetWallet() sharedW.Asset {
@@ -96,7 +124,7 @@ func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 				return layout.E.Layout(gtx, wsi.toBackup.Layout)
 			}))
-			if wsi.IsSlider {
+			if wsi.IsSliderOn() {
 				items = append(items, layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout))
 			}
 		}
@@ -138,7 +166,7 @@ func (wsi *WalletSyncInfo) pageContentWrapper(gtx C, sectionTitle string, redire
 
 func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 	items := make([]layout.FlexChild, 0)
-	if wsi.IsSlider {
+	if wsi.IsSliderOn() {
 		items = append(items, layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Right: values.MarginPadding10,
@@ -175,7 +203,7 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 		}))
 	}
 
-	if wsi.IsSlider {
+	if wsi.IsSliderOn() {
 		items = append(items, layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, wsi.ForwardButton.Layout)
 		}))
@@ -190,8 +218,8 @@ func (wsi *WalletSyncInfo) syncStatusSection(gtx C) D {
 	isLtcAsset := wsi.wallet.GetAssetType() == libutils.LTCWalletAsset
 	syncing := wsi.wallet.IsSyncing()
 
-	// btcwallet does not export implementation to track address discovery.
-	// During btc address discovery, show the normal synced info page with an
+	// btcwallet and ltcWallet do not export implementation to track address discovery.
+	// During btc & ltc address discovery, show the normal synced info page with an
 	// extra label showing the address discovery is in progress.
 	rescanning := wsi.wallet.IsRescanning() && !isLtcAsset && !isBtcAsset && !syncing
 
@@ -320,7 +348,7 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							latestBlockTitle := fmt.Sprintf("%d (%s)", bestBlock.Height, TimeAgo(bestBlock.Timestamp))
+							latestBlockTitle := fmt.Sprintf("%d (%s)", bestBlock.Height, pageutils.TimeAgo(bestBlock.Timestamp))
 							return wsi.labelTexSize16Layout(latestBlockTitle, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
@@ -339,7 +367,7 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 						layout.Rigid(func(gtx C) D {
 							currentSeconds := time.Now().Unix()
 							w := wsi.wallet
-							daysBehind := TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
+							daysBehind := pageutils.TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
 
 							syncProgress := values.String(values.StrWalletNotSynced)
 							if wsi.wallet.IsSyncing() {
@@ -470,7 +498,7 @@ func (wsi *WalletSyncInfo) progressStatusDetails() (int, string) {
 	walletIsRescanning := wsi.wallet.IsRescanning()
 	if walletIsRescanning && wsi.rescanUpdate != nil {
 		progress = int(wsi.rescanUpdate.RescanProgress)
-		timeLeft = TimeFormat(int(wsi.rescanUpdate.RescanTimeRemaining), true)
+		timeLeft = pageutils.TimeFormat(int(wsi.rescanUpdate.RescanTimeRemaining), true)
 	}
 
 	if wsi.wallet.IsSyncing() || walletIsRescanning {
@@ -558,13 +586,13 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 			progress.stepFetchProgress = t.HeadersFetchProgress
 			progress.HeadersToFetchOrScan = t.TotalHeadersToFetch
 			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+			progress.remainingSyncTime = pageutils.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 			updateSyncProgress(progress)
 		},
 		OnAddressDiscoveryProgress: func(t *sharedW.AddressDiscoveryProgressReport) {
 			progress := ProgressInfo{}
 			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+			progress.remainingSyncTime = pageutils.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 			progress.stepFetchProgress = t.AddressDiscoveryProgress
 			updateSyncProgress(progress)
 		},
@@ -572,7 +600,7 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 			progress := ProgressInfo{}
 			progress.HeadersToFetchOrScan = t.TotalHeadersToScan
 			progress.syncProgress = int(t.TotalSyncProgress)
-			progress.remainingSyncTime = TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+			progress.remainingSyncTime = pageutils.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 			progress.stepFetchProgress = t.RescanProgress
 			updateSyncProgress(progress)
 		},
