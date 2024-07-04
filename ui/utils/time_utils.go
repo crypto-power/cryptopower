@@ -31,12 +31,12 @@ func TimeAgo(timestamp int64) string {
 // Otherwise the formatted time and date is returned.
 func FormatDateOrTime(timestamp int64) string {
 	utcTime := time.Unix(timestamp, 0).UTC()
-	HoursDifference := time.Now().UTC().Sub(utcTime).Seconds()
+	timeDiff := int(time.Now().UTC().Sub(utcTime).Seconds())
 
-	if HoursDifference <= secondsInDay {
+	if timeDiff <= secondsInDay {
 		// Provided timestamp is within the same day(Today).
 		return TimeAgo(timestamp)
-	} else if HoursDifference <= 2*secondsInDay {
+	} else if timeDiff <= 2*secondsInDay {
 		// Provided timestamp is within the previous day.
 		return values.String(values.StrYesterday)
 	}

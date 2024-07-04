@@ -494,7 +494,7 @@ func (wsi *WalletSyncInfo) progressStatusDetails() (progress int, timeLeft strin
 	headersToScan := int(sp.HeadersToFetchOrScan())
 
 	if rescanUpdate := wsi.FetchRescanUpdate(); rescanUpdate != nil {
-		progress = int(rescanUpdate.RescanProgress)
+		progress = int(rescanUpdate.CurrentRescanHeight)
 		headersToScan = int(rescanUpdate.TotalHeadersToScan)
 	}
 

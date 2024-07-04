@@ -47,7 +47,7 @@ func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 		progress := make(chan w.RescanProgress, 1)
 		go asset.Internal().DCR.RescanProgressFromHeight(ctx, netBackend, startHeight, progress)
 
-		rescanStartTime := time.Now().Unix()
+		rescanStartTime := time.Now()
 
 		for p := range progress {
 			if p.Err != nil {
@@ -64,12 +64,12 @@ func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 				WalletID:            asset.ID,
 			}
 
-			elapsedRescanTime := time.Now().Unix() - rescanStartTime
+			elapsedRescanTime := time.Since(rescanStartTime).Seconds()
 			rescanRate := float64(p.ScannedThrough) / float64(rescanProgressReport.TotalHeadersToScan)
 
 			rescanProgressReport.RescanProgress = int32(math.Round(rescanRate * 100))
-			estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))
-			rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - elapsedRescanTime
+			estimatedTotalRescanTime := int64(math.Round(elapsedRescanTime / rescanRate))
+			rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - int64(elapsedRescanTime)
 
 			rescanProgressReport.GeneralSyncProgress = &sharedW.GeneralSyncProgress{
 				TotalSyncProgress:         rescanProgressReport.RescanProgress,
