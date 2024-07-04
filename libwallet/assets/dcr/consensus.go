@@ -174,7 +174,10 @@ func (asset *Asset) SetVoteChoice(account int32, agendaID, choiceID, hash, passp
 
 		vspTicketInfo, err := vspTicket.VSPTicketInfo(ctx)
 		if err != nil && firstErr == nil {
-			firstErr = err
+			if err.Error() != utils.ErrWalletLocked {
+				// Ignore the wallet is locked error.
+				firstErr = err
+			}
 			continue // try next tHash
 		}
 

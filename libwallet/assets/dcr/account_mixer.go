@@ -197,8 +197,8 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 }
 
 func (asset *Asset) readCSPPConfig() *CSPPConfig {
-	mixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
-	unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
+	mixedAccount := asset.MixedAccountNumber()
+	unmixedAccount := asset.UnmixedAccountNumber()
 
 	if mixedAccount == -1 || unmixedAccount == -1 {
 		// not configured for mixing

@@ -117,7 +117,10 @@ func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, pa
 
 		vspTicketInfo, err := vspTicket.VSPTicketInfo(ctx)
 		if err != nil && firstErr == nil {
-			firstErr = err
+			if err.Error() != utils.ErrWalletLocked {
+				// Ignore the wallet is locked error.
+				firstErr = err
+			}
 			continue // try next tHash
 		}
 

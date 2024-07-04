@@ -162,6 +162,12 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		return nil, utils.ErrDCRNotInitialized
 	}
 
+	// Cannot query an VSPTicketInfo api if the current instance wallet is locked.
+	if asset.IsLocked() {
+		log.Warnf("cannot query any ticket info when the wallet is locked")
+		return nil, errors.New(utils.ErrWalletLocked)
+	}
+
 	ticketHash, err := chainhash.NewHashFromStr(hash)
 	if err != nil {
 		return nil, err
@@ -184,13 +190,6 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		VSP:         walletTicketInfo.Host,
 		FeeTxHash:   walletTicketInfo.FeeHash.String(),
 		FeeTxStatus: VSPFeeStatus(walletTicketInfo.FeeTxStatus),
-	}
-
-	// Cannot submit a TicketStatus api request to the VSP if
-	// the wallet is locked. Return just the wallet info.
-	if asset.IsLocked() {
-		log.Warnf("cannot submit a ticket status request when wallet is locked")
-		return ticketInfo, nil
 	}
 
 	// Account being set to -1 means the default ticket purchase account will be
@@ -231,6 +230,12 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 func (asset *Asset) StartTicketBuyer(passphrase string) error {
 	if !asset.WalletOpened() {
 		return utils.ErrDCRNotInitialized
+	}
+
+	// The default value (-1) will only be returned if the cpp staking
+	// accounts are missing.
+	if asset.MixedAccountNumber() == -1 || asset.UnmixedAccountNumber() == -1 {
+		return utils.ErrStakingAccountsMissing
 	}
 
 	cfg := asset.AutoTicketsBuyerConfig()

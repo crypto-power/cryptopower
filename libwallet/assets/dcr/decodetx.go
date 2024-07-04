@@ -118,7 +118,7 @@ func (asset *Asset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Params,
 ) (outputs []*sharedW.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
 	outputs = make([]*sharedW.TxOutput, len(mtx.TxOut))
 	txType := stake.DetermineTxType(mtx)
-	mixedAccountNumber := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
+	mixedAccountNumber := asset.MixedAccountNumber()
 
 	for i, txOut := range mtx.TxOut {
 		// get address and script type for output

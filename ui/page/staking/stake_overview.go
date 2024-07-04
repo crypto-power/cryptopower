@@ -288,15 +288,17 @@ func (pg *Page) HandleUserInteractions() {
 
 		// Check if this ticket is fully registered with a VSP
 		// and log any discrepancies.
-		// NOTE: Wallet needs to be unlocked to get the ticket status
-		// from the vsp. Otherwise, only the wallet-stored info will
-		// be retrieved. This is fine because we're only just logging
+		// NOTE: Wallet needs to be unlocked to get any ticket info
+		// from the vsp. This is fine because we're only just logging
 		// but where it is necessary to display vsp-stored info, the
 		// wallet passphrase should be requested and used to unlock
 		// the wallet before calling this method.
 		ticketInfo, err := pg.dcrWallet.VSPTicketInfo(ticketTx.Hash)
 		if err != nil {
-			log.Errorf("VSPTicketInfo error: %v", err)
+			if err.Error() != libutils.ErrWalletLocked {
+				// Ignore the wallet is locked error.
+				log.Errorf("VSPTicketInfo error: %v", err)
+			}
 		} else {
 			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessConfirmed || !ticketInfo.ConfirmedByVSP {
 				log.Warnf("Ticket %s has unconfirmed fee tx with status %q, vsp %s",
