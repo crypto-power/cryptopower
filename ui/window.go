@@ -190,6 +190,7 @@ func (win *Window) HandleEvents() {
 		win.Quit <- struct{}{}
 	}
 
+	// Create window chan event and listen events from window event
 	events := make(chan event.Event)
 	acks := make(chan struct{})
 	go func() {
