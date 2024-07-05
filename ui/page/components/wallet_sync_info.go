@@ -38,9 +38,6 @@ type WalletSyncInfo struct {
 	statusMu          sync.RWMutex
 
 	switchEnabled atomic.Bool
-
-	progressTime   time.Time
-	progressTimeMu sync.RWMutex
 }
 
 // SyncInfo is made independent of the WalletSyncInfo struct so that once
@@ -488,42 +485,16 @@ func (wsi *WalletSyncInfo) progressBarRow(gtx C) D {
 
 // progressStatusRow lays out the progress status when the wallet is syncing.
 func (wsi *WalletSyncInfo) progressStatusDetails() (progress int, timeLeft string) {
-	wsi.progressTimeMu.RLock()
-	prevTime := wsi.progressTime
-	wsi.progressTimeMu.RUnlock()
-
 	sp := wsi.FetchSyncProgress()
 	progress = sp.SyncProgress()
-	headersToScan := int(sp.HeadersToFetchOrScan())
-
-	if rescanUpdate := wsi.FetchRescanUpdate(); rescanUpdate != nil {
-		progress = int(rescanUpdate.CurrentRescanHeight)
-		headersToScan = int(rescanUpdate.TotalHeadersToScan)
-	}
-
-	if !wsi.isBtcOrLtcAsset() {
-		// If running address discovery, use the upstream remaining time estimate.
-		if wsi.wallet.(*dcr.Asset).IsAddressDiscovering() {
-			timeLeft = sp.RemainingSyncTime()
-		}
-	}
-
-	if !prevTime.IsZero() && timeLeft == "" {
-		timeToScan := int(time.Since(prevTime).Seconds() * float64(headersToScan))
-		timeLeft = pageutils.TimeFormat(timeToScan, true)
-	}
+	timeLeft = sp.RemainingSyncTime()
 
 	if wsi.wallet.IsSyncing() || wsi.wallet.IsRescanning() {
 		timeLeft = values.StringF(values.StrTimeLeftFmt, timeLeft)
-		if progress == 0 || prevTime.IsZero() {
+		if progress == 0 {
 			timeLeft = values.String(values.StrLoading)
 		}
 	}
-
-	wsi.progressTimeMu.Lock()
-	wsi.progressTime = time.Now()
-	wsi.progressTimeMu.Unlock()
-
 	return
 }
 
