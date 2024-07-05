@@ -678,7 +678,7 @@ func (pg *Page) OnDismiss() {
 }
 
 // KeysToHandle returns a Filter's slice that describes a set of key combinations
-// that this modal wishes to capture. The HandleKeyPress() method will only be
+// that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *Page) KeysToHandle() []event.Filter {

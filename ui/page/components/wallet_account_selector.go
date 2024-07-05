@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"gioui.org/font"
-	"gioui.org/io/input"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -55,7 +54,6 @@ type selectorModal struct {
 	walletsList        layout.List
 	selectorItems      []*SelectorItem // A SelectorItem can either be a wallet or account
 	assetType          []utils.AssetType
-	eventSource        input.Source
 	isCancelable       bool
 	infoButton         cryptomaterial.IconButton
 	infoModalOpen      bool
@@ -568,7 +566,6 @@ func (sm *selectorModal) accountClicked(callback func(*sharedW.Account)) *select
 }
 
 func (sm *selectorModal) Layout(gtx C) D {
-	sm.eventSource = gtx.Source
 	sm.infoBackdropLayout(gtx)
 
 	w := []layout.Widget{

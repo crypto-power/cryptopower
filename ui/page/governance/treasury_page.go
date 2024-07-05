@@ -24,6 +24,11 @@ import (
 
 const TreasuryPageID = "Treasury"
 
+const (
+	mainnetParamsHost = "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
+	testnetParamsHost = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
+)
+
 type TreasuryPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -154,9 +159,9 @@ func (pg *TreasuryPage) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.viewGovernanceKeys.Clicked(gtx) {
-		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
+		host := mainnetParamsHost
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
-			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
+			host = testnetParamsHost
 		}
 
 		info := modal.NewCustomModal(pg.Load).

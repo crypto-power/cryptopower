@@ -4,7 +4,6 @@ import (
 	"image/color"
 
 	"gioui.org/font"
-	"gioui.org/io/input"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -43,7 +42,6 @@ type assetTypeModal struct {
 	onAssetTypeClicked func(*AssetTypeItem)
 	assetTypeList      layout.List
 	assetTypeItems     []*AssetTypeItem
-	eventSoruce        input.Source // Interface between the interface state and widgets
 	isCancelable       bool
 }
 
@@ -248,7 +246,6 @@ func (atm *assetTypeModal) assetTypeClicked(callback func(*AssetTypeItem)) *asse
 }
 
 func (atm *assetTypeModal) Layout(gtx C) D {
-	atm.eventSoruce = gtx.Source
 	w := []layout.Widget{
 		func(gtx C) D {
 			titleTxt := atm.Theme.Label(values.TextSize20, atm.dialogTitle)

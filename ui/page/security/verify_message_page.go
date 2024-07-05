@@ -77,7 +77,7 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifyMessagePage) OnNavigatedTo() {
-	pg.addressEditor.Focus()
+	pg.addressEditor.SetFocus()
 	pg.verifyButton.SetEnabled(pg.updateBtn())
 }
 

@@ -100,7 +100,7 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *SignMessagePage) OnNavigatedTo() {
-	pg.addressEditor.Focus()
+	pg.addressEditor.SetFocus()
 }
 
 // Layout draws the page UI components into the provided C

@@ -202,7 +202,7 @@ func (e *Editor) FirstPressed(gtx C) bool {
 
 }
 
-func (e *Editor) Focus() {
+func (e *Editor) SetFocus() {
 	e.isFirstFocus = true
 }
 

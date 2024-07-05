@@ -27,6 +27,11 @@ import (
 
 const ProposalDetailsPageID = "proposal_details"
 
+const (
+	mainnetBaseHost = "https://proposals.decred.org/record/"
+	testnetBaseHost = "http://45.32.108.164:3000/record/"
+)
+
 type proposalItemWidgets struct {
 	widgets    []layout.Widget
 	clickables map[string]*widget.Clickable
@@ -224,9 +229,9 @@ func (pg *ProposalDetails) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.viewInPoliteiaBtn.Clicked(gtx) {
-		host := "https://proposals.decred.org/record/" + pg.proposal.Token
+		host := mainnetBaseHost + pg.proposal.Token
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
-			host = "http://45.32.108.164:3000/record/" + pg.proposal.Token
+			host = testnetBaseHost + pg.proposal.Token
 		}
 
 		info := modal.NewCustomModal(pg.Load).

@@ -1606,7 +1606,7 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 
 	if pg.seeFullOrderBookBtn.Clicked(gtx) {
 		// TODO: display full order book
-		log.Info("Display full order book")
+		log.Info("button click listener for full order book view is not implemented")
 	}
 
 	if pg.immediateOrderInfoBtn.Clicked(gtx) {

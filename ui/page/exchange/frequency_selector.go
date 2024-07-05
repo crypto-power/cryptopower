@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"gioui.org/font"
-	"gioui.org/io/input"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -39,7 +38,6 @@ type frequencyModal struct {
 	onFrequencyClicked func(*frequencyItem)
 	frequencyList      layout.List
 	frequencyItems     []*frequencyItem
-	eventSource        input.Source
 	isCancelable       bool
 }
 
@@ -186,7 +184,6 @@ func (fm *frequencyModal) frequencyClicked(callback func(*frequencyItem)) *frequ
 }
 
 func (fm *frequencyModal) Layout(gtx C) D {
-	fm.eventSource = gtx.Source
 	w := []layout.Widget{
 		func(gtx C) D {
 			titleTxt := fm.Theme.Label(values.TextSize20, fm.dialogTitle)

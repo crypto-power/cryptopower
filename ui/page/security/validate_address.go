@@ -68,7 +68,7 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ValidateAddressPage) OnNavigatedTo() {
-	pg.addressEditor.Focus()
+	pg.addressEditor.SetFocus()
 	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 }
 

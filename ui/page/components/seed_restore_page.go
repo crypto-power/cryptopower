@@ -135,7 +135,7 @@ func (pg *SeedRestore) SetParentNav(window app.WindowNavigator) {
 func (pg *SeedRestore) setEditorFocus() {
 	if !pg.IsIOS() {
 		pg.seedEditors.focusIndex = -1
-		pg.seedEditors.editors[0].Edit.Focus()
+		pg.seedEditors.editors[0].Edit.SetFocus()
 	}
 }
 

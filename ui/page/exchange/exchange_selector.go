@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"gioui.org/font"
-	"gioui.org/io/input"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -45,7 +44,6 @@ type exchangeModal struct {
 	onExchangeClicked func(*Exchange)
 	exchangeList      layout.List
 	exchangeItems     []*exchangeItem
-	eventSource       input.Source
 	isCancelable      bool
 }
 
@@ -227,14 +225,12 @@ func (es *ExSelector) buildExchangeItems(server ...instantswap.Server) []*exchan
 func (em *exchangeModal) OnResume() {}
 
 func (em *exchangeModal) Handle(gtx C) {
-	// if em.eventQueue != nil {
 	for _, exchangeItem := range em.exchangeItems {
 		for exchangeItem.clickable.Clicked(gtx) {
 			em.onExchangeClicked(exchangeItem.item)
 			em.Dismiss()
 		}
 	}
-	// }
 
 	if em.Modal.BackdropClicked(gtx, em.isCancelable) {
 		em.Dismiss()
@@ -252,7 +248,6 @@ func (em *exchangeModal) exchangeClicked(callback func(*Exchange)) *exchangeModa
 }
 
 func (em *exchangeModal) Layout(gtx C) D {
-	em.eventSource = gtx.Source
 	w := []layout.Widget{
 		func(gtx C) D {
 			titleTxt := em.Theme.Label(values.TextSize20, em.dialogTitle)
