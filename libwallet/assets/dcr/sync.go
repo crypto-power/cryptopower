@@ -7,6 +7,7 @@ import (
 	"net"
 	"sort"
 	"sync"
+	"time"
 
 	"decred.org/dcrwallet/v4/errors"
 	"decred.org/dcrwallet/v4/p2p"
@@ -86,9 +87,9 @@ type activeSyncData struct {
 
 	addressDiscoveryCompletedOrCanceled chan bool
 
-	rescanStartTime int64
+	rescanStartTime time.Time
 
-	totalInactiveSeconds int64
+	totalInactiveSeconds time.Duration
 	isRescanning         bool
 	isAddressDiscovery   bool
 }
@@ -103,11 +104,10 @@ const (
 
 func (asset *Asset) initActiveSyncData() {
 	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
-		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
-		BeginFetchCFiltersTimeStamp: 0,
-		StartCFiltersHeight:         -1,
-		CfiltersFetchTimeSpent:      0,
-		TotalFetchedCFiltersCount:   0,
+		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
+		StartCFiltersHeight:       -1,
+		CfiltersFetchTimeSpent:    0,
+		TotalFetchedCFiltersCount: 0,
 	}
 
 	headersFetchProgress := sharedW.HeadersFetchProgressReport{
@@ -116,9 +116,8 @@ func (asset *Asset) initActiveSyncData() {
 	}
 
 	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{
-		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
-		AddressDiscoveryStartTime: -1,
-		TotalDiscoveryTimeSpent:   -1,
+		GeneralSyncProgress:     &sharedW.GeneralSyncProgress{},
+		TotalDiscoveryTimeSpent: -1,
 	}
 
 	headersRescanProgress := sharedW.HeadersRescanProgressReport{}
@@ -211,7 +210,7 @@ func (asset *Asset) EnableSyncLogs() {
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
+func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds time.Duration) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -223,7 +222,7 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 	asset.syncData.totalInactiveSeconds += totalInactiveSeconds
 	if asset.syncData.numOfConnectedPeers == 0 {
 		// assume it would take another 60 seconds to reconnect to peers
-		asset.syncData.totalInactiveSeconds += 60
+		asset.syncData.totalInactiveSeconds += secondsToDuration(60.0)
 	}
 }
 

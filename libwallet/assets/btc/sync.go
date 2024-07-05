@@ -71,11 +71,10 @@ const (
 
 func (asset *Asset) initSyncProgressData() {
 	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
-		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
-		BeginFetchCFiltersTimeStamp: 0,
-		StartCFiltersHeight:         -1,
-		CfiltersFetchTimeSpent:      0,
-		TotalFetchedCFiltersCount:   0,
+		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
+		StartCFiltersHeight:       -1,
+		CfiltersFetchTimeSpent:    0,
+		TotalFetchedCFiltersCount: 0,
 	}
 
 	headersFetchProgress := sharedW.HeadersFetchProgressReport{
@@ -84,9 +83,8 @@ func (asset *Asset) initSyncProgressData() {
 	}
 
 	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{
-		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
-		AddressDiscoveryStartTime: -1,
-		TotalDiscoveryTimeSpent:   -1,
+		GeneralSyncProgress:     &sharedW.GeneralSyncProgress{},
+		TotalDiscoveryTimeSpent: -1,
 	}
 
 	headersRescanProgress := sharedW.HeadersRescanProgressReport{}
@@ -179,11 +177,12 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 	}
 
 	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
+	timeRemaining := secondsToDuration(((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar))
 
 	asset.syncData.headersFetchProgress.TotalHeadersToFetch = asset.syncData.bestBlockheight
 	asset.syncData.headersFetchProgress.HeadersFetchProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
-	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
-	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar)
+	asset.syncData.headersFetchProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
+	asset.syncData.headersFetchProgress.TotalTimeRemaining = timeRemaining
 	asset.syncData.mu.Unlock()
 
 	// publish the sync progress results to all listeners.

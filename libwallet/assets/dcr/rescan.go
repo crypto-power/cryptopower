@@ -49,7 +49,7 @@ func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 
 		rescanStartTime := time.Now()
 
-		for p := range progress {
+		for p := range progress { // listen to the progress channel
 			if p.Err != nil {
 				log.Error(p.Err)
 				if asset.blocksRescanProgressListener != nil {
@@ -68,12 +68,12 @@ func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 			rescanRate := float64(p.ScannedThrough) / float64(rescanProgressReport.TotalHeadersToScan)
 
 			rescanProgressReport.RescanProgress = int32(math.Round(rescanRate * 100))
-			estimatedTotalRescanTime := int64(math.Round(elapsedRescanTime / rescanRate))
-			rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - int64(elapsedRescanTime)
+			estimatedTotalRescanTime := elapsedRescanTime / rescanRate
+			rescanProgressReport.RescanTimeRemaining = secondsToDuration(estimatedTotalRescanTime - elapsedRescanTime)
 
 			rescanProgressReport.GeneralSyncProgress = &sharedW.GeneralSyncProgress{
-				TotalSyncProgress:         rescanProgressReport.RescanProgress,
-				TotalTimeRemainingSeconds: rescanProgressReport.RescanTimeRemaining,
+				TotalSyncProgress:  rescanProgressReport.RescanProgress,
+				TotalTimeRemaining: rescanProgressReport.RescanTimeRemaining,
 			}
 
 			if asset.blocksRescanProgressListener != nil {

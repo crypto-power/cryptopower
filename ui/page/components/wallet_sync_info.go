@@ -560,7 +560,7 @@ func (wsi *WalletSyncInfo) syncStatusIcon(gtx C) D {
 // ensure that the StopListeningForNotifications() method is called whenever the
 // the page or modal using these notifications is closed.
 func (wsi *WalletSyncInfo) ListenForNotifications() {
-	updateSyncProgress := func(timeRemaining int64, headersFetched int32,
+	updateSyncProgress := func(timeRemaining time.Duration, headersFetched int32,
 		stepFetchProgress int32, totalSyncProgress int32) {
 		// Update sync progress fields which will be displayed
 		// when the next UI invalidation occurs.
@@ -581,15 +581,15 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 
 	syncProgressListener := &sharedW.SyncProgressListener{
 		OnHeadersFetchProgress: func(t *sharedW.HeadersFetchProgressReport) {
-			updateSyncProgress(t.TotalTimeRemainingSeconds, t.TotalHeadersToFetch,
+			updateSyncProgress(t.TotalTimeRemaining, t.TotalHeadersToFetch,
 				t.HeadersFetchProgress, t.TotalSyncProgress)
 		},
 		OnAddressDiscoveryProgress: func(t *sharedW.AddressDiscoveryProgressReport) {
-			updateSyncProgress(t.TotalTimeRemainingSeconds, t.AddressDiscoveryProgress,
+			updateSyncProgress(t.TotalTimeRemaining, t.AddressDiscoveryProgress,
 				t.AddressDiscoveryProgress, t.TotalSyncProgress)
 		},
 		OnHeadersRescanProgress: func(t *sharedW.HeadersRescanProgressReport) {
-			updateSyncProgress(t.TotalTimeRemainingSeconds, t.TotalHeadersToScan,
+			updateSyncProgress(t.TotalTimeRemaining, t.TotalHeadersToScan,
 				t.RescanProgress, t.TotalSyncProgress)
 		},
 		OnSyncCompleted: func() {

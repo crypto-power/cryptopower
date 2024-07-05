@@ -2,6 +2,7 @@ package utils
 
 import (
 	"sync"
+	"time"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
@@ -70,11 +71,11 @@ func (si *SyncInfo) GetSyncProgress(wallet sharedW.Asset) ProgressInfo {
 }
 
 // SetSyncProgress creates a new sync progress instance and stores a copy of it.
-func (si *SyncInfo) SetSyncProgress(wallet sharedW.Asset, timeRemaining int64,
+func (si *SyncInfo) SetSyncProgress(wallet sharedW.Asset, timeRemaining time.Duration,
 	headersFetched, stepFetchProgress, totalSyncProgress int32) ProgressInfo {
 
 	progress := ProgressInfo{
-		remainingSyncTime:    TimeFormat(int(timeRemaining), true),
+		remainingSyncTime:    TimeFormat(int(timeRemaining.Seconds()), true),
 		headersToFetchOrScan: headersFetched,
 		stepFetchProgress:    stepFetchProgress,
 		syncProgress:         int(totalSyncProgress),

@@ -239,15 +239,15 @@ type SyncProgressListener struct {
 }
 
 type GeneralSyncProgress struct {
-	TotalSyncProgress         int32 `json:"totalSyncProgress"`
-	TotalTimeRemainingSeconds int64 `json:"totalTimeRemainingSeconds"`
+	TotalSyncProgress  int32         `json:"totalSyncProgress"`
+	TotalTimeRemaining time.Duration `json:"totalTimeRemainingSeconds"`
 }
 
 type CFiltersFetchProgressReport struct {
 	*GeneralSyncProgress
-	BeginFetchCFiltersTimeStamp int64
+	BeginFetchCFiltersTimeStamp time.Time
 	StartCFiltersHeight         int32
-	CfiltersFetchTimeSpent      int64
+	CfiltersFetchTimeSpent      time.Duration
 	TotalFetchedCFiltersCount   int32
 	TotalCFiltersToFetch        int32 `json:"totalCFiltersToFetch"`
 	CurrentCFilterHeight        int32 `json:"currentCFilterHeight"`
@@ -256,7 +256,7 @@ type CFiltersFetchProgressReport struct {
 
 type HeadersFetchProgressReport struct {
 	*GeneralSyncProgress
-	HeadersFetchTimeSpent int64
+	HeadersFetchTimeSpent time.Duration
 	BeginFetchTimeStamp   time.Time
 	StartHeaderHeight     *int32
 	TotalHeadersToFetch   int32 `json:"totalHeadersToFetch"`
@@ -265,18 +265,18 @@ type HeadersFetchProgressReport struct {
 
 type AddressDiscoveryProgressReport struct {
 	*GeneralSyncProgress
-	AddressDiscoveryStartTime int64
-	TotalDiscoveryTimeSpent   int64
+	AddressDiscoveryStartTime time.Time
+	TotalDiscoveryTimeSpent   time.Duration
 	AddressDiscoveryProgress  int32 `json:"addressDiscoveryProgress"`
 }
 
 type HeadersRescanProgressReport struct {
 	*GeneralSyncProgress
-	TotalHeadersToScan  int32 `json:"totalHeadersToScan"`
-	CurrentRescanHeight int32 `json:"currentRescanHeight"`
-	RescanProgress      int32 `json:"rescanProgress"`
-	RescanTimeRemaining int64 `json:"rescanTimeRemaining"`
-	WalletID            int   `json:"walletID"`
+	TotalHeadersToScan  int32         `json:"totalHeadersToScan"`
+	CurrentRescanHeight int32         `json:"currentRescanHeight"`
+	RescanProgress      int32         `json:"rescanProgress"`
+	RescanTimeRemaining time.Duration `json:"rescanTimeRemaining"`
+	WalletID            int           `json:"walletID"`
 }
 
 /** end sync-related types */
