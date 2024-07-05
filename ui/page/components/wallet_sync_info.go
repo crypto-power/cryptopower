@@ -685,7 +685,7 @@ func (wsi *WalletSyncInfo) HandleUserInteractions(gtx C) {
 			wsi.wallet.CancelRescan()
 		}
 
-		// Toggle switch states is handled in the layout() method.
+		// Toggling switch states is handled in the layout() method.
 		go func() {
 			wsi.ToggleSync(wsi.wallet, func(b bool) {
 				wsi.wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
@@ -694,7 +694,7 @@ func (wsi *WalletSyncInfo) HandleUserInteractions(gtx C) {
 		}()
 	}
 
-	// Manage the Disabled sync toggle button during sync shutdown process.
+	// Manage the sync toggle switch during the sync shutdown process.
 	isSyncShuttingDown := wsi.wallet.IsSyncShuttingDown()
 	if isSyncShuttingDown {
 		wsi.switchEnabled.Store(true)

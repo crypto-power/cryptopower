@@ -39,8 +39,9 @@ type Wallet struct {
 	loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
-	// isSyncShuttingDown is used to indicate the period between when the sync
-	// signal is first detected and when the sync shutdown actually happens.
+	// isSyncShuttingDown tracks the transition from sync ON to OFF. During
+	// this transition, the wallet status displays "Cancelling..." and the
+	// sync switch is disabled from receiving more user clicks until its over.
 	isSyncShuttingDown atomic.Bool
 
 	// Birthday holds the timestamp of the birthday block from where wallet
