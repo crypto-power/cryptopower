@@ -58,36 +58,28 @@ func (s *SyncData) generalSyncProgress() *sharedW.GeneralSyncProgress {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if s.syncing {
-		switch s.syncStage {
-		case HeadersFetchSyncStage:
-			return s.headersFetchProgress.GeneralSyncProgress
-		case AddressDiscoverySyncStage:
-			return s.addressDiscoveryProgress.GeneralSyncProgress
-		case HeadersRescanSyncStage:
-			return s.headersRescanProgress.GeneralSyncProgress
-		case CFiltersFetchSyncStage:
-			return s.cfiltersFetchProgress.GeneralSyncProgress
-		}
-	}
-
-	return nil
+	return s.genSyncProgress
 }
 
 // reading/writing of properties of this struct are protected by syncData.mu.
 type activeSyncData struct {
-	syncer *spv.Syncer
-
+	syncer    *spv.Syncer
 	syncStage utils.SyncStage
-
-	cfiltersFetchProgress    sharedW.CFiltersFetchProgressReport
-	headersFetchProgress     sharedW.HeadersFetchProgressReport
-	addressDiscoveryProgress sharedW.AddressDiscoveryProgressReport
-	headersRescanProgress    sharedW.HeadersRescanProgressReport
 
 	addressDiscoveryCompletedOrCanceled chan bool
 
-	rescanStartTime time.Time
+	// scanStartTime tracks the time when syncing or rescanning starts.
+	scanStartTime time.Time
+	// scanStartHeight tracks the height when syncing or rescanning starts.
+	scanStartHeight int32
+
+	headersScanTimeSpent   time.Duration // time spent during the headers scan.
+	cfiltersScanTimeSpent  time.Duration // time spent during the Cfilters scan.
+	addrDiscoveryTimeSpent time.Duration // time spent in address discovery.
+	rescanTimeSpent        time.Duration // time spent during the rescan.
+
+	// genSyncProgress tracks progress of the current sync running.
+	genSyncProgress *sharedW.GeneralSyncProgress
 
 	totalInactiveSeconds time.Duration
 	isRescanning         bool
@@ -103,34 +95,11 @@ const (
 )
 
 func (asset *Asset) initActiveSyncData() {
-	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
-		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
-		StartCFiltersHeight:       -1,
-		CfiltersFetchTimeSpent:    0,
-		TotalFetchedCFiltersCount: 0,
-	}
-
-	headersFetchProgress := sharedW.HeadersFetchProgressReport{
-		GeneralSyncProgress:   &sharedW.GeneralSyncProgress{},
-		HeadersFetchTimeSpent: -1,
-	}
-
-	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{
-		GeneralSyncProgress:     &sharedW.GeneralSyncProgress{},
-		TotalDiscoveryTimeSpent: -1,
-	}
-
-	headersRescanProgress := sharedW.HeadersRescanProgressReport{}
-	headersRescanProgress.GeneralSyncProgress = &sharedW.GeneralSyncProgress{}
-
 	asset.syncData.mu.Lock()
 	asset.syncData.activeSyncData = &activeSyncData{
 		syncStage: InvalidSyncStage,
 
-		cfiltersFetchProgress:    cfiltersFetchProgress,
-		headersFetchProgress:     headersFetchProgress,
-		addressDiscoveryProgress: addressDiscoveryProgress,
-		headersRescanProgress:    headersRescanProgress,
+		scanStartHeight: -1,
 	}
 	asset.syncData.mu.Unlock()
 }
@@ -151,8 +120,7 @@ func (asset *Asset) AddSyncProgressListener(syncProgressListener *sharedW.SyncPr
 	asset.syncData.syncProgressListeners[uniqueIdentifier] = syncProgressListener
 	asset.syncData.mu.Unlock()
 
-	// If sync is already on, notify this newly added listener of the current progress report.
-	return asset.PublishLastSyncProgress(uniqueIdentifier)
+	return nil
 }
 
 func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
@@ -171,37 +139,6 @@ func (asset *Asset) syncProgressListeners() []*sharedW.SyncProgressListener {
 	}
 
 	return listeners
-}
-
-func (asset *Asset) PublishLastSyncProgress(uniqueIdentifier string) error {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-
-	syncProgressListener, exists := asset.syncData.syncProgressListeners[uniqueIdentifier]
-	if !exists {
-		return errors.New(utils.ErrInvalid)
-	}
-
-	if asset.syncData.syncing && asset.syncData.activeSyncData != nil {
-		switch asset.syncData.activeSyncData.syncStage {
-		case HeadersFetchSyncStage:
-			if syncProgressListener.OnHeadersFetchProgress != nil {
-				syncProgressListener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
-			}
-
-		case AddressDiscoverySyncStage:
-			if syncProgressListener.OnAddressDiscoveryProgress != nil {
-				syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
-			}
-
-		case HeadersRescanSyncStage:
-			if syncProgressListener.OnHeadersRescanProgress != nil {
-				syncProgressListener.OnHeadersRescanProgress(&asset.syncData.headersRescanProgress)
-			}
-		}
-	}
-
-	return nil
 }
 
 func (asset *Asset) EnableSyncLogs() {

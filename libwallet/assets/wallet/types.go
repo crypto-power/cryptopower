@@ -246,28 +246,28 @@ type GeneralSyncProgress struct {
 type CFiltersFetchProgressReport struct {
 	*GeneralSyncProgress
 	BeginFetchCFiltersTimeStamp time.Time
-	StartCFiltersHeight         int32
-	CfiltersFetchTimeSpent      time.Duration
-	TotalFetchedCFiltersCount   int32
-	TotalCFiltersToFetch        int32 `json:"totalCFiltersToFetch"`
-	CurrentCFilterHeight        int32 `json:"currentCFilterHeight"`
-	CFiltersFetchProgress       int32 `json:"headersFetchProgress"`
+	// StartCFiltersHeight         int32
+	CfiltersFetchTimeSpent    time.Duration
+	TotalFetchedCFiltersCount int32
+	TotalCFiltersToFetch      int32 `json:"totalCFiltersToFetch"`
+	CurrentCFilterHeight      int32 `json:"currentCFilterHeight"`
+	CFiltersFetchProgress     int32 `json:"headersFetchProgress"`
 }
 
 type HeadersFetchProgressReport struct {
 	*GeneralSyncProgress
 	HeadersFetchTimeSpent time.Duration
-	BeginFetchTimeStamp   time.Time
-	StartHeaderHeight     *int32
-	TotalHeadersToFetch   int32 `json:"totalHeadersToFetch"`
-	HeadersFetchProgress  int32 `json:"headersFetchProgress"`
+	// BeginFetchTimeStamp   time.Time
+	StartHeaderHeight    *int32
+	TotalHeadersToFetch  int32 `json:"totalHeadersToFetch"`
+	HeadersFetchProgress int32 `json:"headersFetchProgress"`
 }
 
 type AddressDiscoveryProgressReport struct {
 	*GeneralSyncProgress
-	AddressDiscoveryStartTime time.Time
-	TotalDiscoveryTimeSpent   time.Duration
-	AddressDiscoveryProgress  int32 `json:"addressDiscoveryProgress"`
+	// AddressDiscoveryStartTime time.Time
+	TotalDiscoveryTimeSpent  time.Duration
+	AddressDiscoveryProgress int32 `json:"addressDiscoveryProgress"`
 }
 
 type HeadersRescanProgressReport struct {
