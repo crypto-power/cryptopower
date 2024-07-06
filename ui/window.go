@@ -192,7 +192,7 @@ func (win *Window) HandleEvents() {
 
 	// Create window chan event and listen events from window event
 	events := make(chan event.Event)
-	acks := make(chan struct{})
+	acks := make(chan struct{}, 2)
 	go func() {
 		for {
 			ev := win.Event()
