@@ -74,8 +74,9 @@ func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 	return avm.Modal.Layout(gtx, w)
 }
 
-func (avm *agendaVoteModal) sendVotes(_, password string, _ *modal.CreatePasswordModal) bool {
-	err := avm.dcrImpl.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", password)
+func (avm *agendaVoteModal) sendVotes(ticketHash, password string, _ *modal.CreatePasswordModal) bool {
+	err := avm.dcrImpl.SetVoteChoice(int32(avm.accountSelected.AccountNumber), avm.agenda.AgendaID,
+		avm.voteChoice, ticketHash, password)
 	if err != nil {
 		avm.CreatePasswordModal.SetError(err.Error())
 		return false

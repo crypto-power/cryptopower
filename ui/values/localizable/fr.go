@@ -449,7 +449,6 @@ const FR = `
 "changeAccount" = "Changer de compte"
 "mixedAccount" = "Compte mixte"
 "unmixedAccount" = "Unmixed account"
-"coordinationServer" = "Serveur de coordination"
 "unmixed" = "sans mélange"
 "allowSpendingFromUnmixedAccount" = "Autoriser les dépenses à partir d'un compte non mixte"
 "ticketRevokedTitle" = "Ticket, révoqué"

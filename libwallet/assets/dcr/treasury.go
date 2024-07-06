@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 
 	"github.com/decred/dcrd/blockchain/stake/v5"
@@ -103,8 +103,9 @@ func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, pa
 	policyMap := map[string]string{
 		PiKey: newVotingPolicy,
 	}
+
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := asset.Internal().DCR.VSPTicketInfo(ctx, tHash)
+		vspTicket, err := asset.Internal().DCR.NewVSPTicket(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
@@ -114,13 +115,24 @@ func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, pa
 			continue // try next tHash
 		}
 
-		// Update the vote policy for the ticket with the associated VSP.
-		vspClient, err := asset.VSPClient(vspTicketInfo.Host, vspTicketInfo.PubKey)
+		vspTicketInfo, err := vspTicket.VSPTicketInfo(ctx)
+		if err != nil && firstErr == nil {
+			if err.Error() != utils.ErrWalletLocked {
+				// Ignore the wallet is locked error.
+				firstErr = err
+			}
+			continue // try next tHash
+		}
+
+		// Account being set to -1 means the default ticket purchase account will be
+		// used in the ticket policy configuration.
+		vspClient, err := asset.VSPClient(-1, vspTicketInfo.Host, vspTicketInfo.PubKey)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash
 		}
-		err = vspClient.SetVoteChoice(ctx, tHash, nil, nil, policyMap)
+
+		err = vspClient.SetVoteChoice(ctx, vspTicket, nil, nil, policyMap)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash

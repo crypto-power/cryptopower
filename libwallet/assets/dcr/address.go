@@ -3,8 +3,8 @@ package dcr
 import (
 	"fmt"
 
-	"decred.org/dcrwallet/v3/errors"
-	w "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/errors"
+	w "decred.org/dcrwallet/v4/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 )

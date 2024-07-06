@@ -240,7 +240,10 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 					feeTxHash = info.FeeTxHash
 				}
 				if err != nil {
-					log.Errorf("VSPTicketInfo error: %v", err)
+					if err.Error() != libutils.ErrWalletLocked {
+						// Ignore the wallet is locked error.
+						log.Errorf("VSPTicketInfo error: %v", err)
+					}
 					return
 				}
 

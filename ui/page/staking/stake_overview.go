@@ -21,7 +21,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	tpage "github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
@@ -67,6 +66,11 @@ type Page struct {
 	processingTicket uint32
 
 	dcrWallet *dcr.Asset
+
+	// ticketContext is a managed context instance that is shut once a shutdown
+	// request is made. It helps avoid the use of context.TODO() that isn't
+	// responsive to the shutdown request.
+	ticketContext context.Context
 }
 
 func NewStakingPage(l *load.Load, dcrWallet *dcr.Asset) *Page {
@@ -81,6 +85,9 @@ func NewStakingPage(l *load.Load, dcrWallet *dcr.Asset) *Page {
 		},
 		dcrWallet: dcrWallet,
 	}
+
+	// context will list for a shutdown request.
+	pg.ticketContext, _ = dcrWallet.ShutdownContextWithCancel()
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
 	pg.materialLoader = material.Loader(l.Theme.Base)
@@ -281,15 +288,17 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 
 		// Check if this ticket is fully registered with a VSP
 		// and log any discrepancies.
-		// NOTE: Wallet needs to be unlocked to get the ticket status
-		// from the vsp. Otherwise, only the wallet-stored info will
-		// be retrieved. This is fine because we're only just logging
+		// NOTE: Wallet needs to be unlocked to get any ticket info
+		// from the vsp. This is fine because we're only just logging
 		// but where it is necessary to display vsp-stored info, the
 		// wallet passphrase should be requested and used to unlock
 		// the wallet before calling this method.
 		ticketInfo, err := pg.dcrWallet.VSPTicketInfo(ticketTx.Hash)
 		if err != nil {
-			log.Errorf("VSPTicketInfo error: %v", err)
+			if err.Error() != libutils.ErrWalletLocked {
+				// Ignore the wallet is locked error.
+				log.Errorf("VSPTicketInfo error: %v", err)
+			}
 		} else {
 			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessConfirmed || !ticketInfo.ConfirmedByVSP {
 				log.Warnf("Ticket %s has unconfirmed fee tx with status %q, vsp %s",
@@ -303,14 +312,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 
 				log.Infof("Attempting to process the unconfirmed VSP fee for tx: %v", ticketTx.Hash)
 
-				txHash, err := chainhash.NewHashFromStr(ticketTx.Hash)
-				if err != nil {
-					log.Errorf("convert hex to hash failed: %v", ticketTx.Hash)
-					return
-				}
-
-				account := ticketTx.Inputs[0].AccountNumber
-				err = ticketInfo.Client.ProcessTicket(context.TODO(), txHash, pg.dcrWallet.GetvspPolicy(account))
+				err = ticketInfo.Client.Process(pg.ticketContext, ticketInfo.VSPTicket, nil)
 				if err != nil {
 					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
 				}
@@ -396,26 +398,30 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 				}),
 			)
 		}).
-		SetNegativeButtonCallback(func() { pg.stake.SetChecked(false) }).
+		SetNegativeButtonCallback(func() {
+			_ = pg.dcrWallet.StopAutoTicketsPurchase()
+			pg.stake.SetChecked(false)
+		}).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			pg.stake.SetChecked(false)
+
 			if !pg.dcrWallet.IsConnectedToNetwork() {
 				pm.SetError(values.String(values.StrNotConnected))
-				pg.stake.SetChecked(false)
+				_ = pg.dcrWallet.StopAutoTicketsPurchase() // Halt auto tickets purchase.
 				return false
 			}
 
-			err := pg.dcrWallet.StartTicketBuyer(password)
-			if err != nil {
+			if err := pg.dcrWallet.StartTicketBuyer(password); err != nil {
 				pm.SetError(err.Error())
+				_ = pg.dcrWallet.StopAutoTicketsPurchase() // Halt auto tickets purchase.
 				return false
 			}
 
 			pg.stake.SetChecked(pg.dcrWallet.IsAutoTicketsPurchaseActive())
 			pg.ParentWindow().Reload()
-
 			pm.Dismiss()
 
-			return false
+			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
 }

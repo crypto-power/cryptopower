@@ -18,9 +18,15 @@ import (
 	dexasset "decred.org/dcrdex/client/asset"
 	dexdcr "decred.org/dcrdex/client/asset/dcr"
 	"decred.org/dcrdex/dex"
-	walleterrors "decred.org/dcrwallet/v3/errors"
+
+	// Version v3 of dcrwallet library is still in use because dcrdex is yet to upgrade
+	// to dcrd v2.
 	walletjson "decred.org/dcrwallet/v3/rpc/jsonrpc/types"
-	dcrwallet "decred.org/dcrwallet/v3/wallet"
+	wallettypes "decred.org/dcrwallet/v3/rpc/jsonrpc/types"
+	dcrwalletv3 "decred.org/dcrwallet/v3/wallet"
+
+	walleterrors "decred.org/dcrwallet/v4/errors"
+	dcrwallet "decred.org/dcrwallet/v4/wallet"
 	"github.com/decred/dcrd/blockchain/stake/v5"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
@@ -199,7 +205,26 @@ func (dw *DEXWallet) LockedOutputs(ctx context.Context, accountName string) ([]c
 // Unspents fetches unspent outputs for the Wallet.
 // Part of the Wallet interface.
 func (dw *DEXWallet) Unspents(ctx context.Context, accountName string) ([]*walletjson.ListUnspentResult, error) {
-	return dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
+	data, err := dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
+	var array = make([]*walletjson.ListUnspentResult, len(data))
+	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
+	// dcrwallet v4, copy v4 data into a v3 instance.
+	for _, val := range data {
+		array = append(array, &walletjson.ListUnspentResult{
+			TxID:          val.TxID,
+			Vout:          val.Vout,
+			Tree:          val.Tree,
+			TxType:        val.TxType,
+			Address:       val.Address,
+			Account:       val.Account,
+			ScriptPubKey:  val.ScriptPubKey,
+			RedeemScript:  val.RedeemScript,
+			Amount:        val.Amount,
+			Confirmations: val.Confirmations,
+			Spendable:     val.Spendable,
+		})
+	}
+	return array, err
 }
 
 // LockUnspent locks or unlocks the specified outpoint.
@@ -556,7 +581,36 @@ func (dw *DEXWallet) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (
 }
 
 func (dw *DEXWallet) ListSinceBlock(ctx context.Context, start, end, syncHeight int32) ([]walletjson.ListTransactionsResult, error) {
-	return dw.w.ListSinceBlock(ctx, start, end, syncHeight)
+	data, err := dw.w.ListSinceBlock(ctx, start, end, syncHeight)
+	var array = make([]walletjson.ListTransactionsResult, len(data))
+	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
+	// dcrwallet v4, copy v4 data into a v3 instance.
+	for _, val := range data {
+		var txType = wallettypes.ListTransactionsTxType(*val.TxType)
+		newVal := walletjson.ListTransactionsResult{
+			Account:           val.Account,
+			Address:           val.Address,
+			Amount:            val.Amount,
+			BlockHash:         val.BlockHash,
+			BlockIndex:        val.BlockIndex,
+			BlockTime:         val.BlockTime,
+			Category:          val.Category,
+			Confirmations:     val.Confirmations,
+			Fee:               val.Fee,
+			Generated:         val.Generated,
+			InvolvesWatchOnly: val.InvolvesWatchOnly,
+			Time:              val.Time,
+			TimeReceived:      val.TimeReceived,
+			TxID:              val.TxID,
+			TxType:            &txType,
+			Vout:              val.Vout,
+			WalletConflicts:   val.WalletConflicts,
+			Comment:           val.Comment,
+			OtherAccount:      val.OtherAccount,
+		}
+		array = append(array, newVal)
+	}
+	return array, err
 }
 
 // Part of the Wallet interface.
@@ -594,6 +648,6 @@ func (dw *DEXWallet) SetTxFee(_ context.Context, _ dcrutil.Amount) error {
 	return errors.New("SetTxFee not implemented by Cryptopower DEX wallet")
 }
 
-func (dw *DEXWallet) StakeInfo(_ context.Context) (*dcrwallet.StakeInfoData, error) {
+func (dw *DEXWallet) StakeInfo(_ context.Context) (*dcrwalletv3.StakeInfoData, error) {
 	return nil, errors.New("StakeInfo not implemented by Cryptopower DEX wallet")
 }

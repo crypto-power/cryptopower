@@ -7,14 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v3/errors"
-	w "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/errors"
+	w "decred.org/dcrwallet/v4/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/decred/dcrd/wire"
+	vspd "github.com/decred/vspd/types/v2"
 )
 
 func (asset *Asset) TotalStakingRewards() (int64, error) {
@@ -107,7 +106,7 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 		return nil, utils.ErrDCRNotInitialized
 	}
 
-	vspClient, err := asset.VSPClient(vspHost, vspPubKey)
+	vspClient, err := asset.VSPClient(account, vspHost, vspPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("VSP Server instance failed to start: %v", err)
 	}
@@ -124,24 +123,28 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	defer asset.LockWallet()
 
 	request := &w.PurchaseTicketsRequest{
-		Count:         int(numTickets),
-		SourceAccount: uint32(account),
-		MinConf:       asset.RequiredConfirmations(),
-		VSPFeeProcess: vspClient.FeePercentage,
-		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return vspClient.Process(ctx, ticketHash, feeTx, asset.GetvspPolicy(account))
-		},
+		Count:                int(numTickets),
+		SourceAccount:        uint32(account),
+		MinConf:              asset.RequiredConfirmations(),
+		VSPFeePercent:        vspClient.FeePercentage,
+		VSPFeePaymentProcess: vspClient.Process,
+
+		// VotingAccount used to derive addresses for specifying voting rights.
+		// It is used when VotingAddress == nil, or Mixing == true
+		VotingAccount: uint32(account),
+	}
+
+	csppCfg := asset.readCSPPConfig()
+	if csppCfg == nil {
+		return nil, utils.ErrStakingAccountsMissing
 	}
 
 	// Mixed split buying through CoinShuffle++, if configured.
-	if csppCfg := asset.readCSPPConfig(); csppCfg != nil {
-		request.CSPPServer = csppCfg.CSPPServer
-		request.DialCSPPServer = csppCfg.DialCSPPServer
-		request.MixedAccount = csppCfg.MixedAccount
-		request.MixedAccountBranch = csppCfg.MixedAccountBranch
-		request.ChangeAccount = csppCfg.ChangeAccount
-		request.MixedSplitAccount = csppCfg.TicketSplitAccount
-	}
+	request.Mixing = csppCfg.Mixing
+	request.MixedAccount = csppCfg.MixedAccount
+	request.MixedAccountBranch = csppCfg.MixedAccountBranch
+	request.ChangeAccount = csppCfg.ChangeAccount
+	request.MixedSplitAccount = csppCfg.TicketSplitAccount
 
 	ctx, _ := asset.ShutdownContextWithCancel()
 	ticketsResponse, err := asset.Internal().DCR.PurchaseTickets(ctx, networkBackend, request)
@@ -152,22 +155,17 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	return ticketsResponse.TicketHashes, err
 }
 
-// GetvspPolicy creates the VSP policy using the account number provided.
-// Uses the user-specified instructions for processing fee payments
-// on a ticket, rather than some default policy.
-func (asset *Asset) GetvspPolicy(account int32) vsp.Policy {
-	return vsp.Policy{
-		MaxFee:     0.2e8,
-		FeeAcct:    uint32(account),
-		ChangeAcct: uint32(account),
-	}
-}
-
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
 func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
+	}
+
+	// Cannot query an VSPTicketInfo api if the current instance wallet is locked.
+	if asset.IsLocked() {
+		log.Warnf("cannot query any ticket info when the wallet is locked")
+		return nil, errors.New(utils.ErrWalletLocked)
 	}
 
 	ticketHash, err := chainhash.NewHashFromStr(hash)
@@ -177,7 +175,12 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	// Read the VSP info for this ticket from the wallet db.
 	ctx, _ := asset.ShutdownContextWithCancel()
-	walletTicketInfo, err := asset.Internal().DCR.VSPTicketInfo(ctx, ticketHash)
+	ticket, err := asset.Internal().DCR.NewVSPTicket(ctx, ticketHash)
+	if err != nil {
+		return nil, err
+	}
+
+	walletTicketInfo, err := ticket.VSPTicketInfo(ctx)
 	if err != nil {
 		log.Warnf("unable to getWallet info using ticket: %s Error: %v", hash, err)
 		return nil, err
@@ -189,22 +192,19 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		FeeTxStatus: VSPFeeStatus(walletTicketInfo.FeeTxStatus),
 	}
 
-	// Cannot submit a TicketStatus api request to the VSP if
-	// the wallet is locked. Return just the wallet info.
-	if asset.IsLocked() {
-		log.Warnf("cannot submit a ticket status request when wallet is locked")
-		return ticketInfo, nil
-	}
-
-	vspClient, err := asset.VSPClient(walletTicketInfo.Host, walletTicketInfo.PubKey)
+	// Account being set to -1 means the default ticket purchase account will be
+	// used in the ticket policy configuration.
+	vspClient, err := asset.VSPClient(-1, walletTicketInfo.Host, walletTicketInfo.PubKey)
 	if err != nil {
 		log.Warnf("unable to connect to host: %s Error: %v", walletTicketInfo.Host, err)
 		return ticketInfo, nil
 	}
 
-	ticketInfo.Client = vspClient
+	req := vspd.TicketStatusRequest{
+		TicketHash: ticket.Hash().String(),
+	}
 
-	vspTicketStatus, err := vspClient.GetTicketStatus(ctx, ticketHash)
+	vspTicketStatus, err := vspClient.TicketStatus(ctx, req, ticket.CommitmentAddr())
 	if err != nil {
 		log.Warnf("unable to get vsp ticket: %s Error: %v", hash, err)
 		return ticketInfo, nil
@@ -216,6 +216,8 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 			ticketInfo.FeeTxHash, vspTicketStatus.FeeTxHash, ticketHash)
 	}
 
+	ticketInfo.VSPTicket = ticket
+	ticketInfo.Client = vspClient
 	ticketInfo.FeeTxHash = vspTicketStatus.FeeTxHash
 	ticketInfo.ConfirmedByVSP = vspTicketStatus.TicketConfirmed
 
@@ -230,6 +232,12 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 		return utils.ErrDCRNotInitialized
 	}
 
+	// The default value (-1) will only be returned if the cpp staking
+	// accounts are missing.
+	if asset.MixedAccountNumber() == -1 || asset.UnmixedAccountNumber() == -1 {
+		return utils.ErrStakingAccountsMissing
+	}
+
 	cfg := asset.AutoTicketsBuyerConfig()
 	if cfg.VspHost == "" {
 		return errors.New("ticket buyer config not set for this wallet")
@@ -238,9 +246,7 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 		return errors.New("Negative balance to maintain in ticket buyer config")
 	}
 
-	asset.cancelAutoTicketBuyerMu.Lock()
-	if asset.cancelAutoTicketBuyer != nil {
-		asset.cancelAutoTicketBuyerMu.Unlock()
+	if asset.IsAutoTicketsPurchaseActive() {
 		return errors.New("Ticket buyer already running")
 	}
 
@@ -248,29 +254,31 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 	if len(passphrase) > 0 && asset.IsLocked() {
 		err := asset.UnlockWallet(passphrase)
 		if err != nil {
-			asset.cancelAutoTicketBuyerMu.Unlock()
 			return utils.TranslateError(err)
 		}
 	}
 
 	ctx, cancel := asset.ShutdownContextWithCancel()
+	asset.cancelAutoTicketBuyerMu.Lock()
 	asset.cancelAutoTicketBuyer = cancel
 	asset.cancelAutoTicketBuyerMu.Unlock()
 
 	// Check the VSP.
 	vspInfo, err := vspInfo(cfg.VspHost)
-	if err == nil {
-		cfg.VspClient, err = asset.VSPClient(cfg.VspHost, vspInfo.PubKey)
-	}
 	if err != nil {
 		return fmt.Errorf("error setting up vsp client: %v", err)
+	}
+
+	cfg.VspClient, err = asset.VSPClient(cfg.PurchaseAccount, cfg.VspHost, vspInfo.PubKey)
+	if err != nil {
+		log.Errorf("[%d] VSP Client instance failed error: %v", asset.ID, err)
+		return errors.New("VSP Client failed to start due to incorrect configuration")
 	}
 
 	go func() {
 		log.Infof("[%d] Running ticket buyer", asset.ID)
 
-		err := asset.runTicketBuyer(ctx, passphrase, cfg)
-		if err != nil {
+		if err = asset.runTicketBuyer(ctx, passphrase, cfg); err != nil {
 			if ctx.Err() != nil {
 				log.Errorf("[%d] Ticket buyer instance canceled", asset.ID)
 			} else {
@@ -278,9 +286,9 @@ func (asset *Asset) StartTicketBuyer(passphrase string) error {
 			}
 		}
 
-		asset.cancelAutoTicketBuyerMu.Lock()
-		asset.cancelAutoTicketBuyer = nil
-		asset.cancelAutoTicketBuyerMu.Unlock()
+		if err = asset.StopAutoTicketsPurchase(); err != nil {
+			log.Errorf("[%d] Stopping auto ticket purchase errored: %v", asset.ID, err)
+		}
 	}()
 
 	return nil
@@ -449,33 +457,37 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 		return err
 	}
 
+	if !asset.IsTicketBuyerAccountSet() {
+		return utils.ErrTicketPurchaseAccMissing
+	}
+
 	// Count is 1 to prevent combining multiple split outputs in one tx,
 	// which can be used to link the tickets eventually purchased with the
 	// split outputs.
-	vspPolicy := vsp.Policy{
-		MaxFee:     0.2e8,
-		FeeAcct:    uint32(cfg.PurchaseAccount),
-		ChangeAcct: uint32(cfg.PurchaseAccount),
-	}
 	request := &w.PurchaseTicketsRequest{
-		Count:         1,
-		SourceAccount: uint32(cfg.PurchaseAccount),
-		Expiry:        expiry,
-		MinConf:       asset.RequiredConfirmations(),
-		VSPFeeProcess: cfg.VspClient.FeePercentage,
-		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return cfg.VspClient.Process(ctx, ticketHash, feeTx, vspPolicy)
-		},
+		Count:                1,
+		SourceAccount:        uint32(cfg.PurchaseAccount),
+		Expiry:               expiry,
+		MinConf:              asset.RequiredConfirmations(),
+		VSPFeePercent:        cfg.VspClient.FeePercentage,
+		VSPFeePaymentProcess: cfg.VspClient.Process,
+
+		// VotingAccount used to derive addresses for specifying voting rights.
+		// It is used when VotingAddress == nil, or Mixing == true
+		VotingAccount: uint32(cfg.PurchaseAccount),
 	}
+
+	csppCfg := asset.readCSPPConfig()
+	if csppCfg == nil {
+		return utils.ErrStakingAccountsMissing
+	}
+
 	// Mixed split buying through CoinShuffle++, if configured.
-	if csppCfg := asset.readCSPPConfig(); csppCfg != nil {
-		request.CSPPServer = csppCfg.CSPPServer
-		request.DialCSPPServer = csppCfg.DialCSPPServer
-		request.MixedAccount = csppCfg.MixedAccount
-		request.MixedAccountBranch = csppCfg.MixedAccountBranch
-		request.ChangeAccount = csppCfg.ChangeAccount
-		request.MixedSplitAccount = csppCfg.TicketSplitAccount
-	}
+	request.Mixing = csppCfg.Mixing
+	request.MixedAccount = csppCfg.MixedAccount
+	request.MixedAccountBranch = csppCfg.MixedAccountBranch
+	request.ChangeAccount = csppCfg.ChangeAccount
+	request.MixedSplitAccount = csppCfg.TicketSplitAccount
 
 	tix, err := asset.Internal().DCR.PurchaseTickets(ctx, networkBackend, request)
 	if tix != nil {
@@ -532,6 +544,11 @@ func (asset *Asset) AutoTicketsBuyerConfig() *TicketBuyerConfig {
 // TicketBuyerConfigIsSet checks if ticket buyer config is set for the asset.
 func (asset *Asset) TicketBuyerConfigIsSet() bool {
 	return asset.ReadStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "") != ""
+}
+
+// IsTicketBuyerAccountSet checks if ticket buyer account is set for the asset.
+func (asset *Asset) IsTicketBuyerAccountSet() bool {
+	return asset.ReadInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, -1) != -1
 }
 
 // ClearTicketBuyerConfig clears the wallet's ticket buyer config.

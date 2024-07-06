@@ -134,7 +134,6 @@ const EN = `
 "consensusChange" = "Consensus Changes"
 "consensusDashboard" = "Consensus Vote Dashboard"
 "continue" = "Continue"
-"coordinationServer" = "Coordination server"
 "copied" = "Copied!"
 "copy" = "Copy"
 "copyBlockLink" = "Copy block explorer link"
