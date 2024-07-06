@@ -375,6 +375,8 @@ func (asset *Asset) CancelSync() {
 	asset.syncData.wg.Add(1)
 	go asset.stopSync()
 
+	asset.syncData.wg.Wait() // Wait until the stopSync() goroutine ends.
+
 	// Indicate that the sync shutdown process is fully complete.
 	asset.EndSyncShuttingDown()
 
