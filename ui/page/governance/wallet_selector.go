@@ -60,8 +60,8 @@ func (as *WalletSelector) WalletSelected(callback func(sharedW.Asset)) *WalletSe
 	return as
 }
 
-func (as *WalletSelector) Handle(window app.WindowNavigator) {
-	for as.openSelectorDialog.Clicked() {
+func (as *WalletSelector) Handle(gtx C, window app.WindowNavigator) {
+	if as.openSelectorDialog.Clicked(gtx) {
 		walletSelectorModal := newWalletSelectorModal(as.Load, as.selectedWallet).
 			title(as.dialogTitle).
 			accountValidator(as.walletIsValid).
@@ -107,7 +107,7 @@ func (as *WalletSelector) SelectedWallet() sharedW.Asset {
 }
 
 func (as *WalletSelector) Layout(gtx layout.Context, window app.WindowNavigator) layout.Dimensions {
-	as.Handle(window)
+	as.Handle(gtx, window)
 
 	border := widget.Border{
 		Color:        as.Theme.Color.Gray2,
@@ -168,7 +168,7 @@ type WalletSelectorModal struct {
 func newWalletSelectorModal(l *load.Load, currentSelectedWallet sharedW.Asset) *WalletSelectorModal {
 	asm := &WalletSelectorModal{
 		Load:        l,
-		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal", l.IsMobileView()),
+		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal", l.IsMobileView(), nil),
 		walletsList: l.Theme.NewClickableList(layout.Vertical),
 
 		currentSelectedWallet: currentSelectedWallet,
@@ -191,13 +191,13 @@ func (asm *WalletSelectorModal) OnResume() {
 	asm.filteredWallets = validWallets
 }
 
-func (asm *WalletSelectorModal) Handle() {
+func (asm *WalletSelectorModal) Handle(gtx C) {
 	if clicked, index := asm.walletsList.ItemClicked(); clicked {
 		asm.callback(asm.filteredWallets[index])
 		asm.Dismiss()
 	}
 
-	if asm.Modal.BackdropClicked(asm.isCancelable) {
+	if asm.Modal.BackdropClicked(gtx, asm.isCancelable) {
 		asm.Dismiss()
 	}
 }

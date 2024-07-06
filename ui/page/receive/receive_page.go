@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"io"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
@@ -81,7 +83,7 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	if wallet == nil {
-		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrReceive), pg.IsMobileView())
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrReceive), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 		pg.initWalletSelectors() // will auto select the first wallet in the dropdown as pg.selectedWallet
 	} else {
@@ -430,12 +432,12 @@ func (pg *Page) addressLayout(gtx C) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *Page) HandleUserInteractions() {
-	if pg.backdrop.Clicked() {
+func (pg *Page) HandleUserInteractions(gtx C) {
+	if pg.backdrop.Clicked(gtx) {
 		pg.isNewAddr = false
 	}
 
-	if pg.newAddr.Clicked() {
+	if pg.newAddr.Clicked(gtx) {
 		newAddr, err := pg.generateNewAddress()
 		if err != nil {
 			log.Debug("Error generating new address" + err.Error())
@@ -447,7 +449,7 @@ func (pg *Page) HandleUserInteractions() {
 		pg.isNewAddr = false
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		textWithUnit := values.String(values.StrReceive) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
 			Title(textWithUnit).
@@ -456,7 +458,7 @@ func (pg *Page) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.navigateToSyncBtn.Button.Clicked() {
+	if pg.navigateToSyncBtn.Button.Clicked(gtx) {
 		pg.ToggleSync(pg.selectedWallet, func(b bool) {
 			pg.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
 		})
@@ -482,8 +484,8 @@ generateAddress:
 
 func (pg *Page) handleCopyEvent(gtx C) {
 	// Prevent copying again if the timer hasn't expired
-	if pg.copy.Clicked() && !pg.isCopying {
-		clipboard.WriteOp{Text: pg.currentAddress}.Add(gtx.Ops)
+	if pg.copy.Clicked(gtx) && !pg.isCopying {
+		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.currentAddress))})
 		pg.Toast.Notify(values.String(values.StrCopied))
 	}
 }
@@ -499,11 +501,11 @@ func (pg *Page) OnNavigatedFrom() {
 	pg.sourceAccountselector.StopTxNtfnListener()
 }
 
-func (pg *Page) Handle() {
-	if pg.modalLayout.BackdropClicked(true) {
+func (pg *Page) Handle(gtx C) {
+	if pg.modalLayout.BackdropClicked(gtx, true) {
 		pg.modalLayout.Dismiss()
 	} else {
-		pg.HandleUserInteractions()
+		pg.HandleUserInteractions(gtx)
 	}
 }
 

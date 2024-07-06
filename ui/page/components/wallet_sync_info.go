@@ -84,7 +84,7 @@ func (wsi *WalletSyncInfo) GetWallet() sharedW.Asset {
 }
 
 func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
-	wsi.handle()
+	wsi.handle(gtx)
 
 	return wsi.pageContentWrapper(gtx, "", nil, func(gtx C) D {
 		items := []layout.FlexChild{
@@ -628,7 +628,7 @@ func (wsi *WalletSyncInfo) StopListeningForNotifications() {
 	wsi.wallet.SetBlocksRescanProgressListener(nil)
 }
 
-func (wsi *WalletSyncInfo) handle() {
+func (wsi *WalletSyncInfo) handle(gtx C) {
 	// As long as the internet connection hasn't been established keep checking.
 	if !wsi.isStatusConnected {
 		go func() {
@@ -638,7 +638,7 @@ func (wsi *WalletSyncInfo) handle() {
 
 	isSyncShutting := wsi.wallet.IsSyncShuttingDown()
 	wsi.syncSwitch.SetEnabled(!isSyncShutting)
-	if wsi.syncSwitch.Changed() {
+	if wsi.syncSwitch.Changed(gtx) {
 		if wsi.wallet.IsRescanning() {
 			wsi.wallet.CancelRescan()
 		}
@@ -651,7 +651,7 @@ func (wsi *WalletSyncInfo) handle() {
 		}()
 	}
 
-	if wsi.toBackup.Button.Clicked() {
+	if wsi.toBackup.Button.Clicked(gtx) {
 		wsi.backup(wsi.wallet)
 	}
 }

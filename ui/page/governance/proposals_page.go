@@ -32,11 +32,6 @@ type (
 	D = layout.Dimensions
 )
 
-type pFilter struct {
-	TypeFilter  int32
-	OrderNewest bool
-}
-
 type ProposalsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -46,7 +41,6 @@ type ProposalsPage struct {
 	*app.GenericPageModal
 
 	scroll         *components.Scroll[*components.ProposalItem]
-	previousFilter pFilter
 	statusDropDown *cryptomaterial.DropDown
 	orderDropDown  *cryptomaterial.DropDown
 	walletDropDown *cryptomaterial.DropDown
@@ -186,21 +180,37 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 	return listItems, len(listItems), true, nil
 }
 
+func (pg *ProposalsPage) handleEditorEvents(gtx C) {
+	for {
+		event, ok := pg.searchEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(pg.searchEditor.Editor) {
+			switch event.(type) {
+			case widget.ChangeEvent:
+				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+			}
+		}
+	}
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *ProposalsPage) HandleUserInteractions() {
-	if pg.statusDropDown.Changed() {
+func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
+	if pg.statusDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.orderDropDown.Changed() {
+	if pg.orderDropDown.Changed(gtx) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 	}
 
@@ -210,7 +220,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
 	}
 
-	for pg.syncButton.Clicked() {
+	for pg.syncButton.Clicked(gtx) {
 		go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
 		pg.isSyncing = true
 
@@ -223,7 +233,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.proposalsFetched = true
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrProposal)).
 			Body(values.String(values.StrOffChainVote)).
@@ -239,16 +249,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		})
 	}
 
-	for _, evt := range pg.searchEditor.Editor.Events() {
-		if pg.searchEditor.Editor.Focused() {
-			switch evt.(type) {
-			case widget.ChangeEvent:
-				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
-			}
-		}
-	}
-
-	for pg.filterBtn.Clicked() {
+	for pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }
@@ -297,6 +298,7 @@ func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.Drop
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 	padding := values.MarginPadding24
 	if pg.IsMobileView() {

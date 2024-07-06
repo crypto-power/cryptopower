@@ -47,8 +47,8 @@ func (pg *BackupSuccessPage) OnNavigatedTo() {}
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *BackupSuccessPage) HandleUserInteractions() {
-	for pg.actionButton.Clicked() {
+func (pg *BackupSuccessPage) HandleUserInteractions(gtx C) {
+	if pg.actionButton.Clicked(gtx) {
 		pg.redirectCallback(pg.Load, pg.ParentWindow())
 	}
 }

@@ -10,8 +10,8 @@ import (
 
 	giouiApp "gioui.org/app"
 	"gioui.org/gesture"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
-	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"golang.org/x/text/language"
@@ -76,7 +76,8 @@ func CreateWindow(appInfo *load.AppInfo) (*Window, error) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	giouiWindow := giouiApp.NewWindow(appSize, appMinSize, appTitle)
+	giouiWindow := new(giouiApp.Window)
+	giouiWindow.Option(appSize, appMinSize, appTitle)
 	win := &Window{
 		ctx:        ctx,
 		ctxCancel:  cancel,
@@ -189,6 +190,20 @@ func (win *Window) HandleEvents() {
 		win.Quit <- struct{}{}
 	}
 
+	// Create window chan event and listen events from window event
+	events := make(chan event.Event)
+	acks := make(chan struct{}, 2)
+	go func() {
+		for {
+			ev := win.Event()
+			events <- ev
+			<-acks
+			if _, ok := ev.(giouiApp.DestroyEvent); ok {
+				return
+			}
+		}
+	}()
+
 	for {
 		// Select either the os interrupt or the window event, whichever becomes
 		// ready first.
@@ -198,19 +213,18 @@ func (win *Window) HandleEvents() {
 		case <-win.IsShutdown:
 			// backend processes shutdown is complete, exit UI process too.
 			return
-		case e := <-win.Events():
+		case e := <-events:
 			switch evt := e.(type) {
-
-			case system.DestroyEvent:
+			case giouiApp.DestroyEvent:
 				displayShutdownPage()
-
-			case system.FrameEvent:
+				acks <- struct{}{}
+			case giouiApp.FrameEvent:
 				ops := win.handleFrameEvent(evt)
 				evt.Frame(ops)
-
 			default:
 				log.Tracef("Unhandled window event %v\n", e)
 			}
+			acks <- struct{}{}
 		}
 	}
 }
@@ -219,8 +233,10 @@ func (win *Window) HandleEvents() {
 // window. It expects a new frame in the form of a list of operations that
 // describes what to display and how to handle input. This operations list
 // is returned to the caller for displaying on screen.
-func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
+func (win *Window) handleFrameEvent(evt giouiApp.FrameEvent) *op.Ops {
 	win.load.SetCurrentAppWidth(evt.Size.X, evt.Metric)
+	ops := &op.Ops{}
+	gtx := giouiApp.NewContext(ops, evt)
 
 	switch {
 	case win.navigator.CurrentPage() == nil:
@@ -233,51 +249,24 @@ func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
 		// such interactions before re-displaying the UI components. This
 		// ensures that the proper interface is displayed to the user based on
 		// the action(s) they just performed.
-		win.handleRelevantKeyPresses(evt)
-		win.navigator.CurrentPage().HandleUserInteractions()
+		win.navigator.CurrentPage().HandleUserInteractions(gtx)
 		if modal := win.navigator.TopModal(); modal != nil {
-			modal.Handle()
+			modal.Handle(gtx)
 		}
 	}
 
 	// Generate an operations list with instructions for drawing the window's UI
 	// components onto the screen. Use the generated ops to request key events.
-	ops := win.prepareToDisplayUI(evt)
-	win.addKeyEventRequestsToOps(ops)
-
+	win.prepareToDisplayUI(gtx)
+	win.addListenKeyEvent(gtx)
 	return ops
-}
-
-// handleRelevantKeyPresses checks if any open modal or the current page is a
-// load.KeyEventHandler AND if the provided system.FrameEvent contains key press
-// events for the modal or page.
-func (win *Window) handleRelevantKeyPresses(evt system.FrameEvent) {
-	handleKeyPressFor := func(tag string, maybeHandler interface{}) {
-		handler, ok := maybeHandler.(load.KeyEventHandler)
-		if !ok {
-			return
-		}
-		for _, event := range evt.Queue.Events(tag) {
-			if keyEvent, isKeyEvent := event.(key.Event); isKeyEvent && keyEvent.State == key.Press {
-				handler.HandleKeyPress(&keyEvent)
-			}
-		}
-	}
-
-	// Handle key events on the top modal first, if there's one.
-	// Only handle key events on the current page if no modal is displayed.
-	if modal := win.navigator.TopModal(); modal != nil {
-		handleKeyPressFor(modal.ID(), modal)
-	} else {
-		handleKeyPressFor(win.navigator.CurrentPageID(), win.navigator.CurrentPage())
-	}
 }
 
 // prepareToDisplayUI creates an operation list and writes the layout of all the
 // window UI components into it. The created ops is returned and may be used to
 // record further operations before finally being rendered on screen via
 // system.FrameEvent.Frame(ops).
-func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
+func (win *Window) prepareToDisplayUI(gtx layout.Context) {
 	backgroundWidget := layout.Expanded(func(gtx C) D {
 		return win.load.Theme.DropdownBackdrop.Layout(gtx, func(gtx C) D {
 			return cryptomaterial.Fill(gtx, win.load.Theme.Color.Gray4)
@@ -304,11 +293,10 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 		return modal.Layout(gtx)
 	})
 
+	win.clicker.Add(gtx.Ops)
+
 	// Use a StackLayout to write the above UI components into an operations
 	// list via a graphical context that is linked to the ops.
-	ops := &op.Ops{}
-	gtx := layout.NewContext(ops, evt)
-	win.addEvents(gtx)
 	layout.Stack{Alignment: layout.N}.Layout(
 		gtx,
 		backgroundWidget,
@@ -317,78 +305,83 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 		layout.Stacked(win.load.Toast.Layout),
 	)
 	win.handleEvents(gtx)
-
-	return ops
 }
 
-// addKeyEventRequestsToOps checks if the current page or any modal has
-// registered to be notified of certain key events and updates the provided
-// operations list with instructions to generate a FrameEvent if any of the
-// desired keys is pressed on the window.
-func (win *Window) addKeyEventRequestsToOps(ops *op.Ops) {
-	requestKeyEvents := func(tag string, desiredKeys key.Set) {
-		if desiredKeys == "" {
-			return
-		}
-
-		// Execute the key.InputOP{}.Add operation after all other operations.
-		// This is particularly important because some pages call op.Defer to
-		// signify that some operations should be executed after all other
-		// operations, which has an undesirable effect of discarding this key
-		// operation unless it's done last, after all other defers are done.
-		m := op.Record(ops)
-		key.InputOp{Tag: tag, Keys: desiredKeys}.Add(ops)
-		op.Defer(ops, m.Stop())
-	}
-
+func (win *Window) addListenKeyEvent(gtx C) {
 	// Request key events on the top modal, if necessary.
 	// Only request key events on the current page if no modal is displayed.
 	if modal := win.navigator.TopModal(); modal != nil {
 		if handler, ok := modal.(load.KeyEventHandler); ok {
-			requestKeyEvents(modal.ID(), handler.KeysToHandle())
+			if len(handler.KeysToHandle()) == 0 || handler.KeysToHandle() == nil {
+				return
+			}
+			for {
+				e, ok := gtx.Event(handler.KeysToHandle()...)
+				if !ok {
+					break
+				}
+				switch e := e.(type) {
+				case key.Event:
+					handler.HandleKeyPress(gtx, &e)
+				}
+			}
 		}
 	} else {
 		if handler, ok := win.navigator.CurrentPage().(load.KeyEventHandler); ok {
-			requestKeyEvents(win.navigator.CurrentPageID(), handler.KeysToHandle())
+			if len(handler.KeysToHandle()) == 0 || handler.KeysToHandle() == nil {
+				return
+			}
+			for {
+				e, ok := gtx.Event(handler.KeysToHandle()...)
+				if !ok {
+					break
+				}
+				switch e := e.(type) {
+				case key.Event:
+					handler.HandleKeyPress(gtx, &e)
+				}
+			}
 		}
 	}
 }
 
 func (win *Window) handleEvents(gtx C) {
 	win.handleUserClick(gtx)
-	win.handleShortKeys(gtx)
+	win.listenSoftKey(gtx)
 }
 
 // handleUserClick listen touch action of user for mobile.
 func (win *Window) handleUserClick(gtx C) {
-	for _, evt := range win.clicker.Events(gtx) {
-		if evt.Type == gesture.TypePress {
+	for {
+		evt, ok := win.clicker.Update(gtx.Source)
+		if !ok {
+			break
+		}
+
+		if evt.Kind == gesture.KindPress {
 			win.load.Theme.AutoHideSoftKeyBoardAndMenuButton(gtx)
 		}
 	}
 }
 
 // handleShortKeys listen keys pressed.
-func (win *Window) handleShortKeys(gtx C) {
+func (win *Window) listenSoftKey(gtx C) {
 	// check for presses of the back key.
-	for _, event := range gtx.Events(win) {
-		switch event := event.(type) {
-		case key.Event:
-			if event.Name == key.NameBack && event.State == key.Press {
-				win.load.Theme.OnTapBack()
+	if runtime.GOOS == "android" {
+		for {
+			event, ok := gtx.Event(key.FocusFilter{Target: win},
+				key.Filter{Focus: win, Name: key.NameBack},
+			)
+			if !ok {
+				break
+			}
+
+			switch event := event.(type) {
+			case key.Event:
+				if event.Name == key.NameBack && event.State == key.Press {
+					win.load.Theme.OnTapBack()
+				}
 			}
 		}
-	}
-}
-
-func (win *Window) addEvents(gtx C) {
-	// clicker use for show and hide soft keyboard and menu button on editor
-	win.clicker.Add(gtx.Ops)
-
-	if runtime.GOOS == "android" {
-		key.InputOp{
-			Tag:  win,
-			Keys: key.NameBack,
-		}.Add(gtx.Ops)
 	}
 }

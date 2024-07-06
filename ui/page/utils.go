@@ -10,19 +10,7 @@ import (
 	"path/filepath"
 
 	"gioui.org/widget"
-
-	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/ui/values"
 )
-
-func translateErr(err error) string {
-	switch err.Error() {
-	case utils.ErrInvalidPassphrase:
-		return values.String(values.StrInvalidPassphrase)
-	}
-
-	return err.Error()
-}
 
 func EditorsNotEmpty(editors ...*widget.Editor) bool {
 	for _, e := range editors {
@@ -31,18 +19,6 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
-}
-
-func HandleSubmitEvent(editors ...*widget.Editor) bool {
-	var submit bool
-	for _, editor := range editors {
-		for _, e := range editor.Events() {
-			if _, ok := e.(widget.SubmitEvent); ok {
-				submit = true
-			}
-		}
-	}
-	return submit
 }
 
 func GetAbsolutePath() (string, error) {
@@ -57,16 +33,4 @@ func GetAbsolutePath() (string, error) {
 	}
 
 	return path.Dir(exSym), nil
-}
-
-func handleSubmitEvent(editors ...*widget.Editor) bool {
-	var submit bool
-	for _, editor := range editors {
-		for _, e := range editor.Events() {
-			if _, ok := e.(widget.SubmitEvent); ok {
-				submit = true
-			}
-		}
-	}
-	return submit
 }

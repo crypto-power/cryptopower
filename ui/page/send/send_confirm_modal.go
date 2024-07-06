@@ -5,6 +5,7 @@ import (
 	"image"
 
 	"gioui.org/font"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -41,10 +42,10 @@ type sendConfirmModal struct {
 func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset) *sendConfirmModal {
 	scm := &sendConfirmModal{
 		Load:           l,
-		Modal:          l.Theme.ModalFloatTitle("send_confirm_modal", l.IsMobileView()),
 		authoredTxData: data,
 		asset:          asset,
 	}
+	scm.Modal = l.Theme.ModalFloatTitle("send_confirm_modal", l.IsMobileView(), scm.firstLoad)
 
 	scm.closeConfirmationModalButton = l.Theme.OutlineButton(values.String(values.StrCancel))
 	scm.closeConfirmationModalButton.Font.Weight = font.Medium
@@ -61,8 +62,10 @@ func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset
 	return scm
 }
 
-func (scm *sendConfirmModal) OnResume() {
-	scm.passwordEditor.Editor.Focus()
+func (scm *sendConfirmModal) OnResume() {}
+
+func (scm *sendConfirmModal) firstLoad(gtx C) {
+	gtx.Execute(key.FocusCmd{Tag: scm.passwordEditor.Editor})
 }
 
 func (scm *sendConfirmModal) SetError(err string) {
@@ -98,10 +101,15 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 	}()
 }
 
-func (scm *sendConfirmModal) Handle() {
-	for _, evt := range scm.passwordEditor.Editor.Events() {
-		if scm.passwordEditor.Editor.Focused() {
-			switch evt.(type) {
+func (scm *sendConfirmModal) Handle(gtx C) {
+	for {
+		event, ok := scm.passwordEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(scm.passwordEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				scm.confirmButton.SetEnabled(scm.passwordEditor.Editor.Text() != "")
 			case widget.SubmitEvent:
@@ -110,11 +118,11 @@ func (scm *sendConfirmModal) Handle() {
 		}
 	}
 
-	for scm.confirmButton.Clicked() {
+	if scm.confirmButton.Clicked(gtx) {
 		scm.broadcastTransaction()
 	}
 
-	for scm.closeConfirmationModalButton.Clicked() {
+	if scm.closeConfirmationModalButton.Clicked(gtx) {
 		if !scm.isSending {
 			scm.Dismiss()
 		}

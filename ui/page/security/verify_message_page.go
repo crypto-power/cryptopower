@@ -2,6 +2,7 @@ package security
 
 import (
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -27,9 +28,9 @@ type VerifyMessagePage struct {
 	*app.GenericPageModal
 	wallet sharedW.Asset
 
-	addressEditor          cryptomaterial.Editor
-	messageEditor          cryptomaterial.Editor
-	signatureEditor        cryptomaterial.Editor
+	addressEditor          *cryptomaterial.Editor
+	messageEditor          *cryptomaterial.Editor
+	signatureEditor        *cryptomaterial.Editor
 	clearBtn, verifyButton cryptomaterial.Button
 	backButton             cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
@@ -44,15 +45,19 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 		wallet:           wallet,
 	}
 
-	pg.addressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	addressEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	messageEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrMessage))
+	signatureEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrSignature))
+
+	pg.addressEditor = &addressEditor
 	pg.addressEditor.Editor.SingleLine = true
 	pg.addressEditor.Editor.Submit = true
 
-	pg.messageEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrMessage))
+	pg.messageEditor = &messageEditor
 	pg.messageEditor.Editor.SingleLine = true
 	pg.messageEditor.Editor.Submit = true
 
-	pg.signatureEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrSignature))
+	pg.signatureEditor = &signatureEditor
 	pg.signatureEditor.Editor.Submit = true
 
 	pg.verifyButton = l.Theme.Button(values.String(values.StrVerifyMessage))
@@ -72,8 +77,7 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifyMessagePage) OnNavigatedTo() {
-	pg.addressEditor.Editor.Focus()
-
+	pg.addressEditor.SetFocus()
 	pg.verifyButton.SetEnabled(pg.updateBtn())
 }
 
@@ -81,6 +85,7 @@ func (pg *VerifyMessagePage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *VerifyMessagePage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -113,15 +118,15 @@ func (pg *VerifyMessagePage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx, body)
 }
 
-func (pg *VerifyMessagePage) layoutDesktop(gtx layout.Context, body layout.Widget) layout.Dimensions {
+func (pg *VerifyMessagePage) layoutDesktop(gtx C, body layout.Widget) D {
 	return body(gtx)
 }
 
-func (pg *VerifyMessagePage) layoutMobile(gtx layout.Context, body layout.Widget) layout.Dimensions {
+func (pg *VerifyMessagePage) layoutMobile(gtx C, body layout.Widget) D {
 	return components.UniformMobile(gtx, false, false, body)
 }
 
-func (pg *VerifyMessagePage) inputRow(editor cryptomaterial.Editor) layout.Widget {
+func (pg *VerifyMessagePage) inputRow(editor *cryptomaterial.Editor) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Bottom: values.MarginPadding15}.Layout(gtx, editor.Layout)
 	}
@@ -153,22 +158,15 @@ func (pg *VerifyMessagePage) verifyAndClearButtons() layout.Widget {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
-func (pg *VerifyMessagePage) HandleUserInteractions() {
-	pg.verifyButton.SetEnabled(pg.updateBtn())
-
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
+func (pg *VerifyMessagePage) handleEditorEvents(gtx C) {
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor, pg.messageEditor, pg.signatureEditor)
 	if isChanged {
-		if pg.addressEditor.Editor.Focused() {
+		if gtx.Source.Focused(pg.addressEditor.Editor) {
 			pg.validateAddress()
 		}
 	}
 
-	if (pg.verifyButton.Clicked() || isSubmit) && pg.validateAllInputs() {
+	if (pg.verifyButton.Clicked(gtx) || isSubmit) && pg.validateAllInputs() {
 		var verifyMessageText string
 		var info *modal.InfoModal
 
@@ -185,26 +183,35 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 		}
 		pg.ParentWindow().ShowModal(info)
 	}
+}
 
-	if pg.clearBtn.Clicked() {
+// HandleUserInteractions is called just before Layout() to determine
+// if any user interaction recently occurred on the page and may be
+// used to update the page's UI components shortly before they are
+// displayed.
+// Part of the load.Page interface.
+func (pg *VerifyMessagePage) HandleUserInteractions(gtx C) {
+	pg.verifyButton.SetEnabled(pg.updateBtn())
+
+	if pg.clearBtn.Clicked(gtx) {
 		pg.clearInputs()
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
-// that this page wishes to capture. The HandleKeyPress() method will only be
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
+// that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *VerifyMessagePage) KeysToHandle() key.Set {
-	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+func (pg *VerifyMessagePage) KeysToHandle() []event.Filter {
+	return []event.Filter{key.FocusFilter{Target: pg}, key.Filter{Focus: pg, Name: key.NameTab, Optional: key.ModShift}}
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *VerifyMessagePage) HandleKeyEvent(evt *key.Event) {
+func (pg *VerifyMessagePage) HandleKeyEvent(gtx C, evt *key.Event) {
 	// Switch editors on tab press.
-	cryptomaterial.SwitchEditors(evt, pg.addressEditor.Editor, pg.signatureEditor.Editor, pg.messageEditor.Editor)
+	cryptomaterial.SwitchEditors(gtx, evt, pg.addressEditor.Editor, pg.signatureEditor.Editor, pg.messageEditor.Editor)
 }
 
 func (pg *VerifyMessagePage) validateAllInputs() bool {

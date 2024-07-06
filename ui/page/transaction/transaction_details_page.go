@@ -3,6 +3,7 @@ package transaction
 import (
 	"fmt"
 	"image"
+	"io"
 	"strings"
 	"time"
 
@@ -614,8 +615,8 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						clickable := pg.destAddressClickables[i]
 						flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
 							// copy destination Address
-							if clickable.Clicked() {
-								clipboard.WriteOp{Text: address}.Add(gtx.Ops)
+							if clickable.Clicked(gtx) {
+								gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(address))})
 								pg.Toast.Notify(values.String(values.StrTxHashCopied))
 							}
 							lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(address, 0))
@@ -777,8 +778,8 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				lbl.Color = pg.Theme.Color.Primary
 
 				// copy transaction hash
-				if pg.hashClickable.Clicked() {
-					clipboard.WriteOp{Text: pg.transaction.Hash}.Add(gtx.Ops)
+				if pg.hashClickable.Clicked(gtx) {
+					gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.transaction.Hash))})
 					pg.Toast.Notify(values.String(values.StrTxHashCopied))
 				}
 				return pg.hashClickable.Layout(gtx, lbl.Layout)
@@ -870,8 +871,8 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 					}),
 					layout.Rigid(func(gtx C) D {
 						// copy address
-						if pg.txnWidgets.copyTextButtons[i].Clicked() {
-							clipboard.WriteOp{Text: address}.Add(gtx.Ops)
+						if pg.txnWidgets.copyTextButtons[i].Clicked(gtx) {
+							gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(address))})
 							pg.Toast.Notify(values.String(values.StrCopied))
 						}
 
@@ -919,7 +920,7 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 						layout.Rigid(func(gtx C) D {
 							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									if pg.moreItems[i].button.Clicked() {
+									if pg.moreItems[i].button.Clicked(gtx) {
 										switch pg.moreItems[i].id {
 										case viewBlockID: // redirect to browser
 											pg.showbrowserURLModal(pg.moreItems[i].button)
@@ -954,12 +955,12 @@ func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *TxDetailsPage) HandleUserInteractions() {
-	if pg.moreOption.Clicked() {
+func (pg *TxDetailsPage) HandleUserInteractions(gtx C) {
+	if pg.moreOption.Clicked(gtx) {
 		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
 
-	if pg.associatedTicketClickable.Clicked() {
+	if pg.associatedTicketClickable.Clicked(gtx) {
 		if pg.ticketSpent != nil {
 			pg.txBackStack = pg.transaction
 			pg.transaction = pg.ticketSpent
@@ -969,7 +970,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.rebroadcastClickable.Clicked() {
+	if pg.rebroadcastClickable.Clicked(gtx) {
 		go func() {
 			pg.rebroadcastClickable.SetEnabled(false, nil)
 			if !pg.wallet.IsConnectedToNetwork() {

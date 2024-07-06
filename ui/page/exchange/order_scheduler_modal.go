@@ -61,7 +61,7 @@ type orderSchedulerModal struct {
 func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerModal {
 	osm := &orderSchedulerModal{
 		Load:              l,
-		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrOrderScheduler), l.IsMobileView()),
+		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrOrderScheduler), l.IsMobileView(), nil),
 		exchangeSelector:  NewExSelector(l, instantswap.FlypMe),
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,
@@ -150,19 +150,19 @@ func (osm *orderSchedulerModal) SetError(err string) {
 	osm.passwordEditor.SetError(values.TranslateErr(err))
 }
 
-func (osm *orderSchedulerModal) Handle() {
+func (osm *orderSchedulerModal) Handle(gtx C) {
 	osm.startBtn.SetEnabled(osm.canStart())
 
-	for osm.startBtn.Clicked() {
+	for osm.startBtn.Clicked(gtx) {
 		osm.startOrderScheduler()
 	}
 
-	if osm.cancelBtn.Clicked() || osm.Modal.BackdropClicked(true) {
+	if osm.cancelBtn.Clicked(gtx) || osm.Modal.BackdropClicked(gtx, true) {
 		osm.onCancel()
 		osm.Dismiss()
 	}
 
-	if osm.refreshExchangeRateBtn.Button.Clicked() {
+	if osm.refreshExchangeRateBtn.Button.Clicked(gtx) {
 		go func() {
 			err := osm.getExchangeRateInfo()
 			if err != nil {
@@ -171,9 +171,14 @@ func (osm *orderSchedulerModal) Handle() {
 		}()
 	}
 
-	for _, evt := range osm.balanceToMaintain.Editor.Events() {
-		if osm.balanceToMaintain.Editor.Focused() {
-			switch evt.(type) {
+	for {
+		event, ok := osm.balanceToMaintain.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(osm.balanceToMaintain.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				if components.InputsNotEmpty(osm.balanceToMaintain.Editor) {
 					f, err := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)

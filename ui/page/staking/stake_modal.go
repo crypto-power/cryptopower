@@ -38,7 +38,7 @@ type ticketBuyerModal struct {
 func newTicketBuyerModal(l *load.Load, wallet *dcr.Asset) *ticketBuyerModal {
 	tb := &ticketBuyerModal{
 		Load:  l,
-		Modal: l.Theme.ModalFloatTitle("staking_modal", l.IsMobileView()),
+		Modal: l.Theme.ModalFloatTitle("staking_modal", l.IsMobileView(), nil),
 
 		cancel:          l.Theme.OutlineButton(values.String(values.StrCancel)),
 		saveSettingsBtn: l.Theme.Button(values.String(values.StrSave)),
@@ -201,15 +201,15 @@ func (tb *ticketBuyerModal) OnDismiss() {
 	tb.accountSelector.StopTxNtfnListener()
 }
 
-func (tb *ticketBuyerModal) Handle() {
+func (tb *ticketBuyerModal) Handle(gtx C) {
 	tb.saveSettingsBtn.SetEnabled(tb.canSave())
 
-	if tb.cancel.Clicked() || tb.Modal.BackdropClicked(true) {
+	if tb.cancel.Clicked(gtx) || tb.Modal.BackdropClicked(gtx, true) {
 		tb.onCancel()
 		tb.Dismiss()
 	}
 
-	if tb.saveSettingsBtn.Clicked() {
+	if tb.saveSettingsBtn.Clicked(gtx) {
 		vspHost := tb.vspSelector.SelectedVSP().Host
 		amount, err := strconv.ParseFloat(tb.balToMaintainEditor.Editor.Text(), 64)
 		if err != nil {

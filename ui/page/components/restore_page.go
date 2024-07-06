@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -233,51 +234,51 @@ func (pg *Restore) OnNavigatedFrom() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *Restore) HandleUserInteractions() {
+func (pg *Restore) HandleUserInteractions(gtx C) {
 	if pg.tabs.Changed() {
 		pg.tabIndex = pg.tabs.SelectedIndex()
 	}
 
-	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed() {
+	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed(gtx) {
 		pg.seedRestorePage.setEditorFocus()
 	}
 
 	if pg.tabIndex == 0 {
-		pg.seedRestorePage.HandleUserInteractions()
+		pg.seedRestorePage.HandleUserInteractions(gtx)
 	}
 
 	if len(strings.TrimSpace(pg.seedInputEditor.Editor.Text())) != 0 {
 		pg.confirmSeedButton.SetEnabled(true)
 	}
 
-	if pg.confirmSeedButton.Clicked() {
+	if pg.confirmSeedButton.Clicked(gtx) {
 		if !pg.restoreInProgress {
 			go pg.restoreFromSeedEditor()
 		}
 	}
 
-	if pg.seedTypeDropdown.Changed() {
+	if pg.seedTypeDropdown.Changed(gtx) {
 		pg.seedRestorePage.resetSeeds()
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *Restore) KeysToHandle() key.Set {
+func (pg *Restore) KeysToHandle() []event.Filter {
 	if pg.tabIndex == 0 {
 		return pg.seedRestorePage.KeysToHandle()
 	}
-	return ""
+	return nil
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *Restore) HandleKeyPress(evt *key.Event) {
+func (pg *Restore) HandleKeyPress(gtx C, evt *key.Event) {
 	if pg.tabIndex == 0 {
-		pg.seedRestorePage.HandleKeyPress(evt)
+		pg.seedRestorePage.HandleKeyPress(gtx, evt)
 	}
 }
 

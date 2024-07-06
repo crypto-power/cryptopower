@@ -31,19 +31,22 @@ type Modal struct {
 	scroll         ListStyle
 	padding        unit.Dp
 
-	isFloatTitle  bool
-	isDisabled    bool
-	showScrollBar bool
-	isMobileView  bool
+	isFloatTitle         bool
+	isDisabled           bool
+	showScrollBar        bool
+	isMobileView         bool
+	firstLoadWithContext func(gtx C)
 }
 
-func (t *Theme) ModalFloatTitle(id string, isMobileView bool) *Modal {
-	mod := t.Modal(id, isMobileView)
+// The firstLoad() parameter is used to perform actions
+// that require Context before Layout() is called.
+func (t *Theme) ModalFloatTitle(id string, isMobileView bool, firstLoad func(gtx C)) *Modal {
+	mod := t.Modal(id, isMobileView, firstLoad)
 	mod.isFloatTitle = true
 	return mod
 }
 
-func (t *Theme) Modal(id string, isMobileView bool) *Modal {
+func (t *Theme) Modal(id string, isMobileView bool, firstLoad func(gtx C)) *Modal {
 	overlayColor := t.Color.Black
 	overlayColor.A = 200
 
@@ -61,6 +64,7 @@ func (t *Theme) Modal(id string, isMobileView bool) *Modal {
 		padding:        values.MarginPadding24,
 		isMobileView:   isMobileView,
 	}
+	m.firstLoadWithContext = firstLoad
 
 	m.scroll = t.List(m.list)
 
@@ -92,6 +96,10 @@ func (m *Modal) IsShown() bool {
 // Layout renders the modal widget to screen. The modal assumes the size of
 // its content plus padding.
 func (m *Modal) Layout(gtx C, widgets []layout.Widget, width ...float32) D {
+	if m.firstLoadWithContext != nil {
+		m.firstLoadWithContext(gtx)
+		m.firstLoadWithContext = nil
+	}
 	mGtx := gtx
 	if m.isDisabled {
 		mGtx = gtx.Disabled()
@@ -204,9 +212,9 @@ func (m *Modal) Layout(gtx C, widgets []layout.Widget, width ...float32) D {
 	return dims
 }
 
-func (m *Modal) BackdropClicked(minimizable bool) bool {
+func (m *Modal) BackdropClicked(gtx C, minimizable bool) bool {
 	if minimizable {
-		return m.button.Clicked()
+		return m.button.Clicked(gtx)
 	}
 
 	return false

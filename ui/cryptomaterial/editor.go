@@ -3,11 +3,18 @@
 package cryptomaterial
 
 import (
+	"image"
 	"image/color"
+	"io"
+	"strings"
 
+	"gioui.org/gesture"
 	"gioui.org/io/clipboard"
+	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -65,15 +72,20 @@ type Editor struct {
 	m2 unit.Dp
 	m5 unit.Dp
 
-	clickable *widget.Clickable
+	click gesture.Click
 
 	copy, paste   Button
-	eventKey      int
 	isShowMenu    bool
 	isDisableMenu bool
 
 	// add space for error lable if it is true
 	isSpaceError bool
+
+	isFirstFocus bool
+
+	submitted bool
+	changed   bool
+	selected  bool
 }
 
 func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
@@ -162,7 +174,6 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 			t.Styles.IconButtonColorStyle,
 		},
 		CustomButton: t.Button(""),
-		clickable:    new(widget.Clickable),
 		copy:         t.Button(values.String(values.StrCopy)),
 		paste:        t.Button(values.String(values.StrPaste)),
 	}
@@ -182,30 +193,78 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 	return newEditor
 }
 
-func (e *Editor) Pressed() bool {
-	return e.clickable.Pressed() || e.copy.Clicked() || e.paste.Clicked()
+func (e *Editor) Pressed(gtx C) bool {
+	return e.click.Pressed() || e.copy.Clicked(gtx) || e.paste.Clicked(gtx)
 }
 
-func (e *Editor) FirstPressed() bool {
-	return !e.Editor.Focused() && e.clickable.Pressed()
+func (e *Editor) FirstPressed(gtx C) bool {
+	return !gtx.Source.Focused(e.Editor) && e.click.Pressed()
+
+}
+
+func (e *Editor) SetFocus() {
+	e.isFirstFocus = true
+}
+
+func (e *Editor) Changed() bool {
+	changed := e.changed
+	e.changed = false
+	return changed
+}
+
+func (e *Editor) Submitted() bool {
+	submitted := e.submitted
+	e.submitted = false
+	return submitted
+}
+
+func (e *Editor) Selected() bool {
+	selected := e.selected
+	e.selected = false
+	return selected
 }
 
 func (e *Editor) Layout(gtx C) D {
+	if e.isFirstFocus {
+		e.isFirstFocus = false
+		gtx.Execute(key.FocusCmd{Tag: e.Editor})
+	}
 	e.handleEvents(gtx)
-	clicks := e.clickable.Clicks()
-	if len(clicks) > 0 {
-		clk := clicks[len(clicks)-1]
-		if clk.NumClicks == 2 {
+	e.update(gtx)
+	return e.layout(gtx)
+}
+
+func (e *Editor) update(gtx C) {
+	for {
+		ev, ok := e.click.Update(gtx.Source)
+		if !ok {
+			break
+		}
+
+		switch ev.NumClicks {
+		case 1:
+			gtx.Execute(key.FocusCmd{Tag: e.Editor})
+		case 2:
 			e.isShowMenu = true
-		}
-		if clk.NumClicks == 1 {
-			e.Editor.Focus()
-		}
-		if clk.NumClicks != 2 && clk.NumClicks > 0 {
+		default:
 			e.isShowMenu = false
 		}
 	}
-	return e.layout(gtx)
+	for {
+		ev, ok := e.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		switch ev.(type) {
+		case widget.ChangeEvent:
+			e.changed = true
+		case widget.SubmitEvent:
+			e.submitted = true
+		case widget.SelectEvent:
+			e.selected = true
+		}
+	}
 }
 
 func (e *Editor) layout(gtx C) D {
@@ -217,13 +276,14 @@ func (e *Editor) layout(gtx C) D {
 		e.TitleLabel.Text = ""
 	}
 
-	if e.Editor.Focused() {
+	focused := gtx.Source.Focused(e.Editor)
+	if focused {
 		e.TitleLabel.Text = e.Hint
 		e.TitleLabel.Color, e.LineColor = e.t.Color.Primary, e.t.Color.Primary
 		e.Hint = ""
 	}
 
-	if e.IsRequired && !e.Editor.Focused() && e.Editor.Len() == 0 {
+	if e.IsRequired && !focused && e.Editor.Len() == 0 {
 		e.errorLabel.Text = e.requiredErrorText
 		e.LineColor = e.t.Color.Danger
 	}
@@ -248,24 +308,22 @@ func (e *Editor) layout(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Stack{}.Layout(gtx,
 						layout.Stacked(func(gtx C) D {
-							return e.clickable.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(e.editorLayout),
-									layout.Rigid(func(gtx C) D {
-										if e.errorLabel.Text != "" {
-											inset := layout.Inset{
-												Top:  e.m2,
-												Left: e.m5,
-											}
-											return inset.Layout(gtx, e.errorLabel.Layout)
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(e.editorLayout),
+								layout.Rigid(func(gtx C) D {
+									if e.errorLabel.Text != "" {
+										inset := layout.Inset{
+											Top:  e.m2,
+											Left: e.m5,
 										}
-										if e.isSpaceError {
-											return layout.Spacer{Height: values.MarginPadding18}.Layout(gtx)
-										}
-										return D{}
-									}),
-								)
-							})
+										return inset.Layout(gtx, e.errorLabel.Layout)
+									}
+									if e.isSpaceError {
+										return layout.Spacer{Height: values.MarginPadding18}.Layout(gtx)
+									}
+									return D{}
+								}),
+							)
 						}),
 						layout.Stacked(func(gtx C) D {
 							if e.IsTitleLabel {
@@ -276,6 +334,14 @@ func (e *Editor) layout(gtx C) D {
 									return Card{Color: e.t.Color.Surface}.Layout(gtx, e.TitleLabel.Layout)
 								})
 							}
+							return D{}
+						}),
+						layout.Expanded(func(gtx C) D {
+							defer pointer.PassOp{}.Push(gtx.Ops).Pop()
+							defer clip.Rect(image.Rectangle{
+								Max: gtx.Constraints.Min,
+							}).Push(gtx.Ops).Pop()
+							e.click.Add(gtx.Ops)
 							return D{}
 						}),
 						layout.Stacked(overLay),
@@ -314,7 +380,7 @@ func (e *Editor) editorLayout(gtx C) D {
 }
 
 func (e *Editor) editorMenusLayout(gtx C, editorHeight int) {
-	e.isShowMenu = e.isShowMenu && (e.Editor.Focused() || e.copy.Hovered() || e.paste.Hovered())
+	e.isShowMenu = e.isShowMenu && (gtx.Source.Focused(e.Editor) || e.copy.Hovered() || e.paste.Hovered())
 	if e.isShowMenu {
 		flexChilds := make([]layout.FlexChild, 0)
 		if len(e.Editor.Text()) > 0 {
@@ -364,15 +430,7 @@ func (e *Editor) editor(gtx C) D {
 			return D{}
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					inset := layout.Inset{
-						Top:    e.m5,
-						Bottom: e.m5,
-					}
-					return inset.Layout(gtx, e.EditorStyle.Layout)
-				}),
-			)
+			return layout.Inset{Top: e.m5, Bottom: e.m5}.Layout(gtx, e.EditorStyle.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			if e.ExtraText == "" {
@@ -417,8 +475,7 @@ func (e *Editor) editor(gtx C) D {
 }
 
 func (e *Editor) handleEvents(gtx C) {
-	e.processEvent(gtx)
-	if e.showHidePassword.Button.Clicked() {
+	if e.showHidePassword.Button.Clicked(gtx) {
 		if e.Editor.Mask == '*' {
 			e.Editor.Mask = 0
 		} else if e.Editor.Mask == 0 {
@@ -426,27 +483,18 @@ func (e *Editor) handleEvents(gtx C) {
 		}
 	}
 
-	if e.editorIconButton.Button.Clicked() {
+	if e.editorIconButton.Button.Clicked(gtx) {
 		e.EditorIconButtonEvent()
 	}
 
-	if e.copy.Clicked() {
-		clipboard.WriteOp{Text: e.Editor.Text()}.Add(gtx.Ops)
+	if e.copy.Clicked(gtx) {
+		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(e.Editor.Text()))})
 		e.isShowMenu = false
 	}
 
-	if e.paste.Clicked() {
-		clipboard.ReadOp{Tag: &e.eventKey}.Add(gtx.Ops)
+	if e.paste.Clicked(gtx) {
+		gtx.Execute(clipboard.ReadCmd{Tag: e.Editor})
 		e.isShowMenu = false
-	}
-}
-
-func (e *Editor) processEvent(gtx C) {
-	for _, event := range gtx.Events(&e.eventKey) {
-		switch eventType := event.(type) {
-		case clipboard.Event:
-			e.Editor.Insert(eventType.Text)
-		}
 	}
 }
 
@@ -454,7 +502,7 @@ func (re RestoreEditor) Layout(gtx C) D {
 	width := int(gtx.Metric.PxPerDp * 2.0)
 	height := int(gtx.Metric.PxPerDp * float32(re.height))
 	l := re.t.SeparatorVertical(height, width)
-	if re.Edit.Editor.Focused() {
+	if gtx.Source.Focused(re.Edit.Editor) {
 		re.TitleLabel.Color, re.LineColor, l.Color = re.t.Color.Primary, re.t.Color.Primary, re.t.Color.Primary
 	} else {
 		l.Color = re.t.Color.Gray2

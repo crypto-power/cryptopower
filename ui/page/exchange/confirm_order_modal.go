@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"gioui.org/font"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -44,9 +45,9 @@ type confirmOrderModal struct {
 func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 	com := &confirmOrderModal{
 		Load:      l,
-		Modal:     l.Theme.ModalFloatTitle(values.String(values.StrConfirmYourOrder), l.IsMobileView()),
 		orderData: data,
 	}
+	com.Modal = l.Theme.ModalFloatTitle(values.String(values.StrConfirmYourOrder), l.IsMobileView(), com.firstLoad)
 
 	com.closeConfirmationModalButton = l.Theme.OutlineButton(values.String(values.StrCancel))
 	com.closeConfirmationModalButton.Font.Weight = font.Medium
@@ -70,8 +71,10 @@ func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 	return com
 }
 
-func (com *confirmOrderModal) OnResume() {
-	com.passwordEditor.Editor.Focus()
+func (com *confirmOrderModal) OnResume() {}
+
+func (com *confirmOrderModal) firstLoad(gtx C) {
+	gtx.Execute(key.FocusCmd{Tag: com.passwordEditor.Editor})
 }
 
 func (com *confirmOrderModal) OnOrderCompleted(orderCompleted func(order *instantswap.Order)) *confirmOrderModal {
@@ -156,10 +159,14 @@ func (com *confirmOrderModal) confirmOrder() {
 	}()
 }
 
-func (com *confirmOrderModal) Handle() {
-	for _, evt := range com.passwordEditor.Editor.Events() {
-		if com.passwordEditor.Editor.Focused() {
-			switch evt.(type) {
+func (com *confirmOrderModal) Handle(gtx C) {
+	for {
+		event, ok := com.passwordEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+		if gtx.Source.Focused(com.passwordEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				com.confirmButton.SetEnabled(com.passwordEditor.Editor.Text() != "")
 			case widget.SubmitEvent:
@@ -168,11 +175,11 @@ func (com *confirmOrderModal) Handle() {
 		}
 	}
 
-	for com.confirmButton.Clicked() {
+	if com.confirmButton.Clicked(gtx) {
 		com.confirmOrder()
 	}
 
-	for com.closeConfirmationModalButton.Clicked() {
+	if com.closeConfirmationModalButton.Clicked(gtx) {
 		if !com.isCreating {
 			com.Dismiss()
 		}

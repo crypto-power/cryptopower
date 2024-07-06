@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -65,7 +66,7 @@ const (
 
 // NewCustomModal returns a modal that can be customized.
 func NewCustomModal(l *load.Load) *InfoModal {
-	return newInfoModalWithKey(l, "info_modal", InfoBtn)
+	return newInfoModalWithKey(l, "info_modal", InfoBtn, nil)
 }
 
 // NewSuccessModal returns the default success modal UI component.
@@ -93,7 +94,7 @@ func DefaultClickFunc() ClickFunc {
 }
 
 func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked ClickFunc) *InfoModal {
-	info := newInfoModalWithKey(l, "info_modal", InfoBtn)
+	info := newInfoModalWithKey(l, "info_modal", InfoBtn, nil)
 	info.positiveButtonClicked = clicked
 	info.btnPositiveWidth = values.MarginPadding100
 	info.dialogIcon = icon
@@ -103,10 +104,10 @@ func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked Cl
 	return info
 }
 
-func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *InfoModal {
+func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType, firstLoad func(gtx C)) *InfoModal {
 	in := &InfoModal{
 		Load:             l,
-		Modal:            l.Theme.ModalFloatTitle(key, l.IsMobileView()),
+		Modal:            l.Theme.ModalFloatTitle(key, l.IsMobileView(), firstLoad),
 		btnNegative:      l.Theme.OutlineButton(""),
 		isCancelable:     true,
 		isLoading:        false,
@@ -272,12 +273,16 @@ func (in *InfoModal) UseCustomWidget(layout layout.Widget) *InfoModal {
 	return in
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (in *InfoModal) KeysToHandle() key.Set {
-	return cryptomaterial.AnyKey(key.NameReturn, key.NameEnter, key.NameEscape)
+func (in *InfoModal) KeysToHandle() []event.Filter {
+	return []event.Filter{key.FocusFilter{Target: in},
+		key.Filter{Focus: in, Name: key.NameReturn},
+		key.Filter{Focus: in, Name: key.NameEnter},
+		key.Filter{Focus: in, Name: key.NameEscape},
+	}
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
@@ -288,8 +293,8 @@ func (in *InfoModal) HandleKeyPress(_ *key.Event) {
 	in.ParentWindow().Reload()
 }
 
-func (in *InfoModal) Handle() {
-	for in.btnPositive.Clicked() {
+func (in *InfoModal) Handle(gtx C) {
+	if in.btnPositive.Clicked(gtx) {
 		if in.isLoading {
 			return
 		}
@@ -308,14 +313,14 @@ func (in *InfoModal) Handle() {
 		}()
 	}
 
-	for in.btnNegative.Clicked() {
+	if in.btnNegative.Clicked(gtx) {
 		if !in.isLoading {
 			in.Dismiss()
 			in.negativeButtonClicked()
 		}
 	}
 
-	if in.Modal.BackdropClicked(in.isCancelable) {
+	if in.Modal.BackdropClicked(gtx, in.isCancelable) {
 		if !in.isLoading {
 			in.Dismiss()
 			in.negativeButtonClicked()

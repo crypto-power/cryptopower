@@ -7,7 +7,6 @@ import (
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -118,7 +117,7 @@ func (pg *DEXPage) prepareInitialPage() {
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	isMainnet := pg.AssetsManager.NetType() == utils.Mainnet
+	isMainnet := pg.AssetsManager.NetType() == libutils.Mainnet
 	if !isMainnet && (!pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil) { // dexc must have been reset.
 		pg.showSplashPage = true
 		if !pg.dexIsLoading {
@@ -170,18 +169,18 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 // user interaction recently occurred on the page and may be used to update the
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
-func (pg *DEXPage) HandleUserInteractions() {
-	if pg.switchToTestnetBtn.Button.Clicked() {
+func (pg *DEXPage) HandleUserInteractions(gtx C) {
+	if pg.switchToTestnetBtn.Button.Clicked(gtx) {
 		settings.ChangeNetworkType(pg.Load, pg.ParentWindow(), string(libutils.Testnet))
 	}
 
 	if pg.CurrentPage() != nil {
-		pg.CurrentPage().HandleUserInteractions()
+		pg.CurrentPage().HandleUserInteractions(gtx)
 	}
-	if pg.splashPageInfoButton.Button.Clicked() {
+	if pg.splashPageInfoButton.Button.Clicked(gtx) {
 		pg.showInfoModal()
 	}
-	if pg.startTradingBtn.Button.Clicked() {
+	if pg.startTradingBtn.Button.Clicked(gtx) {
 		pg.showSplashPage = false
 	}
 }

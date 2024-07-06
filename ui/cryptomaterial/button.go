@@ -149,8 +149,8 @@ func (b *Button) Enabled() bool {
 	return b.isEnabled
 }
 
-func (b Button) Clicked() bool {
-	return b.clickable.Clicked()
+func (b Button) Clicked(gtx C) bool {
+	return b.clickable.Clicked(gtx)
 }
 
 func (b Button) Hovered() bool {

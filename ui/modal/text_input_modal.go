@@ -3,6 +3,7 @@ package modal
 import (
 	"image/color"
 
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -28,9 +29,9 @@ type TextInputModal struct {
 
 func NewTextInputModal(l *load.Load) *TextInputModal {
 	tm := &TextInputModal{
-		InfoModal:    newInfoModalWithKey(l, "text_input_modal", InfoBtn),
 		isCancelable: true,
 	}
+	tm.InfoModal = newInfoModalWithKey(l, "text_input_modal", InfoBtn, tm.firstLoad)
 	tm.btnNegative = l.Theme.OutlineButton(values.String(values.StrCancel))
 
 	tm.textInput = l.Theme.Editor(new(widget.Editor), values.String(values.StrHint))
@@ -43,9 +44,12 @@ func NewTextInputModal(l *load.Load) *TextInputModal {
 }
 
 func (tm *TextInputModal) OnResume() {
-	tm.textInput.Editor.Focus()
 	// set the positive button state
 	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
+}
+
+func (tm *TextInputModal) firstLoad(gtx C) {
+	gtx.Execute(key.FocusCmd{Tag: &tm.textInput.Editor})
 }
 
 func (tm *TextInputModal) Hint(hint string) *TextInputModal {
@@ -102,16 +106,16 @@ func (tm *TextInputModal) SetTextWithTemplate(template string, walletName ...str
 	return tm
 }
 
-func (tm *TextInputModal) Handle() {
+func (tm *TextInputModal) Handle(gtx C) {
 	// set the positive button state
 	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(tm.textInput.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &tm.textInput)
 	if isChanged {
 		tm.textInput.SetError("")
 	}
 
-	if tm.btnPositive.Clicked() || isSubmit {
+	if tm.btnPositive.Clicked(gtx) || isSubmit {
 		if tm.isLoading {
 			return
 		}
@@ -127,14 +131,14 @@ func (tm *TextInputModal) Handle() {
 		}()
 	}
 
-	for tm.btnNegative.Clicked() {
+	if tm.btnNegative.Clicked(gtx) {
 		if !tm.isLoading {
 			tm.Dismiss()
 			tm.negativeButtonClicked()
 		}
 	}
 
-	if tm.Modal.BackdropClicked(tm.isCancelable) {
+	if tm.Modal.BackdropClicked(gtx, tm.isCancelable) {
 		if !tm.isLoading {
 			tm.Dismiss()
 			tm.negativeButtonClicked()

@@ -24,7 +24,7 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -44,10 +44,9 @@ const (
 )
 
 var (
-	dp5                        = values.MarginPadding5
-	dp8                        = values.MarginPadding8
-	dp300                      = values.MarginPadding300
-	orderFormAndOrderBookWidth = (values.AppWidth / 2) - 40 // Minus 40 px to allow for margin between the order form and order book.
+	dp5   = values.MarginPadding5
+	dp8   = values.MarginPadding8
+	dp300 = values.MarginPadding300
 	// orderFormAndOrderBookHeight is a an arbitrary height that accommodates
 	// the current order form elements and maxOrderDisplayedInOrderBook. Use
 	// this to ensure they (order form and orderbook) have the same height as
@@ -63,7 +62,6 @@ var (
 		},
 	}
 
-	buyBtnStringIndex    = 0
 	buyAndSellBtnStrings = []string{
 		values.String(values.StrBuy),
 		values.String(values.StrSell),
@@ -553,6 +551,7 @@ func (pg *DEXMarketPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	if pg.isDEXReset() {
 		pg.ParentNavigator().CloseCurrentPage()
 		return D{}
@@ -1414,50 +1413,17 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 	return values.String(values.StrIWillGet), values.String(values.StrIWillGive)
 }
 
-// HandleUserInteractions is called just before Layout() to determine if any
-// user interaction recently occurred on the page and may be used to update the
-// page's UI components shortly before they are displayed.
-// Part of the load.Page interface.
-func (pg *DEXMarketPage) HandleUserInteractions() {
-	if pg.isDEXReset() {
-		return
-	}
+func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 
-	dexc := pg.AssetsManager.DexClient()
-	if pg.serverSelector.Changed() {
-		selectedServer := pg.serverSelector.Selected()
-		xc, err := dexc.Exchange(selectedServer)
-		if err != nil && xc.Auth.EffectiveTier == 0 /* need to post bond now */ {
-			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer))
-		} else {
-			pg.lastSelectedDEXServer = selectedServer
-			pg.setServerMarkets()
-		}
-	}
-
-	for pg.addServerBtn.Clicked() {
-		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
-	}
-
-	for pg.openOrdersBtn.Clicked() {
-		pg.orders = nil // clear orders
-		pg.openOrdersDisplayed = true
-		go pg.refreshOrders()
-	}
-
-	if pg.marketSelector.Changed() {
-		pg.fetchOrderBook()
-	}
-
-	for pg.orderHistoryBtn.Clicked() {
-		pg.orders = nil // clear orders
-		pg.openOrdersDisplayed = false
-		go pg.refreshOrders()
+	var toggleBuyAndSellBtnChanged bool
+	if pg.toggleBuyAndSellBtn.Changed() {
+		toggleBuyAndSellBtnChanged = true
+		pg.setBuyOrSell()
 	}
 
 	isMktOrder := pg.isMarketOrder()
 	mkt := pg.selectedMarketInfo()
-	if pg.orderTypesDropdown.Changed() {
+	if pg.orderTypesDropdown.Changed(gtx) {
 		isMktOrder = pg.isMarketOrder()
 		pg.priceEditor.Editor.ReadOnly = isMktOrder
 		if isMktOrder {
@@ -1469,33 +1435,14 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		}
 	}
 
-	var toggleBuyAndSellBtnChanged bool
-	if pg.toggleBuyAndSellBtn.Changed() {
-		toggleBuyAndSellBtnChanged = true
-		pg.setBuyOrSell()
-	}
-
-	for pg.seeFullOrderBookBtn.Clicked() {
-		// TODO: display full order book
-		log.Info("Display full order book")
-	}
-
-	for pg.immediateOrderInfoBtn.Clicked() {
-		infoModal := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrImmediateOrder)).
-			UseCustomWidget(func(gtx layout.Context) layout.Dimensions {
-				return pg.Theme.Body2(values.String(values.StrImmediateExplanation)).Layout(gtx)
-			}).
-			SetCancelable(true).
-			SetContentAlignment(layout.W, layout.W, layout.Center).
-			SetPositiveButtonText(values.String(values.StrOk))
-		pg.ParentWindow().ShowModal(infoModal)
-	}
-
 	var reEstimateFee bool
 	// Handle updates to Price Editor first.
-	for _, evt := range pg.priceEditor.Editor.Events() {
-		if !isChangeEvent(evt) {
+	for {
+		event, ok := pg.totalEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+		if !isChangeEvent(event) {
 			continue
 		}
 
@@ -1519,8 +1466,8 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 			pg.priceEditor.Editor.SetCaret(start, end)
 		}
 
-		ok := pg.calculateTotalOrder(mkt)
-		if ok {
+		calculateOk := pg.calculateTotalOrder(mkt)
+		if calculateOk {
 			continue
 		}
 
@@ -1539,8 +1486,12 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 	}
 
 	// Handle updates to Total Editor.
-	for _, evt := range pg.totalEditor.Editor.Events() {
-		if !isChangeEvent(evt) || pg.totalEditor.Editor.ReadOnly {
+	for {
+		event, ok := pg.totalEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+		if !isChangeEvent(event) || pg.totalEditor.Editor.ReadOnly {
 			continue
 		}
 
@@ -1559,8 +1510,12 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 	}
 
 	// Handle updates to LotsOrAmount Editor.
-	for _, evt := range pg.lotsOrAmountEditor.Editor.Events() {
-		if !isChangeEvent(evt) || pg.lotsOrAmountEditor.Editor.ReadOnly {
+	for {
+		event, ok := pg.totalEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+		if !isChangeEvent(event) || pg.lotsOrAmountEditor.Editor.ReadOnly {
 			continue
 		}
 
@@ -1597,7 +1552,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		}()
 	}
 
-	if pg.switchLotsOrAmount.Changed() {
+	if pg.switchLotsOrAmount.Changed(gtx) {
 		pg.lotsOrAmountEditor.SetError("")
 		pg.calculateTotalOrder(mkt)
 		if pg.orderWithLots() {
@@ -1606,26 +1561,85 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 			pg.lotsOrAmountEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
 		}
 	}
+}
+
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
+// Part of the load.Page interface.
+func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
+	if pg.isDEXReset() {
+		return
+	}
+
+	dexc := pg.AssetsManager.DexClient()
+	if pg.serverSelector.Changed(gtx) {
+		selectedServer := pg.serverSelector.Selected()
+		xc, err := dexc.Exchange(selectedServer)
+		if err != nil && xc.Auth.EffectiveTier == 0 /* need to post bond now */ {
+			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer))
+		} else {
+			pg.lastSelectedDEXServer = selectedServer
+			pg.setServerMarkets()
+		}
+	}
+
+	if pg.addServerBtn.Clicked(gtx) {
+		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
+	}
+
+	if pg.openOrdersBtn.Clicked(gtx) {
+		pg.orders = nil // clear orders
+		pg.openOrdersDisplayed = true
+		go pg.refreshOrders()
+	}
+
+	if pg.marketSelector.Changed(gtx) {
+		pg.fetchOrderBook()
+	}
+
+	if pg.orderHistoryBtn.Clicked(gtx) {
+		pg.orders = nil // clear orders
+		pg.openOrdersDisplayed = false
+		go pg.refreshOrders()
+	}
+
+	if pg.seeFullOrderBookBtn.Clicked(gtx) {
+		// TODO: display full order book
+		log.Info("button click listener for full order book view is not implemented")
+	}
+
+	if pg.immediateOrderInfoBtn.Clicked(gtx) {
+		infoModal := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrImmediateOrder)).
+			UseCustomWidget(func(gtx layout.Context) layout.Dimensions {
+				return pg.Theme.Body2(values.String(values.StrImmediateExplanation)).Layout(gtx)
+			}).
+			SetCancelable(true).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			SetPositiveButtonText(values.String(values.StrOk))
+		pg.ParentWindow().ShowModal(infoModal)
+	}
 
 	// TODO: postBondBtn should open a separate page when its design is ready.
-	if pg.postBondBtn.Clicked() {
+	if pg.postBondBtn.Clicked(gtx) {
 		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, pg.serverSelector.Selected()))
 	}
 
-	if pg.loginBtn.Clicked() {
+	if pg.loginBtn.Clicked(gtx) {
 		pg.ParentWindow().ShowModal(dexLoginModal(pg.Load, dexc, nil))
 	}
 
-	for pg.addWalletToDEX.Clicked() {
+	if pg.addWalletToDEX.Clicked(gtx) {
 		pg.handleMissingMarketWallet()
 	}
 
 	for _, ord := range pg.orders {
-		if ord.cancelBtn != nil && ord.cancelBtn.Clicked() {
+		if ord.cancelBtn != nil && ord.cancelBtn.Clicked(gtx) {
 			go func(ordID dex.Bytes) {
 				err := dexc.Cancel(ordID)
 				if err != nil {
-					pg.notifyError(fmt.Errorf("Error canceling order: %v", err).Error())
+					pg.notifyError(fmt.Sprintf("Error canceling order: %s", err.Error()))
 				} else {
 					pg.ParentWindow().Reload()
 				}
@@ -1633,7 +1647,7 @@ func (pg *DEXMarketPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.createOrderBtn.Clicked() {
+	if pg.createOrderBtn.Clicked(gtx) {
 		orderForm := pg.validatedOrderFormInfo()
 		if orderForm == nil {
 			return
@@ -1730,7 +1744,7 @@ func (pg *DEXMarketPage) handleMissingMarketWallet() {
 func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetType) {
 	pg.walletSelector = components.NewWalletAndAccountSelector(pg.Load, missingWallet).
 		EnableWatchOnlyWallets(false).
-		AccountValidator(func(a *wallet.Account) bool {
+		AccountValidator(func(a *sharedW.Account) bool {
 			return !a.IsWatchOnly
 		}).
 		WalletSelected(func(asset sharedW.Asset) {
@@ -1740,7 +1754,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 		})
 
 	pg.accountSelector = components.NewWalletAndAccountSelector(pg.Load, missingWallet).
-		AccountValidator(func(a *wallet.Account) bool {
+		AccountValidator(func(a *sharedW.Account) bool {
 			return !a.IsWatchOnly
 		}).EnableWatchOnlyWallets(false)
 
@@ -1821,7 +1835,7 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 	asset := pg.walletSelector.SelectedWallet()
 	selectedAccount := pg.accountSelector.SelectedAccount()
 	if selectedAccount == nil || asset == nil {
-		return errors.New("No wallet selected")
+		return errors.New("no wallet selected")
 	}
 
 	if !asset.IsSynced() { // Only fully synced wallets should connect to core.
@@ -1830,7 +1844,7 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 
 	walletAssetID, ok := bip(missingWallet.ToStringLower())
 	if !ok {
-		return fmt.Errorf("No assetID for %s", missingWallet)
+		return fmt.Errorf("no assetID for %s", missingWallet)
 	}
 
 	dexClient := pg.AssetsManager.DexClient()
@@ -1853,7 +1867,7 @@ func (pg *DEXMarketPage) createMissingMarketWallet(missingWallet libutils.AssetT
 
 	err = dexClient.AddWallet(walletAssetID, cfg, []byte(dexPass), []byte(walletPass))
 	if err != nil {
-		return fmt.Errorf("Failed to add wallet to DEX client: %w", err)
+		return fmt.Errorf("failed to add wallet to DEX client: %w", err)
 	}
 
 	return nil

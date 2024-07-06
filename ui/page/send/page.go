@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/widget"
 
@@ -116,7 +117,7 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		// When this page is opened from the home page, the wallet to use is not
 		// specified. This page will be opened as a modal and a wallet selector
 		// will be displayed.
-		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend), pg.IsMobileView())
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 		pg.initModalWalletSelector() // will auto select the first wallet in the dropdown as pg.selectedWallet
 	} else {
@@ -568,14 +569,14 @@ func (pg *Page) clearEstimates() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *Page) HandleUserInteractions() {
-	if pg.feeRateSelector.SaveRate.Clicked() {
+func (pg *Page) HandleUserInteractions(gtx C) {
+	if pg.feeRateSelector.SaveRate.Clicked(gtx) {
 		pg.feeRateSelector.OnEditRateClicked(pg.selectedWallet)
 	}
 
 	pg.nextButton.SetEnabled(pg.allRecipientsIsValid())
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
 			Title(textWithUnit).
@@ -585,11 +586,11 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	//TODO not included in design
-	// if pg.retryExchange.Clicked() {
+	// if pg.retryExchange.Clicked(gtx) {
 	// 	go pg.fetchExchangeRate()
 	// }
 
-	if pg.toCoinSelection.Clicked() {
+	if pg.toCoinSelection.Clicked(gtx) {
 		if len(pg.getDestinationAddresses()) == len(pg.recipients) {
 			if pg.modalLayout != nil {
 				pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
@@ -599,7 +600,7 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 
-	if pg.nextButton.Clicked() {
+	if pg.nextButton.Clicked(gtx) {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
@@ -627,13 +628,13 @@ func (pg *Page) HandleUserInteractions() {
 		pg.validateAndConstructTx()
 	}
 
-	if pg.navigateToSyncBtn.Button.Clicked() {
+	if pg.navigateToSyncBtn.Button.Clicked(gtx) {
 		pg.ToggleSync(pg.selectedWallet, func(b bool) {
 			pg.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
 		})
 	}
 
-	if pg.addRecipentBtn.Clicked() {
+	if pg.addRecipentBtn.Clicked(gtx) {
 		pg.addRecipient()
 	}
 }
@@ -644,11 +645,11 @@ func (pg *Page) HandleUserInteractions() {
 // be called just before Layout() is called to determine if any user interaction
 // recently occurred on the modal or page and may be used to update any affected
 // UI components shortly before they are displayed by the Layout() method.
-func (pg *Page) Handle() {
-	if pg.modalLayout.BackdropClicked(true) {
+func (pg *Page) Handle(gtx C) {
+	if pg.modalLayout.BackdropClicked(gtx, true) {
 		pg.modalLayout.Dismiss()
 	} else {
-		pg.HandleUserInteractions()
+		pg.HandleUserInteractions(gtx)
 	}
 }
 
@@ -676,12 +677,12 @@ func (pg *Page) OnDismiss() {
 	pg.OnNavigatedFrom()
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *Page) KeysToHandle() key.Set {
-	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+func (pg *Page) KeysToHandle() []event.Filter {
+	return []event.Filter{key.FocusFilter{Target: pg}, key.Filter{Focus: pg, Name: key.NameTab, Optional: key.ModShift}}
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current

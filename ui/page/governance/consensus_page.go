@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"io"
+	"strings"
 	"time"
 
 	"gioui.org/font"
@@ -185,35 +187,35 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	pg.ParentWindow().ShowModal((voteModal))
 }
 
-func (pg *ConsensusPage) HandleUserInteractions() {
-	for pg.statusDropDown.Changed() {
+func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
+	for pg.statusDropDown.Changed(gtx) {
 		pg.FetchAgendas()
 	}
 
-	for pg.orderDropDown.Changed() {
+	for pg.orderDropDown.Changed(gtx) {
 		pg.FetchAgendas()
 	}
 
-	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()].(*dcr.Asset)
 		pg.FetchAgendas()
 	}
 
-	if pg.navigateToSettingsBtn.Button.Clicked() {
+	if pg.navigateToSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
 	for _, item := range pg.consensusItems {
-		if item.VoteButton.Clicked() {
+		if item.VoteButton.Clicked(gtx) {
 			pg.agendaVoteChoiceModal(item.Agenda)
 		}
 	}
 
-	for pg.syncButton.Clicked() {
+	if pg.syncButton.Clicked(gtx) {
 		pg.FetchAgendas()
 	}
 
-	if pg.infoButton.Button.Clicked() {
+	if pg.infoButton.Button.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrConsensusChange)).
 			Body(values.String(values.StrOnChainVote)).
@@ -222,7 +224,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
-	for pg.viewVotingDashboard.Clicked() {
+	if pg.viewVotingDashboard.Clicked(gtx) {
 		host := "https://voting.decred.org"
 		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://voting.decred.org/testnet"
@@ -245,8 +247,8 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 										layout.Flexed(0.9, pg.Theme.Body1(host).Layout),
 										layout.Flexed(0.1, func(gtx C) D {
 											return layout.E.Layout(gtx, func(gtx C) D {
-												if pg.copyRedirectURL.Clicked() {
-													clipboard.WriteOp{Text: host}.Add(gtx.Ops)
+												if pg.copyRedirectURL.Clicked(gtx) {
+													gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(host))})
 													pg.Toast.Notify(values.String(values.StrCopied))
 												}
 												return pg.copyRedirectURL.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.CopyIcon).Layout24dp)
@@ -280,7 +282,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 		})
 	}
 
-	for pg.filterBtn.Clicked() {
+	if pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }

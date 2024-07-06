@@ -185,8 +185,8 @@ func (pg *SetupMixerAccountsPage) layoutHeadingDescAndNextIcon(gtx C, heading, d
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *SetupMixerAccountsPage) HandleUserInteractions() {
-	if pg.autoSetupClickable.Clicked() {
+func (pg *SetupMixerAccountsPage) HandleUserInteractions(gtx C) {
+	if pg.autoSetupClickable.Clicked(gtx) {
 		showModalSetupMixerInfo(&sharedModalConfig{
 			Load:          pg.Load,
 			window:        pg.ParentWindow(),
@@ -195,7 +195,7 @@ func (pg *SetupMixerAccountsPage) HandleUserInteractions() {
 		}, pg.dcrWallet)
 	}
 
-	if pg.manualSetupClickable.Clicked() {
+	if pg.manualSetupClickable.Clicked(gtx) {
 		if !pg.manualEnabled {
 			notEnoughAccounts := values.String(values.StrNotEnoughAccounts)
 			info := modal.NewErrorModal(pg.Load, notEnoughAccounts, modal.DefaultClickFunc())

@@ -2,6 +2,7 @@ package modal
 
 import (
 	"gioui.org/font"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -40,11 +41,11 @@ type PasswordModal struct {
 func NewPasswordModal(l *load.Load) *PasswordModal {
 	pm := &PasswordModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("password_modal", l.IsMobileView()),
 		btnPositve:   l.Theme.Button(values.String(values.StrConfirm)),
 		btnNegative:  l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable: true,
 	}
+	pm.Modal = l.Theme.ModalFloatTitle("password_modal", l.IsMobileView(), pm.firstLoad)
 
 	pm.btnPositve.Font.Weight = font.Medium
 
@@ -59,12 +60,13 @@ func NewPasswordModal(l *load.Load) *PasswordModal {
 	return pm
 }
 
-func (pm *PasswordModal) OnResume() {
-	pm.password.Editor.Focus()
+func (pm *PasswordModal) OnResume() {}
+
+func (pm *PasswordModal) firstLoad(gtx C) {
+	gtx.Execute(key.FocusCmd{Tag: pm.password.Editor})
 }
 
-func (pm *PasswordModal) OnDismiss() {
-}
+func (pm *PasswordModal) OnDismiss() {}
 
 func (pm *PasswordModal) Title(title string) *PasswordModal {
 	pm.dialogTitle = title
@@ -116,13 +118,13 @@ func (pm *PasswordModal) SetError(err string) {
 	}
 }
 
-func (pm *PasswordModal) Handle() {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pm.password.Editor)
+func (pm *PasswordModal) Handle(gtx C) {
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &pm.password)
 	if isChanged {
 		pm.password.SetError("")
 	}
 
-	if pm.btnPositve.Button.Clicked() || isSubmit {
+	if pm.btnPositve.Button.Clicked(gtx) || isSubmit {
 
 		if !utils.EditorsNotEmpty(pm.password.Editor) {
 			pm.password.SetError(values.String(values.StrEnterSpendingPassword))
@@ -141,14 +143,14 @@ func (pm *PasswordModal) Handle() {
 	}
 
 	pm.btnNegative.SetEnabled(!pm.isLoading)
-	for pm.btnNegative.Clicked() {
+	if pm.btnNegative.Clicked(gtx) {
 		if !pm.isLoading {
 			pm.Dismiss()
 			pm.negativeButtonClicked()
 		}
 	}
 
-	if pm.Modal.BackdropClicked(pm.isCancelable) {
+	if pm.Modal.BackdropClicked(gtx, pm.isCancelable) {
 		if !pm.isLoading {
 			pm.Dismiss()
 			pm.negativeButtonClicked()

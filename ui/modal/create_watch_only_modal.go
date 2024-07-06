@@ -2,6 +2,7 @@ package modal
 
 import (
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -39,11 +40,12 @@ type CreateWatchOnlyModal struct {
 func NewCreateWatchOnlyModal(l *load.Load) *CreateWatchOnlyModal {
 	cm := &CreateWatchOnlyModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("create_watch_only_modal", l.IsMobileView()),
 		btnPositve:   l.Theme.Button(values.String(values.StrImport)),
 		btnNegative:  l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable: true,
 	}
+
+	cm.Modal = l.Theme.ModalFloatTitle("create_watch_only_modal", l.IsMobileView(), cm.firstLoad)
 
 	cm.btnPositve.Font.Weight = font.Medium
 
@@ -61,11 +63,13 @@ func NewCreateWatchOnlyModal(l *load.Load) *CreateWatchOnlyModal {
 	return cm
 }
 
-func (cm *CreateWatchOnlyModal) OnResume() {
+func (cm *CreateWatchOnlyModal) OnResume() {}
+
+func (cm *CreateWatchOnlyModal) firstLoad(gtx C) {
 	if cm.walletNameEnabled {
-		cm.walletName.Editor.Focus()
+		gtx.Execute(key.FocusCmd{Tag: cm.walletName.Editor})
 	} else {
-		cm.extendedPubKey.Editor.Focus()
+		gtx.Execute(key.FocusCmd{Tag: cm.extendedPubKey.Editor})
 	}
 }
 
@@ -95,7 +99,7 @@ func (cm *CreateWatchOnlyModal) WatchOnlyCreated(callback func(walletName, extPu
 	return cm
 }
 
-func (cm *CreateWatchOnlyModal) Handle() {
+func (cm *CreateWatchOnlyModal) Handle(gtx C) {
 	if utils.EditorsNotEmpty(cm.walletName.Editor) ||
 		utils.EditorsNotEmpty(cm.extendedPubKey.Editor) {
 		cm.btnPositve.Background = cm.Theme.Color.Primary
@@ -105,7 +109,7 @@ func (cm *CreateWatchOnlyModal) Handle() {
 		cm.isEnabled = false
 	}
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(cm.walletName.Editor, cm.extendedPubKey.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &cm.walletName, &cm.extendedPubKey)
 	if isChanged {
 		// reset editor errors
 		cm.serverError = ""
@@ -113,7 +117,7 @@ func (cm *CreateWatchOnlyModal) Handle() {
 		cm.extendedPubKey.SetError("")
 	}
 
-	for (cm.btnPositve.Clicked() || isSubmit) && cm.isEnabled {
+	for (cm.btnPositve.Clicked(gtx) || isSubmit) && cm.isEnabled {
 		if cm.walletNameEnabled {
 			if !utils.EditorsNotEmpty(cm.walletName.Editor) {
 				cm.walletName.SetError(values.String(values.StrEnterWalletName))
@@ -151,36 +155,36 @@ func (cm *CreateWatchOnlyModal) Handle() {
 	}
 
 	cm.btnNegative.SetEnabled(!cm.isLoading)
-	if cm.btnNegative.Clicked() {
+	if cm.btnNegative.Clicked(gtx) {
 		if !cm.isLoading {
 			cm.Dismiss()
 		}
 	}
 
-	if cm.Modal.BackdropClicked(cm.isCancelable) {
+	if cm.Modal.BackdropClicked(gtx, cm.isCancelable) {
 		if !cm.isLoading {
 			cm.Dismiss()
 		}
 	}
 }
 
-// KeysToHandle returns an expression that describes a set of key combinations
+// KeysToHandle returns a Filter's slice that describes a set of key combinations
 // that this modal wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (cm *CreateWatchOnlyModal) KeysToHandle() key.Set {
+func (cm *CreateWatchOnlyModal) KeysToHandle() []event.Filter {
 	if !cm.walletNameEnabled {
-		return ""
+		return []event.Filter{}
 	}
-	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	return []event.Filter{key.FocusFilter{Target: cm}, key.Filter{Focus: cm, Name: key.NameTab, Optional: key.ModShift}}
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (cm *CreateWatchOnlyModal) HandleKeyPress(evt *key.Event) {
+func (cm *CreateWatchOnlyModal) HandleKeyPress(gtx C, evt *key.Event) {
 	if cm.walletNameEnabled {
-		cryptomaterial.SwitchEditors(evt, cm.walletName.Editor, cm.extendedPubKey.Editor)
+		cryptomaterial.SwitchEditors(gtx, evt, cm.walletName.Editor, cm.extendedPubKey.Editor)
 	}
 }
 

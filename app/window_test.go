@@ -93,7 +93,7 @@ func (tPage *testPage) OnNavigatedTo() {
 	tPage.calledMethod(pageMethodOnNavigatedTo)
 }
 
-func (tPage *testPage) HandleUserInteractions() {
+func (tPage *testPage) HandleUserInteractions(_ layout.Context) {
 	tPage.calledMethod(pageMethodHandleUserInteractions)
 }
 
@@ -190,7 +190,7 @@ func (tModal *testModal) OnResume() {
 	tModal.calledMethod(modalMethodOnResume)
 }
 
-func (tModal *testModal) Handle() {
+func (tModal *testModal) Handle(_ layout.Context) {
 	tModal.calledMethod(modalMethodHandle)
 }
 
@@ -215,10 +215,10 @@ type testGiouiWindow struct {
 // appropriate methods on the page to be displayed.
 func (tgw *testGiouiWindow) invalidate() {
 	if topModal := tgw.topModalGetter(); topModal != nil {
-		topModal.Handle()
+		topModal.Handle(layout.Context{})
 		topModal.Layout(layout.Context{})
 	} else if currentPage := tgw.currentPageGetter(); currentPage != nil {
-		currentPage.HandleUserInteractions()
+		currentPage.HandleUserInteractions(layout.Context{})
 		currentPage.Layout(layout.Context{})
 	}
 }

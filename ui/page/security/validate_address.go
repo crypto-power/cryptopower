@@ -33,7 +33,7 @@ type ValidateAddressPage struct {
 	*app.GenericPageModal
 	wallet sharedW.Asset
 
-	addressEditor         cryptomaterial.Editor
+	addressEditor         *cryptomaterial.Editor
 	clearBtn, validateBtn cryptomaterial.Button
 	stateValidate         int
 	backButton            cryptomaterial.IconButton
@@ -47,8 +47,8 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 	}
 
 	pg.backButton = components.GetBackButton(l)
-
-	pg.addressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	addressEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
+	pg.addressEditor = &addressEditor
 	pg.addressEditor.Editor.SingleLine = true
 	pg.addressEditor.Editor.Submit = true
 
@@ -68,8 +68,7 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ValidateAddressPage) OnNavigatedTo() {
-	pg.addressEditor.Editor.Focus()
-
+	pg.addressEditor.SetFocus()
 	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 }
 
@@ -77,6 +76,7 @@ func (pg *ValidateAddressPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ValidateAddressPage) Layout(gtx C) D {
+	pg.handleEditorEvents(gtx)
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -161,24 +161,26 @@ func (pg *ValidateAddressPage) pageSections(gtx C, body layout.Widget) D {
 	})
 }
 
+func (pg *ValidateAddressPage) handleEditorEvents(gtx C) {
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, pg.addressEditor)
+	if isChanged {
+		pg.stateValidate = none
+	}
+
+	if pg.validateBtn.Clicked(gtx) || isSubmit {
+		pg.validateAddress()
+	}
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *ValidateAddressPage) HandleUserInteractions() {
+func (pg *ValidateAddressPage) HandleUserInteractions(gtx C) {
 	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor)
-	if isChanged {
-		pg.stateValidate = none
-	}
-
-	if pg.validateBtn.Clicked() || isSubmit {
-		pg.validateAddress()
-	}
-
-	if pg.clearBtn.Clicked() {
+	if pg.clearBtn.Clicked(gtx) {
 		pg.clearPage()
 	}
 }

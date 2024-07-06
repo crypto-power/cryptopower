@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/btcsuite/btcd/btcutil"
@@ -199,7 +200,7 @@ func (sa *sendAmount) clearAmount() {
 	sa.usdAmountEditor.Editor.SetText("")
 }
 
-func (sa *sendAmount) handle() {
+func (sa *sendAmount) handle(gtx C) {
 	sa.amountEditor.SetError(sa.amountErrorText)
 
 	if sa.amountErrorText != "" {
@@ -218,9 +219,14 @@ func (sa *sendAmount) handle() {
 		sa.usdAmountEditor.CustomButton.Background = sa.theme.Color.Gray1
 	}
 
-	for _, evt := range sa.amountEditor.Editor.Events() {
-		if sa.amountEditor.Editor.Focused() {
-			switch evt.(type) {
+	for {
+		event, ok := sa.amountEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(sa.amountEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				if sa.sendMaxChangeEvent {
 					sa.sendMaxChangeEvent = false
@@ -233,9 +239,14 @@ func (sa *sendAmount) handle() {
 		}
 	}
 
-	for _, evt := range sa.usdAmountEditor.Editor.Events() {
-		if sa.usdAmountEditor.Editor.Focused() {
-			switch evt.(type) {
+	for {
+		event, ok := sa.usdAmountEditor.Editor.Update(gtx)
+		if !ok {
+			break
+		}
+
+		if gtx.Source.Focused(sa.usdAmountEditor.Editor) {
+			switch event.(type) {
 			case widget.ChangeEvent:
 				if sa.usdSendMaxChangeEvent {
 					sa.usdSendMaxChangeEvent = false
@@ -249,12 +260,12 @@ func (sa *sendAmount) handle() {
 	}
 }
 
-func (sa *sendAmount) IsMaxClicked() bool {
+func (sa *sendAmount) IsMaxClicked(gtx C) bool {
 	switch {
-	case sa.amountEditor.CustomButton.Clicked():
-		sa.amountEditor.Editor.Focus()
-	case sa.usdAmountEditor.CustomButton.Clicked():
-		sa.usdAmountEditor.Editor.Focus()
+	case sa.amountEditor.CustomButton.Clicked(gtx):
+		gtx.Execute(key.FocusCmd{Tag: sa.amountEditor.Editor})
+	case sa.usdAmountEditor.CustomButton.Clicked(gtx):
+		gtx.Execute(key.FocusCmd{Tag: sa.usdAmountEditor.Editor})
 	default:
 		return false
 	}

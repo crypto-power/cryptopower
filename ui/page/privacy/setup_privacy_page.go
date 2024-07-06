@@ -153,8 +153,8 @@ func (pg *SetupPrivacyPage) Layout(gtx C) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *SetupPrivacyPage) HandleUserInteractions() {
-	if pg.toPrivacySetup.Clicked() {
+func (pg *SetupPrivacyPage) HandleUserInteractions(gtx C) {
+	if pg.toPrivacySetup.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewSetupMixerAccountsPage(pg.Load, pg.wallet))
 	}
 }

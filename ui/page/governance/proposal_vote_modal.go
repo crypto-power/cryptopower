@@ -45,7 +45,7 @@ type voteModal struct {
 func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 	vm := &voteModal{
 		Load:           l,
-		Modal:          l.Theme.ModalFloatTitle("input_vote_modal", l.IsMobileView()),
+		Modal:          l.Theme.ModalFloatTitle("input_vote_modal", l.IsMobileView(), nil),
 		proposal:       proposal,
 		materialLoader: material.Loader(l.Theme.Base),
 		voteBtn:        l.Theme.Button(values.String(values.StrVote)),
@@ -168,35 +168,24 @@ func (vm *voteModal) sendVotes() {
 	vm.ParentWindow().ShowModal(passwordModal)
 }
 
-func (vm *voteModal) Handle() {
-	for vm.cancelBtn.Clicked() {
-		if vm.isVoting {
-			continue
-		}
+func (vm *voteModal) Handle(gtx C) {
+	if vm.cancelBtn.Clicked(gtx) && !vm.isVoting {
 		vm.Dismiss()
 	}
 
-	vm.handleVoteCountButtons(vm.yesVote)
-	vm.handleVoteCountButtons(vm.noVote)
+	vm.handleVoteCountButtons(gtx, vm.yesVote)
+	vm.handleVoteCountButtons(gtx, vm.noVote)
 
 	totalVotes := vm.yesVote.voteCount() + vm.noVote.voteCount()
 	validToVote := totalVotes > 0 && totalVotes <= vm.eligibleVotes()
 	vm.voteBtn.SetEnabled(validToVote)
 
-	for vm.voteBtn.Clicked() {
-		if vm.isVoting {
-			break
-		}
-
-		if !validToVote {
-			break
-		}
-
+	if vm.voteBtn.Clicked(gtx) && !vm.isVoting && validToVote {
 		vm.isVoting = true
 		vm.sendVotes()
 	}
 
-	if vm.navigateToStakePage.Clicked() {
+	if vm.navigateToStakePage.Clicked(gtx) {
 		vm.Dismiss()
 		selectedWallet, _ := vm.walletSelector.selectedWallet.(*dcr.Asset)
 		walletCallbackFunc := func() {

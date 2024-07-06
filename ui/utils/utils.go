@@ -120,18 +120,6 @@ func ComputePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomate
 	}
 }
 
-func HandleSubmitEvent(editors ...*widget.Editor) bool {
-	var submit bool
-	for _, editor := range editors {
-		for _, e := range editor.Events() {
-			if _, ok := e.(widget.SubmitEvent); ok {
-				submit = true
-			}
-		}
-	}
-	return submit
-}
-
 func GetAbsolutePath() (string, error) {
 	ex, err := os.Executable()
 	if err != nil {
@@ -188,6 +176,6 @@ func USDMarketFromAsset(asset utils.AssetType) (values.Market, error) {
 	case utils.LTCWalletAsset:
 		return values.LTCUSDTMarket, nil
 	default:
-		return values.UnknownMarket, fmt.Errorf("Unsupported asset type: %s", asset)
+		return values.UnknownMarket, fmt.Errorf("unsupported asset type: %s", asset)
 	}
 }
