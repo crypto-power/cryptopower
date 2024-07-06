@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/crypto-power/cryptopower/appos"

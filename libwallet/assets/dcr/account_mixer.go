@@ -1,27 +1,18 @@
 package dcr
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
-	"net"
 
-	"decred.org/dcrwallet/v3/ticketbuyer"
-	w "decred.org/dcrwallet/v3/wallet"
-	"decred.org/dcrwallet/v3/wallet/udb"
+	"decred.org/dcrwallet/v4/ticketbuyer"
+	w "decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v4/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/certs"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 const (
 	smalletSplitPoint  = 000.00262144
-	ShuffleServer      = "mix.decred.org"
-	MainnetShufflePort = "5760"
-	TestnetShufflePort = "15760"
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
@@ -158,7 +149,7 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 
 	cfg := asset.readCSPPConfig()
 	if cfg == nil {
-		return errors.New(utils.ErrFailedPrecondition)
+		return utils.ErrStakingAccountsMissing
 	}
 
 	hasMixableOutput := asset.accountHasMixableOutput(int32(cfg.ChangeAccount))
@@ -171,8 +162,7 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 		c.MixedAccountBranch = cfg.MixedAccountBranch
 		c.MixedAccount = cfg.MixedAccount
 		c.ChangeAccount = cfg.ChangeAccount
-		c.CSPPServer = cfg.CSPPServer
-		c.DialCSPPServer = cfg.DialCSPPServer
+		c.Mixing = cfg.Mixing
 		c.TicketSplitAccount = cfg.TicketSplitAccount
 		c.BuyTickets = false
 		c.MixChange = true
@@ -207,41 +197,16 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 }
 
 func (asset *Asset) readCSPPConfig() *CSPPConfig {
-	mixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
-	unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
+	mixedAccount := asset.MixedAccountNumber()
+	unmixedAccount := asset.UnmixedAccountNumber()
 
 	if mixedAccount == -1 || unmixedAccount == -1 {
 		// not configured for mixing
 		return nil
 	}
 
-	shufflePort := TestnetShufflePort
-	var dialCSPPServer func(ctx context.Context, network, addr string) (net.Conn, error)
-	if asset.chainParams.Net == chaincfg.MainNetParams().Net {
-		shufflePort = MainnetShufflePort
-
-		pool := x509.NewCertPool()
-		pool.AppendCertsFromPEM([]byte(certs.CSPP))
-
-		csppTLSConfig := new(tls.Config)
-		csppTLSConfig.ServerName = ShuffleServer
-		csppTLSConfig.RootCAs = pool
-
-		dailer := new(net.Dialer)
-		dialCSPPServer = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := dailer.DialContext(context.Background(), network, addr)
-			if err != nil {
-				return nil, err
-			}
-
-			conn = tls.Client(conn, csppTLSConfig)
-			return conn, nil
-		}
-	}
-
 	return &CSPPConfig{
-		CSPPServer:         ShuffleServer + ":" + shufflePort,
-		DialCSPPServer:     dialCSPPServer,
+		Mixing:             true,
 		MixedAccount:       uint32(mixedAccount),
 		MixedAccountBranch: uint32(MixedAccountBranch),
 		ChangeAccount:      uint32(unmixedAccount),

@@ -3,7 +3,7 @@ package btc
 import (
 	"fmt"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
