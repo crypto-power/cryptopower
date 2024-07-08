@@ -379,7 +379,7 @@ func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error
 		default:
 			newTicker, err = getTickerFn(market)
 			if err == nil {
-				log.Infof("%s is choosen", source)
+				log.Infof("%s is chosen", source)
 				cs.source = source
 				return newTicker, nil
 			}
