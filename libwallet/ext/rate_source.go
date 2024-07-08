@@ -165,8 +165,7 @@ func NewCommonRateSource(ctx context.Context, source string, disableConversionEx
 
 // Name is the string associated with the rate source for display.
 func (cs *CommonRateSource) Name() string {
-	src := cs.source
-	return strings.ToUpper(src[:1]) + src[1:]
+	return cs.source
 }
 
 func (cs *CommonRateSource) Ready() bool {
@@ -352,23 +351,17 @@ func (cs *CommonRateSource) fetchRate(market values.Market) *Ticker {
 }
 
 func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error) {
+	log.Infof("fetching %s rate from %v", market, cs.source)
 	var newTicker *Ticker
 	var err error
-	backoff := 1 * time.Second
-	for i := 1; i <= 3; i++ {
-		select {
-		case <-cs.ctx.Done():
-			log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
-			return nil, cs.ctx.Err()
-		default:
-			newTicker, err = cs.getTicker(market)
-			if err == nil {
-				return newTicker, nil
-			}
-
-			log.Errorf("fetching ticker %d failed: %v. Retrying in %v", i, err, backoff)
-			time.Sleep(backoff)
-			backoff *= 2 // Exponential backoff
+	select {
+	case <-cs.ctx.Done():
+		log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
+		return nil, cs.ctx.Err()
+	default:
+		newTicker, err = cs.getTicker(market)
+		if err == nil {
+			return newTicker, nil
 		}
 	}
 	// fetch ticker from available exchanges
@@ -377,6 +370,7 @@ func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error
 		if source == cs.source {
 			continue
 		}
+		log.Infof("fetching %s rate from %v", market, source)
 		getTickerFn := cs.sourceGetTickerFunc(source)
 		select {
 		case <-cs.ctx.Done():
