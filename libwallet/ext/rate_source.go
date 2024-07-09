@@ -351,7 +351,6 @@ func (cs *CommonRateSource) fetchRate(market values.Market) *Ticker {
 }
 
 func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error) {
-	log.Infof("fetching %s rate from %v", market, cs.source)
 	var newTicker *Ticker
 	var err error
 	select {
@@ -359,6 +358,7 @@ func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error
 		log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
 		return nil, cs.ctx.Err()
 	default:
+		log.Infof("fetching %s rate from %v", market, cs.source)
 		newTicker, err = cs.getTicker(market)
 		if err == nil {
 			return newTicker, nil
@@ -370,13 +370,13 @@ func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error
 		if source == cs.source {
 			continue
 		}
-		log.Infof("fetching %s rate from %v", market, source)
 		getTickerFn := cs.sourceGetTickerFunc(source)
 		select {
 		case <-cs.ctx.Done():
 			log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
 			return nil, cs.ctx.Err()
 		default:
+			log.Infof("fetching %s rate from %v", market, source)
 			newTicker, err = getTickerFn(market)
 			if err == nil {
 				log.Infof("%s is chosen", source)
