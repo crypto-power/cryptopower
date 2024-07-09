@@ -19,11 +19,7 @@ import (
 	dexdcr "decred.org/dcrdex/client/asset/dcr"
 	"decred.org/dcrdex/dex"
 
-	// Version v3 of dcrwallet library is still in use because dcrdex is yet to upgrade
-	// to dcrd v2.
-	walletjson "decred.org/dcrwallet/v3/rpc/jsonrpc/types"
-	wallettypes "decred.org/dcrwallet/v3/rpc/jsonrpc/types"
-	dcrwalletv3 "decred.org/dcrwallet/v3/wallet"
+	walletjson "decred.org/dcrwallet/v4/rpc/jsonrpc/types"
 
 	walleterrors "decred.org/dcrwallet/v4/errors"
 	dcrwallet "decred.org/dcrwallet/v4/wallet"
@@ -123,13 +119,6 @@ func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 		UnmixedAccount: unMixedAcctName,
 		TradingAccount: accts.PrimaryAccount,
 	}
-}
-
-// NotifyOnTipChange is not used, in favor of the tipNotifier pattern. See:
-// https://github.com/decred/dcrdex/blob/master/client/asset/dcr/spv.go#513.
-// Part of the Wallet interface.
-func (dw *DEXWallet) NotifyOnTipChange(_ context.Context, _ dexdcr.TipChangeCallback) bool {
-	return false
 }
 
 // AddressInfo returns information for the provided address. It is an error
@@ -580,37 +569,50 @@ func (dw *DEXWallet) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (
 	return privKey, err
 }
 
-func (dw *DEXWallet) ListSinceBlock(ctx context.Context, start, end, syncHeight int32) ([]walletjson.ListTransactionsResult, error) {
-	data, err := dw.w.ListSinceBlock(ctx, start, end, syncHeight)
-	var array = make([]walletjson.ListTransactionsResult, len(data))
-	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
-	// dcrwallet v4, copy v4 data into a v3 instance.
-	for _, val := range data {
-		var txType = wallettypes.ListTransactionsTxType(*val.TxType)
-		newVal := walletjson.ListTransactionsResult{
-			Account:           val.Account,
-			Address:           val.Address,
-			Amount:            val.Amount,
-			BlockHash:         val.BlockHash,
-			BlockIndex:        val.BlockIndex,
-			BlockTime:         val.BlockTime,
-			Category:          val.Category,
-			Confirmations:     val.Confirmations,
-			Fee:               val.Fee,
-			Generated:         val.Generated,
-			InvolvesWatchOnly: val.InvolvesWatchOnly,
-			Time:              val.Time,
-			TimeReceived:      val.TimeReceived,
-			TxID:              val.TxID,
-			TxType:            &txType,
-			Vout:              val.Vout,
-			WalletConflicts:   val.WalletConflicts,
-			Comment:           val.Comment,
-			OtherAccount:      val.OtherAccount,
+func (dw *DEXWallet) ListSinceBlock(ctx context.Context, start int32) ([]dexdcr.ListTransactionsResult, error) {
+	res := make([]dexdcr.ListTransactionsResult, 0)
+	f := func(block *dcrwallet.Block) (bool, error) {
+		for _, tx := range block.Transactions {
+			convertTxType := func(txType dcrwallet.TransactionType) *walletjson.ListTransactionsTxType {
+				switch txType {
+				case dcrwallet.TransactionTypeTicketPurchase:
+					txType := walletjson.LTTTTicket
+					return &txType
+				case dcrwallet.TransactionTypeVote:
+					txType := walletjson.LTTTVote
+					return &txType
+				case dcrwallet.TransactionTypeRevocation:
+					txType := walletjson.LTTTRevocation
+					return &txType
+				case dcrwallet.TransactionTypeCoinbase:
+				case dcrwallet.TransactionTypeRegular:
+					txType := walletjson.LTTTRegular
+					return &txType
+				}
+				log.Warnf("unknown transaction type %v", tx.Type)
+				regularTxType := walletjson.LTTTRegular
+				return &regularTxType
+			}
+			fee := tx.Fee.ToUnit(dcrutil.AmountCoin)
+			var blockIndex, blockTime int64
+			if block.Header != nil {
+				blockIndex = int64(block.Header.Height)
+				blockTime = block.Header.Timestamp.Unix()
+			}
+			res = append(res, dexdcr.ListTransactionsResult{
+				TxID:       tx.Hash.String(),
+				BlockIndex: &blockIndex,
+				BlockTime:  blockTime,
+				Send:       len(tx.MyInputs) > 0,
+				TxType:     convertTxType(tx.Type),
+				Fee:        &fee,
+			})
 		}
-		array = append(array, newVal)
+		return false, nil
 	}
-	return array, err
+
+	startID := dcrwallet.NewBlockIdentifierFromHeight(start)
+	return res, dw.w.GetTransactions(ctx, f, startID, nil)
 }
 
 // Part of the Wallet interface.
@@ -623,7 +625,7 @@ func (dw *DEXWallet) Reconfigure(_ context.Context, _ *dexasset.WalletConfig, _ 
 
 // PurchaseTickets purchases n tickets. vspHost and vspPubKey only
 // needed for internal wallets.
-func (dw *DEXWallet) PurchaseTickets(_ context.Context, _ int, _, _ string, _ *dexdcr.MixingConfig) ([]*dexasset.Ticket, error) {
+func (dw *DEXWallet) PurchaseTickets(_ context.Context, _ int, _, _ string, _ bool) ([]*dexasset.Ticket, error) {
 	return nil, errors.New("PurchaseTickets not implemented by Cryptopower DEX wallet")
 }
 
@@ -648,6 +650,6 @@ func (dw *DEXWallet) SetTxFee(_ context.Context, _ dcrutil.Amount) error {
 	return errors.New("SetTxFee not implemented by Cryptopower DEX wallet")
 }
 
-func (dw *DEXWallet) StakeInfo(_ context.Context) (*dcrwalletv3.StakeInfoData, error) {
+func (dw *DEXWallet) StakeInfo(_ context.Context) (*dcrwallet.StakeInfoData, error) {
 	return nil, errors.New("StakeInfo not implemented by Cryptopower DEX wallet")
 }
