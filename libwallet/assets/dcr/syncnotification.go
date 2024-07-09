@@ -156,21 +156,6 @@ func (asset *Asset) fetchHeadersStarted() {
 		return
 	}
 
-	// fetch all the peers information currently available
-	peers, err := asset.PeerInfoRaw()
-	if err != nil {
-		log.Errorf("fetchHeadersStarted failed: %v", err)
-		return
-	}
-
-	// pick the highest height.
-	var peerInitialHeight int32
-	for _, p := range peers {
-		if int32(p.StartingHeight) > peerInitialHeight {
-			peerInitialHeight = int32(p.StartingHeight)
-		}
-	}
-
 	asset.syncData.mu.RLock()
 	headersFetchingStarted := asset.syncData.scanStartHeight != -1
 	asset.syncData.mu.RUnlock()
@@ -181,8 +166,12 @@ func (asset *Asset) fetchHeadersStarted() {
 	}
 
 	asset.waitingForHeaders = true
-
 	lowestBlockHeight := asset.GetBestBlock().Height
+
+	// Returns the best synced block if syncing is done or the best block from
+	// the connected peers if not connected.
+	ctx, _ := asset.ShutdownContextWithCancel()
+	_, peerInitialHeight := asset.syncData.syncer.Synced(ctx)
 
 	asset.syncData.mu.Lock()
 	asset.syncData.syncStage = HeadersFetchSyncStage
@@ -214,6 +203,22 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 		// Required preset data is missing. Invoke fetchHeadersStarted() first
 		// before proceeding.
 		return
+	}
+
+	// If the last fetchec block is greater than the current best preset best
+	// block, the previous attempt failed. Make another attempt now!
+	if lastFetchedHeaderHeight > peersBestBlock {
+		ctx, _ := asset.ShutdownContextWithCancel()
+
+		// It returns the best synced block if syncing is done or the best block
+		// from the connected peers if not connected.
+		_, peersBestBlock = asset.syncData.syncer.Synced(ctx)
+
+		if lastFetchedHeaderHeight <= peersBestBlock {
+			asset.syncData.mu.Lock()
+			asset.syncData.bestBlockheight = peersBestBlock
+			asset.syncData.mu.Unlock()
+		}
 	}
 
 	if headerSpentTime.Milliseconds() > 0 {

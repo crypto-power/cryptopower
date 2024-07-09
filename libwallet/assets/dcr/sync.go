@@ -200,11 +200,17 @@ func (asset *Asset) SpvSync() error {
 	addrManager := addrmgr.New(asset.DataDir(), net.LookupIP) // TODO: be mindful of tor
 	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
 
+	// Set the node to only connect to remote peers whose advertised best block
+	// height is greater than the currently synced.
+	lp.RequirePeerHeight(asset.GetBestBlockHeight())
+
 	syncer := spv.NewSyncer(asset.Internal().DCR, lp)
 	syncer.SetNotifications(asset.spvSyncNotificationCallbacks())
 	if len(validPeerAddresses) > 0 {
 		syncer.SetPersistentPeers(validPeerAddresses)
 	}
+
+	syncer.GetRemotePeers()
 
 	ctx, cancel := asset.ShutdownContextWithCancel()
 
@@ -408,6 +414,7 @@ func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 	return blockInfo
 }
 
+// GetBestBlockHeight returns the height of the best block already synced.
 func (asset *Asset) GetBestBlockHeight() int32 {
 	if !asset.WalletOpened() {
 		// This method is sometimes called after a wallet is deleted and causes crash.
