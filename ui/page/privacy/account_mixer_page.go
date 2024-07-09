@@ -39,7 +39,7 @@ type AccountMixerPage struct {
 	unmixedBalance     sharedW.AssetAmount
 	totalWalletBalance sharedW.AssetAmount
 
-	MixerAccounts []preference.ItemPreference
+	allAccount []preference.ItemPreference
 
 	mixerCompleted bool
 }
@@ -99,7 +99,7 @@ func (pg *AccountMixerPage) getMixerBalance() {
 	pg.mixedBalance = getSafeAmount(pg.mixedBalance)
 	pg.unmixedBalance = getSafeAmount(pg.unmixedBalance)
 
-	pg.MixerAccounts = vm
+	pg.allAccount = vm
 }
 
 // This function return dcr amount default is 0 if amount passed is nil
@@ -267,6 +267,9 @@ func (pg *AccountMixerPage) mixerSettings(l *load.Load) layout.FlexChild {
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
+				if pg.dcrWallet.IsAccountMixerActive() {
+					return D{}
+				}
 				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 					return pg.settingsCollapsible.Layout(gtx,
 						func(gtx C) D {
@@ -289,7 +292,10 @@ func (pg *AccountMixerPage) mixerSettings(l *load.Load) layout.FlexChild {
 	})
 }
 
-func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
+// Layout draws the page UI components into the provided layout context
+// to be eventually drawn on screen.
+// Part of the load.Page interface.
+func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		wdg := func(gtx C) D {
 			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
@@ -307,13 +313,6 @@ func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 			return wdg(gtx)
 		})
 	})
-}
-
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
-// Part of the load.Page interface.
-func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
-	return pg.mixerPageLayout(gtx)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -378,7 +377,6 @@ func (pg *AccountMixerPage) HandleUserInteractions(gtx C) {
 
 		// Filter unmixed account
 		mixerAccounts := pg.getMixerAccounts(false)
-
 		mixedAccountModal := preference.NewListPreference(pg.Load, "", name, mixerAccounts).
 			UseCustomWidget(subtitle).
 			IsWallet(true).
@@ -432,7 +430,7 @@ func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) []preference.It
 	}
 
 	mixerAcc := []preference.ItemPreference{}
-	for _, item := range pg.MixerAccounts {
+	for _, item := range pg.allAccount {
 		if item.Key != accountFilter {
 			mixerAcc = append(mixerAcc, item)
 		}
