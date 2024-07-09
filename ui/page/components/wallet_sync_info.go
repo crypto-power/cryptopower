@@ -27,14 +27,19 @@ type WalletSyncInfo struct {
 	syncSwitch       *cryptomaterial.Switch
 	toBackup         cryptomaterial.Button
 
-	isStatusConnected     bool
-	reload                Reload
-	backup                func(sharedW.Asset)
-	ForwardButton         cryptomaterial.IconButton
-	syncProgressInfoMutex sync.Mutex
+	isStatusConnected bool
+	reload            Reload
+	backup            func(sharedW.Asset)
+	ForwardButton     cryptomaterial.IconButton
 
 	IsSlider bool
 }
+
+// SyncProgressInfo is made independent of the walletInfo struct so that once
+// set with a value, it always persists till unset. This will help address the
+// progress bar issue where, changing UI pages alters the progress on the sync
+// status progress percentage. Stores sharedW.Asset : ProgressInfo.
+var syncProgressInfo = sync.Map{}
 
 type ProgressInfo struct {
 	remainingSyncTime    string
@@ -44,12 +49,6 @@ type ProgressInfo struct {
 }
 
 type Reload func()
-
-// SyncProgressInfo is made independent of the walletInfo struct so that once
-// set with a value, it always persists till unset. This will help address the
-// progress bar issue where, changing UI pages alters the progress on the sync
-// status progress percentage.
-var syncProgressInfo = map[sharedW.Asset]ProgressInfo{}
 
 func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload Reload, backup func(sharedW.Asset)) *WalletSyncInfo {
 	wsi := &WalletSyncInfo{
@@ -495,20 +494,21 @@ func (wsi *WalletSyncInfo) layoutAutoSyncSection(gtx C) D {
 }
 
 func (wsi *WalletSyncInfo) FetchSyncProgress() ProgressInfo {
-	pgrss, ok := syncProgressInfo[wsi.wallet]
+	pgrss, ok := syncProgressInfo.Load(wsi.wallet)
 	if !ok {
-		pgrss = ProgressInfo{}
+		return ProgressInfo{}
 	}
+
 	// remove the unnecessary sync progress data if already synced.
 	wsi.deleteSyncProgress()
-	return pgrss
+	return pgrss.(ProgressInfo)
 }
 
 // deleteSyncProgress removes the map entry after the data persisted is no longer necessary.
 func (wsi *WalletSyncInfo) deleteSyncProgress() {
 	wal := wsi.wallet
 	if wal.IsSynced() {
-		delete(syncProgressInfo, wal)
+		syncProgressInfo.Delete(wal)
 	}
 }
 
@@ -543,12 +543,8 @@ func (wsi *WalletSyncInfo) ListenForNotifications() {
 		// headers to fetch cannot be less than the previously fetched.
 		// Page refresh only needed if there is new data to update the UI.
 		if progress.HeadersToFetchOrScan >= previousProgress.HeadersToFetchOrScan {
-			// Lock the map before updating it
-			wsi.syncProgressInfoMutex.Lock()
-			// Ensure the mutex is unlocked even if there is a panic
-			defer wsi.syncProgressInfoMutex.Unlock()
 			// set the new progress against the associated asset.
-			syncProgressInfo[wsi.wallet] = progress
+			syncProgressInfo.Store(wsi.wallet, progress)
 
 			// We only care about sync state changes here, to
 			// refresh the window display.
