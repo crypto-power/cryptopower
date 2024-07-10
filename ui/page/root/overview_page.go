@@ -1185,6 +1185,10 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 			pg.reloadBalances()
 			pg.ParentWindow().Reload()
 		},
+		OnTransactionConfirmed: func(walletID int, hash string, blockHeight int32) {
+		},
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+		},
 	}
 
 	wallets := pg.AssetsManager.AllWallets()

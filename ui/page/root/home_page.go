@@ -197,6 +197,10 @@ func (hp *HomePage) OnNavigatedTo() {
 	if hp.isUpdateAPIAllowed() {
 		go hp.checkForUpdates()
 	}
+
+	hp.AssetsManager.ListenAssetChange(func() {
+		go hp.CalculateAssetsUSDBalance()
+	})
 }
 
 // initDEX initializes a new dex client if dex is not ready.
@@ -567,6 +571,7 @@ func (hp *HomePage) OnNavigatedFrom() {
 		activeTab.OnNavigatedFrom()
 	}
 
+	hp.AssetsManager.RemoveAssetChange()
 	hp.ctxCancel()
 }
 

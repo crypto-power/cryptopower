@@ -19,12 +19,12 @@ import (
 	"github.com/dcrlabs/ltcwallet/spv/headerfs"
 	_ "github.com/dcrlabs/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/ltcsuite/ltcd/btcec/v2/ecdsa"
-	"github.com/ltcsuite/ltcd/chaincfg"
+
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/gcs"
-	"github.com/ltcsuite/ltcd/wire"
+
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 )
 
@@ -60,10 +60,6 @@ type Asset struct {
 	// been introduced.
 	fees feeEstimateCache
 
-	// rescanStarting is set while reloading the wallet and dropping
-	// transactions from the wallet db.
-	rescanStarting uint32 // atomic
-
 	notificationListenersMu sync.RWMutex
 
 	syncData                        *SyncData
@@ -82,8 +78,8 @@ type neutrinoService interface {
 	BestBlock() (*headerfs.BlockStamp, error)
 	Peers() []*neutrino.ServerPeer
 	GetBlockHeight(hash *chainhash.Hash) (int32, error)
-	GetBlockHeader(*chainhash.Hash) (*wire.BlockHeader, error)
-	GetCFilter(blockHash chainhash.Hash, filterType wire.FilterType, options ...neutrino.QueryOption) (*gcs.Filter, error)
+	GetBlockHeader(*chainhash.Hash) (*ltcwire.BlockHeader, error)
+	GetCFilter(blockHash chainhash.Hash, filterType ltcwire.FilterType, options ...neutrino.QueryOption) (*gcs.Filter, error)
 	GetBlock(blockHash chainhash.Hash, options ...neutrino.QueryOption) (*ltcutil.Block, error)
 	Stop() error
 }
@@ -426,11 +422,11 @@ func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, er
 	}
 
 	var buf bytes.Buffer
-	err = wire.WriteVarString(&buf, 0, "Litecoin Signed Message:\n")
+	err = ltcwire.WriteVarString(&buf, 0, "Litecoin Signed Message:\n")
 	if err != nil {
 		return nil, err
 	}
-	err = wire.WriteVarString(&buf, 0, message)
+	err = ltcwire.WriteVarString(&buf, 0, message)
 	if err != nil {
 		return nil, err
 	}
@@ -460,11 +456,11 @@ func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (boo
 	// Validate the signature - this just shows that it was valid at all.
 	// we will compare it with the key next.
 	var buf bytes.Buffer
-	err = wire.WriteVarString(&buf, 0, "Litecoin Signed Message:\n")
+	err = ltcwire.WriteVarString(&buf, 0, "Litecoin Signed Message:\n")
 	if err != nil {
 		return false, nil
 	}
-	err = wire.WriteVarString(&buf, 0, message)
+	err = ltcwire.WriteVarString(&buf, 0, message)
 	if err != nil {
 		return false, nil
 	}
@@ -544,7 +540,7 @@ func (asset *Asset) AccountXPubMatches(account uint32, xPub string) (bool, error
 	return acctXPubKey.AccountPubKey.String() == xPub, nil
 }
 
-func decodeAddress(s string, params *chaincfg.Params) (ltcutil.Address, error) {
+func decodeAddress(s string, params *ltcchaincfg.Params) (ltcutil.Address, error) {
 	addr, err := ltcutil.DecodeAddress(s, params)
 	if err != nil {
 		return nil, fmt.Errorf("invalid address %q: decode failed with %#q", s, err)

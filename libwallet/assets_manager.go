@@ -33,6 +33,7 @@ import (
 // TODO: This is the main app's log filename, should probably be defined
 // elsewhere.
 const LogFilename = "cryptopower.log"
+const assetId = "assets_manager"
 
 // Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
@@ -959,4 +960,27 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 
 	// Delete dex client db.
 	return os.Remove(dexDBFile)
+}
+
+func (mgr *AssetsManager) ListenAssetChange(listen func()) {
+	// Reload wallets unmixed balance and reload UI on new blocks.
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransactionConfirmed: func(walletID int, hash string, blockHeight int32) {
+			listen()
+		},
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+			listen()
+		},
+	}
+	for _, wallet := range mgr.AllWallets() {
+		if err := wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, assetId); err != nil {
+			log.Errorf("Can't listen tx and block notification for %s wallet", wallet.GetWalletName())
+		}
+	}
+}
+
+func (mgr *AssetsManager) RemoveAssetChange() {
+	for _, wallet := range mgr.AllWallets() {
+		wallet.RemoveTxAndBlockNotificationListener(assetId)
+	}
 }

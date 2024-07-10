@@ -26,23 +26,7 @@ func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationList
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
-	asset.txAndBlockNotificationListeners[uniqueIdentifier] = &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
-			if txAndBlockNotificationListener.OnTransaction != nil {
-				go txAndBlockNotificationListener.OnTransaction(walletID, transaction)
-			}
-		},
-		OnBlockAttached: func(walletID int, blockHeight int32) {
-			if txAndBlockNotificationListener.OnBlockAttached != nil {
-				go txAndBlockNotificationListener.OnBlockAttached(walletID, blockHeight)
-			}
-		},
-		OnTransactionConfirmed: func(walletID int, hash string, blockHeight int32) {
-			if txAndBlockNotificationListener.OnTransactionConfirmed != nil {
-				txAndBlockNotificationListener.OnTransactionConfirmed(walletID, hash, blockHeight)
-			}
-		},
-	}
+	asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
 	return nil
 }
 
@@ -61,7 +45,9 @@ func (asset *Asset) mempoolTransactionNotification(transaction *sharedW.Transact
 	defer asset.notificationListenersMu.RUnlock()
 
 	for _, txAndBlockNotificationListener := range asset.txAndBlockNotificationListeners {
-		txAndBlockNotificationListener.OnTransaction(asset.ID, transaction)
+		if txAndBlockNotificationListener.OnTransaction != nil {
+			txAndBlockNotificationListener.OnTransaction(asset.ID, transaction)
+		}
 	}
 }
 
@@ -73,7 +59,9 @@ func (asset *Asset) publishTransactionConfirmed(txHash string, blockHeight int32
 	defer asset.notificationListenersMu.RUnlock()
 
 	for _, txAndBlockNotificationListener := range asset.txAndBlockNotificationListeners {
-		txAndBlockNotificationListener.OnTransactionConfirmed(asset.ID, txHash, blockHeight)
+		if txAndBlockNotificationListener.OnTransactionConfirmed != nil {
+			txAndBlockNotificationListener.OnTransactionConfirmed(asset.ID, txHash, blockHeight)
+		}
 	}
 }
 
@@ -84,6 +72,8 @@ func (asset *Asset) publishBlockAttached(blockHeight int32) {
 	defer asset.notificationListenersMu.RUnlock()
 
 	for _, txAndBlockNotificationListener := range asset.txAndBlockNotificationListeners {
-		txAndBlockNotificationListener.OnBlockAttached(asset.ID, blockHeight)
+		if txAndBlockNotificationListener.OnBlockAttached != nil {
+			txAndBlockNotificationListener.OnBlockAttached(asset.ID, blockHeight)
+		}
 	}
 }
