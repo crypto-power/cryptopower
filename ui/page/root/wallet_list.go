@@ -112,25 +112,22 @@ func (pg *WalletSelectorPage) syncStatusIconAndText(wallet sharedW.Asset) (*cryp
 }
 
 func (pg *WalletSelectorPage) walletListLayout(gtx C, assetType libutils.AssetType) D {
-	walletSections := []func(gtx C) D{}
+	flexChilds := make([]layout.FlexChild, 0)
 	if len(pg.walletsList[assetType]) > 0 {
 		walletSection := func(gtx C) D {
 			return pg.walletSection(gtx, pg.walletsList[assetType])
 		}
-		walletSections = append(walletSections, walletSection)
+		flexChilds = append(flexChilds, layout.Rigid(walletSection))
 	}
 
 	if len(pg.badWalletsList[assetType]) > 0 {
 		badWalletSection := func(gtx C) D {
 			return pg.badWalletSection(gtx, pg.badWalletsList[assetType])
 		}
-		walletSections = append(walletSections, badWalletSection)
+		flexChilds = append(flexChilds, layout.Rigid(badWalletSection))
 	}
 
-	list := &layout.List{Axis: layout.Vertical}
-	return list.Layout(gtx, len(walletSections), func(gtx C, i int) D {
-		return walletSections[i](gtx)
-	})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexChilds...)
 }
 
 func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*walletWithBalance) D {

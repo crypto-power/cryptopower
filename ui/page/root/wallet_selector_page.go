@@ -254,10 +254,6 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		})
 	}
 
-	pageContent := []func(gtx C) D{
-		assetDropdown,
-	}
-
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.MatchParent,
@@ -272,8 +268,8 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 			Height:  cryptomaterial.MatchParent,
 			Padding: components.HorizontalInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)),
 		}.Layout2(gtx, func(gtx C) D {
-			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-				return pageContent[i](gtx)
+			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+				return assetDropdown(gtx)
 			})
 		})
 	})
