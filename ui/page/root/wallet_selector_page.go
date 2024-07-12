@@ -268,7 +268,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 			Height:  cryptomaterial.MatchParent,
 			Padding: components.HorizontalInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)),
 		}.Layout2(gtx, func(gtx C) D {
-			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 				return assetDropdown(gtx)
 			})
 		})
