@@ -210,8 +210,6 @@ func (asset *Asset) SpvSync() error {
 		syncer.SetPersistentPeers(validPeerAddresses)
 	}
 
-	syncer.GetRemotePeers()
-
 	ctx, cancel := asset.ShutdownContextWithCancel()
 
 	asset.syncData.mu.Lock()

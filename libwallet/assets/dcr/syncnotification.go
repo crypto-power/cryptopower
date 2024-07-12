@@ -64,7 +64,7 @@ func (asset *Asset) fetchCFiltersStarted() {
 	asset.syncData.mu.Unlock()
 
 	if showLogs {
-		log.Infof("Step 1 of 3 - fetching %d block headers.")
+		log.Info("Step 1 of 3 - fetching fetchCFiltersStarted.")
 	}
 }
 
@@ -205,7 +205,7 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 		return
 	}
 
-	// If the last fetchec block is greater than the current best preset best
+	// If the last fetched block is greater than the current best preset best
 	// block, the previous attempt failed. Make another attempt now!
 	if lastFetchedHeaderHeight > peersBestBlock {
 		ctx, _ := asset.ShutdownContextWithCancel()
@@ -305,7 +305,7 @@ func (asset *Asset) discoverAddressesStarted() {
 	}
 
 	asset.syncData.mu.RLock()
-	addressDiscoveryAlreadyStarted := asset.syncData.scanStartTime.IsZero()
+	addressDiscoveryAlreadyStarted := !asset.syncData.scanStartTime.IsZero()
 	asset.syncData.mu.RUnlock()
 
 	if addressDiscoveryAlreadyStarted {
@@ -327,8 +327,9 @@ func (asset *Asset) discoverAddressesStarted() {
 }
 
 func (asset *Asset) updateAddressDiscoveryProgress() {
-	// use ticker to calculate and broadcast address discovery progress every second
-	everySecondTicker := time.NewTicker(1 * time.Second)
+	// use ticker to calculate and broadcast address discovery progress
+	// every 5 seconds.
+	everySecondTicker := time.NewTicker(5 * time.Second)
 
 	asset.syncData.mu.Lock()
 	totalHeadersFetchTime := asset.syncData.headersScanTimeSpent.Seconds()
