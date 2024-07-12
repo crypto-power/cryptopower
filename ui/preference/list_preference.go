@@ -39,7 +39,6 @@ var (
 	ExchOptions = []ItemPreference{
 		{Key: values.BinanceExchange, Value: values.StrUsdBinance, Warning: values.String(values.StrRateBinanceWarning), WarningLink: binanceProhibitedCountries},
 		{Key: values.BinanceUSExchange, Value: values.StrUsdBinanceUS},
-		{Key: values.BittrexExchange, Value: values.StrUsdBittrex, Warning: values.String(values.StrRateBittrexWarning), WarningLink: bittrexProhibitedCountries},
 		{Key: values.Coinpaprika, Value: values.StrUsdCoinpaprika},
 		{Key: values.Messari, Value: values.StrUsdMessari},
 		{Key: values.KucoinExchange, Value: values.StrUsdKucoin, Warning: values.String(values.StrRateKucoinWarning), WarningLink: kucoinProhibitedCountries},

@@ -18,7 +18,6 @@ import (
 
 const (
 	// These are constants used to represent various rate sources supported.
-	bittrex        = values.BittrexExchange
 	binance        = values.BinanceExchange
 	binanceUS      = values.BinanceUSExchange
 	coinpaprika    = values.Coinpaprika
@@ -31,12 +30,6 @@ const (
 )
 
 var (
-	// These are urls to fetch rate information from the Bittrex exchange.
-	bittrexURLs = sourceURLs{
-		price: "https://api.bittrex.com/v3/markets/%s/ticker",
-		stats: "https://api.bittrex.com/v3/markets/%s/summary",
-	}
-
 	// According to the docs (See:
 	// https://www.binance.com/en/support/faq/frequently-asked-questions-on-api-360004492232),
 	// there's a 6,000 request weight per minute (keep in mind that this is not
@@ -129,6 +122,8 @@ type RateListener struct {
 	OnRateUpdated func()
 }
 
+type tickerFunc func(market values.Market) (*Ticker, error)
+
 // CommonRateSource is an external rate source for fiat and crypto-currency
 // rates. These rates are estimates and maybe be affected by server latency and
 // should not be used for actual buy or sell orders except to display reasonable
@@ -141,7 +136,7 @@ type CommonRateSource struct {
 	tickers       map[values.Market]*Ticker
 	refreshing    bool
 	cond          *sync.Cond
-	getTicker     func(market values.Market) (*Ticker, error)
+	getTicker     tickerFunc
 	sourceChanged chan *struct{}
 	lastUpdate    time.Time
 
@@ -169,8 +164,7 @@ func NewCommonRateSource(ctx context.Context, source string, disableConversionEx
 
 // Name is the string associated with the rate source for display.
 func (cs *CommonRateSource) Name() string {
-	src := cs.source
-	return strings.ToUpper(src[:1]) + src[1:]
+	return cs.source
 }
 
 func (cs *CommonRateSource) Ready() bool {
@@ -358,21 +352,36 @@ func (cs *CommonRateSource) fetchRate(market values.Market) *Ticker {
 func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error) {
 	var newTicker *Ticker
 	var err error
-	backoff := 1 * time.Second
-	for i := 0; i < 3; i++ {
+	select {
+	case <-cs.ctx.Done():
+		log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
+		return nil, cs.ctx.Err()
+	default:
+		log.Infof("fetching %s rate from %v", market, cs.source)
+		newTicker, err = cs.getTicker(market)
+		if err == nil {
+			return newTicker, nil
+		}
+	}
+	// fetch ticker from available exchanges
+	log.Infof("fetching from other exchanges")
+	for _, source := range sources {
+		if source == cs.source {
+			continue
+		}
+		getTickerFn := cs.sourceGetTickerFunc(source)
 		select {
 		case <-cs.ctx.Done():
 			log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
 			return nil, cs.ctx.Err()
 		default:
-			newTicker, err = cs.getTicker(market)
+			log.Infof("fetching %s rate from %v", market, source)
+			newTicker, err = getTickerFn(market)
 			if err == nil {
+				log.Infof("%s is chosen", source)
+				cs.source = source
 				return newTicker, nil
 			}
-
-			log.Errorf("fetching ticker %d failed: %v. Retrying in %v\n", i+1, err, backoff)
-			time.Sleep(backoff)
-			backoff *= 2 // Exponential backoff
 		}
 	}
 	if cs.disableConversionExchange != nil {
@@ -386,7 +395,6 @@ func (cs *CommonRateSource) binanceGetTicker(market values.Market) (*Ticker, err
 		HTTPURL: fmt.Sprintf(binanceURLs.price, market.MarketWithoutSep()),
 		Method:  "GET",
 	}
-
 	if cs.source == binanceUS {
 		reqCfg.HTTPURL = fmt.Sprintf(binanceUSURLs.price, market.MarketWithoutSep())
 	}
@@ -394,7 +402,7 @@ func (cs *CommonRateSource) binanceGetTicker(market values.Market) (*Ticker, err
 	resp := new(BinanceTickerResponse)
 	_, err := utils.HTTPRequest(reqCfg, &resp)
 	if err != nil {
-		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", binance, market, err)
+		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", cs.source, market, err)
 	}
 
 	percentChange := resp.PriceChangePercent
@@ -405,38 +413,6 @@ func (cs *CommonRateSource) binanceGetTicker(market values.Market) (*Ticker, err
 		lastUpdate:         time.Now(),
 	}
 
-	return ticker, nil
-}
-
-func bittrexGetTicker(market values.Market) (*Ticker, error) {
-	reqCfg := &utils.ReqConfig{
-		HTTPURL: fmt.Sprintf(bittrexURLs.price, market.String()),
-		Method:  "GET",
-	}
-
-	// Fetch current rate.
-	resp := new(BittrexTickerResponse)
-	_, err := utils.HTTPRequest(reqCfg, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", bittrex, market, err)
-	}
-
-	ticker := &Ticker{
-		Market:         resp.Symbol, // Ok: e.g BTC-USDT
-		LastTradePrice: resp.LastTradeRate,
-	}
-
-	// Fetch percentage change.
-	reqCfg.HTTPURL = fmt.Sprintf(bittrexURLs.stats, market)
-	res := new(BittrexMarketSummaryResponse)
-	_, err = utils.HTTPRequest(reqCfg, &res)
-	if err != nil {
-		return nil, fmt.Errorf("%s failed to fetch ticker for %s: %w", bittrex, market, err)
-	}
-
-	percentChange := res.PercentChange
-	ticker.PriceChangePercent = &percentChange
-	ticker.lastUpdate = time.Now()
 	return ticker, nil
 }
 
@@ -596,7 +572,7 @@ func isSupportedMarket(market values.Market, rateSource string) (values.Market, 
 
 func isValidSource(source string) bool {
 	switch source {
-	case bittrex, binance, binanceUS, coinpaprika, messari, kucoinExchange, none:
+	case binance, binanceUS, coinpaprika, messari, kucoinExchange, none:
 		return true
 	default:
 		return false
@@ -607,8 +583,6 @@ func (cs *CommonRateSource) sourceGetTickerFunc(source string) func(values.Marke
 	switch source {
 	case binance, binanceUS:
 		return cs.binanceGetTicker
-	case bittrex:
-		return bittrexGetTicker
 	case messari:
 		return messariGetTicker
 	case kucoinExchange:
@@ -620,6 +594,15 @@ func (cs *CommonRateSource) sourceGetTickerFunc(source string) func(values.Marke
 	default:
 		return nil
 	}
+}
+
+var sources = []string{
+	binance,
+	binanceUS,
+	messari,
+	kucoinExchange,
+	coinpaprika,
+	none,
 }
 
 func dummyGetTickerFunc(values.Market) (*Ticker, error) {
