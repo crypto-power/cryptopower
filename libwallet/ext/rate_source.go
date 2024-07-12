@@ -137,7 +137,6 @@ type CommonRateSource struct {
 	refreshing    bool
 	cond          *sync.Cond
 	getTicker     tickerFunc
-	otherTickers  []tickerFunc
 	sourceChanged chan *struct{}
 	lastUpdate    time.Time
 
