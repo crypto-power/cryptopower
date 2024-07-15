@@ -33,26 +33,23 @@ func (pi ProgressInfo) SyncProgress() int {
 }
 
 type SyncInfo struct {
-	progressInfo map[sharedW.Asset]*ProgressInfo
-	rescanInfo   map[sharedW.Asset]*sharedW.HeadersRescanProgressReport
-	syncInfoMu   sync.RWMutex
+	progressInfo sync.Map //map[sharedW.Asset]ProgressInfo
+	rescanInfo   sync.Map //map[sharedW.Asset]*sharedW.HeadersRescanProgressReport
 }
 
 // NewSyncProgressInfo returns an instance of the SyncInfo with the respective
 // maps initialized.
 func NewSyncProgressInfo() *SyncInfo {
 	return &SyncInfo{
-		progressInfo: make(map[sharedW.Asset]*ProgressInfo),
-		rescanInfo:   make(map[sharedW.Asset]*sharedW.HeadersRescanProgressReport),
+		progressInfo: sync.Map{},
+		rescanInfo:   sync.Map{},
 	}
 }
 
 // IsSyncProgressSet returns true if a sync progress instance of the provided wallet
 // exists.
 func (si *SyncInfo) IsSyncProgressSet(wallet sharedW.Asset) bool {
-	si.syncInfoMu.RLock()
-	_, ok := si.progressInfo[wallet]
-	si.syncInfoMu.RUnlock()
+	_, ok := si.progressInfo.Load(wallet)
 
 	return ok
 }
@@ -60,14 +57,12 @@ func (si *SyncInfo) IsSyncProgressSet(wallet sharedW.Asset) bool {
 // GetSyncProgress returns a copy of the progress info associated with the provided
 // asset type.
 func (si *SyncInfo) GetSyncProgress(wallet sharedW.Asset) ProgressInfo {
-	si.syncInfoMu.RLock()
-	data := si.progressInfo[wallet]
-	si.syncInfoMu.RUnlock()
+	data, _ := si.progressInfo.Load(wallet)
 
 	if data == nil {
 		return ProgressInfo{}
 	}
-	return *data
+	return data.(ProgressInfo)
 }
 
 // SetSyncProgress creates a new sync progress instance and stores a copy of it.
@@ -81,9 +76,7 @@ func (si *SyncInfo) SetSyncProgress(wallet sharedW.Asset, timeRemaining time.Dur
 		syncProgress:         int(totalSyncProgress),
 	}
 
-	si.syncInfoMu.Lock()
-	si.progressInfo[wallet] = &progress
-	si.syncInfoMu.Unlock()
+	si.progressInfo.Store(wallet, progress)
 
 	return progress
 }
@@ -91,17 +84,13 @@ func (si *SyncInfo) SetSyncProgress(wallet sharedW.Asset, timeRemaining time.Dur
 // DeleteSyncProgress deletes the sync progress associated with the provided
 // asset type.
 func (si *SyncInfo) DeleteSyncProgress(wallet sharedW.Asset) {
-	si.syncInfoMu.Lock()
-	delete(si.progressInfo, wallet)
-	si.syncInfoMu.Unlock()
+	si.progressInfo.Delete(wallet)
 }
 
 // IsRescanProgressSet confirms if a rescan progress info associated with the
 // provided asset type exists.
 func (si *SyncInfo) IsRescanProgressSet(wallet sharedW.Asset) bool {
-	si.syncInfoMu.RLock()
-	_, ok := si.rescanInfo[wallet]
-	si.syncInfoMu.RUnlock()
+	_, ok := si.rescanInfo.Load(wallet)
 
 	return ok
 }
@@ -109,23 +98,17 @@ func (si *SyncInfo) IsRescanProgressSet(wallet sharedW.Asset) bool {
 // GetRescanProgress returns the progress report associated with the provided
 // asset type.
 func (si *SyncInfo) GetRescanProgress(wallet sharedW.Asset) *sharedW.HeadersRescanProgressReport {
-	si.syncInfoMu.RLock()
-	data := si.rescanInfo[wallet]
-	si.syncInfoMu.RUnlock()
+	data, _ := si.rescanInfo.Load(wallet)
 
-	return data
+	return data.(*sharedW.HeadersRescanProgressReport)
 }
 
 // SetRescanProgress updates the Rescan progress for the provided asset type.
 func (si *SyncInfo) SetRescanProgress(wallet sharedW.Asset, data *sharedW.HeadersRescanProgressReport) {
-	si.syncInfoMu.Lock()
-	si.rescanInfo[wallet] = data
-	si.syncInfoMu.Unlock()
+	si.rescanInfo.Store(wallet, data)
 }
 
 // DeleteRescanProgress deletes the rescan progress for the provided asset type.
 func (si *SyncInfo) DeleteRescanProgress(wallet sharedW.Asset) {
-	si.syncInfoMu.Lock()
-	delete(si.rescanInfo, wallet)
-	si.syncInfoMu.Unlock()
+	si.rescanInfo.Delete(wallet)
 }
