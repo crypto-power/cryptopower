@@ -294,7 +294,7 @@ func (pg *AccountMixerPage) mixerSettings(l *load.Load) layout.FlexChild {
 
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
-// Part of the load.Page interface.
+// Layout is part of the load.Page interface.
 func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		wdg := func(gtx C) D {

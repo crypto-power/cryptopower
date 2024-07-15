@@ -198,7 +198,7 @@ func (hp *HomePage) OnNavigatedTo() {
 		go hp.checkForUpdates()
 	}
 
-	hp.AssetsManager.ListenAssetChange(func() {
+	hp.AssetsManager.WatchBalanceChange(func() {
 		go hp.CalculateAssetsUSDBalance()
 	})
 }

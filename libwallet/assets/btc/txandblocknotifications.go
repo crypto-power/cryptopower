@@ -77,3 +77,8 @@ func (asset *Asset) publishBlockAttached(blockHeight int32) {
 		}
 	}
 }
+
+func (asset *Asset) IsNotificationListenerExist(uniqueIdentifier string) bool {
+	_, ok := asset.txAndBlockNotificationListeners[uniqueIdentifier]
+	return ok
+}
