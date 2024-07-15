@@ -5,7 +5,6 @@ import "github.com/crypto-power/cryptopower/libwallet/utils"
 // These are a list of supported rate sources.
 const (
 	DefaultExchangeValue = "none"
-	BittrexExchange      = "bittrex"
 	BinanceExchange      = "binance"
 	BinanceUSExchange    = "binanceus"
 	Coinpaprika          = "coinpaprika"

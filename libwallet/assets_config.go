@@ -140,6 +140,9 @@ func (mgr *AssetsManager) SetDarkMode(data bool) {
 
 // GetCurrencyConversionExchange returns the currency conversion exchange.
 func (mgr *AssetsManager) GetCurrencyConversionExchange() string {
+	if mgr.RateSource != nil {
+		return mgr.RateSource.Name()
+	}
 	var key string
 	mgr.ReadAppConfigValue(sharedW.CurrencyConversionConfigKey, &key)
 	if key == "" {
