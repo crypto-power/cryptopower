@@ -965,7 +965,7 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 }
 
 func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
-	// Reload wallets unmixed balance and reload UI on new blocks.
+	// Reload total balance on new tx.
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransactionConfirmed: func(_ int, _ string, _ int32) {
 			listen()
@@ -974,6 +974,8 @@ func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
 			listen()
 		},
 	}
+
+	// add tx listener
 	for _, wallet := range mgr.AllWallets() {
 		if !wallet.IsNotificationListenerExist(assetIdentifier) {
 			if err := wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, assetIdentifier); err != nil {
@@ -981,10 +983,26 @@ func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
 			}
 		}
 	}
+
+	// add rate listener
+	rateListener := &ext.RateListener{
+		OnRateUpdated: func() {
+			listen()
+		},
+	}
+	if !mgr.RateSource.IsRateListenerExist(assetIdentifier) {
+		if err := mgr.RateSource.AddRateListener(rateListener, assetIdentifier); err != nil {
+			log.Error("Can't listen rate notification ")
+		}
+	}
 }
 
 func (mgr *AssetsManager) RemoveAssetChange() {
+	// Remove all listener on tx notification
 	for _, wallet := range mgr.AllWallets() {
 		wallet.RemoveTxAndBlockNotificationListener(assetIdentifier)
 	}
+
+	// Remove listener on rate notification
+	mgr.RateSource.RemoveRateListener(assetIdentifier)
 }

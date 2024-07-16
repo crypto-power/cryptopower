@@ -6,6 +6,7 @@ package ext
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -115,6 +116,9 @@ type RateSource interface {
 	GetTicker(market values.Market, cacheOnly bool) *Ticker
 	ToggleStatus(disable bool)
 	ToggleSource(newSource string) error
+	AddRateListener(listener *RateListener, uniqueIdentifier string) error
+	RemoveRateListener(uniqueIdentifier string)
+	IsRateListenerExist(uniqueIdentifier string) bool
 }
 
 // RateListener listens for new tickers and rate source change notifications.
@@ -141,6 +145,9 @@ type CommonRateSource struct {
 	lastUpdate    time.Time
 
 	disableConversionExchange func()
+
+	notificationListenersMu sync.RWMutex
+	ratesListeners          map[string]*RateListener
 }
 
 // Used to initialize a rate source.
@@ -155,6 +162,7 @@ func NewCommonRateSource(ctx context.Context, source string, disableConversionEx
 		tickers:                   make(map[values.Market]*Ticker),
 		sourceChanged:             make(chan *struct{}),
 		disableConversionExchange: disableConversionExchange,
+		ratesListeners:            make(map[string]*RateListener),
 	}
 	s.getTicker = s.sourceGetTickerFunc(source)
 	s.cond = sync.NewCond(&s.mtx)
@@ -203,6 +211,36 @@ func (cs *CommonRateSource) isDisabled() bool {
 	cs.mtx.RLock()
 	defer cs.mtx.RUnlock()
 	return cs.disabled
+}
+
+func (cs *CommonRateSource) AddRateListener(listener *RateListener, uniqueIdentifier string) error {
+	if _, ok := cs.ratesListeners[uniqueIdentifier]; ok {
+		return errors.New(utils.ErrListenerAlreadyExist)
+	}
+
+	cs.notificationListenersMu.Lock()
+	defer cs.notificationListenersMu.Unlock()
+	cs.ratesListeners[uniqueIdentifier] = listener
+	return nil
+}
+
+func (cs *CommonRateSource) IsRateListenerExist(uniqueIdentifier string) bool {
+	_, ok := cs.ratesListeners[uniqueIdentifier]
+	return ok
+}
+
+func (cs *CommonRateSource) RemoveRateListener(uniqueIdentifier string) {
+	cs.notificationListenersMu.Lock()
+	defer cs.notificationListenersMu.Unlock()
+	delete(cs.ratesListeners, uniqueIdentifier)
+}
+
+func (cs *CommonRateSource) pushlishRateUpdated() {
+	for _, listener := range cs.ratesListeners {
+		if listener.OnRateUpdated != nil {
+			listener.OnRateUpdated()
+		}
+	}
 }
 
 // ToggleSource changes the rate source to newSource. This method takes some
@@ -275,6 +313,7 @@ func (cs *CommonRateSource) Refresh(force bool) {
 	}()
 
 	defer cs.ratesUpdated(time.Now())
+	defer cs.pushlishRateUpdated()
 
 	tickers := make(map[values.Market]*Ticker)
 	if !force {
