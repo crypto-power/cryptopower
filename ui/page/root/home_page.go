@@ -199,7 +199,6 @@ func (hp *HomePage) OnNavigatedTo() {
 	}
 
 	hp.AssetsManager.WatchBalanceChange(func() {
-		fmt.Println("Update Total balance")
 		go hp.CalculateAssetsUSDBalance()
 	})
 }
