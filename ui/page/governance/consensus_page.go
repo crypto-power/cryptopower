@@ -82,7 +82,7 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
-	}, values.ConsensusDropdownGroup, 1, 10, true)
+	}, values.ConsensusDropdownGroup, 1, 10, false)
 
 	pg.statusDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
@@ -91,7 +91,7 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 		{Text: values.String(values.StrFailed)},
 		{Text: values.String(values.StrLockedIn)},
 		{Text: values.String(values.StrFinished)},
-	}, values.ConsensusDropdownGroup, 1, 10, true)
+	}, values.ConsensusDropdownGroup, 1, 10, false)
 	if pg.statusDropDown.Reversed() {
 		pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
 	} else {
@@ -101,10 +101,7 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropDown.Width = values.MarginPadding100
-	if l.IsMobileView() {
-		pg.orderDropDown.Width = values.MarginPadding85
-		pg.statusDropDown.Width = values.DP118
-	}
+	pg.statusDropDown.Width = values.DP118
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
 	settingCommonDropdown(pg.Theme, pg.orderDropDown)
 	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)

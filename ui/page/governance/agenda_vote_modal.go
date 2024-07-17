@@ -1,7 +1,6 @@
 package governance
 
 import (
-	"gioui.org/font"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -21,7 +20,7 @@ type agendaVoteModal struct {
 
 	onPreferenceUpdated func()
 
-	accountSelector *components.WalletAndAccountSelector
+	accountDropdown *components.AccountDropdown
 	accountSelected *sharedW.Account
 	dcrImpl         *dcr.Asset
 }
@@ -40,32 +39,27 @@ func newAgendaVoteModal(l *load.Load, dcrWallet *dcr.Asset, agenda *dcr.Agenda, 
 	avm.SetPositiveButtonCallback(avm.sendVotes)
 
 	// Source account picker
-	avm.accountSelector = components.NewWalletAndAccountSelector(l).
-		Title(values.String(values.StrSelectAcc)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {
+	avm.accountDropdown = components.NewAccountDropdown(l).
+		SetChangedCallback(func(selectedAccount *sharedW.Account) {
 			avm.accountSelected = selectedAccount
 		}).
 		AccountValidator(func(_ *sharedW.Account) bool {
 			return true
-		})
+		}).
+		Setup(dcrWallet)
 
 	return avm
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	_ = avm.accountSelector.SelectFirstValidAccount(avm.dcrImpl)
+	_ = avm.accountDropdown.Setup(avm.dcrImpl)
 }
 
 // - Layout
 func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 	w := []layout.Widget{
-		func(gtx C) D {
-			t := avm.Theme.H6(values.String(values.StrSettings))
-			t.Font.Weight = font.SemiBold
-			return t.Layout(gtx)
-		},
 		func(gtx layout.Context) layout.Dimensions {
-			return avm.accountSelector.Layout(avm.ParentWindow(), gtx)
+			return avm.accountDropdown.Layout(gtx, values.StrSettings)
 		},
 	}
 

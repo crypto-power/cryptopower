@@ -221,7 +221,7 @@ func (pg *ManualCoinSelectionPage) OnNavigatedTo() {
 }
 
 func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
-	account := pg.sendPage.sourceAccountSelector.SelectedAccount()
+	account := pg.sendPage.accountDropdown.SelectedAccount()
 	info, err := pg.sendPage.selectedWallet.UnspentOutputs(int32(account.AccountNumber))
 	if err != nil {
 		return fmt.Errorf("querying the account (%v) info failed: %v", account.AccountNumber, err)

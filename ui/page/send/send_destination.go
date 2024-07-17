@@ -22,10 +22,12 @@ var tabOptions = []string{
 type destination struct {
 	*load.Load
 
-	addressChanged             func()
-	destinationAddressEditor   cryptomaterial.Editor
-	destinationAccountSelector *components.WalletAndAccountSelector
-	destinationWalletSelector  *components.WalletAndAccountSelector
+	addressChanged           func()
+	destinationAddressEditor cryptomaterial.Editor
+	sourceAccount            *sharedW.Account
+
+	walletDropdown  *components.WalletDropdown
+	accountDropdown *components.AccountDropdown
 
 	accountSwitch *cryptomaterial.SegmentedControl
 }
@@ -50,16 +52,37 @@ func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination 
 }
 
 func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetType) {
-	// Destination wallet picker
-	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, assetType).
+	dst.walletDropdown = components.NewWalletDropdown(dst.Load, assetType).
+		SetChangedCallback(func(wallet sharedW.Asset) {
+			if dst.accountDropdown != nil {
+				_ = dst.accountDropdown.Setup(wallet)
+			}
+		}).
 		EnableWatchOnlyWallets(true).
-		Title(values.String(values.StrTo))
+		Setup()
+	dst.accountDropdown = components.NewAccountDropdown(dst.Load).
+		SetChangedCallback(func(_ *sharedW.Account) {
+			dst.addressChanged()
+		}).
+		AccountValidator(func(account *sharedW.Account) bool {
+			if dst.sourceAccount == nil {
+				return false
+			}
+			accountIsValid := account.Number != load.MaxInt32
+			// Filter mixed wallet
+			destinationWallet := dst.walletDropdown.SelectedWallet()
+			isMixedAccount := load.MixedAccountNumber(destinationWallet) == account.Number
 
-	// Destination account picker
-	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
+			// Filter the sending account.
+			sourceWalletID := dst.sourceAccount.WalletID
+			isSameAccount := sourceWalletID == account.WalletID && account.Number == dst.sourceAccount.Number
+			if !accountIsValid || isSameAccount || isMixedAccount {
+				return false
+			}
+			return true
+		}).
 		EnableWatchOnlyWallets(true).
-		Title(values.String(values.StrAccount))
-	_ = dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
+		Setup(dst.walletDropdown.SelectedWallet())
 }
 
 // destinationAddress validates the destination address obtained from the provided
@@ -69,7 +92,7 @@ func (dst *destination) destinationAddress() (string, error) {
 		return dst.validateDestinationAddress()
 	}
 
-	destinationAccount := dst.destinationAccountSelector.SelectedAccount()
+	destinationAccount := dst.accountDropdown.SelectedAccount()
 	if destinationAccount == nil {
 		return "", fmt.Errorf(values.String(values.StrInvalidAddress))
 	}
@@ -83,7 +106,7 @@ func (dst *destination) destinationAccount() *sharedW.Account {
 		return nil
 	}
 
-	return dst.destinationAccountSelector.SelectedAccount()
+	return dst.accountDropdown.SelectedAccount()
 }
 
 // validateDestinationAddress checks if raw address provided as destination is
@@ -96,7 +119,7 @@ func (dst *destination) validateDestinationAddress() (string, error) {
 		return address, fmt.Errorf(values.String(values.StrDestinationMissing))
 	}
 
-	if dst.destinationWalletSelector.SelectedWallet().IsAddressValid(address) {
+	if dst.walletDropdown.SelectedWallet().IsAddressValid(address) {
 		dst.destinationAddressEditor.SetError("")
 		return address, nil
 	}
@@ -111,14 +134,17 @@ func (dst *destination) validate() bool {
 		return err == nil
 	}
 
+	if dst.destinationAccount() == nil {
+		dst.setError(values.String(values.StrNoValidAccountFound))
+		return false
+	}
+
 	return true
 }
 
 func (dst *destination) setError(errMsg string) {
 	if dst.isSendToAddress() {
 		dst.destinationAddressEditor.SetError(errMsg)
-	} else {
-		dst.destinationAccountSelector.SetError(errMsg)
 	}
 }
 
@@ -134,6 +160,9 @@ func (dst *destination) isSendToAddress() bool {
 }
 
 func (dst *destination) handle(gtx C) {
+	dst.accountDropdown.Handle(gtx)
+	dst.walletDropdown.Handle(gtx)
+
 	if dst.accountSwitch.Changed() {
 		dst.addressChanged()
 	}

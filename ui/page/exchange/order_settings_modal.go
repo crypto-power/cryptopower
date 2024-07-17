@@ -20,11 +20,11 @@ import (
 )
 
 type callbackParams struct {
-	sourceAccountSelector *components.WalletAndAccountSelector
-	sourceWalletSelector  *components.WalletAndAccountSelector
+	sourceAccountSelector *components.AccountDropdown
+	sourceWalletSelector  *components.WalletDropdown
 
-	destinationAccountSelector *components.WalletAndAccountSelector
-	destinationWalletSelector  *components.WalletAndAccountSelector
+	destinationAccountSelector *components.AccountDropdown
+	destinationWalletSelector  *components.WalletDropdown
 }
 
 type orderSettingsModal struct {
@@ -51,11 +51,11 @@ type orderSettingsModal struct {
 
 	*orderData
 
-	sourceAccountSelector *components.WalletAndAccountSelector
-	sourceWalletSelector  *components.WalletAndAccountSelector
+	sourceAccountSelector *components.AccountDropdown
+	sourceWalletSelector  *components.WalletDropdown
 
-	destinationAccountSelector *components.WalletAndAccountSelector
-	destinationWalletSelector  *components.WalletAndAccountSelector
+	destinationAccountSelector *components.AccountDropdown
+	destinationWalletSelector  *components.WalletDropdown
 }
 
 func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
@@ -112,8 +112,8 @@ func (osm *orderSettingsModal) OnCancel(cancel func()) *orderSettingsModal {
 func (osm *orderSettingsModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
 
-	osm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		_ = osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+	osm.sourceWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
+		_ = osm.sourceAccountSelector.Setup(selectedWallet)
 	})
 
 	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
@@ -122,8 +122,8 @@ func (osm *orderSettingsModal) OnResume() {
 	}
 	osm.addressEditor.Editor.SetText(address)
 
-	osm.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		_ = osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+	osm.destinationWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
+		_ = osm.destinationAccountSelector.Setup(selectedWallet)
 		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
 		if err != nil {
 			log.Error(err)
@@ -131,7 +131,7 @@ func (osm *orderSettingsModal) OnResume() {
 		osm.addressEditor.Editor.SetText(address)
 	})
 
-	osm.destinationAccountSelector.AccountSelected(func(_ *sharedW.Account) {
+	osm.destinationAccountSelector.SetChangedCallback(func(_ *sharedW.Account) {
 		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
 		if err != nil {
 			log.Error(err)
@@ -300,11 +300,11 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return layout.Inset{
 																			Bottom: values.MarginPadding16,
 																		}.Layout(gtx, func(gtx C) D {
-																			return osm.sourceWalletSelector.Layout(osm.ParentWindow(), gtx)
+																			return osm.sourceWalletSelector.Layout(gtx, values.StrSource)
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
+																		return osm.sourceAccountSelector.Layout(gtx, values.StrSource)
 																	}),
 																	layout.Rigid(func(gtx C) D {
 																		if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
@@ -347,14 +347,14 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return layout.Inset{
 																			Bottom: values.MarginPadding16,
 																		}.Layout(gtx, func(gtx C) D {
-																			return osm.destinationWalletSelector.Layout(osm.ParentWindow(), gtx)
+																			return osm.destinationWalletSelector.Layout(gtx, values.StrSource)
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {
 																		return layout.Inset{
 																			Bottom: values.MarginPadding16,
 																		}.Layout(gtx, func(gtx C) D {
-																			return osm.destinationAccountSelector.Layout(osm.ParentWindow(), gtx)
+																			return osm.destinationAccountSelector.Layout(gtx, values.StrSource)
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {
@@ -471,22 +471,22 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 			}
 
 			// Source wallet picker
-			osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, sourceCurrency).
-				Title(values.String(values.StrSource))
+			osm.sourceWalletSelector = components.
+				NewWalletDropdown(osm.Load, sourceCurrency).
+				Setup()
 
 			osm.sourceWalletSelector.SetSelectedWallet(sourceWallet)
 
 			// Source account picker
-			osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-				Title(values.String(values.StrAccount)).
+			osm.sourceAccountSelector = components.NewAccountDropdown(osm.Load).
 				AccountValidator(func(account *sharedW.Account) bool {
 					accountIsValid := account.Number != load.MaxInt32
 					return accountIsValid
-				})
-			_ = osm.sourceAccountSelector.SelectAccount(osm.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
+				}).
+				Setup(sourceWallet)
 
-			osm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-				_ = osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+			osm.sourceWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
+				_ = osm.sourceAccountSelector.Setup(selectedWallet)
 			})
 		}
 
@@ -497,63 +497,61 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 			}
 
 			// Destination wallet picker
-			osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, toCurrency).
-				Title(values.String(values.StrDestination)).
-				EnableWatchOnlyWallets(true)
+			osm.destinationWalletSelector = components.NewWalletDropdown(osm.Load, toCurrency).
+				EnableWatchOnlyWallets(true).
+				Setup()
 
 			osm.destinationWalletSelector.SetSelectedWallet(destinationWallet)
 
 			// Destination account picker
-			osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-				Title(values.String(values.StrAccount)).
+			osm.destinationAccountSelector = components.NewAccountDropdown(osm.Load).
 				AccountValidator(func(account *sharedW.Account) bool {
 					// Imported accounts and watch only accounts are imvalid
 					accountIsValid := account.Number != load.MaxInt32
 
 					return accountIsValid
-				})
-			_ = osm.destinationAccountSelector.SelectAccount(osm.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
+				}).
+				Setup(osm.destinationWalletSelector.SelectedWallet())
 
-			osm.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-				_ = osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+			osm.destinationWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
+				_ = osm.destinationAccountSelector.Setup(selectedWallet)
 			})
 		}
 	} else {
 		// Source wallet picker
-		osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, libutils.DCRWalletAsset).
-			Title(values.String(values.StrFrom))
+		osm.sourceWalletSelector = components.
+			NewWalletDropdown(osm.Load, libutils.DCRWalletAsset).
+			Setup()
 
 		// Source account picker
-		osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-			Title(values.String(values.StrAccount)).
+		osm.sourceAccountSelector = components.NewAccountDropdown(osm.Load).
 			AccountValidator(func(account *sharedW.Account) bool {
 				accountIsValid := account.Number != load.MaxInt32
 
 				return accountIsValid
-			})
-		_ = osm.sourceAccountSelector.SelectFirstValidAccount(osm.sourceWalletSelector.SelectedWallet())
+			}).
+			Setup(osm.sourceWalletSelector.SelectedWallet())
 
-		osm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-			_ = osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+		osm.sourceWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
+			_ = osm.sourceAccountSelector.Setup(selectedWallet)
 		})
 
 		// Destination wallet picker
-		osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, libutils.BTCWalletAsset).
-			Title(values.String(values.StrTo)).
-			EnableWatchOnlyWallets(true)
+		osm.destinationWalletSelector = components.NewWalletDropdown(osm.Load, libutils.BTCWalletAsset).
+			EnableWatchOnlyWallets(true).
+			Setup()
 
 		// Destination account picker
-		osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-			Title(values.String(values.StrAccount)).
+		osm.destinationAccountSelector = components.NewAccountDropdown(osm.Load).
 			AccountValidator(func(account *sharedW.Account) bool {
 				accountIsValid := account.Number != load.MaxInt32
 
 				return accountIsValid
-			})
-		_ = osm.destinationAccountSelector.SelectFirstValidAccount(osm.destinationWalletSelector.SelectedWallet())
+			}).
+			Setup(osm.destinationWalletSelector.SelectedWallet())
 
-		osm.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-			_ = osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		osm.destinationWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
+			_ = osm.destinationAccountSelector.Setup(selectedWallet)
 		})
 	}
 }

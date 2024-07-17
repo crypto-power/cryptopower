@@ -81,11 +81,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 		Text: values.String(values.Str33WordSeed),
 	}
 
-	pg.seedTypeDropdown = pg.Theme.DropDown(GetWordSeedTypeDropdownItems(), defaultWordSeedType, values.TxDropdownGroup, false)
-	pg.seedTypeDropdown.SetConvertTextSize(pg.ConvertTextSize)
-	pg.seedTypeDropdown.FontWeight = font.SemiBold
-	pg.seedTypeDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
-	pg.seedTypeDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
+	pg.seedTypeDropdown = pg.Theme.NewCommonDropDown(GetWordSeedTypeDropdownItems(), defaultWordSeedType, values.MarginPadding130, values.TxDropdownGroup, false)
 
 	pg.seedRestorePage = NewSeedRestorePage(l, walletName, walletType, onRestoreComplete, pg.getWordSeedType)
 

@@ -7,7 +7,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -80,9 +79,12 @@ func (rp *recipient) setDestinationAssetType(assetType libUtil.AssetType) {
 }
 
 func (rp *recipient) isAccountValid(sourceAccount, account *sharedW.Account) bool {
+	if sourceAccount == nil || account == nil {
+		return false
+	}
 	accountIsValid := account.Number != load.MaxInt32
 	// Filter mixed wallet
-	destinationWallet := rp.sendDestination.destinationAccountSelector.SelectedWallet()
+	destinationWallet := rp.sendDestination.walletDropdown.SelectedWallet()
 	isMixedAccount := load.MixedAccountNumber(destinationWallet) == account.Number
 
 	// Filter the sending account.
@@ -96,25 +98,12 @@ func (rp *recipient) isAccountValid(sourceAccount, account *sharedW.Account) boo
 
 func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) {
 	rp.selectedSourceAccount = sourceAccount
-	rp.sendDestination.destinationAccountSelector = rp.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
-		return rp.isAccountValid(sourceAccount, account)
-	})
-
-	rp.sendDestination.destinationAccountSelector.AccountSelected(func(_ *sharedW.Account) {
-		rp.sendDestination.addressChanged()
-	})
-
-	rp.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		_ = rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-	})
-
-	// destinationAccountSelector does not have a default value,
-	// so assign it an initial value here
-	_ = rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.sendDestination.destinationWalletSelector.SelectedWallet())
+	rp.sendDestination.sourceAccount = sourceAccount
+	_ = rp.sendDestination.accountDropdown.Setup(rp.sendDestination.walletDropdown.SelectedWallet())
 }
 
 func (rp *recipient) isShowSendToWallet() bool {
-	sourceWalletSelected := rp.sendDestination.destinationWalletSelector.SelectedWallet()
+	sourceWalletSelected := rp.sendDestination.walletDropdown.SelectedWallet()
 	var wallets []sharedW.Asset
 	switch sourceWalletSelected.GetAssetType() {
 	case libUtil.BTCWalletAsset:
@@ -207,8 +196,7 @@ func (rp *recipient) addressValidationError(err string) {
 	rp.sendDestination.setError(err)
 }
 
-func (rp *recipient) recipientLayout(gtx C, index int, showIcon bool, window app.WindowNavigator) layout.Widget {
-	rp.handle(gtx)
+func (rp *recipient) recipientLayout(index int, showIcon bool) layout.Widget {
 	return func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.WrapContent,
@@ -234,7 +222,7 @@ func (rp *recipient) recipientLayout(gtx C, index int, showIcon bool, window app
 				}
 
 				if !rp.isSendToAddress() {
-					layoutBody = rp.walletAccountlayout(window)
+					layoutBody = rp.walletAccountlayout()
 				}
 
 				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody, rp.IsMobileView())
@@ -260,7 +248,7 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 	)
 }
 
-func (rp *recipient) walletAccountlayout(window app.WindowNavigator) layout.Widget {
+func (rp *recipient) walletAccountlayout() layout.Widget {
 	return func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
@@ -269,14 +257,12 @@ func (rp *recipient) walletAccountlayout(window app.WindowNavigator) layout.Widg
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				txt := fmt.Sprintf("%s %s", values.String(values.StrDestination), values.String(values.StrWallet))
-				return rp.contentWrapper(gtx, txt, func(gtx C) D {
-					return rp.sendDestination.destinationWalletSelector.Layout(window, gtx)
-				})
+				return rp.sendDestination.walletDropdown.Layout(gtx, txt)
 			}),
 			layout.Rigid(func(gtx C) D {
 				txt := fmt.Sprintf("%s %s", values.String(values.StrDestination), values.String(values.StrAccount))
-				return rp.contentWrapper(gtx, txt, func(gtx C) D {
-					return rp.sendDestination.destinationAccountSelector.Layout(window, gtx)
+				return layout.Inset{Top: values.MarginPadding32}.Layout(gtx, func(gtx C) D {
+					return rp.sendDestination.accountDropdown.Layout(gtx, txt)
 				})
 			}),
 		)

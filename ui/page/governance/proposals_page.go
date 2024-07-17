@@ -92,12 +92,12 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 		{Text: values.String(values.StrApproved)},
 		{Text: values.String(values.StrRejected)},
 		{Text: values.String(values.StrAbandoned)},
-	}, values.ProposalDropdownGroup, 1, 0, true)
+	}, values.ProposalDropdownGroup, 1, 0, false)
 
 	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
-	}, values.ProposalDropdownGroup, 1, 0, true)
+	}, values.ProposalDropdownGroup, 1, 0, false)
 
 	if pg.statusDropDown.Reversed() {
 		pg.statusDropDown.ExpandedLayoutInset.Right = values.MarginPadding10
@@ -107,10 +107,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropDown.Width = values.MarginPadding100
-	if l.IsMobileView() {
-		pg.orderDropDown.Width = values.MarginPadding85
-		pg.statusDropDown.Width = values.DP118
-	}
+	pg.statusDropDown.Width = values.MarginPadding150
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
 	settingCommonDropdown(pg.Theme, pg.orderDropDown)
 	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)

@@ -110,8 +110,8 @@ type DEXMarketPage struct {
 	immediateOrderInfoBtn  *cryptomaterial.Clickable
 
 	addWalletToDEX  cryptomaterial.Button
-	walletSelector  *components.WalletAndAccountSelector
-	accountSelector *components.WalletAndAccountSelector
+	walletSelector  *components.WalletDropdown
+	accountSelector *components.AccountDropdown
 
 	seeFullOrderBookBtn     cryptomaterial.Button
 	selectedMarketOrderBook orderbookInfo
@@ -1742,25 +1742,19 @@ func (pg *DEXMarketPage) handleMissingMarketWallet() {
 }
 
 func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetType) {
-	pg.walletSelector = components.NewWalletAndAccountSelector(pg.Load, missingWallet).
+	pg.walletSelector = components.NewWalletDropdown(pg.Load, missingWallet).
 		EnableWatchOnlyWallets(false).
+		SetChangedCallback(func(asset sharedW.Asset) {
+			_ = pg.accountSelector.Setup(asset)
+		}).
+		Setup()
+
+	pg.accountSelector = components.NewAccountDropdown(pg.Load).
 		AccountValidator(func(a *sharedW.Account) bool {
 			return !a.IsWatchOnly
 		}).
-		WalletSelected(func(asset sharedW.Asset) {
-			if err := pg.accountSelector.SelectFirstValidAccount(asset); err != nil {
-				log.Error(err)
-			}
-		})
-
-	pg.accountSelector = components.NewWalletAndAccountSelector(pg.Load, missingWallet).
-		AccountValidator(func(a *sharedW.Account) bool {
-			return !a.IsWatchOnly
-		}).EnableWatchOnlyWallets(false)
-
-	if err := pg.accountSelector.SelectFirstValidAccount(pg.walletSelector.SelectedWallet()); err != nil {
-		log.Error(err)
-	}
+		EnableWatchOnlyWallets(false).
+		Setup(pg.walletSelector.SelectedWallet())
 
 	var dexPass string
 	// walletPasswordModal will request user's wallet password and bind the
@@ -1806,18 +1800,13 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 		UseCustomWidget(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
-						return pg.walletSelector.Layout(pg.ParentWindow(), gtx)
+					return layout.Inset{Bottom: dp20}.Layout(gtx, func(gtx C) D {
+						return pg.walletSelector.Layout(gtx, values.StrSelectWallet)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.H6(values.String(values.StrSelectAcc))
-					label.Font.Weight = font.SemiBold
-					return layout.Inset{Top: dp20}.Layout(gtx, label.Layout)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
-						return pg.accountSelector.Layout(pg.ParentWindow(), gtx)
+					return layout.Inset{Bottom: dp2}.Layout(gtx, func(gtx C) D {
+						return pg.accountSelector.Layout(gtx, values.StrSelectAcc)
 					})
 				}),
 			)

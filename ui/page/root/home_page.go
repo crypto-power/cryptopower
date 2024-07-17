@@ -98,6 +98,9 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 
 	// init shared page functions
 	toggleSync := func(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
+		if wallet == nil {
+			return
+		}
 		if wallet.IsConnectedToNetwork() {
 			go wallet.CancelSync()
 			unlock(false)

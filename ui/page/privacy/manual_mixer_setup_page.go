@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"gioui.org/font"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -24,8 +23,8 @@ type ManualMixerSetupPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	mixedAccountSelector   *components.WalletAndAccountSelector
-	unmixedAccountSelector *components.WalletAndAccountSelector
+	mixedAccountSelector   *components.AccountDropdown
+	unmixedAccountSelector *components.AccountDropdown
 
 	backButton     cryptomaterial.IconButton
 	infoButton     cryptomaterial.IconButton
@@ -48,9 +47,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 	pg.backIcon.Color = pg.Theme.Color.Gray1
 
 	// Mixed account picker
-	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
-		Title(values.String(values.StrMixedAccount)).
-		AccountSelected(func(_ *sharedW.Account) {}).
+	pg.mixedAccountSelector = components.NewAccountDropdown(l).
+		SetChangedCallback(func(_ *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			wal := pg.Load.AssetsManager.WalletWithID(account.WalletID)
 
@@ -68,12 +66,12 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 			}
 
 			return true
-		})
+		}).
+		Setup(dcrWallet)
 
 	// Unmixed account picker
-	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
-		Title(values.String(values.StrUnmixedAccount)).
-		AccountSelected(func(_ *sharedW.Account) {}).
+	pg.unmixedAccountSelector = components.NewAccountDropdown(l).
+		SetChangedCallback(func(_ *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			wal := pg.Load.AssetsManager.WalletWithID(account.WalletID)
 
@@ -91,10 +89,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 			}
 
 			return true
-		})
-
-	_ = pg.mixedAccountSelector.SelectFirstValidAccount(dcrWallet)
-	_ = pg.unmixedAccountSelector.SelectFirstValidAccount(dcrWallet)
+		}).
+		Setup(dcrWallet)
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.backButton = components.GetBackButton(l)
@@ -107,8 +103,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
-	_ = pg.mixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
-	_ = pg.unmixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
+	_ = pg.mixedAccountSelector.Setup(pg.dcrWallet)
+	_ = pg.unmixedAccountSelector.Setup(pg.dcrWallet)
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -139,15 +135,12 @@ func (pg *ManualMixerSetupPage) Layout(gtx C) D {
 					return layout.Spacer{Height: values.MarginPadding16}.Layout(gtx)
 				}),
 				// "Mixed account" label, 4px space, mixed account dropdown
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					lbl := pg.Theme.Body1(values.String(values.StrMixedAccount))
-					lbl.Font.Weight = font.SemiBold
-					return lbl.Layout(gtx)
-				}),
-				layout.Rigid(layout.Spacer{Height: values.MarginPadding4}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return pg.mixedAccountSelector.Layout(pg.ParentWindow(), gtx)
+					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+						return pg.mixedAccountSelector.Layout(gtx, values.StrMixedAccount)
+					})
 				}),
+
 				// 16px/12px space (mobile/desktop)
 				layout.Rigid(func(gtx C) D {
 					if pg.IsMobileView() {
@@ -156,14 +149,10 @@ func (pg *ManualMixerSetupPage) Layout(gtx C) D {
 					return layout.Spacer{Height: values.MarginPadding12}.Layout(gtx)
 				}),
 				// "Unmixed account" label, 4px space, unmixed account dropdown
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					lbl := pg.Theme.Body1(values.String(values.StrUnmixedAccount))
-					lbl.Font.Weight = font.SemiBold
-					return lbl.Layout(gtx)
-				}),
-				layout.Rigid(layout.Spacer{Height: values.MarginPadding4}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return pg.unmixedAccountSelector.Layout(pg.ParentWindow(), gtx)
+					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+						return pg.mixedAccountSelector.Layout(gtx, values.StrUnmixedAccount)
+					})
 				}),
 				// 24px space, then warning/caution text
 				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),

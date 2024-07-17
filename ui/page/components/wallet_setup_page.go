@@ -2,6 +2,7 @@ package components
 
 import (
 	"errors"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -44,7 +45,7 @@ type CreateWallet struct {
 
 	walletActions []*walletAction
 
-	assetTypeSelector     *AssetTypeSelector
+	assetTypeDropdown     *cryptomaterial.DropDown
 	assetTypeError        cryptomaterial.Label
 	walletName            cryptomaterial.Editor
 	watchOnlyWalletHex    cryptomaterial.Editor
@@ -76,7 +77,7 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 				Alignment: layout.Middle,
 			},
 		},
-		assetTypeSelector: NewAssetTypeSelector(l),
+		assetTypeDropdown: NewAssetTypeDropDown(l),
 		list:              layout.List{Axis: layout.Vertical},
 
 		continueBtn:          l.Theme.Button(values.String(values.StrContinue)),
@@ -96,13 +97,8 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 		}
 	}
 
-	bg := l.Theme.Color.White
-	if l.AssetsManager.IsDarkModeOn() {
-		bg = l.Theme.Color.Background
-	}
-	pg.assetTypeSelector.SetBackground(bg)
 	if len(assetType) > 0 {
-		pg.assetTypeSelector.SetSelectedAssetType(assetType[0])
+		pg.assetTypeDropdown.SetSelectedValue(assetType[0].String())
 	}
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
@@ -123,16 +119,27 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 		Text: values.String(values.Str12WordSeed),
 	}
 
-	pg.seedTypeDropdown = pg.Theme.DropDown(GetWordSeedTypeDropdownItems(), defaultWordSeedType, values.TxDropdownGroup, false)
-	pg.seedTypeDropdown.SetConvertTextSize(pg.ConvertTextSize)
-	pg.seedTypeDropdown.FontWeight = font.SemiBold
-	pg.seedTypeDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
-	pg.seedTypeDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
-	pg.seedTypeDropdown.Background = &pg.Theme.Color.Surface
+	pg.seedTypeDropdown = pg.Theme.NewCommonDropDown(GetWordSeedTypeDropdownItems(), defaultWordSeedType, values.MarginPadding130, values.TxDropdownGroup, false)
 
 	pg.backButton = GetBackButton(l)
 
 	return pg
+}
+
+// NewAssetTypeDropDown creates a new asset type drop down component.
+func NewAssetTypeDropDown(l *load.Load) *cryptomaterial.DropDown {
+	items := []cryptomaterial.DropDownItem{}
+
+	for _, assType := range l.AssetsManager.AllAssetTypes() {
+		item := cryptomaterial.DropDownItem{
+			Text: assType.String(),
+			Icon: l.Theme.AssetIcon(assType),
+		}
+		items = append(items, item)
+	}
+
+	assetTypeDropdown := l.Theme.NewCommonDropDown(items, nil, values.MarginPadding340, values.AssetTypeDropdownGroup, false)
+	return assetTypeDropdown
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -227,9 +234,9 @@ func (pg *CreateWallet) Layout(gtx C) D {
 								Top:   values.MarginPadding26,
 								Right: values.MarginPadding20,
 							}.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(pg.walletTypeSection),
-									layout.Rigid(pg.walletOptions),
+								return layout.Stack{}.Layout(gtx,
+									layout.Expanded(pg.walletOptions),
+									layout.Expanded(pg.walletTypeSection),
 								)
 							})
 						})
@@ -245,15 +252,14 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-						return pg.assetTypeSelector.Layout(pg.ParentWindow(), gtx)
-					})
+					titleLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectAssetType))
+					titleLabel.Font.Weight = font.Bold
+					return titleLabel.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding4, Bottom: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-						pg.assetTypeError.Color = pg.Theme.Color.Danger
-						pg.assetTypeError.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
-						return pg.assetTypeError.Layout(gtx)
+					pg.assetTypeDropdown.Width = values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding340)
+					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return pg.assetTypeDropdown.Layout(gtx)
 					})
 				}),
 			)
@@ -262,74 +268,68 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 }
 
 func (pg *CreateWallet) walletOptions(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			list := layout.List{}
-			return list.Layout(gtx, len(pg.walletActions), func(gtx C, i int) D {
-				item := pg.walletActions[i]
+	return layout.Inset{Top: values.MarginPadding90}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				list := layout.List{}
+				return list.Layout(gtx, len(pg.walletActions), func(gtx C, i int) D {
+					item := pg.walletActions[i]
 
-				// set selected item background color
-				col := pg.Theme.Color.Surface
-				title := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), item.title)
-				title.Color = pg.Theme.Color.Gray1
+					// set selected item background color
+					col := pg.Theme.Color.Surface
+					title := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), item.title)
+					title.Color = pg.Theme.Color.Gray1
 
-				radius := cryptomaterial.Radius(8)
-				borderColor := pg.Theme.Color.White
-				if pg.AssetsManager.IsDarkModeOn() {
-					borderColor = pg.Theme.Color.Background
-				}
-				item.border = cryptomaterial.Border{
-					Radius: radius,
-					Color:  borderColor,
-					Width:  values.MarginPadding2,
-				}
-
-				if pg.selectedWalletAction == i {
-					col = pg.Theme.Color.White
-					title.Color = pg.Theme.Color.Primary
-
-					if pg.AssetsManager.IsDarkModeOn() {
-						col = pg.Theme.Color.Gray2
-						title.Color = pg.Theme.Color.White
+					radius := cryptomaterial.Radius(8)
+					borderColor := pg.Theme.Color.LightGray
+					item.border = cryptomaterial.Border{
+						Radius: radius,
+						Color:  borderColor,
+						Width:  values.MarginPadding2,
 					}
 
-					item.border.Color = pg.Theme.Color.Primary
-				}
+					if pg.selectedWalletAction == i {
+						col = pg.Theme.Color.LightGray
+						title.Color = pg.Theme.Color.Primary
 
-				if item.clickable.IsHovered() {
-					item.border.Color = pg.Theme.Color.Gray1
-					title.Color = pg.Theme.Color.Gray1
-				}
+						item.border.Color = pg.Theme.Color.Primary
+					}
 
-				return layout.Inset{
-					Right: values.MarginPadding8,
-				}.Layout(gtx, func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Width:       gtx.Dp(item.width),
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Vertical,
-						Alignment:   layout.Middle,
-						Direction:   layout.Center,
-						Background:  col,
-						Clickable:   item.clickable,
-						Border:      item.border,
-						Padding:     layout.UniformInset(values.MarginPadding12),
-						Margin:      layout.Inset{Bottom: values.MarginPadding15},
-					}.Layout2(gtx, title.Layout)
+					if item.clickable.IsHovered() {
+						item.border.Color = pg.Theme.Color.Gray1
+						title.Color = pg.Theme.Color.Gray1
+					}
+
+					return layout.Inset{
+						Right: values.MarginPadding8,
+					}.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       gtx.Dp(item.width),
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Vertical,
+							Alignment:   layout.Middle,
+							Direction:   layout.Center,
+							Background:  col,
+							Clickable:   item.clickable,
+							Border:      item.border,
+							Padding:     layout.UniformInset(values.MarginPadding12),
+							Margin:      layout.Inset{Bottom: values.MarginPadding15},
+						}.Layout2(gtx, title.Layout)
+					})
 				})
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			switch pg.selectedWalletAction {
-			case 0:
-				return pg.createNewWallet(gtx)
-			case 1:
-				return pg.restoreWallet(gtx)
-			default:
-				return D{}
-			}
-		}),
-	)
+			}),
+			layout.Rigid(func(gtx C) D {
+				switch pg.selectedWalletAction {
+				case 0:
+					return pg.createNewWallet(gtx)
+				case 1:
+					return pg.restoreWallet(gtx)
+				default:
+					return D{}
+				}
+			}),
+		)
+	})
 }
 
 func (pg *CreateWallet) createNewWallet(gtx C) D {
@@ -442,8 +442,8 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 		pg.showLoader = true
 		var err error
 		go func() {
-			switch *pg.assetTypeSelector.SelectedAssetType() {
-			case libutils.DCRWalletAsset:
+			switch strings.ToLower(pg.assetTypeDropdown.Selected()) {
+			case libutils.DCRWalletAsset.ToStringLower():
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -451,7 +451,7 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
-			case libutils.BTCWalletAsset:
+			case libutils.BTCWalletAsset.ToStringLower():
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -459,7 +459,7 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
-			case libutils.LTCWalletAsset:
+			case libutils.LTCWalletAsset.ToStringLower():
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.LTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -491,8 +491,8 @@ func (pg *CreateWallet) createWallet() {
 	walletName := pg.walletName.Editor.Text()
 	pass := pg.passwordEditor.Editor.Text()
 	seedType := GetWordSeedType(pg.seedTypeDropdown.Selected())
-	switch *pg.assetTypeSelector.SelectedAssetType() {
-	case libutils.DCRWalletAsset:
+	switch strings.ToLower(pg.assetTypeDropdown.Selected()) {
+	case libutils.DCRWalletAsset.ToStringLower():
 		_, err := pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
@@ -505,7 +505,7 @@ func (pg *CreateWallet) createWallet() {
 			return
 		}
 
-	case libutils.BTCWalletAsset:
+	case libutils.BTCWalletAsset.ToStringLower():
 		_, err := pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
@@ -518,7 +518,7 @@ func (pg *CreateWallet) createWallet() {
 			return
 		}
 
-	case libutils.LTCWalletAsset:
+	case libutils.LTCWalletAsset.ToStringLower():
 		_, err := pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
@@ -546,6 +546,13 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 
+	if pg.assetTypeDropdown.Changed(gtx) {
+		pg.assetTypeError.Text = ""
+	}
+	if pg.seedTypeDropdown.Changed(gtx) {
+		pg.assetTypeError.Text = ""
+	}
+
 	// decred wallet type sub action
 	for i, item := range pg.walletActions {
 		if item.clickable.Clicked(gtx) {
@@ -559,8 +566,8 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 			// todo setup mixer for restored accounts automatically
 			pg.walletCreationSuccessCallback()
 		}
-		ast := pg.assetTypeSelector.SelectedAssetType()
-		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
+		ast := libutils.AssetType(pg.assetTypeDropdown.Selected())
+		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), ast, afterRestore))
 	}
 }
 
@@ -585,11 +592,6 @@ func (pg *CreateWallet) validCreateWalletInputs() bool {
 	pg.walletName.SetError("")
 	pg.assetTypeError = pg.Theme.Body1("")
 
-	if pg.assetTypeSelector.SelectedAssetType() == nil {
-		pg.assetTypeError = pg.Theme.Body1(values.String(values.StrSelectAssetType))
-		return false
-	}
-
 	if !utils.StringNotEmpty(pg.walletName.Editor.Text()) {
 		pg.walletName.SetError(values.String(values.StrEnterWalletName))
 		return false
@@ -613,11 +615,6 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 	pg.walletName.SetError("")
 	pg.watchOnlyWalletHex.SetError("")
 	pg.assetTypeError = pg.Theme.Body1("")
-
-	if pg.assetTypeSelector.SelectedAssetType() == nil {
-		pg.assetTypeError = pg.Theme.Body1(values.String(values.StrSelectAssetType))
-		return false
-	}
 
 	if !utils.StringNotEmpty(pg.walletName.Editor.Text()) {
 		pg.walletName.SetError(values.String(values.StrEnterWalletName))

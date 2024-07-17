@@ -121,10 +121,8 @@ func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
-	}, values.ProposalDropdownGroup, 1, 0, true)
-	if l.IsMobileView() {
-		pg.orderDropDown.Width = values.MarginPadding85
-	}
+	}, values.ProposalDropdownGroup, 1, 0, false)
+	pg.orderDropDown.Width = values.MarginPadding100
 	pg.materialLoader = material.Loader(pg.Theme.Base)
 	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
 	settingCommonDropdown(pg.Theme, pg.orderDropDown)
@@ -197,11 +195,9 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	for _, name := range keysInfo {
 		items = append(items, cryptomaterial.DropDownItem{Text: name})
 	}
-	pg.statusDropDown = pg.Theme.DropdownWithCustomPos(items, values.TxDropdownGroup, 0, 2, true)
+	pg.statusDropDown = pg.Theme.DropdownWithCustomPos(items, values.TxDropdownGroup, 0, 2, false)
+	pg.statusDropDown.Width = values.DP118
 	pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
-	if pg.IsMobileView() {
-		pg.statusDropDown.Width = values.DP118
-	}
 	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
 
@@ -231,10 +227,8 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 				})
 			}
 
-			pg.statusDropDown = pg.Theme.DropdownWithCustomPos(items, values.TxDropdownGroup, 0, 2, true)
-			if pg.IsMobileView() {
-				pg.statusDropDown.Width = values.DP118
-			}
+			pg.statusDropDown = pg.Theme.DropdownWithCustomPos(items, values.TxDropdownGroup, 0, 2, false)
+			pg.statusDropDown.Width = values.DP118
 			pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
 			pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)
 			settingCommonDropdown(pg.Theme, pg.statusDropDown)
