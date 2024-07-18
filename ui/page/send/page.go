@@ -639,7 +639,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 
 	// handle recipient user interactions
 	for _, re := range pg.recipients {
-		re.handle(gtx)
+		re.HandleUserInteractions(gtx)
 	}
 }
 

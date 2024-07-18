@@ -549,6 +549,7 @@ func (d *DropDown) Items() []DropDownItem {
 
 func (d *DropDown) SetItems(items []DropDownItem) {
 	d.items = make([]DropDownItem, 0)
+	d.selectedIndex = 0
 	for _, i := range items {
 		i.clickable = d.theme.NewClickable(true)
 		d.items = append(d.items, i)
