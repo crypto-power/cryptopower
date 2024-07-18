@@ -79,6 +79,7 @@ type Asset interface {
 	AddTxAndBlockNotificationListener(txAndBlockNotificationListener *TxAndBlockNotificationListener, uniqueIdentifier string) error
 	RemoveTxAndBlockNotificationListener(uniqueIdentifier string)
 	SetBlocksRescanProgressListener(blocksRescanProgressListener *BlocksRescanProgressListener)
+	IsNotificationListenerExist(uniqueIdentifier string) bool
 
 	CurrentAddress(account int32) (string, error)
 	NextAddress(account int32) (string, error)

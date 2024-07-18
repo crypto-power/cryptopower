@@ -1205,6 +1205,18 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 		}
 	}
 
+	// add rate listener
+	rateListener := &ext.RateListener{
+		OnRateUpdated: func() {
+			pg.updateAssetsUSDBalance()
+		},
+	}
+	if !pg.AssetsManager.RateSource.IsRateListenerExist(OverviewPageID) {
+		if err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID); err != nil {
+			log.Error("Can't listen rate notification ")
+		}
+	}
+
 	pg.sortedMixerSlideKeys = make([]int, 0)
 	pg.mixerSliderData = make(map[int]*mixerData)
 	for _, wal := range wallets {

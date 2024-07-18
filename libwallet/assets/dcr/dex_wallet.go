@@ -19,7 +19,7 @@ import (
 	dexdcr "decred.org/dcrdex/client/asset/dcr"
 	"decred.org/dcrdex/dex"
 
-	walletjson "decred.org/dcrwallet/v4/rpc/jsonrpc/types"
+	wallettypes "decred.org/dcrwallet/v4/rpc/jsonrpc/types"
 
 	walleterrors "decred.org/dcrwallet/v4/errors"
 	dcrwallet "decred.org/dcrwallet/v4/wallet"
@@ -163,7 +163,7 @@ func (dw *DEXWallet) AccountOwnsAddress(ctx context.Context, addr stdaddr.Addres
 
 // AccountBalance returns the balance breakdown for the specified account.
 // Part of the Wallet interface.
-func (dw *DEXWallet) AccountBalance(ctx context.Context, confirms int32, accountName string) (*walletjson.GetAccountBalanceResult, error) {
+func (dw *DEXWallet) AccountBalance(ctx context.Context, confirms int32, accountName string) (*wallettypes.GetAccountBalanceResult, error) {
 	accountNumber, err := dw.w.AccountNumber(ctx, accountName)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (dw *DEXWallet) AccountBalance(ctx context.Context, confirms int32, account
 		return nil, err
 	}
 
-	return &walletjson.GetAccountBalanceResult{
+	return &wallettypes.GetAccountBalanceResult{
 		AccountName:             accountName,
 		ImmatureCoinbaseRewards: bal.ImmatureCoinbaseRewards.ToCoin(),
 		ImmatureStakeGeneration: bal.ImmatureStakeGeneration.ToCoin(),
@@ -193,13 +193,13 @@ func (dw *DEXWallet) LockedOutputs(ctx context.Context, accountName string) ([]c
 
 // Unspents fetches unspent outputs for the Wallet.
 // Part of the Wallet interface.
-func (dw *DEXWallet) Unspents(ctx context.Context, accountName string) ([]*walletjson.ListUnspentResult, error) {
+func (dw *DEXWallet) Unspents(ctx context.Context, accountName string) ([]*wallettypes.ListUnspentResult, error) {
 	data, err := dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
-	var array = make([]*walletjson.ListUnspentResult, len(data))
+	var array = make([]*wallettypes.ListUnspentResult, len(data))
 	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
 	// dcrwallet v4, copy v4 data into a v3 instance.
 	for _, val := range data {
-		array = append(array, &walletjson.ListUnspentResult{
+		array = append(array, &wallettypes.ListUnspentResult{
 			TxID:          val.TxID,
 			Vout:          val.Vout,
 			Tree:          val.Tree,
@@ -475,9 +475,9 @@ func (dw *DEXWallet) GetTransaction(ctx context.Context, txHash *chainhash.Hash)
 	if err != nil {
 		return nil, err
 	}
-	ret.Details = make([]walletjson.GetTransactionDetailsResult, len(details))
+	ret.Details = make([]wallettypes.GetTransactionDetailsResult, len(details))
 	for i, d := range details {
-		ret.Details[i] = walletjson.GetTransactionDetailsResult{
+		ret.Details[i] = wallettypes.GetTransactionDetailsResult{
 			Account:           d.Account,
 			Address:           d.Address,
 			Amount:            d.Amount,
@@ -573,24 +573,24 @@ func (dw *DEXWallet) ListSinceBlock(ctx context.Context, start int32) ([]dexdcr.
 	res := make([]dexdcr.ListTransactionsResult, 0)
 	f := func(block *dcrwallet.Block) (bool, error) {
 		for _, tx := range block.Transactions {
-			convertTxType := func(txType dcrwallet.TransactionType) *walletjson.ListTransactionsTxType {
+			convertTxType := func(txType dcrwallet.TransactionType) *wallettypes.ListTransactionsTxType {
 				switch txType {
 				case dcrwallet.TransactionTypeTicketPurchase:
-					txType := walletjson.LTTTTicket
+					txType := wallettypes.LTTTTicket
 					return &txType
 				case dcrwallet.TransactionTypeVote:
-					txType := walletjson.LTTTVote
+					txType := wallettypes.LTTTVote
 					return &txType
 				case dcrwallet.TransactionTypeRevocation:
-					txType := walletjson.LTTTRevocation
+					txType := wallettypes.LTTTRevocation
 					return &txType
 				case dcrwallet.TransactionTypeCoinbase:
 				case dcrwallet.TransactionTypeRegular:
-					txType := walletjson.LTTTRegular
+					txType := wallettypes.LTTTRegular
 					return &txType
 				}
 				log.Warnf("unknown transaction type %v", tx.Type)
-				regularTxType := walletjson.LTTTRegular
+				regularTxType := wallettypes.LTTTRegular
 				return &regularTxType
 			}
 			fee := tx.Fee.ToUnit(dcrutil.AmountCoin)
@@ -636,8 +636,8 @@ func (dw *DEXWallet) Tickets(_ context.Context) ([]*dexasset.Ticket, error) {
 }
 
 // VotingPreferences returns current voting preferences.
-func (dw *DEXWallet) VotingPreferences(_ context.Context) ([]*walletjson.VoteChoice, []*dexasset.TBTreasurySpend, []*walletjson.TreasuryPolicyResult, error) {
-	return []*walletjson.VoteChoice{}, []*dexasset.TBTreasurySpend{}, []*walletjson.TreasuryPolicyResult{}, errors.New("VotingPreferences not implemented by Cryptopower DEX wallet")
+func (dw *DEXWallet) VotingPreferences(_ context.Context) ([]*wallettypes.VoteChoice, []*dexasset.TBTreasurySpend, []*wallettypes.TreasuryPolicyResult, error) {
+	return []*wallettypes.VoteChoice{}, []*dexasset.TBTreasurySpend{}, []*wallettypes.TreasuryPolicyResult{}, errors.New("VotingPreferences not implemented by Cryptopower DEX wallet")
 }
 
 // SetVotingPreferences sets preferences used when a ticket is chosen to

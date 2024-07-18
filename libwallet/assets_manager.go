@@ -34,6 +34,9 @@ import (
 // elsewhere.
 const LogFilename = "cryptopower.log"
 
+// assetIdentifier use for listen balance of all wallet changed
+const assetIdentifier = "assets_manager"
+
 // Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
 	DCR struct {
@@ -959,4 +962,47 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 
 	// Delete dex client db.
 	return os.Remove(dexDBFile)
+}
+
+func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
+	// Reload total balance on new tx.
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransactionConfirmed: func(_ int, _ string, _ int32) {
+			listen()
+		},
+		OnTransaction: func(_ int, _ *sharedW.Transaction) {
+			listen()
+		},
+	}
+
+	// add tx listener
+	for _, wallet := range mgr.AllWallets() {
+		if !wallet.IsNotificationListenerExist(assetIdentifier) {
+			if err := wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, assetIdentifier); err != nil {
+				log.Errorf("Can't listen tx and block notification for %s wallet", wallet.GetWalletName())
+			}
+		}
+	}
+
+	// add rate listener
+	rateListener := &ext.RateListener{
+		OnRateUpdated: func() {
+			listen()
+		},
+	}
+	if !mgr.RateSource.IsRateListenerExist(assetIdentifier) {
+		if err := mgr.RateSource.AddRateListener(rateListener, assetIdentifier); err != nil {
+			log.Error("Can't listen rate notification ")
+		}
+	}
+}
+
+func (mgr *AssetsManager) RemoveAssetChange() {
+	// Remove all listener on tx notification
+	for _, wallet := range mgr.AllWallets() {
+		wallet.RemoveTxAndBlockNotificationListener(assetIdentifier)
+	}
+
+	// Remove listener on rate notification
+	mgr.RateSource.RemoveRateListener(assetIdentifier)
 }
