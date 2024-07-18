@@ -159,10 +159,12 @@ func (dst *destination) isSendToAddress() bool {
 	return dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
 }
 
-func (dst *destination) handle(gtx C) {
+func (dst *destination) HandleDropdownInteraction(gtx C) {
 	dst.accountDropdown.Handle(gtx)
 	dst.walletDropdown.Handle(gtx)
+}
 
+func (dst *destination) handle(gtx C) {
 	if dst.accountSwitch.Changed() {
 		dst.addressChanged()
 	}

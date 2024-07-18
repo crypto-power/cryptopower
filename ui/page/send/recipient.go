@@ -196,8 +196,13 @@ func (rp *recipient) addressValidationError(err string) {
 	rp.sendDestination.setError(err)
 }
 
+func (rp *recipient) HandleUserInteractions(gtx C) {
+	rp.sendDestination.HandleDropdownInteraction(gtx)
+}
+
 func (rp *recipient) recipientLayout(index int, showIcon bool) layout.Widget {
 	return func(gtx C) D {
+		rp.handle(gtx)
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.WrapContent,
 			Height:      cryptomaterial.WrapContent,
