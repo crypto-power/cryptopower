@@ -50,7 +50,6 @@ func NewSyncProgressInfo() *SyncInfo {
 // exists.
 func (si *SyncInfo) IsSyncProgressSet(wallet sharedW.Asset) bool {
 	_, ok := si.progressInfo.Load(wallet)
-
 	return ok
 }
 
@@ -58,7 +57,6 @@ func (si *SyncInfo) IsSyncProgressSet(wallet sharedW.Asset) bool {
 // asset type.
 func (si *SyncInfo) GetSyncProgress(wallet sharedW.Asset) ProgressInfo {
 	data, _ := si.progressInfo.Load(wallet)
-
 	if data == nil {
 		return ProgressInfo{}
 	}
@@ -77,7 +75,6 @@ func (si *SyncInfo) SetSyncProgress(wallet sharedW.Asset, timeRemaining time.Dur
 	}
 
 	si.progressInfo.Store(wallet, progress)
-
 	return progress
 }
 
@@ -91,7 +88,6 @@ func (si *SyncInfo) DeleteSyncProgress(wallet sharedW.Asset) {
 // provided asset type exists.
 func (si *SyncInfo) IsRescanProgressSet(wallet sharedW.Asset) bool {
 	_, ok := si.rescanInfo.Load(wallet)
-
 	return ok
 }
 
@@ -99,7 +95,6 @@ func (si *SyncInfo) IsRescanProgressSet(wallet sharedW.Asset) bool {
 // asset type.
 func (si *SyncInfo) GetRescanProgress(wallet sharedW.Asset) *sharedW.HeadersRescanProgressReport {
 	data, _ := si.rescanInfo.Load(wallet)
-
 	return data.(*sharedW.HeadersRescanProgressReport)
 }
 
