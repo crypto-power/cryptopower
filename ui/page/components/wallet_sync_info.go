@@ -486,7 +486,6 @@ func (wsi *WalletSyncInfo) progressStatusDetails() (int, string) {
 func (wsi *WalletSyncInfo) layoutAutoSyncSection(gtx C) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			wsi.syncSwitch.SetChecked(wsi.wallet.IsSyncing() || wsi.wallet.IsSynced())
 			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, wsi.syncSwitch.Layout)
 		}),
 		layout.Rigid(wsi.Theme.Body2(values.String(values.StrSync)).Layout),
@@ -632,19 +631,30 @@ func (wsi *WalletSyncInfo) handle(gtx C) {
 		}()
 	}
 
-	isSyncShutting := wsi.wallet.IsSyncShuttingDown()
-	wsi.syncSwitch.SetEnabled(!isSyncShutting)
-	if wsi.syncSwitch.Changed(gtx) {
-		if wsi.wallet.IsRescanning() {
-			wsi.wallet.CancelRescan()
+	wsi.syncSwitch.SetEnabled(!wsi.wallet.IsSyncShuttingDown())
+	connected := wsi.wallet.IsConnectedToNetwork()
+	autosync := wsi.wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
+	wsi.syncSwitch.SetChecked(autosync) // update switch layout to match state
+	if connected && !autosync {
+		// ensure the syncing process matches the autoSync state.
+		for wsi.wallet.IsConnectedToNetwork() {
+			wsi.wallet.CancelSync()
+			time.Sleep(500 * time.Millisecond)
 		}
-
-		go func() {
-			wsi.ToggleSync(wsi.wallet, func(b bool) {
-				wsi.syncSwitch.SetChecked(b)
-				wsi.wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
-			})
-		}()
+	}
+	if wsi.syncSwitch.Changed(gtx) {
+		autoSync := wsi.syncSwitch.IsChecked()
+		wsi.wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, autoSync)
+		if autoSync {
+			wsi.ToggleSync(wsi.wallet, func(_ bool) {})
+		} else {
+			if wsi.wallet.IsRescanning() {
+				wsi.wallet.CancelRescan()
+			}
+			if wsi.wallet.IsSyncing() {
+				wsi.wallet.CancelSync()
+			}
+		}
 	}
 
 	if wsi.toBackup.Button.Clicked(gtx) {

@@ -491,9 +491,11 @@ func (pg *CreateWallet) createWallet() {
 	walletName := pg.walletName.Editor.Text()
 	pass := pg.passwordEditor.Editor.Text()
 	seedType := GetWordSeedType(pg.seedTypeDropdown.Selected())
+	var wallet sharedW.Asset
+	var err error
 	switch strings.ToLower(pg.assetTypeDropdown.Selected()) {
 	case libutils.DCRWalletAsset.ToStringLower():
-		_, err := pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		wallet, err = pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
 				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
@@ -506,7 +508,7 @@ func (pg *CreateWallet) createWallet() {
 		}
 
 	case libutils.BTCWalletAsset.ToStringLower():
-		_, err := pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		wallet, err = pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
 				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
@@ -519,7 +521,7 @@ func (pg *CreateWallet) createWallet() {
 		}
 
 	case libutils.LTCWalletAsset.ToStringLower():
-		_, err := pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		wallet, err = pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
 				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
@@ -531,7 +533,7 @@ func (pg *CreateWallet) createWallet() {
 			return
 		}
 	}
-
+	wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true) // auto sync when create wallet
 	pg.walletCreationSuccessCallback()
 }
 

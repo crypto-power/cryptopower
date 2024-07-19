@@ -532,7 +532,7 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
+				wallet, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
 				if err != nil {
 					errString := err.Error()
 					if err.Error() == libutils.ErrExist {
@@ -542,7 +542,7 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 					pg.isRestoring = false
 					return false
 				}
-
+				wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true) // auto sync when restore wallet
 				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
 				pg.window.ShowModal(infoModal)
 				pg.resetSeeds()
