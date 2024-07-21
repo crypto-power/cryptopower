@@ -364,6 +364,9 @@ func (sp *startPage) welcomePage(gtx C) D {
 			return sp.loadingSection(gtx)
 		}),
 		layout.Expanded(func(gtx C) D {
+			if sp.loading {
+				return D{}
+			}
 			return sp.pageHeaderLayout(gtx, "", true)
 		}),
 	)
