@@ -82,7 +82,6 @@ func (t *Theme) NewCommonDropDown(items []DropDownItem, lastSelectedItem *DropDo
 	d := t.DropDown(items, lastSelectedItem, group, reversePos)
 	d.FontWeight = font.SemiBold
 	d.SelectedItemIconColor = &t.Color.Primary
-	d.Background = &t.Color.Surface
 	d.BorderWidth = 2
 	d.Width = width
 	d.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding44}
@@ -506,7 +505,7 @@ func (d *DropDown) drawLayout(gtx C, body layout.Widget) D {
 		if d.Background != nil {
 			d.linearLayout.Background = *d.Background
 		} else {
-			d.linearLayout.Background = d.theme.Color.Gray2
+			d.linearLayout.Background = d.theme.Color.Surface
 		}
 		d.linearLayout.Padding = layout.Inset{}
 		d.linearLayout.Shadow = nil
