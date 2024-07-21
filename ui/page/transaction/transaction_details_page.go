@@ -920,15 +920,6 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 						layout.Rigid(func(gtx C) D {
 							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									if pg.moreItems[i].button.Clicked(gtx) {
-										switch pg.moreItems[i].id {
-										case viewBlockID: // redirect to browser
-											pg.showbrowserURLModal(pg.moreItems[i].button)
-											pg.moreOptionIsOpen = false
-										default:
-										}
-									}
-
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return pg.Theme.Label(values.TextSize14, pg.moreItems[i].text).Layout(gtx)
 								})
@@ -956,6 +947,18 @@ func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) HandleUserInteractions(gtx C) {
+
+	for _, item := range pg.moreItems {
+		if item.button.Clicked(gtx) {
+			switch item.id {
+			case viewBlockID: // redirect to browser
+				pg.showbrowserURLModal(item.button)
+				pg.moreOptionIsOpen = false
+			default:
+			}
+		}
+	}
+
 	if pg.moreOption.Clicked(gtx) {
 		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
