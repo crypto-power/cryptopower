@@ -158,7 +158,11 @@ func (pg *Page) OnNavigatedTo() {
 
 	pg.walletDropdown.ListenForTxNotifications(pg.ParentWindow())
 	_ = pg.accountDropdown.Setup(pg.selectedWallet)
-	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.accountDropdown.SelectedAccount().Number)
+	selectedAccount := pg.accountDropdown.SelectedAccount()
+	if selectedAccount == nil {
+		return
+	}
+	currentAddress, err := pg.selectedWallet.CurrentAddress(selectedAccount.Number)
 	if err != nil {
 		errStr := fmt.Sprintf("Error getting current address: %v", err)
 		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
