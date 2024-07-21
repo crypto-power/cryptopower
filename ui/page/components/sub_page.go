@@ -180,7 +180,7 @@ func (sp *SubPage) EventHandler(gtx C, window app.WindowNavigator) {
 		sp.Back()
 	}
 
-	if sp.ExtraItem != nil && sp.ExtraItem.Clicked(gtx) {
+	if sp.ExtraItem != nil && sp.ExtraItem.Clicked(gtx) && sp.HandleExtra != nil {
 		sp.HandleExtra()
 	}
 }

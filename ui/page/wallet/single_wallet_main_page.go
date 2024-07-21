@@ -165,15 +165,16 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 func (swmp *SingleWalletMasterPage) initTabOptions() {
 	commonTabs := []string{
 		values.String(values.StrInfo),
+		values.String(values.StrReceive),
 		values.String(values.StrTransactions),
 		values.String(values.StrAccounts),
 		values.String(values.StrSettings),
 	}
 
 	if !swmp.selectedWallet.IsWatchingOnlyWallet() {
-		// Add 'Send' and 'Receive' to the tabs for non-watching-only wallets.
-		sendTab := []string{values.String(values.StrSend), values.String(values.StrReceive)}
-		// Insert 'Send' and 'Receive' after 'StrInfo'.
+		// Add 'Send' to the tabs for non-watching-only wallets.
+		sendTab := []string{values.String(values.StrSend)}
+		// Insert 'Send' after 'StrInfo'.
 		commonTabs = append(commonTabs[:1], append(sendTab, commonTabs[1:]...)...)
 	}
 

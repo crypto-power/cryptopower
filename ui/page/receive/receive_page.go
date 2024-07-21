@@ -103,6 +103,7 @@ func (pg *Page) initWalletSelectors(wallet sharedW.Asset) {
 				pg.accountDropdown.Setup(wallet)
 			}
 		}).
+		EnableWatchOnlyWallets(true).
 		Setup()
 	pg.accountDropdown = components.NewAccountDropdown(pg.Load).
 		SetChangedCallback(func(account *sharedW.Account) {
