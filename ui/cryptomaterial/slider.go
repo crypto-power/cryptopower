@@ -77,6 +77,18 @@ func (s *Slider) GetSelectedIndex() int {
 	return s.selected
 }
 
+func (s *Slider) IsLastSlide() bool {
+	return s.selected == len(s.slideItems)-1
+}
+
+func (s *Slider) NextSlide() {
+	s.handleActionEvent(true)
+}
+
+func (s *Slider) ResetSlide() {
+	s.selected = 0
+}
+
 func (s *Slider) SetDisableDirectionBtn(disable bool) {
 	s.disableButtonDirection = disable
 }

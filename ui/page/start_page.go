@@ -69,6 +69,7 @@ type startPage struct {
 	ctx context.Context
 
 	addWalletButton     cryptomaterial.Button
+	skipButton          cryptomaterial.Button
 	nextButton          cryptomaterial.Button
 	backButton          cryptomaterial.IconButton
 	networkSwitchButton *cryptomaterial.Clickable
@@ -99,6 +100,7 @@ func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app
 
 		addWalletButton:     l.Theme.Button(values.String(values.StrAddWallet)),
 		nextButton:          l.Theme.Button(values.String(values.StrNext)),
+		skipButton:          l.Theme.OutlineButton(values.String(values.StrSkip)),
 		backButton:          getBackButton(l),
 		networkSwitchButton: l.Theme.NewClickable(true),
 		introductionSlider:  l.Theme.Slider(),
@@ -266,11 +268,19 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 
 	if sp.nextButton.Clicked(gtx) {
 		if sp.currentPageIndex < startupSettingsPageIndex {
-			sp.currentPageIndex++
+			if sp.introductionSlider.IsLastSlide() {
+				sp.currentPageIndex++
+			} else {
+				sp.introductionSlider.NextSlide()
+			}
 		} else {
 			sp.updateSettings()
 			sp.currentPageIndex = -1
 		}
+	}
+
+	if sp.skipButton.Clicked(gtx) {
+		sp.currentPageIndex = 1
 	}
 
 	for i, item := range sp.settingsOptions {
@@ -303,6 +313,7 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 	}
 
 	for sp.backButton.Button.Clicked(gtx) {
+		sp.introductionSlider.ResetSlide()
 		if sp.currentPageIndex < 0 {
 			sp.currentPageIndex = 1
 		} else {
@@ -332,16 +343,24 @@ func (sp *startPage) OnNavigatedFrom() {}
 // Part of the load.Page interface.
 func (sp *startPage) Layout(gtx C) D {
 	gtx.Constraints.Min = gtx.Constraints.Max // use maximum height & width
+	sp.updateNextButtonText()
 	if sp.currentPageIndex < 0 || sp.isQuitting {
 		return sp.welcomePage(gtx)
 	}
 
 	if sp.displayStartPage {
 		return sp.pageLayout(gtx, func(gtx C) D {
-			welcomeText := sp.Theme.Label(sp.ConvertTextSize(values.TextSize60), strings.ToUpper(values.String(values.StrAppName)))
-			welcomeText.Alignment = text.Middle
-			welcomeText.Font.Weight = font.Bold
-			return welcomeText.Layout(gtx)
+			return layout.Flex{Alignment: layout.Middle, Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return sp.logo.LayoutSize(gtx, values.MarginPadding150)
+				}),
+				layout.Rigid(func(gtx C) D {
+					welcomeText := sp.Theme.Label(sp.ConvertTextSize(values.TextSize60), strings.ToUpper(values.String(values.StrAppName)))
+					welcomeText.Alignment = text.Middle
+					welcomeText.Font.Weight = font.Bold
+					return welcomeText.Layout(gtx)
+				}),
+			)
 		})
 	}
 	return sp.onBoardingScreensLayout(gtx)
@@ -467,6 +486,29 @@ func (sp *startPage) introScreenLayout(gtx C) D {
 	return sp.introductionSlider.Layout(gtx, sliderWidget)
 }
 
+func (sp *startPage) updateNextButtonText() {
+	if sp.currentPageIndex < startupSettingsPageIndex && sp.introductionSlider.IsLastSlide() {
+		sp.nextButton.Text = values.String(values.StrGetStarted)
+		return
+	}
+	sp.nextButton.Text = values.String(values.StrNext)
+}
+
+func (sp *startPage) introScreenButtons(gtx C) D {
+	if sp.introductionSlider.IsLastSlide() {
+		return sp.nextButton.Layout(gtx)
+	}
+	return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+
+			return sp.skipButton.Layout(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return sp.nextButton.Layout(gtx)
+		}),
+	)
+}
+
 func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -488,9 +530,9 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 						layout.Rigid(func(gtx C) D {
 							gtx.Constraints.Min.X = gtx.Dp(values.MarginPaddingTransform(sp.IsMobileView(), values.MarginPadding420))
 							if !sp.IsMobileView() {
-								return sp.nextButton.Layout(gtx)
+								return sp.introScreenButtons(gtx)
 							}
-							return layout.Inset{Top: values.MarginPadding64}.Layout(gtx, sp.nextButton.Layout)
+							return layout.Inset{Top: values.MarginPadding64}.Layout(gtx, sp.introScreenButtons)
 						}),
 					)
 				})

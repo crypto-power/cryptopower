@@ -768,6 +768,7 @@ const EN = `
 "weekAgo" = "%d week ago"
 "weeksAgo" = "%d weeks ago"
 "welcomeNote" = "Welcome to Cryptopower Wallet."
+"getStarted" = "Get Started"
 "whatToCallWallet" = "What would you like to call your wallet?"
 "whatIsCex" = "What is Centralized Exchange?"
 "whatIsDex" = "What is Decred Decentralized Exchange?"
