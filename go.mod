@@ -16,12 +16,12 @@ require (
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.8
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74
-	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.3
-	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
-	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
-	github.com/btcsuite/btcwallet/walletdb v1.4.0
-	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
+	github.com/btcsuite/btcwallet v0.16.10-0.20240718224643-db3a4a2543bd
+	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.4
+	github.com/btcsuite/btcwallet/wallet/txrules v1.2.1
+	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.4
+	github.com/btcsuite/btcwallet/walletdb v1.4.2
+	github.com/btcsuite/btcwallet/wtxmgr v1.5.3
 	github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4
 	github.com/dcrlabs/ltcwallet v0.0.0-20240518141247-13553c8fce6a
 	github.com/decred/dcrd/addrmgr/v2 v2.0.4
@@ -46,7 +46,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/kevinburke/nacl v0.0.0-20190829012316-f3ed23dbd7f8
-	github.com/lightninglabs/neutrino v0.15.0
+	github.com/lightninglabs/neutrino v0.16.0
 	github.com/ltcsuite/ltcd v0.23.6-0.20240131072528-64dfa402637a
 	github.com/ltcsuite/ltcd/btcec/v2 v2.3.2
 	github.com/ltcsuite/ltcd/chaincfg/chainhash v1.0.2
@@ -161,7 +161,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf // indirect
-	github.com/lightninglabs/neutrino/cache v1.1.0 // indirect
+	github.com/lightninglabs/neutrino/cache v1.1.1 // indirect
 	github.com/lightningnetwork/lnd/clock v1.0.1 // indirect
 	github.com/lightningnetwork/lnd/queue v1.0.1 // indirect
 	github.com/lightningnetwork/lnd/ticker v1.0.0 // indirect
@@ -221,13 +221,6 @@ require (
 // the android OS using gomobile. This replace can be removed once any
 // of those projects update their github.com/lib/pq dependency.
 replace github.com/lib/pq => github.com/lib/pq v1.10.4
-
-// The newer version of github.com/btcsuite/btcwallet
-// (v0.16.10-0.20230706223227-037580c66b74) is not backward compactible with the
-// current version (v0.16.9) used by cryptopower. This temporary workaround is
-// neccessary to work with dcrdex which has latest version of
-// github.com/btcsuite/btcwallet.
-replace github.com/btcsuite/btcwallet v0.16.10-0.20230706223227-037580c66b74 => github.com/btcsuite/btcwallet v0.16.9
 
 // https://github.com/ukane-philemon/dcrdex/tree/btc-node
 replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240702002443-384278ca5340

@@ -334,7 +334,7 @@ func (asset *Asset) ConnectedPeers() int32 {
 	if !asset.IsConnectedToNetwork() {
 		return -1
 	}
-	return asset.chainClient.CS.ConnectedCount()
+	return asset.chainClient.CS.(ExtraNeutrinoChainService).ConnectedCount()
 }
 
 // IsConnectedToNetwork returns true if the wallet is connected to the network.
