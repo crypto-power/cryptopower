@@ -81,9 +81,9 @@ type activeSyncData struct {
 	// genSyncProgress tracks progress of the current sync running.
 	genSyncProgress *sharedW.GeneralSyncProgress
 
-	totalInactiveSeconds time.Duration
-	isRescanning         bool
-	isAddressDiscovery   bool
+	totalInactiveDuration time.Duration
+	isRescanning          bool
+	isAddressDiscovery    bool
 }
 
 const (
@@ -147,7 +147,7 @@ func (asset *Asset) EnableSyncLogs() {
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds time.Duration) {
+func (asset *Asset) SyncInactiveForPeriod(totalInactiveDuration time.Duration) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -156,10 +156,10 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds time.Duration) {
 		return
 	}
 
-	asset.syncData.totalInactiveSeconds += totalInactiveSeconds
+	asset.syncData.totalInactiveDuration += totalInactiveDuration
 	if asset.syncData.numOfConnectedPeers == 0 {
 		// assume it would take another 60 seconds to reconnect to peers
-		asset.syncData.totalInactiveSeconds += secondsToDuration(60.0)
+		asset.syncData.totalInactiveDuration += secondsToDuration(60.0)
 	}
 }
 

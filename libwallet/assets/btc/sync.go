@@ -171,9 +171,9 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 			TotalSyncProgress:  syncProgress,
 			TotalTimeRemaining: timeRemaining,
 		},
+		TotalHeadersToFetch:  asset.syncData.bestBlockheight,
+		HeadersFetchProgress: syncProgress,
 	}
-	headersFetchProgress.TotalHeadersToFetch = asset.syncData.bestBlockheight
-	headersFetchProgress.HeadersFetchProgress = syncProgress
 
 	// publish the sync progress results to all listeners.
 	for _, listener := range asset.syncData.syncProgressListeners {
