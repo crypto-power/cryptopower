@@ -114,10 +114,6 @@ func (d *WalletDropdown) walletBalance(wal sharedW.Asset) (totalBalance, spendab
 	}
 	var tBal, sBal int64
 	for _, account := range accountsResult.Accounts {
-		// If the wallet is watching-only, the spendable balance is zero.
-		if wal.IsWatchingOnlyWallet() {
-			account.Balance.Spendable = wal.ToAmount(0)
-		}
 		tBal += account.Balance.Total.ToInt()
 		sBal += account.Balance.Spendable.ToInt()
 	}
