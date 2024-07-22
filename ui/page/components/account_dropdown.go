@@ -129,6 +129,9 @@ func (d *AccountDropdown) getAccountItemLayout(account *sharedW.Account) layout.
 						return spendableText.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
+						if d.selectedWallet != nil && d.selectedWallet.IsWatchingOnlyWallet() {
+							account.Balance.Spendable = d.selectedWallet.ToAmount(0)
+						}
 						return d.Theme.Label(values.TextSizeTransform(d.IsMobileView(), values.TextSize14), account.Balance.Spendable.String()).Layout(gtx)
 					}),
 				)
