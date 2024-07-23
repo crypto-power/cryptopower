@@ -36,6 +36,7 @@ type Icons struct {
 	TicketUnminedIcon *Image
 
 	BTC, DCR, DCRBlue, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly, DcrDex *Image
+	AppIcon                                                                  *Image
 }
 
 // TODO: Deprecate some of these standard icons eg ActionInfo
@@ -79,6 +80,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	decredIcons := assets.DecredIcons
 
 	i.StandardMaterialIcons()
+	i.AppIcon = NewImage(decredIcons["appicon"])
 	i.OverviewIcon = NewImage(decredIcons["ic_overview"])
 	i.OverviewIconInactive = NewImage(decredIcons["ic_overview_inactive"])
 	i.WalletIconInactive = NewImage(decredIcons["ic_wallet_inactive"])

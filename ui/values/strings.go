@@ -878,6 +878,7 @@ const (
 	StrWeekAgo                               = "weekAgo"
 	StrWeeksAgo                              = "weeksAgo"
 	StrWelcomeNote                           = "welcomeNote"
+	StrGetStarted                            = "getStarted"
 	StrWhatIsDex                             = "whatIsDex"
 	StrWhatIsCex                             = "whatIsCex"
 	StrWhatToCallWallet                      = "whatToCallWallet"

@@ -430,6 +430,7 @@ const ES = `
 "loading" = "Cargando..."
 "openingWallet" = "Apertura de carteras"
 "welcomeNote" = "Bienvenido a Decred Wallet, una billetera móvil segura y de código abierto".
+"getStarted" = "Empezar"
 "generateAddress" = "Generar nueva dirección"
 "receivingAddress" = "Cuenta receptora"
 "yourAddress" = "Su dirección"

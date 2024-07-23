@@ -408,6 +408,7 @@ const FR = `
 "loading" = "Chargement..."
 "openingWallet" = "Ouverture des portefeuilles"
 "welcomeNote" = "Bienvenue dans Decred Wallet, un portefeuille mobile sécurisé et open-source."
+"getStarted" = "Commencer"
 "generateAddress" = "Générer une nouvelle adresse"
 "receivingAddress" = "Recevoir un compte"
 "yourAddress" = "Votre adresse"
