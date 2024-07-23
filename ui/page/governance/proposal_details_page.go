@@ -59,7 +59,6 @@ type ProposalDetails struct {
 
 	viewInPoliteiaBtn *cryptomaterial.Clickable
 	copyRedirectURL   *cryptomaterial.Clickable
-	tempRightHead     *cryptomaterial.Clickable
 
 	descriptionCard cryptomaterial.Card
 	vote            cryptomaterial.Button
@@ -91,7 +90,6 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 		successIcon:       l.Theme.Icons.ActionCheckCircle,
 		viewInPoliteiaBtn: l.Theme.NewClickable(true),
 		copyRedirectURL:   l.Theme.NewClickable(false),
-		tempRightHead:     l.Theme.NewClickable(false),
 		voteBar:           components.NewVoteBar(l),
 	}
 
@@ -187,7 +185,6 @@ func (pg *ProposalDetails) Layout(gtx C) D {
 			}
 			return layout.Inset{Bottom: values.MarginPadding16, Top: marginTop}.Layout(gtx, pg.layoutTitle)
 		},
-		ExtraItem: pg.tempRightHead,
 		Extra: func(gtx C) D {
 			if pg.IsMobileView() {
 				return D{}

@@ -21,7 +21,6 @@ type AccountDropdown struct {
 	allAccounts            []*sharedW.Account
 	accountChangedCallback func(*sharedW.Account)
 	accountIsValid         func(*sharedW.Account) bool
-	isWatchOnlyEnabled     bool
 }
 
 func NewAccountDropdown(l *load.Load) *AccountDropdown {
@@ -42,34 +41,32 @@ func (d *AccountDropdown) Setup(wallet sharedW.Asset) *AccountDropdown {
 	d.selectedWallet = wallet
 	items := []cryptomaterial.DropDownItem{}
 	d.allAccounts = make([]*sharedW.Account, 0)
-	if !wallet.IsWatchingOnlyWallet() || d.isWatchOnlyEnabled {
-		accounts, err := wallet.GetAccountsRaw()
-		if err != nil {
-			d.selectedAccount = nil
-			d.dropdown.SetItems(items)
-			return d
-		}
+	accounts, err := wallet.GetAccountsRaw()
+	if err != nil {
+		d.selectedAccount = nil
+		d.dropdown.SetItems(items)
+		return d
+	}
 
-		for _, account := range accounts.Accounts {
-			if d.accountIsValid == nil || d.accountIsValid(account) {
-				item := cryptomaterial.DropDownItem{
-					Text:      fmt.Sprint(account.Number),
-					Icon:      d.Theme.Icons.AccountIcon,
-					DisplayFn: d.getAccountItemLayout(account),
-				}
-				items = append(items, item)
-				d.allAccounts = append(d.allAccounts, account)
+	for _, account := range accounts.Accounts {
+		if d.accountIsValid == nil || d.accountIsValid(account) {
+			item := cryptomaterial.DropDownItem{
+				Text:      fmt.Sprint(account.Number),
+				Icon:      d.Theme.Icons.AccountIcon,
+				DisplayFn: d.getAccountItemLayout(account),
 			}
+			items = append(items, item)
+			d.allAccounts = append(d.allAccounts, account)
 		}
-		if len(items) > 0 && !d.selectedIsValid() { // if selected account is not valid, select the first valid account
-			id := items[0].Text
-			accountNum, err := strconv.Atoi(id)
-			if err == nil {
-				d.selectedAccount = d.getAccountByNumber(int32(accountNum))
-				d.dropdown.SetSelectedValue(id)
-				if d.accountChangedCallback != nil {
-					d.accountChangedCallback(d.selectedAccount)
-				}
+	}
+	if len(items) > 0 && !d.selectedIsValid() { // if selected account is not valid, select the first valid account
+		id := items[0].Text
+		accountNum, err := strconv.Atoi(id)
+		if err == nil {
+			d.selectedAccount = d.getAccountByNumber(int32(accountNum))
+			d.dropdown.SetSelectedValue(id)
+			if d.accountChangedCallback != nil {
+				d.accountChangedCallback(d.selectedAccount)
 			}
 		}
 	}
@@ -132,6 +129,9 @@ func (d *AccountDropdown) getAccountItemLayout(account *sharedW.Account) layout.
 						return spendableText.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
+						if d.selectedWallet != nil && d.selectedWallet.IsWatchingOnlyWallet() {
+							account.Balance.Spendable = d.selectedWallet.ToAmount(0)
+						}
 						return d.Theme.Label(values.TextSizeTransform(d.IsMobileView(), values.TextSize14), account.Balance.Spendable.String()).Layout(gtx)
 					}),
 				)
@@ -147,12 +147,6 @@ func (d *AccountDropdown) getAccountByNumber(accountNumber int32) *sharedW.Accou
 		}
 	}
 	return nil
-}
-
-// EnableWatchOnlyWallets enables selection of watchOnly wallets and their accounts.
-func (d *AccountDropdown) EnableWatchOnlyWallets(isEnable bool) *AccountDropdown {
-	d.isWatchOnlyEnabled = isEnable
-	return d
 }
 
 func (d *AccountDropdown) SelectedAccount() *sharedW.Account {

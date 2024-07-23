@@ -156,6 +156,9 @@ func (pg *Page) headerLayout(gtx C) D {
 				return txt.Layout(gtx)
 			}),
 			layout.Flexed(1, func(gtx C) D {
+				if pg.wallet.IsWatchingOnlyWallet() {
+					return D{}
+				}
 				return layout.E.Layout(gtx, pg.addAccountBtnLayout)
 			}),
 		)

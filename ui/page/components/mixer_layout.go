@@ -75,7 +75,7 @@ func (mc MixerComponent) middleMixerLayout(gtx C) D {
 			Top:    values.MarginPadding10,
 			Bottom: values.MarginPadding10,
 		},
-		Background: mc.Theme.Color.LightBlue7,
+		Background: mc.Theme.Color.Gray5,
 		Alignment:  layout.Middle,
 		Border: cryptomaterial.Border{
 			Radius: cryptomaterial.Radius(7),

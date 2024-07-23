@@ -81,7 +81,6 @@ func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetTyp
 			}
 			return true
 		}).
-		EnableWatchOnlyWallets(true).
 		Setup(dst.walletDropdown.SelectedWallet())
 }
 

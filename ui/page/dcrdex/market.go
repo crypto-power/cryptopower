@@ -1753,7 +1753,6 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 		AccountValidator(func(a *sharedW.Account) bool {
 			return !a.IsWatchOnly
 		}).
-		EnableWatchOnlyWallets(false).
 		Setup(pg.walletSelector.SelectedWallet())
 
 	var dexPass string
