@@ -22,6 +22,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/renderers"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -333,7 +334,7 @@ func (pg *ProposalDetails) layoutProposalVoteBar(gtx C) D {
 
 func (pg *ProposalDetails) statusAndTimeLayout(gtx C) D {
 	grayCol := pg.Load.Theme.Color.GrayText2
-	timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(pg.proposal.Timestamp))
+	timeAgoLabel := pg.Load.Theme.Body2(pageutils.TimeAgo(pg.proposal.Timestamp))
 	timeAgoLabel.Color = grayCol
 
 	dotLabel := pg.Load.Theme.H4(" . ")
@@ -599,10 +600,10 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 	versionLabel := pg.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
 	versionLabel.Color = grayCol
 
-	publishedLabel := pg.Theme.Body2(values.String(values.StrPublished2) + " " + components.TimeAgo(proposal.PublishedAt))
+	publishedLabel := pg.Theme.Body2(values.String(values.StrPublished2) + " " + pageutils.TimeAgo(proposal.PublishedAt))
 	publishedLabel.Color = grayCol
 
-	updatedLabel := pg.Theme.Body2(values.String(values.StrUpdated) + " " + components.TimeAgo(proposal.Timestamp))
+	updatedLabel := pg.Theme.Body2(values.String(values.StrUpdated) + " " + pageutils.TimeAgo(proposal.Timestamp))
 	updatedLabel.Color = grayCol
 
 	userLabel.TextSize = pg.ConvertTextSize(values.TextSize14)

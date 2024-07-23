@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"decred.org/dcrdex/dex/encode"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -52,20 +51,6 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
-}
-
-func FormatDateOrTime(timestamp int64) string {
-	utcTime := time.Unix(timestamp, 0).UTC()
-	if time.Now().UTC().Sub(utcTime).Hours() < 168 {
-		return utcTime.Weekday().String()
-	}
-
-	t := strings.Split(utcTime.Format(time.UnixDate), " ")
-	t2 := t[2]
-	if t[2] == "" {
-		t2 = t[3]
-	}
-	return fmt.Sprintf("%s %s", t[1], t2)
 }
 
 // breakBalance takes the balance string and returns it in two slices

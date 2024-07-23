@@ -239,15 +239,14 @@ type SyncProgressListener struct {
 }
 
 type GeneralSyncProgress struct {
-	TotalSyncProgress         int32 `json:"totalSyncProgress"`
-	TotalTimeRemainingSeconds int64 `json:"totalTimeRemainingSeconds"`
+	TotalSyncProgress  int32         `json:"totalSyncProgress"`
+	TotalTimeRemaining time.Duration `json:"totalTimeRemainingSeconds"`
 }
 
 type CFiltersFetchProgressReport struct {
 	*GeneralSyncProgress
-	BeginFetchCFiltersTimeStamp int64
-	StartCFiltersHeight         int32
-	CfiltersFetchTimeSpent      int64
+	BeginFetchCFiltersTimeStamp time.Time
+	CfiltersFetchTimeSpent      time.Duration
 	TotalFetchedCFiltersCount   int32
 	TotalCFiltersToFetch        int32 `json:"totalCFiltersToFetch"`
 	CurrentCFilterHeight        int32 `json:"currentCFilterHeight"`
@@ -256,8 +255,7 @@ type CFiltersFetchProgressReport struct {
 
 type HeadersFetchProgressReport struct {
 	*GeneralSyncProgress
-	HeadersFetchTimeSpent int64
-	BeginFetchTimeStamp   time.Time
+	HeadersFetchTimeSpent time.Duration
 	StartHeaderHeight     *int32
 	TotalHeadersToFetch   int32 `json:"totalHeadersToFetch"`
 	HeadersFetchProgress  int32 `json:"headersFetchProgress"`
@@ -265,18 +263,17 @@ type HeadersFetchProgressReport struct {
 
 type AddressDiscoveryProgressReport struct {
 	*GeneralSyncProgress
-	AddressDiscoveryStartTime int64
-	TotalDiscoveryTimeSpent   int64
-	AddressDiscoveryProgress  int32 `json:"addressDiscoveryProgress"`
+	TotalDiscoveryTimeSpent  time.Duration
+	AddressDiscoveryProgress int32 `json:"addressDiscoveryProgress"`
 }
 
 type HeadersRescanProgressReport struct {
 	*GeneralSyncProgress
-	TotalHeadersToScan  int32 `json:"totalHeadersToScan"`
-	CurrentRescanHeight int32 `json:"currentRescanHeight"`
-	RescanProgress      int32 `json:"rescanProgress"`
-	RescanTimeRemaining int64 `json:"rescanTimeRemaining"`
-	WalletID            int   `json:"walletID"`
+	TotalHeadersToScan  int32         `json:"totalHeadersToScan"`
+	CurrentRescanHeight int32         `json:"currentRescanHeight"`
+	RescanProgress      int32         `json:"rescanProgress"`
+	RescanTimeRemaining time.Duration `json:"rescanTimeRemaining"`
+	WalletID            int           `json:"walletID"`
 }
 
 /** end sync-related types */

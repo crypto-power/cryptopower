@@ -2,7 +2,6 @@ package btc
 
 import (
 	"fmt"
-	"math"
 	"sync/atomic"
 	"time"
 
@@ -355,16 +354,16 @@ func (asset *Asset) updateRescanProgress(height int32) {
 		WalletID:            asset.ID,
 	}
 
-	elapsedRescanTime := time.Now().Unix() - asset.syncData.rescanStartTime.Unix()
+	elapsedRescanTime := time.Since(asset.syncData.rescanStartTime)
 	rescanRate := headersFetchedSoFar / float64(rescanProgressReport.TotalHeadersToScan)
 
 	rescanProgressReport.RescanProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
-	estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))
-	rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - elapsedRescanTime
+	estimatedTotalRescanTime := float64(elapsedRescanTime) / rescanRate
+	rescanProgressReport.RescanTimeRemaining = secondsToDuration(estimatedTotalRescanTime) - elapsedRescanTime
 
 	rescanProgressReport.GeneralSyncProgress = &sharedW.GeneralSyncProgress{
-		TotalSyncProgress:         rescanProgressReport.RescanProgress,
-		TotalTimeRemainingSeconds: rescanProgressReport.RescanTimeRemaining,
+		TotalSyncProgress:  rescanProgressReport.RescanProgress,
+		TotalTimeRemaining: rescanProgressReport.RescanTimeRemaining,
 	}
 
 	if asset.blocksRescanProgressListener != nil {

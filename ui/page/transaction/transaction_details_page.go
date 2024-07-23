@@ -23,7 +23,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/utils"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -606,7 +606,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			if pg.transaction.Type == txhelper.TxTypeRegular || pg.transaction.Type == txhelper.TxTypeMixed {
 				dim := func(gtx C) D {
 					if pg.transaction.Direction == txhelper.TxDirectionReceived {
-						lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(pg.txDestinationAddresses[0], 0))
+						lbl := pg.Theme.Label(values.TextSize14, pageutils.SplitSingleString(pg.txDestinationAddresses[0], 0))
 						return lbl.Layout(gtx)
 					}
 					flexChilds := make([]layout.FlexChild, 0)
@@ -619,7 +619,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 								gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(address))})
 								pg.Toast.Notify(values.String(values.StrTxHashCopied))
 							}
-							lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(address, 0))
+							lbl := pg.Theme.Label(values.TextSize14, pageutils.SplitSingleString(address, 0))
 							lbl.Color = pg.Theme.Color.Primary
 							return clickable.Layout(gtx, lbl.Layout)
 						}))
@@ -774,7 +774,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			dim := func(gtx C) D {
-				lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(transaction.Hash, 30))
+				lbl := pg.Theme.Label(values.TextSize14, pageutils.SplitSingleString(transaction.Hash, 30))
 				lbl.Color = pg.Theme.Color.Primary
 
 				// copy transaction hash
@@ -808,7 +808,7 @@ func (pg *TxDetailsPage) txnInputs(gtx C) D {
 	collapsibleBody := func(gtx C) D {
 		return pg.transactionInputsContainer.Layout(gtx, len(transaction.Inputs), func(gtx C, i int) D {
 			input := transaction.Inputs[i]
-			addr := utils.SplitSingleString(input.PreviousOutpoint, 20)
+			addr := pageutils.SplitSingleString(input.PreviousOutpoint, 20)
 			return pg.txnIORow(gtx, input.Amount, input.AccountNumber, addr, i)
 		})
 	}
@@ -1009,7 +1009,7 @@ func (pg *TxDetailsPage) initTxnWidgets() transactionWdg {
 	txn.wallet = pg.Theme.Body2(pg.wallet.GetWalletName())
 
 	if components.TxConfirmations(pg.wallet, pg.transaction) >= pg.wallet.RequiredConfirmations() {
-		txn.status.Text = components.FormatDateOrTime(pg.transaction.Timestamp)
+		txn.status.Text = pageutils.FormatDateOrTime(pg.transaction.Timestamp)
 		txn.confirmationIcons = pg.Theme.Icons.ConfirmIcon
 	} else {
 		txn.status.Text = values.String(values.StrPending)

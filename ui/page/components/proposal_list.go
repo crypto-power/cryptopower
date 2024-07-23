@@ -10,6 +10,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -68,7 +69,7 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 
 	stateLabel := getStateLabel(l, proposal)
 
-	timeAgoLabel := l.Theme.Body2(TimeAgo(proposal.Timestamp))
+	timeAgoLabel := l.Theme.Body2(pageutils.TimeAgo(proposal.Timestamp))
 	timeAgoLabel.Color = grayCol
 
 	var categoryLabel cryptomaterial.Label
@@ -218,7 +219,7 @@ func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
 
 	stateLabel := getStateLabel(l, proposal)
 
-	timeAgoLabel := l.Theme.Body2(TimeAgo(proposal.Timestamp))
+	timeAgoLabel := l.Theme.Body2(pageutils.TimeAgo(proposal.Timestamp))
 	timeAgoLabel.Color = grayCol
 
 	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)

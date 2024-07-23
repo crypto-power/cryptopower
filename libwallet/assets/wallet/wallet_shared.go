@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"decred.org/dcrwallet/v4/errors"
@@ -38,6 +39,11 @@ type Wallet struct {
 	loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
+	// isSyncShuttingDown tracks the transition from sync ON to OFF. During
+	// this transition, the wallet status displays "Cancelling..." and the
+	// sync switch is disabled from receiving more user clicks until its over.
+	isSyncShuttingDown atomic.Bool
+
 	// Birthday holds the timestamp of the birthday block from where wallet
 	// restoration begins from. CreatedAt is available for audit purposes
 	// in relation to how long the wallet has been in existence.
@@ -51,6 +57,7 @@ type Wallet struct {
 	networkCancel func()
 
 	shuttingDown chan bool
+	isCancelDone chan struct{} // waits until all cancelFuncs functions run.
 	cancelFuncs  []context.CancelFunc
 
 	mu sync.RWMutex
@@ -129,11 +136,16 @@ func (wallet *Wallet) prepare() (err error) {
 	// operations and start go routine to listen for shutdown signal
 	wallet.cancelFuncs = make([]context.CancelFunc, 0)
 	wallet.shuttingDown = make(chan bool)
+	wallet.isCancelDone = make(chan struct{})
+
 	go func() {
 		<-wallet.shuttingDown
 		for _, cancel := range wallet.cancelFuncs {
 			cancel()
 		}
+
+		// Indicate completion of canceling all active contexts
+		wallet.isCancelDone <- struct{}{}
 	}()
 
 	return nil
@@ -164,6 +176,9 @@ func (wallet *Wallet) Shutdown() {
 			log.Errorf("tx db closed with error: %v", err)
 		}
 	}
+
+	// Ensure that all cancelFuncs are Run.
+	<-wallet.isCancelDone
 
 	log.Infof("(%s) full network shutdown protocols completed.", wallet.Name)
 }
@@ -333,6 +348,22 @@ func (wallet *Wallet) SetBirthday(birthday time.Time) {
 	// Triggers db update with the new birthday time.
 	_ = wallet.db.Save(wallet)
 	wallet.mu.Unlock()
+}
+
+// IsSyncShuttingDown returns true if the wallet sync shutdownn signal has been
+// recieved and remains true until the sync processes completely shutdown.
+func (wallet *Wallet) IsSyncShuttingDown() bool {
+	return wallet.isSyncShuttingDown.Load()
+}
+
+// EnableSyncShuttingDown marks the start of the sync shutdown process.
+func (wallet *Wallet) EnableSyncShuttingDown() {
+	wallet.isSyncShuttingDown.Store(true)
+}
+
+// EnableSyncShuttingDown marks the end of the sync shutdown process.
+func (wallet *Wallet) EndSyncShuttingDown() {
+	wallet.isSyncShuttingDown.Store(false)
 }
 
 func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,

@@ -32,7 +32,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/utils"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -633,7 +633,7 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 		if ticker == nil {
 			marketRate = pg.Printer.Sprintf("%f", rate)
 		} else {
-			marketRate = pg.Printer.Sprintf("%f (~ %s)", rate, utils.FormatAsUSDString(pg.Printer, rate*ticker.LastTradePrice))
+			marketRate = pg.Printer.Sprintf("%f (~ %s)", rate, pageutils.FormatAsUSDString(pg.Printer, rate*ticker.LastTradePrice))
 		}
 
 		change24 = mkt.SpotPrice.Change24
@@ -1180,7 +1180,7 @@ func (pg *DEXMarketPage) orderbook(gtx C) D {
 								marketRate := mkt.MsgRateToConventional(mkt.SpotPrice.Rate)
 								marketRateStr = fmt.Sprintf("%f %s", marketRate, quoteAsset)
 								if ticker := pg.selectedMarketUSDRateTicker(); ticker != nil {
-									marketRateStr = fmt.Sprintf("%f %s (~ %s)", marketRate, quoteAsset, utils.FormatAsUSDString(pg.Printer, marketRate*ticker.LastTradePrice))
+									marketRateStr = fmt.Sprintf("%f %s (~ %s)", marketRate, quoteAsset, pageutils.FormatAsUSDString(pg.Printer, marketRate*ticker.LastTradePrice))
 								}
 							}
 							lb := pg.Theme.Label(values.TextSize16, marketRateStr)
@@ -1318,7 +1318,7 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 									return layout.Flex{Axis: horizontal, Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 										pg.orderColumn(false, fmt.Sprintf("%s %s", values.String(ord.Type.String()), values.String(orderReader.SideString())), columnWidth, index),
 										pg.orderColumn(false, ord.MarketID, columnWidth, index),
-										pg.orderColumn(false, components.TimeAgo(int64(ord.SubmitTime/1000)), columnWidth, index),
+										pg.orderColumn(false, pageutils.TimeAgo(int64(ord.SubmitTime/1000)), columnWidth, index),
 										pg.orderColumn(false, orderReader.RateString(), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s %s", orderReader.BaseQtyString(), strings.ToTitle(orderReader.BaseSymbol)), columnWidth, index),
 										pg.orderColumn(false, fmt.Sprintf("%s%%", orderReader.FilledPercent()), columnWidth, index),

@@ -333,14 +333,6 @@ func (asset *Asset) IsSyncing() bool {
 	return asset.syncData.syncing
 }
 
-// IsSyncShuttingDown returns true if the wallet is shutting down.
-func (asset *Asset) IsSyncShuttingDown() bool {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-
-	return asset.syncData.isSyncShuttingDown
-}
-
 // ConnectedPeers returns the number of connected peers.
 func (asset *Asset) ConnectedPeers() int32 {
 	// Calling CS.ConnectedCount() before the first sync is

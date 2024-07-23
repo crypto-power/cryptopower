@@ -2,6 +2,7 @@ package ltc
 
 import (
 	"encoding/binary"
+	"time"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -125,4 +126,8 @@ func (asset *Asset) DeriveAccountXpub(seedMnemonic string, wordSeedType sharedW.
 
 func hardenedKey(key uint32) uint32 {
 	return key + hdkeychain.HardenedKeyStart
+}
+
+func secondsToDuration(secs float64) time.Duration {
+	return time.Duration(secs) * time.Second
 }

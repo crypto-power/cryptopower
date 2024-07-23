@@ -7,6 +7,7 @@ import (
 	"net"
 	"sort"
 	"sync"
+	"time"
 
 	"decred.org/dcrwallet/v4/errors"
 	"decred.org/dcrwallet/v4/p2p"
@@ -57,40 +58,32 @@ func (s *SyncData) generalSyncProgress() *sharedW.GeneralSyncProgress {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if s.syncing {
-		switch s.syncStage {
-		case HeadersFetchSyncStage:
-			return s.headersFetchProgress.GeneralSyncProgress
-		case AddressDiscoverySyncStage:
-			return s.addressDiscoveryProgress.GeneralSyncProgress
-		case HeadersRescanSyncStage:
-			return s.headersRescanProgress.GeneralSyncProgress
-		case CFiltersFetchSyncStage:
-			return s.cfiltersFetchProgress.GeneralSyncProgress
-		}
-	}
-
-	return nil
+	return s.genSyncProgress
 }
 
 // reading/writing of properties of this struct are protected by syncData.mu.
 type activeSyncData struct {
-	syncer *spv.Syncer
-
+	syncer    *spv.Syncer
 	syncStage utils.SyncStage
-
-	cfiltersFetchProgress    sharedW.CFiltersFetchProgressReport
-	headersFetchProgress     sharedW.HeadersFetchProgressReport
-	addressDiscoveryProgress sharedW.AddressDiscoveryProgressReport
-	headersRescanProgress    sharedW.HeadersRescanProgressReport
 
 	addressDiscoveryCompletedOrCanceled chan bool
 
-	rescanStartTime int64
+	// scanStartTime tracks the time when syncing or rescanning starts.
+	scanStartTime time.Time
+	// scanStartHeight tracks the height when syncing or rescanning starts.
+	scanStartHeight int32
 
-	totalInactiveSeconds int64
-	isRescanning         bool
-	isAddressDiscovery   bool
+	headersScanTimeSpent   time.Duration // time spent during the headers scan.
+	cfiltersScanTimeSpent  time.Duration // time spent during the Cfilters scan.
+	addrDiscoveryTimeSpent time.Duration // time spent in address discovery.
+	rescanTimeSpent        time.Duration // time spent during the rescan.
+
+	// genSyncProgress tracks progress of the current sync running.
+	genSyncProgress *sharedW.GeneralSyncProgress
+
+	totalInactiveDuration time.Duration
+	isRescanning          bool
+	isAddressDiscovery    bool
 }
 
 const (
@@ -102,36 +95,11 @@ const (
 )
 
 func (asset *Asset) initActiveSyncData() {
-	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
-		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
-		BeginFetchCFiltersTimeStamp: 0,
-		StartCFiltersHeight:         -1,
-		CfiltersFetchTimeSpent:      0,
-		TotalFetchedCFiltersCount:   0,
-	}
-
-	headersFetchProgress := sharedW.HeadersFetchProgressReport{
-		GeneralSyncProgress:   &sharedW.GeneralSyncProgress{},
-		HeadersFetchTimeSpent: -1,
-	}
-
-	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{
-		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
-		AddressDiscoveryStartTime: -1,
-		TotalDiscoveryTimeSpent:   -1,
-	}
-
-	headersRescanProgress := sharedW.HeadersRescanProgressReport{}
-	headersRescanProgress.GeneralSyncProgress = &sharedW.GeneralSyncProgress{}
-
 	asset.syncData.mu.Lock()
 	asset.syncData.activeSyncData = &activeSyncData{
 		syncStage: InvalidSyncStage,
 
-		cfiltersFetchProgress:    cfiltersFetchProgress,
-		headersFetchProgress:     headersFetchProgress,
-		addressDiscoveryProgress: addressDiscoveryProgress,
-		headersRescanProgress:    headersRescanProgress,
+		scanStartHeight: -1,
 	}
 	asset.syncData.mu.Unlock()
 }
@@ -152,8 +120,7 @@ func (asset *Asset) AddSyncProgressListener(syncProgressListener *sharedW.SyncPr
 	asset.syncData.syncProgressListeners[uniqueIdentifier] = syncProgressListener
 	asset.syncData.mu.Unlock()
 
-	// If sync is already on, notify this newly added listener of the current progress report.
-	return asset.PublishLastSyncProgress(uniqueIdentifier)
+	return nil
 }
 
 func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
@@ -174,44 +141,13 @@ func (asset *Asset) syncProgressListeners() []*sharedW.SyncProgressListener {
 	return listeners
 }
 
-func (asset *Asset) PublishLastSyncProgress(uniqueIdentifier string) error {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-
-	syncProgressListener, exists := asset.syncData.syncProgressListeners[uniqueIdentifier]
-	if !exists {
-		return errors.New(utils.ErrInvalid)
-	}
-
-	if asset.syncData.syncing && asset.syncData.activeSyncData != nil {
-		switch asset.syncData.activeSyncData.syncStage {
-		case HeadersFetchSyncStage:
-			if syncProgressListener.OnHeadersFetchProgress != nil {
-				syncProgressListener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
-			}
-
-		case AddressDiscoverySyncStage:
-			if syncProgressListener.OnAddressDiscoveryProgress != nil {
-				syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
-			}
-
-		case HeadersRescanSyncStage:
-			if syncProgressListener.OnHeadersRescanProgress != nil {
-				syncProgressListener.OnHeadersRescanProgress(&asset.syncData.headersRescanProgress)
-			}
-		}
-	}
-
-	return nil
-}
-
 func (asset *Asset) EnableSyncLogs() {
 	asset.syncData.mu.Lock()
 	asset.syncData.showLogs = true
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
+func (asset *Asset) SyncInactiveForPeriod(totalInactiveDuration time.Duration) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -220,10 +156,10 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 		return
 	}
 
-	asset.syncData.totalInactiveSeconds += totalInactiveSeconds
+	asset.syncData.totalInactiveDuration += totalInactiveDuration
 	if asset.syncData.numOfConnectedPeers == 0 {
 		// assume it would take another 60 seconds to reconnect to peers
-		asset.syncData.totalInactiveSeconds += 60
+		asset.syncData.totalInactiveDuration += secondsToDuration(60.0)
 	}
 }
 
@@ -263,6 +199,10 @@ func (asset *Asset) SpvSync() error {
 	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
 	addrManager := addrmgr.New(asset.DataDir(), net.LookupIP) // TODO: be mindful of tor
 	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
+
+	// Set the node to only connect to remote peers whose advertised best block
+	// height is greater than the currently synced.
+	lp.RequirePeerHeight(asset.GetBestBlockHeight())
 
 	syncer := spv.NewSyncer(asset.Internal().DCR, lp)
 	syncer.SetNotifications(asset.spvSyncNotificationCallbacks())
@@ -325,7 +265,7 @@ func (asset *Asset) CancelSync() {
 	asset.syncData.mu.RUnlock()
 
 	if cancelSync != nil {
-		log.Info("Canceling sync. May take a while for sync to fully cancel.")
+		log.Info("Cancelling sync. May take a while for sync to fully cancel.")
 
 		// Stop running cspp mixers
 		if asset.IsAccountMixerActive() {
@@ -343,9 +283,12 @@ func (asset *Asset) CancelSync() {
 
 		// When sync terminates and syncer.Run returns, we will get notified on this channel.
 		<-asset.syncData.syncCanceled
-
-		log.Info("Sync fully canceled.")
 	}
+
+	// Indicate that the sync shutdown process is fully complete.
+	asset.EndSyncShuttingDown()
+
+	log.Info("Sync fully cancelled.")
 }
 
 func (asset *Asset) IsWaiting() bool {
@@ -366,11 +309,6 @@ func (asset *Asset) IsConnectedToDecredNetwork() bool {
 
 func (asset *Asset) IsSynced() bool {
 	return asset.syncData.isSynced()
-}
-
-func (asset *Asset) IsSyncShuttingDown() bool {
-	// TODO: implement for DCR if synchronous shutdown takes a long time
-	return false
 }
 
 func (asset *Asset) CurrentSyncStage() utils.SyncStage {
@@ -474,6 +412,7 @@ func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 	return blockInfo
 }
 
+// GetBestBlockHeight returns the height of the best block already synced.
 func (asset *Asset) GetBestBlockHeight() int32 {
 	if !asset.WalletOpened() {
 		// This method is sometimes called after a wallet is deleted and causes crash.

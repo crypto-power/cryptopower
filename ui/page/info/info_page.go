@@ -248,6 +248,9 @@ func (pg *WalletInfo) walletTxWrapper(gtx C, tx *sharedW.Transaction, isHiddenSe
 // displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) HandleUserInteractions(gtx C) {
+	// Process subpage events too.
+	pg.walletSyncInfo.HandleUserInteractions(gtx)
+
 	if clicked, selectedItem := pg.recentTransactions.ItemClicked(); clicked {
 		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.transactions[selectedItem]))
 	}

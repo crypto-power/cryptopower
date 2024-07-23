@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"decred.org/dcrwallet/v4/spv"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,13 +58,13 @@ func (asset *Asset) handlePeerCountUpdate(peerCount int32) {
 func (asset *Asset) fetchCFiltersStarted() {
 	asset.syncData.mu.Lock()
 	asset.syncData.syncStage = CFiltersFetchSyncStage
-	asset.syncData.cfiltersFetchProgress.BeginFetchCFiltersTimeStamp = time.Now().Unix()
-	asset.syncData.cfiltersFetchProgress.TotalFetchedCFiltersCount = 0
+	asset.syncData.scanStartTime = time.Now()
+	asset.syncData.scanStartHeight = -1
 	showLogs := asset.syncData.showLogs
 	asset.syncData.mu.Unlock()
 
 	if showLogs {
-		log.Infof("Step 1 of 3 - fetching %d block headers.")
+		log.Info("Step 1 of 3 - fetching fetchCFiltersStarted.")
 	}
 }
 
@@ -71,30 +72,36 @@ func (asset *Asset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHeight
 	// lock the mutex before reading and writing to asset.syncData.*
 	asset.syncData.mu.Lock()
 
-	if asset.syncData.cfiltersFetchProgress.StartCFiltersHeight == -1 {
-		asset.syncData.cfiltersFetchProgress.StartCFiltersHeight = startCFiltersHeight
+	if asset.syncData.scanStartHeight == -1 {
+		asset.syncData.scanStartHeight = startCFiltersHeight
 	}
 
-	asset.syncData.cfiltersFetchProgress.TotalFetchedCFiltersCount += endCFiltersHeight - startCFiltersHeight
+	var cfiltersFetchData = &sharedW.CFiltersFetchProgressReport{
+		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
+		TotalFetchedCFiltersCount: endCFiltersHeight - startCFiltersHeight,
+	}
 
-	totalCFiltersToFetch := asset.GetBestBlockHeight() - asset.syncData.cfiltersFetchProgress.StartCFiltersHeight
-
-	cfiltersFetchProgress := float64(asset.syncData.cfiltersFetchProgress.TotalFetchedCFiltersCount) / float64(totalCFiltersToFetch)
+	totalCFiltersToFetch := float64(asset.GetBestBlockHeight() - asset.syncData.scanStartHeight)
+	cfiltersFetchProgress := float64(cfiltersFetchData.TotalFetchedCFiltersCount) / totalCFiltersToFetch
 
 	// If there was some period of inactivity,
 	// assume that this process started at some point in the future,
 	// thereby accounting for the total reported time of inactivity.
-	asset.syncData.cfiltersFetchProgress.BeginFetchCFiltersTimeStamp += asset.syncData.totalInactiveSeconds
-	asset.syncData.totalInactiveSeconds = 0
+	asset.syncData.scanStartTime = asset.syncData.scanStartTime.Add(asset.syncData.totalInactiveDuration)
+	asset.syncData.totalInactiveDuration = 0
 
-	timeTakenSoFar := time.Now().Unix() - asset.syncData.cfiltersFetchProgress.BeginFetchCFiltersTimeStamp
+	timeDurationTaken := time.Since(asset.syncData.scanStartTime)
+	timeTakenSoFar := timeDurationTaken.Seconds()
 	if timeTakenSoFar < 1 {
 		timeTakenSoFar = 1
 	}
-	estimatedTotalCFiltersFetchTime := float64(timeTakenSoFar) / cfiltersFetchProgress
+
+	asset.syncData.mu.Unlock()
+
+	estimatedTotalCFiltersFetchTime := timeTakenSoFar / cfiltersFetchProgress
 
 	// Use CFilters fetch rate to estimate headers fetch time.
-	cfiltersFetchRate := float64(asset.syncData.activeSyncData.cfiltersFetchProgress.TotalFetchedCFiltersCount) / float64(timeTakenSoFar)
+	cfiltersFetchRate := float64(cfiltersFetchData.TotalFetchedCFiltersCount) / timeTakenSoFar
 	estimatedHeadersLeftToFetch := asset.estimateBlockHeadersCountAfter(asset.GetBestBlockTimeStamp())
 	estimatedTotalHeadersFetchTime := float64(estimatedHeadersLeftToFetch) / cfiltersFetchRate
 	// increase estimated value by fetchPercentage
@@ -104,44 +111,43 @@ func (asset *Asset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHeight
 	estimatedRescanTime := estimatedTotalHeadersFetchTime * rescanPercentage
 	estimatedTotalSyncTime := estimatedTotalCFiltersFetchTime + estimatedTotalHeadersFetchTime + estimatedDiscoveryTime + estimatedRescanTime
 
-	totalSyncProgress := float64(timeTakenSoFar) / estimatedTotalSyncTime
-	totalTimeRemainingSeconds := int64(math.Round(estimatedTotalSyncTime)) - timeTakenSoFar
+	totalSyncProgress := timeTakenSoFar / estimatedTotalSyncTime
+	totalTimeRemaining := secondsToDuration(estimatedTotalSyncTime - timeTakenSoFar)
 
 	// update headers fetching progress report including total progress percentage and total time remaining
-	asset.syncData.cfiltersFetchProgress.TotalCFiltersToFetch = totalCFiltersToFetch
-	asset.syncData.cfiltersFetchProgress.CurrentCFilterHeight = startCFiltersHeight
-	asset.syncData.cfiltersFetchProgress.CFiltersFetchProgress = roundUp(cfiltersFetchProgress * 100.0)
-	asset.syncData.cfiltersFetchProgress.TotalSyncProgress = roundUp(totalSyncProgress * 100.0)
-	asset.syncData.cfiltersFetchProgress.TotalTimeRemainingSeconds = totalTimeRemainingSeconds
-
-	asset.syncData.mu.Unlock()
+	cfiltersFetchData.TotalCFiltersToFetch = int32(totalCFiltersToFetch)
+	cfiltersFetchData.CurrentCFilterHeight = startCFiltersHeight
+	cfiltersFetchData.CFiltersFetchProgress = roundUp(cfiltersFetchProgress * 100.0)
+	cfiltersFetchData.CfiltersFetchTimeSpent = timeDurationTaken
+	cfiltersFetchData.GeneralSyncProgress.TotalSyncProgress = roundUp(totalSyncProgress * 100.0)
+	cfiltersFetchData.GeneralSyncProgress.TotalTimeRemaining = totalTimeRemaining
 
 	// notify progress listener of estimated progress report
-	asset.publishFetchCFiltersProgress()
+	asset.publishFetchCFiltersProgress(cfiltersFetchData)
 }
 
-func (asset *Asset) publishFetchCFiltersProgress() {
-	asset.syncData.mu.RLock()
-	cfilters := &asset.syncData.cfiltersFetchProgress
-	asset.syncData.mu.RUnlock()
-
+func (asset *Asset) publishFetchCFiltersProgress(cfilters *sharedW.CFiltersFetchProgressReport) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		if syncProgressListener.OnCFiltersFetchProgress != nil {
 			syncProgressListener.OnCFiltersFetchProgress(cfilters)
 		}
 	}
+
+	// update the general sync progress
+	asset.updateGeneralSyncProgress(cfilters.GeneralSyncProgress)
 }
 
 func (asset *Asset) fetchCFiltersEnded() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
-	asset.syncData.cfiltersFetchProgress.CfiltersFetchTimeSpent = time.Now().Unix() - asset.syncData.cfiltersFetchProgress.BeginFetchCFiltersTimeStamp
+	// Record the time spent when the filter scan.
+	asset.syncData.cfiltersScanTimeSpent = time.Since(asset.syncData.scanStartTime)
 
-	// If there is some period of inactivity reported at this stage,
-	// subtract it from the total stage time.
-	asset.syncData.cfiltersFetchProgress.CfiltersFetchTimeSpent -= asset.syncData.totalInactiveSeconds
-	asset.syncData.totalInactiveSeconds = 0
+	// Clean up the shared data fields
+	asset.syncData.scanStartTime = time.Time{}
+	asset.syncData.scanStartHeight = -1
+	asset.syncData.genSyncProgress = nil // clear preset general progress
 }
 
 // Fetch Headers Callbacks
@@ -150,41 +156,29 @@ func (asset *Asset) fetchHeadersStarted() {
 		return
 	}
 
-	// fetch all the peers information currently available
-	peers, err := asset.PeerInfoRaw()
-	if err != nil {
-		log.Errorf("fetchHeadersStarted failed: %v", err)
-		return
-	}
-
-	// pick the highest height.
-	var peerInitialHeight int32
-	for _, p := range peers {
-		if int32(p.StartingHeight) > peerInitialHeight {
-			peerInitialHeight = int32(p.StartingHeight)
-		}
-	}
-
 	asset.syncData.mu.RLock()
-	headersFetchingStarted := asset.syncData.headersFetchProgress.StartHeaderHeight != nil
+	headersFetchingStarted := asset.syncData.scanStartHeight != -1
 	asset.syncData.mu.RUnlock()
 
 	if headersFetchingStarted {
-		// This function gets called for each newly connected peer so
-		// ignore if headers fetching was already started.
+		// This function gets invoked once for each active sync session.
 		return
 	}
 
 	asset.waitingForHeaders = true
-
 	lowestBlockHeight := asset.GetBestBlock().Height
+
+	// Returns the best synced block if syncing is done or the best block from
+	// the connected peers if not connected.
+	ctx, _ := asset.ShutdownContextWithCancel()
+	_, peerInitialHeight := asset.syncData.syncer.Synced(ctx)
 
 	asset.syncData.mu.Lock()
 	asset.syncData.syncStage = HeadersFetchSyncStage
-	asset.syncData.headersFetchProgress.BeginFetchTimeStamp = time.Now()
-	asset.syncData.headersFetchProgress.StartHeaderHeight = &lowestBlockHeight
+	asset.syncData.scanStartTime = time.Now()
+	asset.syncData.scanStartHeight = lowestBlockHeight
 	asset.syncData.bestBlockheight = peerInitialHeight // Best block synced in the connected peers
-	asset.syncData.totalInactiveSeconds = 0
+	asset.syncData.totalInactiveDuration = 0
 	showLogs := asset.syncData.showLogs
 	asset.syncData.mu.Unlock()
 
@@ -198,9 +192,36 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 		return
 	}
 
-	asset.syncData.mu.Lock()
+	asset.syncData.mu.RLock()
+	startHeight := asset.syncData.scanStartHeight
+	startTime := asset.syncData.scanStartTime
+	peersBestBlock := asset.syncData.bestBlockheight
+	headerSpentTime := asset.syncData.headersScanTimeSpent
+	asset.syncData.mu.RUnlock()
 
-	if asset.syncData.headersFetchProgress.HeadersFetchTimeSpent != -1 {
+	if startHeight == -1 {
+		// Required preset data is missing. Invoke fetchHeadersStarted() first
+		// before proceeding.
+		return
+	}
+
+	// If the last fetched block is greater than the current best preset best
+	// block, the previous attempt failed. Make another attempt now!
+	if lastFetchedHeaderHeight > peersBestBlock {
+		ctx, _ := asset.ShutdownContextWithCancel()
+
+		// It returns the best synced block if syncing is done or the best block
+		// from the connected peers if not connected.
+		_, peersBestBlock = asset.syncData.syncer.Synced(ctx)
+
+		if lastFetchedHeaderHeight <= peersBestBlock {
+			asset.syncData.mu.Lock()
+			asset.syncData.bestBlockheight = peersBestBlock
+			asset.syncData.mu.Unlock()
+		}
+	}
+
+	if headerSpentTime.Milliseconds() > 0 {
 		// This function gets called for each newly connected peer so ignore
 		// this call if the headers fetching phase was previously completed.
 		return
@@ -210,44 +231,48 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 		asset.waitingForHeaders = asset.GetBestBlockHeight() > lastFetchedHeaderHeight
 	}
 
-	headersFetchedSoFar := float64(lastFetchedHeaderHeight - *asset.syncData.headersFetchProgress.StartHeaderHeight)
+	headersFetchedSoFar := float64(lastFetchedHeaderHeight - startHeight)
 	if headersFetchedSoFar < 1 {
 		headersFetchedSoFar = 1
 	}
 
-	fetchTimeTakenSoFar := time.Since(asset.syncData.headersFetchProgress.BeginFetchTimeStamp).Seconds()
+	fetchTimeTakenSoFar := time.Since(startTime).Seconds()
 	if fetchTimeTakenSoFar < 1 {
 		fetchTimeTakenSoFar = 1
 	}
 
-	remainingHeaders := float64(asset.syncData.bestBlockheight - lastFetchedHeaderHeight)
+	remainingHeaders := float64(peersBestBlock - lastFetchedHeaderHeight)
 	if remainingHeaders < 1 {
 		remainingHeaders = 1
 	}
 
 	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
+	timeRemaining := (fetchTimeTakenSoFar * remainingHeaders) / headersFetchedSoFar
+	syncProgress := int32((headersFetchedSoFar * 100) / allHeadersToFetch)
 
-	asset.syncData.headersFetchProgress.TotalHeadersToFetch = asset.syncData.bestBlockheight
-	asset.syncData.headersFetchProgress.HeadersFetchProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
-	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
-	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((fetchTimeTakenSoFar * remainingHeaders) / headersFetchedSoFar)
-
-	asset.syncData.mu.Unlock()
+	headersFetchedData := &sharedW.HeadersFetchProgressReport{
+		GeneralSyncProgress: &sharedW.GeneralSyncProgress{
+			TotalSyncProgress:  syncProgress,
+			TotalTimeRemaining: secondsToDuration(timeRemaining),
+		},
+	}
+	headersFetchedData.TotalHeadersToFetch = asset.syncData.bestBlockheight
+	headersFetchedData.HeadersFetchProgress = syncProgress
+	headersFetchedData.HeadersFetchTimeSpent = time.Since(startTime)
 
 	// notify progress listener of estimated progress report
-	asset.publishFetchHeadersProgress()
+	asset.publishFetchHeadersProgress(headersFetchedData)
 }
 
-func (asset *Asset) publishFetchHeadersProgress() {
-	asset.syncData.mu.RLock()
-	headerFetch := &asset.syncData.headersFetchProgress
-	asset.syncData.mu.RUnlock()
-
+func (asset *Asset) publishFetchHeadersProgress(headerFetch *sharedW.HeadersFetchProgressReport) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		if syncProgressListener.OnHeadersFetchProgress != nil {
 			syncProgressListener.OnHeadersFetchProgress(headerFetch)
 		}
 	}
+
+	// update the general sync progress
+	asset.updateGeneralSyncProgress(headerFetch.GeneralSyncProgress)
 }
 
 func (asset *Asset) fetchHeadersFinished() {
@@ -259,18 +284,13 @@ func (asset *Asset) fetchHeadersFinished() {
 		return
 	}
 
-	asset.syncData.headersFetchProgress.StartHeaderHeight = nil
-	asset.syncData.headersFetchProgress.HeadersFetchTimeSpent = int64(time.Since(asset.syncData.headersFetchProgress.BeginFetchTimeStamp).Seconds())
+	// Record the time spent when the headers scan.
+	asset.syncData.headersScanTimeSpent = time.Since(asset.syncData.scanStartTime)
 
-	// If there is some period of inactivity reported at this stage,
-	// subtract it from the total stage time.
-	asset.syncData.headersFetchProgress.HeadersFetchTimeSpent -= asset.syncData.totalInactiveSeconds
-	asset.syncData.totalInactiveSeconds = 0
-
-	if asset.syncData.headersFetchProgress.HeadersFetchTimeSpent < 150 {
-		// This ensures that minimum ETA used for stage 2 (address discovery) is 120 seconds (80% of 150 seconds).
-		asset.syncData.headersFetchProgress.HeadersFetchTimeSpent = 150
-	}
+	// Clean up the shared data fields
+	asset.syncData.scanStartTime = time.Time{}
+	asset.syncData.scanStartHeight = -1
+	asset.syncData.genSyncProgress = nil // clear preset general progress
 
 	if asset.syncData.showLogs && asset.syncData.syncing {
 		log.Info("Fetch headers completed.")
@@ -285,8 +305,7 @@ func (asset *Asset) discoverAddressesStarted() {
 	}
 
 	asset.syncData.mu.RLock()
-	addressDiscoveryAlreadyStarted := asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime != -1
-	totalHeadersFetchTime := float64(asset.syncData.headersFetchProgress.HeadersFetchTimeSpent)
+	addressDiscoveryAlreadyStarted := !asset.syncData.scanStartTime.IsZero()
 	asset.syncData.mu.RUnlock()
 
 	if addressDiscoveryAlreadyStarted {
@@ -296,27 +315,33 @@ func (asset *Asset) discoverAddressesStarted() {
 	asset.syncData.mu.Lock()
 	asset.syncData.isAddressDiscovery = true
 	asset.syncData.syncStage = AddressDiscoverySyncStage
-	asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime = time.Now().Unix()
+	asset.syncData.scanStartTime = time.Now()
 	asset.syncData.addressDiscoveryCompletedOrCanceled = make(chan bool)
 	asset.syncData.mu.Unlock()
 
-	go asset.updateAddressDiscoveryProgress(totalHeadersFetchTime)
+	go asset.updateAddressDiscoveryProgress()
 
 	if asset.syncData.showLogs {
 		log.Info("Step 2 of 3 - discovering used addresses.")
 	}
 }
 
-func (asset *Asset) updateAddressDiscoveryProgress(totalHeadersFetchTime float64) {
-	// use ticker to calculate and broadcast address discovery progress every second
-	everySecondTicker := time.NewTicker(1 * time.Second)
+func (asset *Asset) updateAddressDiscoveryProgress() {
+	// use ticker to calculate and broadcast address discovery progress
+	// every 5 seconds.
+	everySecondTicker := time.NewTicker(5 * time.Second)
+
+	asset.syncData.mu.Lock()
+	totalHeadersFetchTime := asset.syncData.headersScanTimeSpent.Seconds()
+	totalCfiltersFetchTime := asset.syncData.cfiltersScanTimeSpent.Seconds()
+	asset.syncData.mu.Unlock()
 
 	// these values will be used every second to calculate the total sync progress
 	estimatedDiscoveryTime := totalHeadersFetchTime * discoveryPercentage
 	estimatedRescanTime := totalHeadersFetchTime * rescanPercentage
 
 	// track last logged time remaining and total percent to avoid re-logging same message
-	var lastTimeRemaining int64
+	var lastTimeRemaining time.Duration
 	var lastTotalPercent int32 = -1
 
 	for {
@@ -328,10 +353,9 @@ func (asset *Asset) updateAddressDiscoveryProgress(totalHeadersFetchTime float64
 		// assume that this process started at some point in the future,
 		// thereby accounting for the total reported time of inactivity.
 		asset.syncData.mu.Lock()
-		asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime += asset.syncData.totalInactiveSeconds
-		asset.syncData.totalInactiveSeconds = 0
-		addressDiscoveryStartTime := asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime
-		totalCfiltersFetchTime := float64(asset.syncData.cfiltersFetchProgress.CfiltersFetchTimeSpent)
+		asset.syncData.scanStartTime = asset.syncData.scanStartTime.Add(asset.syncData.totalInactiveDuration)
+		asset.syncData.totalInactiveDuration = 0
+		addressDiscoveryStartTime := asset.syncData.scanStartTime
 		showLogs := asset.syncData.showLogs
 		asset.syncData.mu.Unlock()
 
@@ -346,64 +370,79 @@ func (asset *Asset) updateAddressDiscoveryProgress(totalHeadersFetchTime float64
 
 		case <-everySecondTicker.C:
 			// calculate address discovery progress
-			elapsedDiscoveryTime := float64(time.Now().Unix() - addressDiscoveryStartTime)
+			elapsedDiscoveryTime := time.Since(addressDiscoveryStartTime).Seconds()
 			discoveryProgress := (elapsedDiscoveryTime / estimatedDiscoveryTime) * 100
 
-			var totalSyncTime float64
+			totalSyncTime := totalCfiltersFetchTime + totalHeadersFetchTime
 			if elapsedDiscoveryTime > estimatedDiscoveryTime {
-				totalSyncTime = totalCfiltersFetchTime + totalHeadersFetchTime + elapsedDiscoveryTime + estimatedRescanTime
+				totalSyncTime += elapsedDiscoveryTime + estimatedRescanTime
 			} else {
-				totalSyncTime = totalCfiltersFetchTime + totalHeadersFetchTime + estimatedDiscoveryTime + estimatedRescanTime
+				totalSyncTime += estimatedDiscoveryTime + estimatedRescanTime
 			}
 
 			totalElapsedTime := totalCfiltersFetchTime + totalHeadersFetchTime + elapsedDiscoveryTime
 			totalProgress := (totalElapsedTime / totalSyncTime) * 100
 
-			remainingAccountDiscoveryTime := math.Round(estimatedDiscoveryTime - elapsedDiscoveryTime)
+			remainingAccountDiscoveryTime := estimatedDiscoveryTime - elapsedDiscoveryTime
 			if remainingAccountDiscoveryTime < 0 {
 				remainingAccountDiscoveryTime = 0
 			}
 
-			totalProgressPercent := int32(math.Round(totalProgress))
-			totalTimeRemainingSeconds := int64(math.Round(remainingAccountDiscoveryTime + estimatedRescanTime))
+			totalProgressPercent := int32(totalProgress)
+			totalTimeRemaining := secondsToDuration(remainingAccountDiscoveryTime + estimatedRescanTime)
 
 			// update address discovery progress, total progress and total time remaining
-			asset.syncData.mu.Lock()
-			asset.syncData.addressDiscoveryProgress.AddressDiscoveryProgress = int32(math.Round(discoveryProgress))
-			asset.syncData.addressDiscoveryProgress.TotalSyncProgress = totalProgressPercent
-			asset.syncData.addressDiscoveryProgress.TotalTimeRemainingSeconds = totalTimeRemainingSeconds
-			asset.syncData.mu.Unlock()
+			addressDiscoveryData := &sharedW.AddressDiscoveryProgressReport{
+				GeneralSyncProgress: &sharedW.GeneralSyncProgress{
+					TotalSyncProgress:  totalProgressPercent,
+					TotalTimeRemaining: totalTimeRemaining,
+				},
+			}
+			addressDiscoveryData.AddressDiscoveryProgress = int32(discoveryProgress)
 
-			asset.publishAddressDiscoveryProgress()
+			asset.publishAddressDiscoveryProgress(addressDiscoveryData)
 
 			if showLogs {
 				// avoid logging same message multiple times
-				if totalProgressPercent != lastTotalPercent || totalTimeRemainingSeconds != lastTimeRemaining {
+				if totalProgressPercent != lastTotalPercent || totalTimeRemaining != lastTimeRemaining {
 					log.Infof("Syncing %d%%, %s remaining, discovering used addresses.",
-						totalProgressPercent, calculateTotalTimeRemaining(totalTimeRemainingSeconds))
+						totalProgressPercent, calculateTotalTimeRemaining(totalTimeRemaining))
 
 					lastTotalPercent = totalProgressPercent
-					lastTimeRemaining = totalTimeRemainingSeconds
+					lastTimeRemaining = totalTimeRemaining
 				}
 			}
 		}
 	}
 }
 
-func (asset *Asset) publishAddressDiscoveryProgress() {
+func (asset *Asset) publishAddressDiscoveryProgress(addrDiscovery *sharedW.AddressDiscoveryProgressReport) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		if syncProgressListener.OnAddressDiscoveryProgress != nil {
-			syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
+			syncProgressListener.OnAddressDiscoveryProgress(addrDiscovery)
 		}
 	}
+
+	// update the general sync progress
+	asset.updateGeneralSyncProgress(addrDiscovery.GeneralSyncProgress)
 }
 
 func (asset *Asset) discoverAddressesFinished() {
 	if !asset.IsSyncing() {
 		return
 	}
+
 	asset.syncData.mu.Lock()
 	asset.syncData.isAddressDiscovery = false
+	asset.syncData.genSyncProgress = nil // clear preset general progress
+
+	// Record the time spent when the headers scan.
+	asset.syncData.addrDiscoveryTimeSpent = time.Since(asset.syncData.scanStartTime)
+
+	// Clean up the shared data fields
+	asset.syncData.scanStartTime = time.Time{}
+	asset.syncData.scanStartHeight = -1
+	asset.syncData.genSyncProgress = nil // clear preset general progress
 	asset.syncData.mu.Unlock()
 
 	err := asset.MarkWalletAsDiscoveredAccounts() // Mark address discovery as completed.
@@ -419,7 +458,7 @@ func (asset *Asset) stopUpdatingAddressDiscoveryProgress() {
 	if asset.syncData != nil && asset.syncData.addressDiscoveryCompletedOrCanceled != nil {
 		close(asset.syncData.addressDiscoveryCompletedOrCanceled)
 		asset.syncData.addressDiscoveryCompletedOrCanceled = nil
-		asset.syncData.addressDiscoveryProgress.TotalDiscoveryTimeSpent = time.Now().Unix() - asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime
+		asset.syncData.addrDiscoveryTimeSpent = time.Since(asset.syncData.scanStartTime)
 	}
 	asset.syncData.mu.Unlock()
 }
@@ -438,11 +477,7 @@ func (asset *Asset) rescanStarted() {
 
 	asset.syncData.isRescanning = true
 	asset.syncData.syncStage = HeadersRescanSyncStage
-	asset.syncData.rescanStartTime = time.Now().Unix()
-
-	// retain last total progress report from address discovery phase
-	asset.syncData.headersRescanProgress.TotalTimeRemainingSeconds = asset.syncData.addressDiscoveryProgress.TotalTimeRemainingSeconds
-	asset.syncData.headersRescanProgress.TotalSyncProgress = asset.syncData.addressDiscoveryProgress.TotalSyncProgress
+	asset.syncData.scanStartTime = time.Now()
 
 	if asset.syncData.showLogs && asset.syncData.syncing {
 		log.Info("Step 3 of 3 - Scanning block headers.")
@@ -464,59 +499,60 @@ func (asset *Asset) rescanProgress(rescannedThrough int32) {
 	// If there was some period of inactivity,
 	// assume that this process started at some point in the future,
 	// thereby accounting for the total reported time of inactivity.
-	asset.syncData.rescanStartTime += asset.syncData.totalInactiveSeconds
-	asset.syncData.totalInactiveSeconds = 0
+	asset.syncData.scanStartTime = asset.syncData.scanStartTime.Add(asset.syncData.totalInactiveDuration)
+	asset.syncData.totalInactiveDuration = 0
 
-	elapsedRescanTime := time.Now().Unix() - asset.syncData.rescanStartTime
-	estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))
-	totalTimeRemainingSeconds := estimatedTotalRescanTime - elapsedRescanTime
-	totalElapsedTime := asset.syncData.cfiltersFetchProgress.CfiltersFetchTimeSpent + asset.syncData.headersFetchProgress.HeadersFetchTimeSpent +
-		asset.syncData.addressDiscoveryProgress.TotalDiscoveryTimeSpent + elapsedRescanTime
+	elapsedRescanTime := time.Since(asset.syncData.scanStartTime)
+	estimatedTotalRescanTime := elapsedRescanTime.Seconds() / rescanRate
+	totalTimeRemaining := secondsToDuration(estimatedTotalRescanTime) - elapsedRescanTime
+	totalElapsedTimePreRescans := asset.syncData.cfiltersScanTimeSpent +
+		asset.syncData.headersScanTimeSpent + asset.syncData.addrDiscoveryTimeSpent
+	asset.syncData.mu.Unlock()
 
-	asset.syncData.headersRescanProgress.TotalHeadersToScan = totalHeadersToScan
-	asset.syncData.headersRescanProgress.RescanProgress = int32(math.Round(rescanRate * 100))
-	asset.syncData.headersRescanProgress.CurrentRescanHeight = rescannedThrough
-	asset.syncData.headersRescanProgress.RescanTimeRemaining = totalTimeRemainingSeconds
+	totalElapsedTime := totalElapsedTimePreRescans + elapsedRescanTime
+
+	headersRescanData := &sharedW.HeadersRescanProgressReport{
+		GeneralSyncProgress: &sharedW.GeneralSyncProgress{},
+	}
+	headersRescanData.TotalHeadersToScan = totalHeadersToScan
+	headersRescanData.RescanProgress = int32(rescanRate * 100)
+	headersRescanData.CurrentRescanHeight = rescannedThrough
+	headersRescanData.RescanTimeRemaining = totalTimeRemaining
 
 	// do not update total time taken and total progress percent if elapsedRescanTime is 0
 	// because the estimatedTotalRescanTime will be inaccurate (also 0)
 	// which will make the estimatedTotalSyncTime equal to totalElapsedTime
 	// giving the wrong impression that the process is complete
 	if elapsedRescanTime > 0 {
-		estimatedTotalSyncTime := asset.syncData.cfiltersFetchProgress.CfiltersFetchTimeSpent + asset.syncData.headersFetchProgress.HeadersFetchTimeSpent +
-			asset.syncData.addressDiscoveryProgress.TotalDiscoveryTimeSpent + estimatedTotalRescanTime
-		totalProgress := (float64(totalElapsedTime) / float64(estimatedTotalSyncTime)) * 100
+		estimatedTotalSyncTime := totalElapsedTimePreRescans + secondsToDuration(estimatedTotalRescanTime)
+		totalProgress := (totalElapsedTime.Seconds() / estimatedTotalSyncTime.Seconds()) * 100
 
-		asset.syncData.headersRescanProgress.TotalTimeRemainingSeconds = totalTimeRemainingSeconds
-		asset.syncData.headersRescanProgress.TotalSyncProgress = int32(math.Round(totalProgress))
+		headersRescanData.GeneralSyncProgress.TotalTimeRemaining = totalTimeRemaining
+		headersRescanData.GeneralSyncProgress.TotalSyncProgress = int32(totalProgress)
 	}
 
-	asset.syncData.mu.Unlock()
-
-	asset.publishHeadersRescanProgress()
+	asset.publishHeadersRescanProgress(headersRescanData)
 
 	asset.syncData.mu.RLock()
 	if asset.syncData.showLogs {
 		log.Infof("Syncing %d%%, %s remaining, scanning %d of %d block headers.",
-			asset.syncData.headersRescanProgress.TotalSyncProgress,
-			calculateTotalTimeRemaining(asset.syncData.headersRescanProgress.TotalTimeRemainingSeconds),
-			asset.syncData.headersRescanProgress.CurrentRescanHeight,
-			asset.syncData.headersRescanProgress.TotalHeadersToScan,
+			headersRescanData.TotalSyncProgress,
+			calculateTotalTimeRemaining(headersRescanData.TotalTimeRemaining),
+			headersRescanData.CurrentRescanHeight, headersRescanData.TotalHeadersToScan,
 		)
 	}
 	asset.syncData.mu.RUnlock()
 }
 
-func (asset *Asset) publishHeadersRescanProgress() {
-	asset.syncData.mu.RLock()
-	headersRescan := &asset.syncData.headersRescanProgress
-	asset.syncData.mu.RUnlock()
-
+func (asset *Asset) publishHeadersRescanProgress(headersRescanData *sharedW.HeadersRescanProgressReport) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		if syncProgressListener.OnHeadersRescanProgress != nil {
-			syncProgressListener.OnHeadersRescanProgress(headersRescan)
+			syncProgressListener.OnHeadersRescanProgress(headersRescanData)
 		}
 	}
+
+	// update the general sync progress
+	asset.updateGeneralSyncProgress(headersRescanData.GeneralSyncProgress)
 }
 
 func (asset *Asset) rescanFinished() {
@@ -527,16 +563,15 @@ func (asset *Asset) rescanFinished() {
 
 	asset.syncData.mu.Lock()
 	asset.syncData.isRescanning = false
-	asset.syncData.headersRescanProgress.TotalTimeRemainingSeconds = 0
-	asset.syncData.headersRescanProgress.TotalSyncProgress = 100
 
-	// Reset these value so that address discovery would
-	// not be skipped for the next sharedW.
-	asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime = -1
-	asset.syncData.addressDiscoveryProgress.TotalDiscoveryTimeSpent = -1
+	// Record the time spent when the headers scan.
+	asset.syncData.rescanTimeSpent = time.Since(asset.syncData.scanStartTime)
+
+	// Clean up the shared data fields
+	asset.syncData.scanStartTime = time.Time{}
+	asset.syncData.scanStartHeight = -1
+	asset.syncData.genSyncProgress = nil // clear preset general progress
 	asset.syncData.mu.Unlock()
-
-	asset.publishHeadersRescanProgress()
 }
 
 /** Helper functions start here */
@@ -646,4 +681,12 @@ func (asset *Asset) syncedWallet(synced bool) {
 	asset.syncData.mu.Unlock()
 
 	indexTransactions()
+}
+
+// updateGeneralSyncProgress tracks the general sync progress of the actively
+// running sync.
+func (asset *Asset) updateGeneralSyncProgress(progress *sharedW.GeneralSyncProgress) {
+	asset.syncData.mu.Lock()
+	asset.syncData.genSyncProgress = progress
+	asset.syncData.mu.Unlock()
 }

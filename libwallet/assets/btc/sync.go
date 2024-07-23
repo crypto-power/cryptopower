@@ -32,12 +32,19 @@ type SyncData struct {
 	syncstarted         uint32
 	chainServiceStopped bool
 
-	syncing            bool
-	synced             bool
-	isRescan           bool
-	rescanStartTime    time.Time
-	rescanStartHeight  *int32
-	isSyncShuttingDown bool
+	syncing  bool
+	synced   bool
+	isRescan bool
+
+	// Syncing fields
+	syncStartTime   time.Time // syncStartTime tracks the time when syncing starts.
+	syncStartHeight *int32    // syncStartHeight tracks the height when syncing starts.
+
+	// Rescanning fields
+	// NB: Rescanning and syncing can happen simultaneously thus the need to
+	// have separated fields
+	rescanStartTime   time.Time // rescanStartTime tracks the time when syncing starts.
+	rescanStartHeight *int32    // rescanStartHeight tracks the height when syncing starts.
 
 	wg sync.WaitGroup
 
@@ -50,11 +57,6 @@ type SyncData struct {
 // reading/writing of properties of this struct are protected by syncData.mu.
 type activeSyncData struct {
 	syncStage utils.SyncStage
-
-	cfiltersFetchProgress    sharedW.CFiltersFetchProgressReport
-	headersFetchProgress     sharedW.HeadersFetchProgressReport
-	addressDiscoveryProgress sharedW.AddressDiscoveryProgressReport
-	headersRescanProgress    sharedW.HeadersRescanProgressReport
 }
 
 const (
@@ -71,35 +73,10 @@ const (
 )
 
 func (asset *Asset) initSyncProgressData() {
-	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
-		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
-		BeginFetchCFiltersTimeStamp: 0,
-		StartCFiltersHeight:         -1,
-		CfiltersFetchTimeSpent:      0,
-		TotalFetchedCFiltersCount:   0,
-	}
-
-	headersFetchProgress := sharedW.HeadersFetchProgressReport{
-		GeneralSyncProgress:   &sharedW.GeneralSyncProgress{},
-		HeadersFetchTimeSpent: -1,
-	}
-
-	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{
-		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
-		AddressDiscoveryStartTime: -1,
-		TotalDiscoveryTimeSpent:   -1,
-	}
-
-	headersRescanProgress := sharedW.HeadersRescanProgressReport{}
-	headersRescanProgress.GeneralSyncProgress = &sharedW.GeneralSyncProgress{}
-
 	asset.syncData.mu.Lock()
-	asset.syncData.activeSyncData = &activeSyncData{
-		cfiltersFetchProgress:    cfiltersFetchProgress,
-		headersFetchProgress:     headersFetchProgress,
-		addressDiscoveryProgress: addressDiscoveryProgress,
-		headersRescanProgress:    headersRescanProgress,
-	}
+	asset.syncData.activeSyncData = &activeSyncData{}
+	asset.syncData.syncStartHeight = nil
+	asset.syncData.syncStartTime = time.Time{}
 	asset.syncData.mu.Unlock()
 }
 
@@ -151,10 +128,10 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 	asset.bestServerPeerBlockHeight()
 
 	// initial set up when sync begins.
-	if asset.syncData.headersFetchProgress.StartHeaderHeight == nil {
+	if asset.syncData.syncStartHeight == nil {
 		asset.syncData.syncStage = utils.HeadersFetchSyncStage
-		asset.syncData.headersFetchProgress.BeginFetchTimeStamp = time.Now()
-		asset.syncData.headersFetchProgress.StartHeaderHeight = &rawBlockHeight
+		asset.syncData.syncStartTime = time.Now()
+		asset.syncData.syncStartHeight = &rawBlockHeight
 
 		if asset.syncData.bestBlockheight != rawBlockHeight {
 			asset.syncData.mu.Unlock()
@@ -162,14 +139,20 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 			return
 		}
 	}
-	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, asset.syncData.bestBlockheight)
 
-	timeSpentSoFar := time.Since(asset.syncData.headersFetchProgress.BeginFetchTimeStamp).Seconds()
+	startTime := asset.syncData.syncStartTime
+	startheight := *asset.syncData.syncStartHeight
+	asset.syncData.mu.Unlock()
+
+	log.Infof("Current sync progress update is on block %v, target sync block is %v",
+		rawBlockHeight, asset.syncData.bestBlockheight)
+
+	timeSpentSoFar := time.Since(startTime).Seconds()
 	if timeSpentSoFar < 1 {
 		timeSpentSoFar = 1
 	}
 
-	headersFetchedSoFar := float64(rawBlockHeight - *asset.syncData.headersFetchProgress.StartHeaderHeight)
+	headersFetchedSoFar := float64(rawBlockHeight - startheight)
 	if headersFetchedSoFar < 1 {
 		headersFetchedSoFar = 1
 	}
@@ -180,21 +163,24 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 	}
 
 	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
+	timeRemaining := secondsToDuration(((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar))
+	syncProgress := int32((headersFetchedSoFar * 100) / allHeadersToFetch)
 
-	asset.syncData.headersFetchProgress.TotalHeadersToFetch = asset.syncData.bestBlockheight
-	asset.syncData.headersFetchProgress.HeadersFetchProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
-	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
-	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar)
-	asset.syncData.mu.Unlock()
+	headersFetchProgress := &sharedW.HeadersFetchProgressReport{
+		GeneralSyncProgress: &sharedW.GeneralSyncProgress{
+			TotalSyncProgress:  syncProgress,
+			TotalTimeRemaining: timeRemaining,
+		},
+		TotalHeadersToFetch:  asset.syncData.bestBlockheight,
+		HeadersFetchProgress: syncProgress,
+	}
 
 	// publish the sync progress results to all listeners.
-	asset.syncData.mu.RLock()
 	for _, listener := range asset.syncData.syncProgressListeners {
 		if listener.OnHeadersFetchProgress != nil {
-			listener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
+			listener.OnHeadersFetchProgress(headersFetchProgress)
 		}
 	}
-	asset.syncData.mu.RUnlock()
 }
 
 func (asset *Asset) publishHeadersFetchComplete() {
@@ -368,6 +354,11 @@ func (asset *Asset) CancelSync() {
 	asset.syncData.wg.Add(1)
 	go asset.stopSync()
 
+	asset.syncData.wg.Wait() // Wait until the stopSync() goroutine ends.
+
+	// Indicate that the sync shutdown process is fully complete.
+	asset.EndSyncShuttingDown()
+
 	log.Infof("(%v) SPV wallet closed", asset.GetWalletName())
 }
 
@@ -375,12 +366,10 @@ func (asset *Asset) CancelSync() {
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
 func (asset *Asset) stopSync() {
-	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if asset.WalletOpened() {
 		// If wallet shutdown is in progress ignore the current request to shutdown.
 		if loadedAsset.ShuttingDown() {
-			asset.syncData.isSyncShuttingDown = false
 			asset.syncData.wg.Done()
 			return
 		}
@@ -417,7 +406,6 @@ func (asset *Asset) stopSync() {
 	// context but we do it early to avoid panics that happen after db has been
 	// closed but some goroutines still interact with the db.
 	asset.cancelSync()
-	asset.syncData.isSyncShuttingDown = false
 
 	log.Infof("Stopping (%s) wallet and its neutrino interface", asset.GetWalletName())
 

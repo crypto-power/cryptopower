@@ -12,6 +12,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 
 	api "github.com/crypto-power/instantswap/instantswap"
@@ -270,7 +271,7 @@ func (pg *OrderHistoryPage) layoutSectionHeader(gtx C) D {
 						if pg.AssetsManager.InstantSwap.IsSyncing() {
 							text = values.String(values.StrSyncingState)
 						} else {
-							text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+							text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
 
 							if pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
 								text = values.String(values.StrNeverSynced)

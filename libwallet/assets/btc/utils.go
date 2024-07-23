@@ -3,6 +3,7 @@ package btc
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
@@ -138,4 +139,8 @@ func decodeAddress(s string, params *chaincfg.Params) (btcutil.Address, error) {
 			addr, params.Name)
 	}
 	return addr, nil
+}
+
+func secondsToDuration(secs float64) time.Duration {
+	return time.Duration(secs) * time.Second
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -140,7 +141,7 @@ func (pg *StatPage) layoutStats(gtx C) D {
 		line.Layout,
 		item(values.String(values.StrBestBlockTimestamp), bestBlockTime.Format("2006-01-02 03:04:05 -0700")),
 		line.Layout,
-		item(values.String(values.StrBestBlockAge), components.SecondsToDays(secondsSinceBestBlock)),
+		item(values.String(values.StrBestBlockAge), pageutils.SecondsToDays(secondsSinceBestBlock)),
 		line.Layout,
 		item(values.String(values.StrWalletDirectory), pg.wallet.DataDir()),
 		line.Layout,

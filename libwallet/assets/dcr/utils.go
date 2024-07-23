@@ -3,6 +3,7 @@ package dcr
 import (
 	"fmt"
 	"math"
+	"time"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -38,12 +39,16 @@ func AmountAtom(f float64) int64 {
 	return int64(amount)
 }
 
-func calculateTotalTimeRemaining(timeRemainingInSeconds int64) string {
+func calculateTotalTimeRemaining(timeRemainingInSeconds time.Duration) string {
 	minutes := timeRemainingInSeconds / 60
 	if minutes > 0 {
 		return fmt.Sprintf("%d min", minutes)
 	}
 	return fmt.Sprintf("%d sec", timeRemainingInSeconds)
+}
+
+func secondsToDuration(secs float64) time.Duration {
+	return time.Duration(secs) * time.Second
 }
 
 func roundUp(n float64) int32 {

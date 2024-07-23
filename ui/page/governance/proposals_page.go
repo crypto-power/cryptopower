@@ -17,6 +17,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -450,7 +451,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 						} else if pg.syncCompleted {
 							text = values.String(values.StrUpdated)
 						} else {
-							text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.Politeia.GetLastSyncedTimeStamp())
+							text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.AssetsManager.Politeia.GetLastSyncedTimeStamp())
 						}
 
 						lastUpdatedInfo := pg.Theme.Label(pg.ConvertTextSize(values.TextSize10), text)

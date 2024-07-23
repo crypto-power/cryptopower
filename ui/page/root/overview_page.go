@@ -31,7 +31,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/page/wallet"
-	"github.com/crypto-power/cryptopower/ui/utils"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -271,6 +271,9 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 	}
 
 	for _, info := range pg.listInfoWallets {
+		// Process subpage events too.
+		info.HandleUserInteractions(gtx)
+
 		if info.ForwardButton.Button.Clicked(gtx) {
 			pg.showNavigationFunc(true)
 			callback := func() {
@@ -379,7 +382,7 @@ func (pg *OverviewPage) initInfoWallets() {
 	wallets := pg.AssetsManager.AllWallets()
 	for _, wal := range wallets {
 		infoSync := components.NewWalletSyncInfo(pg.Load, wal, pg.reload, pg.backup)
-		infoSync.IsSlider = true
+		infoSync.SetSliderOn()
 		pg.listInfoWallets = append(pg.listInfoWallets, infoSync)
 	}
 }
@@ -466,7 +469,7 @@ func (pg *OverviewPage) assetBalanceSliderLayout(gtx C, rowHeigh int) D {
 
 func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem, rowHeigh int) layout.Widget {
 	return func(gtx C) D {
-		return utils.RadiusLayout(gtx, 8, func(gtx C) D {
+		return pageutils.RadiusLayout(gtx, 8, func(gtx C) D {
 			size := pg.contentSliderLayout(item)(gtx).Size
 			if size.Y < rowHeigh {
 				size.Y = rowHeigh
@@ -748,7 +751,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-											txt := pg.Theme.Label(values.TextSize16, utils.FormatAsUSDString(pg.Printer, rate.LastTradePrice))
+											txt := pg.Theme.Label(values.TextSize16, pageutils.FormatAsUSDString(pg.Printer, rate.LastTradePrice))
 											txt.Color = pg.Theme.Color.Text
 											return txt.Layout(gtx)
 										})
@@ -865,7 +868,7 @@ func (pg *OverviewPage) marketTableRows(gtx C, asset assetMarketData, rate *ext.
 			Alignment: layout.Middle,
 		}.Layout(gtx,
 			layout.Flexed(.785, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.assetTableLabel(utils.FormatAsUSDString(pg.Printer, rate.LastTradePrice), pg.Theme.Color.Text))
+				return layout.E.Layout(gtx, pg.assetTableLabel(pageutils.FormatAsUSDString(pg.Printer, rate.LastTradePrice), pg.Theme.Color.Text))
 			}),
 			layout.Flexed(.215, func(gtx C) D {
 				hasRateChange := rate.PriceChangePercent != nil
@@ -1067,7 +1070,7 @@ func (pg *OverviewPage) updateAssetsUSDBalance() {
 		}
 
 		toUSDString := func(balance float64) string {
-			return utils.FormatAsUSDString(pg.Printer, balance)
+			return pageutils.FormatAsUSDString(pg.Printer, balance)
 		}
 
 		for assetType, balance := range assetsTotalUSDBalance {
@@ -1300,7 +1303,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 					text = values.String(values.StrRefreshState)
 				} else {
 					lastUpdatedTimestamp := pg.AssetsManager.RateSource.LastUpdate().Unix()
-					text = values.String(values.StrUpdated) + " " + components.TimeAgo(lastUpdatedTimestamp)
+					text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(lastUpdatedTimestamp)
 				}
 				lastUpdatedInfo := pg.Theme.Label(values.TextSize14, text)
 				lastUpdatedInfo.Color = pg.Theme.Color.GrayText2

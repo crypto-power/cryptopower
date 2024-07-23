@@ -22,7 +22,6 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/ararog/timeago"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -32,6 +31,7 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -493,7 +493,7 @@ func txStakingStatus(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transac
 		durationPrefix = values.String(values.StrRevoked)
 	}
 
-	durationTxt := TimeAgo(tx.Timestamp)
+	durationTxt := pageutils.TimeAgo(tx.Timestamp)
 	durationTxt = fmt.Sprintf("%s %s", durationPrefix, durationTxt)
 	lbl := l.Theme.Label(values.TextSize14, durationTxt)
 	lbl.Color = l.Theme.Color.GrayText2
@@ -534,32 +534,6 @@ func TxConfirmations(wallet sharedW.Asset, transaction *sharedW.Transaction) int
 	return 0
 }
 
-func FormatDateOrTime(timestamp int64) string {
-	utcTime := time.Unix(timestamp, 0).UTC()
-	currentTime := time.Now().UTC()
-
-	if strconv.Itoa(currentTime.Year()) == strconv.Itoa(utcTime.Year()) && currentTime.Month().String() == utcTime.Month().String() {
-		if strconv.Itoa(currentTime.Day()) == strconv.Itoa(utcTime.Day()) {
-			if strconv.Itoa(currentTime.Hour()) == strconv.Itoa(utcTime.Hour()) {
-				return TimeAgo(timestamp)
-			}
-
-			return TimeAgo(timestamp)
-		} else if currentTime.Day()-1 == utcTime.Day() {
-			yesterday := values.String(values.StrYesterday)
-			return yesterday
-		}
-	}
-
-	t := strings.Split(utcTime.Format(time.UnixDate), " ")
-	t2 := t[2]
-	year := strconv.Itoa(utcTime.Year())
-	if t[2] == "" {
-		t2 = t[3]
-	}
-	return fmt.Sprintf("%s %s, %s", t[1], t2, year)
-}
-
 // EndToEndRow layouts out its content on both ends of its horizontal layout.
 func EndToEndRow(gtx C, leftWidget, rightWidget func(C) D) D {
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
@@ -568,11 +542,6 @@ func EndToEndRow(gtx C, leftWidget, rightWidget func(C) D) D {
 			return layout.E.Layout(gtx, rightWidget)
 		}),
 	)
-}
-
-func TimeAgo(timestamp int64) string {
-	timeAgo, _ := timeago.TimeAgoWithTime(time.Now(), time.Unix(timestamp, 0))
-	return timeAgo
 }
 
 func TruncateString(str string, num int) string {
@@ -602,38 +571,6 @@ func GoToURL(url string) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-}
-
-func TimeFormat(secs int, long bool) string {
-	var val string
-	if secs > 86399 {
-		val = "d"
-		if long {
-			val = " " + values.String(values.StrDays)
-		}
-		days := secs / 86400
-		return fmt.Sprintf("%d%s", days, val)
-	} else if secs > 3599 {
-		val = "h"
-		if long {
-			val = " " + values.String(values.StrHours)
-		}
-		hours := secs / 3600
-		return fmt.Sprintf("%d%s", hours, val)
-	} else if secs > 59 {
-		val = "s"
-		if long {
-			val = " " + values.String(values.StrMinutes)
-		}
-		mins := secs / 60
-		return fmt.Sprintf("%d%s", mins, val)
-	}
-
-	val = "s"
-	if long {
-		val = " " + values.String(values.StrSeconds)
-	}
-	return fmt.Sprintf("%d %s", secs, val)
 }
 
 // TxPageDropDownFields returns the fields for the required drop down with the
@@ -808,23 +745,6 @@ func CalculateTotalWalletsBalance(wallet sharedW.Asset) (*CummulativeWalletsBala
 	}
 
 	return cumm, nil
-}
-
-// SecondsToDays takes time in seconds and returns its string equivalent in the format ddhhmm.
-func SecondsToDays(totalTimeLeft int64) string {
-	q, r := divMod(totalTimeLeft, 24*60*60)
-	timeLeft := time.Duration(r) * time.Second
-	if q > 0 {
-		return fmt.Sprintf("%dd%s", q, timeLeft.String())
-	}
-	return timeLeft.String()
-}
-
-// divMod divides a numerator by a denominator and returns its quotient and remainder.
-func divMod(numerator, denominator int64) (quotient, remainder int64) {
-	quotient = numerator / denominator // integer division, decimals are truncated
-	remainder = numerator % denominator
-	return
 }
 
 func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomaterial.Clickable) D {
