@@ -1024,7 +1024,7 @@ func (s *btcChainService) Peers() []dexbtc.SPVPeer {
 	// waiting briefly.
 	rawPeersChan := make(chan []*neutrino.ServerPeer)
 	go func() {
-		rawPeersChan <- s.CS.Peers()
+		rawPeersChan <- s.CS.(ExtraNeutrinoChainService).Peers()
 	}()
 
 	select {

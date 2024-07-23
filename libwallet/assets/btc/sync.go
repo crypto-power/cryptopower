@@ -110,7 +110,7 @@ func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
 // bestServerPeerBlockHeight accesses the connected peers and requests for the
 // last synced block height.
 func (asset *Asset) bestServerPeerBlockHeight() {
-	serverPeers := asset.chainClient.CS.Peers()
+	serverPeers := asset.chainClient.CS.(ExtraNeutrinoChainService).Peers()
 	for _, p := range serverPeers {
 		if p.LastBlock() > asset.syncData.bestBlockheight {
 			asset.syncData.bestBlockheight = p.LastBlock()
