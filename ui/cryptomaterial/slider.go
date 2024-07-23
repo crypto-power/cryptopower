@@ -49,8 +49,8 @@ func (t *Theme) Slider() *Slider {
 
 		nextButton:               t.NewClickable(false),
 		prevButton:               t.NewClickable(false),
-		ButtonBackgroundColor:    values.TransparentColor(values.TransparentWhite, 0.2),
-		IndicatorBackgroundColor: values.TransparentColor(values.TransparentWhite, 0.2),
+		ButtonBackgroundColor:    t.Color.LightGray,
+		IndicatorBackgroundColor: t.Color.LightGray,
 		SelectedIndicatorColor:   t.Color.White,
 		slideAction:              NewSlideAction(),
 	}

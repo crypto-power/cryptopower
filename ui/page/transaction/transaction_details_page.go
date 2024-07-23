@@ -9,6 +9,7 @@ import (
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -61,6 +62,7 @@ type TxDetailsPage struct {
 	associatedTicketClickable *cryptomaterial.Clickable
 	hashClickable             *cryptomaterial.Clickable
 	rebroadcastClickable      *cryptomaterial.Clickable
+	moreOption                *cryptomaterial.Clickable
 	outputsCollapsible        *cryptomaterial.Collapsible
 	inputsCollapsible         *cryptomaterial.Collapsible
 	txLabelCollapsible        *cryptomaterial.Collapsible
@@ -71,8 +73,7 @@ type TxDetailsPage struct {
 	backButton  cryptomaterial.IconButton
 	rebroadcast cryptomaterial.Label
 
-	viewOnExplorerBtn *cryptomaterial.Clickable
-	copyURLBtn        *cryptomaterial.Clickable
+	copyURLBtn *cryptomaterial.Clickable
 
 	transaction   *sharedW.Transaction
 	ticketSpender *sharedW.Transaction // vote or revoke ticket
@@ -80,6 +81,7 @@ type TxDetailsPage struct {
 	txBackStack   *sharedW.Transaction // track original transaction
 	wallet        sharedW.Asset
 
+	moreItems  []moreItem
 	txnWidgets transactionWdg
 
 	txSourceAccount, txDestinationAccount string
@@ -87,6 +89,8 @@ type TxDetailsPage struct {
 	title                                 string
 	vspHost                               string
 	vspHostFees                           string
+
+	moreOptionIsOpen bool
 }
 
 func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *sharedW.Transaction) *TxDetailsPage {
@@ -110,12 +114,12 @@ func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *
 		inputsCollapsible:  l.Theme.Collapsible(),
 		txLabelCollapsible: l.Theme.Collapsible(),
 
-		viewOnExplorerBtn: l.Theme.NewClickable(true),
-		copyURLBtn:        l.Theme.NewClickable(false),
+		copyURLBtn: l.Theme.NewClickable(false),
 
 		associatedTicketClickable: l.Theme.NewClickable(true),
 		hashClickable:             l.Theme.NewClickable(true),
 		destAddressClickables:     make([]*cryptomaterial.Clickable, 0),
+		moreOption:                l.Theme.NewClickable(false),
 		shadowBox:                 l.Theme.Shadow(),
 
 		transaction:            transaction,
@@ -130,6 +134,8 @@ func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *
 
 	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 	pg.dot.Color = l.Theme.Color.Gray1
+
+	pg.moreItems = pg.getMoreItem()
 
 	return pg
 }
@@ -269,6 +275,16 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 	pg.txnWidgets = pg.initTxnWidgets()
 }
 
+func (pg *TxDetailsPage) getMoreItem() []moreItem {
+	return []moreItem{
+		{
+			text:   values.String(values.StrViewOnExplorer),
+			button: pg.Theme.NewClickable(true),
+			id:     viewBlockID,
+		},
+	}
+}
+
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
@@ -278,8 +294,20 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 			Load:       pg.Load,
 			Title:      pg.title,
 			BackButton: pg.backButton,
-			ExtraItem:  pg.viewOnExplorerBtn,
-			Extra:      pg.layoutViewOnExplorer,
+			ExtraItem:  pg.moreOption,
+			Extra: func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(pg.Theme.NewIcon(pg.Theme.Icons.NavigationMore).Layout24dp),
+						layout.Rigid(func(gtx C) D {
+							if pg.moreOptionIsOpen {
+								pg.layoutOptionsMenu(gtx)
+							}
+							return D{}
+						}),
+					)
+				})
+			},
 			Back: func() {
 				if pg.txBackStack == nil {
 					pg.ParentNavigator().CloseCurrentPage()
@@ -874,26 +902,39 @@ func (pg *TxDetailsPage) showbrowserURLModal(copyredirect *cryptomaterial.Clicka
 			return components.BrowserURLWidget(gtx, pg.Load, redirectURL, copyredirect)
 		}).
 		SetPositiveButtonText(values.String(values.StrGotIt))
+
+	pg.moreOptionIsOpen = false
 	pg.ParentWindow().ShowModal(info)
 }
 
-func (pg *TxDetailsPage) layoutViewOnExplorer(gtx C) D {
-	return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-		return pg.viewOnExplorerBtn.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Right: values.MarginPadding10,
-					}.Layout(gtx, pg.Theme.Icons.RedirectIcon.Layout16dp)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top: values.MarginPaddingMinus2,
-					}.Layout(gtx, pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), values.String(values.StrViewOnExplorer)).Layout)
-				}),
-			)
+func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
+	inset := layout.Inset{
+		Left: values.MarginPaddingMinus145,
+	}
+
+	m := op.Record(gtx.Ops)
+	inset.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding168)
+		return pg.shadowBox.Layout(gtx, func(gtx C) D {
+			optionsMenuCard := cryptomaterial.Card{Color: pg.Theme.Color.Surface}
+			optionsMenuCard.Radius = cryptomaterial.Radius(5)
+			return optionsMenuCard.Layout(gtx, func(gtx C) D {
+				return (&layout.List{Axis: layout.Vertical}).Layout(gtx, len(pg.moreItems), func(gtx C, i int) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.Theme.Label(values.TextSize14, pg.moreItems[i].text).Layout(gtx)
+								})
+							})
+						}),
+					)
+				})
+			})
 		})
 	})
+	op.Defer(gtx.Ops, m.Stop())
 }
 
 func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
@@ -910,9 +951,19 @@ func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) HandleUserInteractions(gtx C) {
+	for _, item := range pg.moreItems {
+		if item.button.Clicked(gtx) {
+			switch item.id {
+			case viewBlockID: // redirect to browser
+				pg.showbrowserURLModal(pg.copyURLBtn)
+				pg.moreOptionIsOpen = false
+			default:
+			}
+		}
+	}
 
-	if pg.viewOnExplorerBtn.Clicked(gtx) {
-		pg.showbrowserURLModal(pg.copyURLBtn)
+	if pg.moreOption.Clicked(gtx) {
+		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
 
 	if pg.associatedTicketClickable.Clicked(gtx) {

@@ -168,11 +168,9 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 	}
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
-	pg.mixerSlider.ButtonBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.mixerSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.mixerSlider.SelectedIndicatorColor = pg.Theme.Color.DeepBlue
 
-	pg.infoSyncWalletsSlider.ButtonBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.infoSyncWalletsSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.infoSyncWalletsSlider.SelectedIndicatorColor = pg.Theme.Color.DeepBlue
 
