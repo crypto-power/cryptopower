@@ -235,8 +235,8 @@ func (pg *SettingsPage) debug() layout.Widget {
 				}
 				return D{}
 			}),
-			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
-			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
+			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrViewLog))),
+			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrViewStats))),
 		)
 	}
 	return func(gtx C) D {
