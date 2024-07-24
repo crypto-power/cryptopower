@@ -260,9 +260,8 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 	}
 
 	if sp.addWalletButton.Clicked(gtx) {
-		isFirstWallet := sp.AssetsManager.LoadedWalletsCount() == 0
 		createWalletPage := components.NewCreateWallet(sp.Load, func(newWallet sharedW.Asset) {
-			if newWallet != nil && isFirstWallet {
+			if newWallet != nil {
 				newWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true)
 			}
 			
