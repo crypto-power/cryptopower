@@ -1732,7 +1732,7 @@ func (pg *DEXMarketPage) handleMissingMarketWallet() {
 		return
 	}
 
-	callbackFn := func() {
+	callbackFn := func(_ sharedW.Asset) {
 		pg.ParentNavigator().ClosePagesAfter(DEXMarketPageID)
 		showWalletModal()
 	}

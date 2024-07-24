@@ -16,6 +16,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -259,7 +260,11 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 	}
 
 	if sp.addWalletButton.Clicked(gtx) {
-		createWalletPage := components.NewCreateWallet(sp.Load, func() {
+		createWalletPage := components.NewCreateWallet(sp.Load, func(newWallet sharedW.Asset) {
+			if newWallet != nil {
+				newWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true)
+			}
+			
 			sp.setLanguagePref(false)
 			sp.ParentNavigator().Display(root.NewHomePage(sp.ctx, sp.Load))
 		})

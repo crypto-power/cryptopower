@@ -62,13 +62,13 @@ type CreateWallet struct {
 
 	selectedWalletAction int
 
-	walletCreationSuccessCallback func()
+	walletCreationSuccessCallback func(newWallet sharedW.Asset)
 
 	showLoader bool
 	isLoading  bool
 }
 
-func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetType ...libutils.AssetType) *CreateWallet {
+func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(newWallet sharedW.Asset), assetType ...libutils.AssetType) *CreateWallet {
 	pg := &CreateWallet{
 		GenericPageModal: app.NewGenericPageModal(CreateWalletID),
 		scrollContainer: &widget.List{
@@ -92,7 +92,7 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetTy
 	}
 
 	if walletCreationSuccessCallback == nil {
-		pg.walletCreationSuccessCallback = func() {
+		pg.walletCreationSuccessCallback = func(newWallet sharedW.Asset) {
 			pg.ParentNavigator().CloseCurrentPage()
 		}
 	}
@@ -441,13 +441,14 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 	if (pg.importBtn.Clicked(gtx) || isSubmit) && pg.validRestoreWalletInputs() {
 		pg.showLoader = true
 		var err error
+		var newWallet sharedW.Asset
 		go func() {
 			switch strings.ToLower(pg.assetTypeDropdown.Selected()) {
 			case libutils.DCRWalletAsset.ToStringLower():
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
-					_, err = pg.AssetsManager.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+					newWallet, err = pg.AssetsManager.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
@@ -455,7 +456,7 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
-					_, err = pg.AssetsManager.CreateNewBTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+					newWallet, err = pg.AssetsManager.CreateNewBTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
@@ -463,7 +464,7 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 				var walletWithXPub int
 				walletWithXPub, err = pg.AssetsManager.LTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
-					_, err = pg.AssetsManager.CreateNewLTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+					newWallet, err = pg.AssetsManager.CreateNewLTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
@@ -478,7 +479,7 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 				pg.showLoader = false
 				return
 			}
-			pg.walletCreationSuccessCallback()
+			pg.walletCreationSuccessCallback(newWallet)
 		}()
 	}
 }
@@ -491,9 +492,11 @@ func (pg *CreateWallet) createWallet() {
 	walletName := pg.walletName.Editor.Text()
 	pass := pg.passwordEditor.Editor.Text()
 	seedType := GetWordSeedType(pg.seedTypeDropdown.Selected())
+	var newWallet sharedW.Asset
+	var err error
 	switch strings.ToLower(pg.assetTypeDropdown.Selected()) {
 	case libutils.DCRWalletAsset.ToStringLower():
-		_, err := pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		newWallet, err = pg.AssetsManager.CreateNewDCRWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
 				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
@@ -506,7 +509,7 @@ func (pg *CreateWallet) createWallet() {
 		}
 
 	case libutils.BTCWalletAsset.ToStringLower():
-		_, err := pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		newWallet, err = pg.AssetsManager.CreateNewBTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
 				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
@@ -519,7 +522,7 @@ func (pg *CreateWallet) createWallet() {
 		}
 
 	case libutils.LTCWalletAsset.ToStringLower():
-		_, err := pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
+		newWallet, err = pg.AssetsManager.CreateNewLTCWallet(walletName, pass, sharedW.PassphraseTypePass, seedType)
 		if err != nil {
 			if err.Error() == libutils.ErrExist {
 				pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
@@ -532,7 +535,7 @@ func (pg *CreateWallet) createWallet() {
 		}
 	}
 
-	pg.walletCreationSuccessCallback()
+	pg.walletCreationSuccessCallback(newWallet)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -562,9 +565,9 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 
 	// restore wallet actions
 	if pg.restoreBtn.Clicked(gtx) && pg.validRestoreWalletInputs() {
-		afterRestore := func() {
+		afterRestore := func(newWallet sharedW.Asset) {
 			// todo setup mixer for restored accounts automatically
-			pg.walletCreationSuccessCallback()
+			pg.walletCreationSuccessCallback(newWallet)
 		}
 		ast := libutils.AssetType(pg.assetTypeDropdown.Selected())
 		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), ast, afterRestore))

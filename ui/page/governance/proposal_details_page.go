@@ -720,7 +720,7 @@ func (pg *ProposalDetails) displayCreateWalletModal(asset libutils.AssetType) {
 		SetCancelable(true).
 		SetContentAlignment(layout.Center, layout.W, layout.Center).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 				pg.walletCreationSuccessFunc()
 			}, asset))
 			return true
