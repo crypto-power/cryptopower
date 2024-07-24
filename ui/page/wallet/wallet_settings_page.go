@@ -345,7 +345,9 @@ func (pg *SettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clicka
 }
 
 func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
-	return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{
+		 Bottom: values.MarginPadding30,
+		}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), title).Layout),
 			layout.Flexed(1, func(gtx C) D {
