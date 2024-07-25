@@ -52,6 +52,7 @@ func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageF
 	// Set the maximum characters the editor can accept.
 	rp.description.Editor.MaxLen = MaxTxLabelSize
 	rp.description.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
+	rp.description.AlwayShowHit()
 
 	return rp
 }
@@ -246,7 +247,7 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(titleTxt.Layout),
 		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			return layout.E.Layout(gtx, func(gtx C) D {
 				return rp.deleteBtn.Layout(gtx, rp.Theme.NewIcon(rp.Theme.Icons.ChevronLeft).Layout20dp)
 			})
 		}),
@@ -318,7 +319,7 @@ func (rp *recipient) addressAndAmountlayout(gtx C) D {
 						return icon.Layout(gtx, values.MarginPadding16)
 					})
 				}),
-				layout.Flexed(0.45, func(gtx layout.Context) layout.Dimensions {
+				layout.Flexed(0.45, func(gtx C) D {
 					if rp.amount.amountEditor.HasError() {
 						gtx.Constraints.Min.Y = amountHeight
 					}
