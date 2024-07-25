@@ -112,55 +112,6 @@ func (asset *Asset) CancelRescan() {
 	}
 }
 
-// rescanAsync initiates a full wallet recovery (used address discovery
-// and transaction scanning) by stopping the btcwallet, dropping the transaction
-// history from the wallet db, resetting the synced-to height of the wallet
-// manager, restarting the wallet and its chain client, and finally commanding
-// the wallet to resynchronize, which starts asynchronous wallet recovery.
-// Progress of the rescan should be monitored with syncStatus. During the rescan
-// wallet balances and known transactions may not be reported accurately or
-// located. The SPVService is not stopped, so most spvWallet methods will
-// continue to work without error, but methods using the btcWallet will likely
-// return incorrect results or errors.
-func (asset *Asset) rescanAsync() error {
-	if !atomic.CompareAndSwapUint32(&asset.rescanStarting, 0, 1) {
-		log.Error("rescan already in progress")
-		return fmt.Errorf("rescan already in progress")
-	}
-
-	defer atomic.StoreUint32(&asset.rescanStarting, 0)
-
-	log.Info("Stopping wallet and chain client...")
-
-	asset.Internal().BTC.Stop() // stops Wallet and chainClient (not chainService)
-	asset.Internal().BTC.WaitForShutdown()
-	asset.chainClient.WaitForShutdown()
-
-	// Attempt to drop the the tx history. See the btcwallet/cmd/dropwtxmgr app
-	// for more information. Because of how often a forces rescan will be triggered,
-	// dropping the transaction history in every one of those occasions won't make
-	// much difference. Its recommended that on the manually triggered rescan that
-	// is when dropping transaction history can be done.
-	log.Infof("(%v) Dropping transaction history to perform full rescan...", asset.GetWalletName())
-
-	err := w.DropTransactionHistory(asset.Internal().BTC.Database(), false)
-	if err != nil {
-		log.Errorf("Failed to drop wallet transaction history: %v", err)
-		// continue with the rescan despite the error occurring
-	}
-
-	log.Info("Starting wallet...")
-	asset.Internal().BTC.Start()
-
-	if err := asset.chainClient.Start(); err != nil {
-		return fmt.Errorf("couldn't start Neutrino client: %v", err)
-	}
-
-	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
-	return nil
-}
-
 // forceRescan forces a full rescan with active address discovery on wallet
 // restart by setting the "synced to" field to nil.
 func (asset *Asset) forceRescan() {
