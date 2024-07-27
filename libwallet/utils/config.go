@@ -12,6 +12,12 @@ import (
 )
 
 type ProposalStatus int
+type AgendaSyncStatus int
+
+const (
+	AgendaStatusSynced AgendaSyncStatus = iota
+	AgendaStatusSyncing
+)
 
 const (
 	ProposalStatusSynced ProposalStatus = iota

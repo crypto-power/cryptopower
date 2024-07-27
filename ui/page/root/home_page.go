@@ -520,7 +520,7 @@ func (hp *HomePage) displaySelectedPage(title string) {
 		}
 		pg = exchange.NewTradePage(hp.Load)
 	case values.String(values.StrGovernance):
-		pg = governance.NewGovernancePage(hp.Load)
+		pg = governance.NewGovernancePage(hp.Load, nil)
 	}
 	hp.Display(pg)
 }

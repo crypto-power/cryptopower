@@ -25,6 +25,7 @@ type Page struct {
 	splashScreenInfoButton cryptomaterial.IconButton
 	enableGovernanceBtn    cryptomaterial.Button
 	navigateToSettingsBtn  cryptomaterial.Button
+	detailData             interface{}
 }
 
 var governanceTabTitles = []string{
@@ -33,12 +34,13 @@ var governanceTabTitles = []string{
 	values.String(values.StrTreasurySpending),
 }
 
-func NewGovernancePage(l *load.Load) *Page {
+func NewGovernancePage(l *load.Load, detailData interface{}) *Page {
 	pg := &Page{
 		Load:            l,
 		MasterPage:      app.NewMasterPage(GovernancePageID),
 		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings), l.IsMobileView(), nil),
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
+		detailData:      detailData,
 	}
 
 	pg.tab = l.Theme.SegmentedControl(governanceTabTitles, cryptomaterial.SegmentTypeGroup)
@@ -59,7 +61,7 @@ func (pg *Page) OnNavigatedTo() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
 	} else {
-		pg.Display(NewProposalsPage(pg.Load))
+		pg.Display(NewProposalsPage(pg.Load, pg.detailData))
 	}
 }
 
@@ -95,7 +97,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 
 	if tabItemClicked, clickedTabIndex := pg.tabCategoryList.ItemClicked(); tabItemClicked {
 		if clickedTabIndex == 0 {
-			pg.Display(NewProposalsPage(pg.Load)) // Display should do nothing if the page is already displayed.
+			pg.Display(NewProposalsPage(pg.Load, nil)) // Display should do nothing if the page is already displayed.
 		} else if clickedTabIndex == 1 {
 			pg.Display(NewConsensusPage(pg.Load))
 		} else {
@@ -111,7 +113,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 	if pg.tab.Changed() {
 		selectedTabIdx := pg.tab.SelectedIndex()
 		if selectedTabIdx == 0 {
-			pg.Display(NewProposalsPage(pg.Load)) // Display should do nothing if the page is already displayed.
+			pg.Display(NewProposalsPage(pg.Load, nil)) // Display should do nothing if the page is already displayed.
 		} else if selectedTabIdx == 1 {
 			pg.Display(NewConsensusPage(pg.Load))
 		} else {

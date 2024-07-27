@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"context"
 	"io"
 	"strings"
 	"time"
@@ -22,10 +23,18 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
+	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const ConsensusPageID = "Consensus"
+const (
+	ConsensusPageID = "Consensus"
+
+	// interval to run sync Agendas in minute
+	consensusSyncInterval = 5
+	// interval to refresh the view in second
+	consensusRefreshView = 5
+)
 
 type ConsensusPage struct {
 	*load.Load
@@ -58,6 +67,9 @@ type ConsensusPage struct {
 
 	syncCompleted bool
 	isSyncing     bool
+	agendaFetched bool
+	lastSyncTime  int64
+	ticker        *time.Ticker
 }
 
 func NewConsensusPage(l *load.Load) *ConsensusPage {
@@ -73,6 +85,7 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 		redirectIcon:        l.Theme.Icons.RedirectIcon,
 		viewVotingDashboard: l.Theme.NewClickable(true),
 		copyRedirectURL:     l.Theme.NewClickable(false),
+		lastSyncTime:        l.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp(),
 	}
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
@@ -108,14 +121,56 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
 
 	pg.initWalletSelector()
+
+	// ticker to update the page and sync proposals after "proposalsSyncInterval" minutes
+	pg.ticker = time.NewTicker(time.Second)
+	pg.ticker.Stop()
+	go pg.refreshPageAndSyncInterval()
 	return pg
+}
+
+func (pg *ConsensusPage) refreshPageAndSyncInterval() {
+	for range pg.ticker.C {
+		if pg.syncCompleted {
+			pg.syncCompleted = false
+		}
+		pg.ParentWindow().Reload()
+		if !pg.isSyncing && time.Since(time.Unix(pg.lastSyncTime, 0)) > time.Minute*consensusSyncInterval && pg.agendaFetched {
+			pg.SyncAgenda()
+		}
+	}
+}
+
+func (pg *ConsensusPage) listenForSyncNotifications() {
+	consensusSyncCallback := func(status libutils.AgendaSyncStatus) {
+		if status == libutils.AgendaStatusSynced {
+			pg.syncCompleted = true
+			pg.isSyncing = false
+			pg.lastSyncTime = pg.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp()
+			pg.FetchAgendas()
+			// start the ticker to update the page and sync proposals after "proposalsSyncInterval" minutes
+			pg.ticker.Reset(time.Second * proposalsRefreshView)
+		}
+	}
+	err := pg.AssetsManager.ConsensusAgenda.AddSyncCallback(consensusSyncCallback, ConsensusPageID)
+	if err != nil {
+		log.Errorf("Error adding politeia notification listener: %v", err)
+		return
+	}
 }
 
 func (pg *ConsensusPage) OnNavigatedTo() {
 	if pg.isAgendaAPIAllowed() {
-		// Only query the agendas if the Agenda API is allowed.
-		pg.FetchAgendas()
+		pg.syncAndUpdateAgenda()
+		pg.agendaFetched = true
 	}
+}
+
+func (pg *ConsensusPage) syncAndUpdateAgenda() {
+	// Only proceed if allowed make Agenda API call.
+	pg.listenForSyncNotifications()
+	pg.FetchAgendas()
+	pg.SyncAgenda()
 }
 
 func (pg *ConsensusPage) initWalletSelector() {
@@ -139,7 +194,10 @@ func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
 	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
-func (pg *ConsensusPage) OnNavigatedFrom() {}
+func (pg *ConsensusPage) OnNavigatedFrom() {
+	pg.ticker.Stop()
+	pg.AssetsManager.ConsensusAgenda.RemoveSyncCallback(ConsensusPageID)
+}
 
 func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	var voteChoices []string
@@ -209,7 +267,10 @@ func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.syncButton.Clicked(gtx) {
-		pg.FetchAgendas()
+		if pg.isSyncing {
+			return
+		}
+		pg.SyncAgenda()
 	}
 
 	if pg.infoButton.Button.Clicked(gtx) {
@@ -272,49 +333,37 @@ func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.syncCompleted {
-		time.AfterFunc(time.Second*1, func() {
-			pg.syncCompleted = false
-			pg.ParentWindow().Reload()
-		})
-	}
-
 	if pg.filterBtn.Clicked(gtx) {
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 }
 
+func (pg *ConsensusPage) SyncAgenda() {
+	pg.isSyncing = true
+	pg.syncCompleted = false
+	go func() { _ = pg.AssetsManager.ConsensusAgenda.Sync(context.Background()) }()
+	pg.ParentWindow().Reload()
+}
+
 func (pg *ConsensusPage) FetchAgendas() {
 	selectedType := pg.statusDropDown.Selected()
-	pg.isSyncing = true
-
 	orderNewest := pg.orderDropDown.Selected() != values.String(values.StrOldest)
 
-	// Fetch (or re-fetch) agendas in background as this makes
-	// a network call. Refresh the window once the call completes.
-	go func() {
-		items := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, orderNewest)
-		agenda := dcr.AgendaStatusFromStr(selectedType)
-		listItems := make([]*components.ConsensusItem, 0)
-		if agenda == dcr.UnknownStatus {
-			listItems = items
-		} else {
-			for _, item := range items {
-				if dcr.AgendaStatusType(item.Agenda.Status) == agenda {
-					listItems = append(listItems, item)
-				}
+	items := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, orderNewest)
+	agenda := dcr.AgendaStatusFromStr(selectedType)
+	listItems := make([]*components.ConsensusItem, 0)
+	if agenda == dcr.UnknownStatus {
+		listItems = items
+	} else {
+		for _, item := range items {
+			if dcr.AgendaStatusType(item.Agenda.Status) == agenda {
+				listItems = append(listItems, item)
 			}
 		}
-
-		pg.isSyncing = false
-		pg.syncCompleted = true
-		pg.consensusItems = listItems
-		pg.ParentWindow().Reload()
-	}()
-
-	// Refresh the window now to signify that the syncing
-	// has started with pg.isSyncing set to true above.
+	}
+	pg.consensusItems = listItems
 	pg.ParentWindow().Reload()
+	pg.ticker.Reset(time.Second * consensusRefreshView)
 }
 
 func (pg *ConsensusPage) Layout(gtx C) D {
@@ -471,6 +520,8 @@ func (pg *ConsensusPage) layoutRedirectVoting(gtx C) D {
 				text = values.String(values.StrSyncingState)
 			} else if pg.syncCompleted {
 				text = values.String(values.StrUpdated)
+			} else {
+				text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.lastSyncTime)
 			}
 
 			lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
@@ -480,7 +531,11 @@ func (pg *ConsensusPage) layoutRedirectVoting(gtx C) D {
 			}
 
 			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+				return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+					return pg.syncButton.Layout(gtx, func(gtx C) D {
+						return lastUpdatedInfo.Layout(gtx)
+					})
+				})
 			})
 		}),
 	)

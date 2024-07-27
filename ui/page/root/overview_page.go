@@ -244,7 +244,7 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 	}
 
 	if clicked, selectedTxIndex := pg.recentProposalList.ItemClicked(); clicked {
-		pg.ParentNavigator().Display(governance.NewProposalDetailsPage(pg.Load, &pg.proposalItems[selectedTxIndex].Proposal))
+		pg.ParentNavigator().Display(governance.NewGovernancePage(pg.Load, &pg.proposalItems[selectedTxIndex].Proposal))
 	}
 
 	if clicked, selectedTxIndex := pg.recentTradeList.ItemClicked(); clicked {
