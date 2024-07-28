@@ -55,6 +55,7 @@ type Page struct {
 	infoButton cryptomaterial.IconButton
 	// retryExchange cryptomaterial.Button // TODO not included in design
 	nextButton     cryptomaterial.Button
+	closeButton    cryptomaterial.Button
 	addRecipentBtn *cryptomaterial.Clickable
 
 	isFetchingExchangeRate bool
@@ -650,7 +651,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 // recently occurred on the modal or page and may be used to update any affected
 // UI components shortly before they are displayed by the Layout() method.
 func (pg *Page) Handle(gtx C) {
-	if pg.modalLayout.BackdropClicked(gtx, true) {
+	if pg.modalLayout.BackdropClicked(gtx, true) || pg.closeButton.Clicked(gtx) {
 		pg.modalLayout.Dismiss()
 	} else {
 		pg.HandleUserInteractions(gtx)
