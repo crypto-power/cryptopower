@@ -90,6 +90,19 @@ func (db *BTCDB) View(f func(tx walletdb.ReadTx) error, reset func()) error {
 	return nil
 }
 
+// Batch is similar to the package-level Update method, but it will attempt to
+// optismitcally combine the invocation of several transaction functions into a
+// single db write transaction.
+//
+// This function is part of the walletdb.Db interface implementation.
+func (db *BTCDB) Batch(f func(tx walletdb.ReadWriteTx) error) error {
+	return db.Bolt.Batch(func(btx *bbolt.Tx) error {
+		interfaceTx := &BTCTX{boltTx: btx}
+
+		return f(interfaceTx)
+	})
+}
+
 // Update opens a database read/write transaction and executes the
 // function f with the transaction passed as a parameter. After f exits,
 // if f did not error, the transaction is committed. Otherwise, if f did
