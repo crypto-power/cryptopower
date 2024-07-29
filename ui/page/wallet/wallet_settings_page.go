@@ -235,8 +235,8 @@ func (pg *SettingsPage) debug() layout.Widget {
 				}
 				return D{}
 			}),
-			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
-			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
+			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrViewLog))),
+			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrViewStats))),
 		)
 	}
 	return func(gtx C) D {
@@ -345,7 +345,7 @@ func (pg *SettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clicka
 }
 
 func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
-	return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Bottom: values.MarginPadding30}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), title).Layout),
 			layout.Flexed(1, func(gtx C) D {
