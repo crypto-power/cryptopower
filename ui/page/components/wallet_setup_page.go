@@ -92,7 +92,7 @@ func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(newWallet 
 	}
 
 	if walletCreationSuccessCallback == nil {
-		pg.walletCreationSuccessCallback = func(newWallet sharedW.Asset) {
+		pg.walletCreationSuccessCallback = func(_ sharedW.Asset) {
 			pg.ParentNavigator().CloseCurrentPage()
 		}
 	}

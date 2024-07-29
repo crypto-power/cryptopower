@@ -264,7 +264,6 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 			if newWallet != nil {
 				newWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true)
 			}
-			
 			sp.setLanguagePref(false)
 			sp.ParentNavigator().Display(root.NewHomePage(sp.ctx, sp.Load))
 		})
