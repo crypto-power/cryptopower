@@ -93,7 +93,7 @@ func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator,
 		s.loadedAllItems = false
 		s.isLoadingItems = false
 		s.offset = 0
-		s.itemsCount = 0
+		s.itemsCount = -1
 		s.data = nil
 		s.cacheData = nil
 		s.list.Position.Offset = 0
