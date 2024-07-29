@@ -46,7 +46,7 @@ type SeedRestore struct {
 	// the ParentNavigator is the MainPage.
 	*app.GenericPageModal
 	isRestoring     bool
-	restoreComplete func()
+	restoreComplete func(newWallet sharedW.Asset)
 
 	seedList *layout.List
 
@@ -78,7 +78,7 @@ type SeedRestore struct {
 	getWordSeedType func() sharedW.WordSeedType
 }
 
-func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func(), getWordSeedType func() sharedW.WordSeedType) *SeedRestore {
+func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func(newWallet sharedW.Asset), getWordSeedType func() sharedW.WordSeedType) *SeedRestore {
 	pg := &SeedRestore{
 		Load:            l,
 		restoreComplete: onRestoreComplete,
@@ -532,7 +532,7 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
+				importedWallet, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass, pg.getWordSeedType())
 				if err != nil {
 					errString := err.Error()
 					if err.Error() == libutils.ErrExist {
@@ -549,7 +549,7 @@ func (pg *SeedRestore) HandleUserInteractions(gtx C) {
 				m.Dismiss()
 				pg.window.CloseCurrentPage()
 				if pg.restoreComplete != nil {
-					pg.restoreComplete()
+					pg.restoreComplete(importedWallet)
 				}
 				return true
 			})

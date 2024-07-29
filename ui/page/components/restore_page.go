@@ -35,7 +35,7 @@ type Restore struct {
 	// WindowNavigator if this page is displayed from the StartPage, otherwise
 	// the ParentNavigator is the MainPage.
 	*app.GenericPageModal
-	restoreComplete   func()
+	restoreComplete   func(newWallet sharedW.Asset)
 	tabs              *cryptomaterial.SegmentedControl
 	tabIndex          int
 	backButton        cryptomaterial.IconButton
@@ -49,7 +49,7 @@ type Restore struct {
 	seedTypeDropdown  *cryptomaterial.DropDown
 }
 
-func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func()) *Restore {
+func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func(newWallet sharedW.Asset)) *Restore {
 	pg := &Restore{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateRestorePageID),
@@ -344,7 +344,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		ShowWalletInfoTip(true).
 		SetParent(pg).
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-			_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass, wordSeedType)
+			importedWallet, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass, wordSeedType)
 			if err != nil {
 				errString := err.Error()
 				if err.Error() == libutils.ErrExist {
@@ -360,7 +360,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 			m.Dismiss()
 			pg.ParentNavigator().CloseCurrentPage()
 			if pg.restoreComplete != nil {
-				pg.restoreComplete()
+				pg.restoreComplete(importedWallet)
 			}
 			clearEditor()
 			return true

@@ -182,7 +182,7 @@ func (pg *TreasuryPage) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.createWalletBtn.Button.Clicked(gtx) {
-		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 			pg.walletCreationSuccessFunc()
 		}, libutils.DCRWalletAsset))
 	}
