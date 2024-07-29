@@ -276,9 +276,9 @@ func (asset *Asset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 }
 
 // Broadcast broadcasts the transaction to the network.
-func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byte, error) {
+func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) (string, error) {
 	if !asset.WalletOpened() {
-		return nil, utils.ErrBTCNotInitialized
+		return "", utils.ErrBTCNotInitialized
 	}
 
 	asset.TxAuthoredInfo.mu.Lock()
@@ -286,7 +286,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 
 	unsignedTx, err := asset.unsignedTransaction()
 	if err != nil {
-		return nil, utils.TranslateError(err)
+		return "", utils.TranslateError(err)
 	}
 
 	// If the change output is the only one, no need to change position.
@@ -305,7 +305,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	err = asset.Internal().BTC.Unlock([]byte(privatePassphrase), lock)
 	if err != nil {
 		log.Errorf("unlocking the wallet failed: %v", err)
-		return nil, errors.New(utils.ErrInvalidPassphrase)
+		return "", errors.New(utils.ErrInvalidPassphrase)
 	}
 
 	// To discourage fee sniping, LockTime is explicitly set in the raw tx.
@@ -317,7 +317,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 		_, previousTXout, _, _, err := asset.Internal().BTC.FetchInputInfo(&txIn.PreviousOutPoint)
 		if err != nil {
 			log.Errorf("fetch previous outpoint txout failed: %v", err)
-			return nil, err
+			return "", err
 		}
 
 		prevOutScript := unsignedTx.PrevScripts[index]
@@ -330,7 +330,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 		)
 		if err != nil {
 			log.Errorf("generating input signatures failed: %v", err)
-			return nil, err
+			return "", err
 		}
 
 		msgTx.TxIn[index].Witness = witness
@@ -344,11 +344,11 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 			prevOutAmount, prevOutFetcher)
 		if err != nil {
 			log.Errorf("creating validation engine failed: %v", err)
-			return nil, err
+			return "", err
 		}
 		if err := vm.Execute(); err != nil {
 			log.Errorf("executing the validation engine failed: %v", err)
-			return nil, err
+			return "", err
 		}
 	}
 
@@ -357,18 +357,19 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	err = msgTx.Serialize(&serializedTransaction)
 	if err != nil {
 		log.Errorf("encoding the tx to test its validity failed: %v", err)
-		return nil, err
+		return "", err
 	}
 
 	err = msgTx.Deserialize(bytes.NewReader(serializedTransaction.Bytes()))
 	if err != nil {
 		// Invalid tx
 		log.Errorf("decoding the tx to test its validity failed: %v", err)
-		return nil, err
+		return "", err
 	}
 
 	err = asset.Internal().BTC.PublishTransaction(msgTx, transactionLabel)
-	return nil, utils.TranslateError(err)
+	txHash := msgTx.TxHash()
+	return txHash.String(), utils.TranslateError(err)
 }
 
 func (asset *Asset) unsignedTransaction() (*txauthor.AuthoredTx, error) {

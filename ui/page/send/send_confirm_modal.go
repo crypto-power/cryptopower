@@ -37,13 +37,15 @@ type sendConfirmModal struct {
 	asset           sharedW.Asset
 	exchangeRateSet bool
 	txLabel         string
+	sentHandle      func(string)
 }
 
-func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset) *sendConfirmModal {
+func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset, sentHandle func(string)) *sendConfirmModal {
 	scm := &sendConfirmModal{
 		Load:           l,
 		authoredTxData: data,
 		asset:          asset,
+		sentHandle:     sentHandle,
 	}
 	scm.Modal = l.Theme.ModalFloatTitle("send_confirm_modal", l.IsMobileView(), scm.firstLoad)
 
@@ -88,12 +90,15 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 	scm.setLoading(true)
 	go func() {
 		defer scm.setLoading(false)
-		_, err := scm.asset.Broadcast(password, scm.txLabel)
+		txHash, err := scm.asset.Broadcast(password, scm.txLabel)
 		if err != nil {
 			scm.SetError(err.Error())
 			return
 		}
-		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), modal.DefaultClickFunc())
+		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), func(_ bool, _ *modal.InfoModal) bool {
+			scm.sentHandle(txHash)
+			return true
+		})
 		scm.ParentWindow().ShowModal(successModal)
 
 		scm.txSent()

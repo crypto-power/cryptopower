@@ -208,20 +208,20 @@ func (asset *Asset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
-func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byte, error) {
+func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) (string, error) {
 	if !asset.WalletOpened() {
-		return nil, utils.ErrDCRNotInitialized
+		return "", utils.ErrDCRNotInitialized
 	}
 
 	n, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return "", err
 	}
 
 	unsignedTx, err := asset.unsignedTransaction()
 	if err != nil {
-		return nil, utils.TranslateError(err)
+		return "", utils.TranslateError(err)
 	}
 
 	if unsignedTx.ChangeIndex >= 0 {
@@ -233,7 +233,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	err = unsignedTx.Tx.Serialize(&txBuf)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return "", err
 	}
 
 	var msgTx wire.MsgTx
@@ -241,7 +241,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	if err != nil {
 		log.Error(err)
 		// Bytes do not represent a valid raw transaction
-		return nil, err
+		return "", err
 	}
 
 	lock := make(chan time.Time, 1)
@@ -253,7 +253,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	err = asset.Internal().DCR.Unlock(ctx, []byte(privatePassphrase), lock)
 	if err != nil {
 		log.Error(err)
-		return nil, errors.New(utils.ErrInvalidPassphrase)
+		return "", errors.New(utils.ErrInvalidPassphrase)
 	}
 
 	var additionalPkScripts map[wire.OutPoint][]byte
@@ -261,7 +261,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	invalidSigs, err := asset.Internal().DCR.SignTransaction(ctx, &msgTx, txscript.SigHashAll, additionalPkScripts, nil, nil)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return "", err
 	}
 
 	invalidInputIndexes := make([]uint32, len(invalidSigs))
@@ -274,22 +274,21 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 	err = msgTx.Serialize(&serializedTransaction)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return "", err
 	}
 
 	err = msgTx.Deserialize(bytes.NewReader(serializedTransaction.Bytes()))
 	if err != nil {
 		// Invalid tx
 		log.Error(err)
-		return nil, err
+		return "", err
 	}
 
 	txHash, err := asset.Internal().DCR.PublishTransaction(ctx, &msgTx, n)
 	if err != nil {
-		return nil, utils.TranslateError(err)
+		return "", utils.TranslateError(err)
 	}
-
-	return txHash[:], asset.updateTxLabel(txHash, transactionLabel)
+	return txHash.String(), asset.updateTxLabel(txHash, transactionLabel)
 }
 
 // updateTxLabel saves the tx label in the local instance.

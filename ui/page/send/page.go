@@ -15,6 +15,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	txpage "github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -607,7 +608,15 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 
 	if pg.nextButton.Clicked(gtx) {
 		if pg.selectedWallet.IsUnsignedTxExist() {
-			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
+			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet, func(txHash string) {
+				if pg.modalLayout == nil {
+					transaction, err := pg.selectedWallet.GetTransactionRaw(txHash)
+					if err != nil {
+						log.Error("get transaction error: ", err)
+					}
+					pg.ParentNavigator().Display(txpage.NewTransactionDetailsPage(pg.Load, pg.selectedWallet, transaction))
+				}
+			})
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
 			// TODO handle if there are many description texts
 			// this workaround shows the description text when there is only one recipient and does not show when have more than one recipient

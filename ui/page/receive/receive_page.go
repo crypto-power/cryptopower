@@ -60,7 +60,9 @@ type Page struct {
 	selectedWallet    sharedW.Asset
 	navigateToSyncBtn cryptomaterial.Button
 
-	closeButton cryptomaterial.Button
+	closeButton       cryptomaterial.Button
+	qrCopyButton      *widget.Clickable
+	addressCopyButton *widget.Clickable
 }
 
 func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
@@ -78,6 +80,8 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 		newAddr:           l.Theme.NewClickable(false),
 		card:              l.Theme.Card(),
 		backdrop:          new(widget.Clickable),
+		qrCopyButton:      new(widget.Clickable),
+		addressCopyButton: new(widget.Clickable),
 		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
 		selectedWallet:    wallet,
 	}
@@ -315,7 +319,9 @@ func (pg *Page) contentLayout(gtx C) D {
 									if pg.qrImage == nil {
 										return D{}
 									}
-									return pg.Theme.ImageIcon(gtx, *pg.qrImage, 150)
+									return pg.qrCopyButton.Layout(gtx, func(gtx C) D {
+										return pg.Theme.ImageIcon(gtx, *pg.qrImage, 150)
+									})
 								}),
 								layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
 								layout.Rigid(pg.addressLayout),
@@ -426,12 +432,14 @@ func (pg *Page) addressLayout(gtx C) D {
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return border.Layout(gtx, func(gtx C) D {
-		return components.VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), "")
-			if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
-				lbl.Text = pg.currentAddress
-			}
-			return layout.Center.Layout(gtx, lbl.Layout)
+		return pg.addressCopyButton.Layout(gtx, func(gtx C) D {
+			return components.VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
+				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), "")
+				if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
+					lbl.Text = pg.currentAddress
+				}
+				return layout.Center.Layout(gtx, lbl.Layout)
+			})
 		})
 	})
 }
@@ -495,7 +503,7 @@ generateAddress:
 
 func (pg *Page) handleCopyEvent(gtx C) {
 	// Prevent copying again if the timer hasn't expired
-	if pg.copy.Clicked(gtx) && !pg.isCopying {
+	if (pg.copy.Clicked(gtx) || pg.qrCopyButton.Clicked(gtx) || pg.addressCopyButton.Clicked(gtx)) && !pg.isCopying {
 		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.currentAddress))})
 		pg.Toast.Notify(values.String(values.StrCopied))
 	}
