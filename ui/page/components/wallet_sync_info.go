@@ -3,7 +3,6 @@ package components
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -187,8 +186,7 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 								layout.Expanded(func(gtx C) D {
 									size := image.Point{X: 280, Y: 50}
 									rect := clip.Rect{Max: size}.Op()
-									var red = color.NRGBA{R: 240, G: 4, B: 1, A: 255}
-									paint.FillShape(gtx.Ops, red, rect)
+									paint.FillShape(gtx.Ops, wsi.Theme.Color.Danger, rect)
 									return layout.Dimensions{Size: size}
 								}),
 								layout.Stacked(func(gtx C) D {
