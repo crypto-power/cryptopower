@@ -2,6 +2,8 @@ package components
 
 import (
 	"fmt"
+	"image"
+	"image/color"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -9,6 +11,8 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -180,16 +184,31 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 					}.Layout(gtx, func(gtx C) D {
 						return material.Clickable(gtx, &wsi.toBackup, func(gtx C) D {
 							return layout.Stack{}.Layout(gtx,
+								layout.Expanded(func(gtx C) D {
+									size := image.Point{X: 280, Y: 50}
+									rect := clip.Rect{Max: size}.Op()
+									var red = color.NRGBA{R: 240, G: 4, B: 1, A: 255}
+									paint.FillShape(gtx.Ops, red, rect)
+									return layout.Dimensions{Size: size}
+								}),
 								layout.Stacked(func(gtx C) D {
-									lbl := material.Body2(wsi.Theme.Base, values.String(values.StrBackupWarning))
-									lbl.Color = wsi.Theme.Color.Danger
-									return lbl.Layout(gtx)
+									return layout.Inset{
+										Left: values.MarginPadding5,
+										Top:  values.MarginPadding4,
+									}.Layout(gtx, func(gtx C) D {
+										return layout.Center.Layout(gtx, func(gtx C) D {
+											lbl := material.Body2(wsi.Theme.Base, values.String(values.StrBackupWarning))
+											lbl.Color = wsi.Theme.Color.White
+											return lbl.Layout(gtx)
+										})
+									})
 								}),
 							)
 						})
 					})
 				}),
 			)
+
 		}))
 	}
 
