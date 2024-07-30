@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"image"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -10,8 +9,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -182,26 +179,27 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 						Right: values.MarginPadding16,
 					}.Layout(gtx, func(gtx C) D {
 						return material.Clickable(gtx, &wsi.toBackup, func(gtx C) D {
-							return layout.Stack{}.Layout(gtx,
-								layout.Expanded(func(gtx C) D {
-									size := image.Point{X: 280, Y: 50}
-									rect := clip.Rect{Max: size}.Op()
-									paint.FillShape(gtx.Ops, wsi.Theme.Color.Danger, rect)
-									return layout.Dimensions{Size: size}
-								}),
-								layout.Stacked(func(gtx C) D {
-									return layout.Inset{
-										Left: values.MarginPadding5,
-										Top:  values.MarginPadding4,
-									}.Layout(gtx, func(gtx C) D {
-										return layout.Center.Layout(gtx, func(gtx C) D {
-											lbl := material.Body2(wsi.Theme.Base, values.String(values.StrBackupWarning))
-											lbl.Color = wsi.Theme.Color.White
-											return lbl.Layout(gtx)
-										})
-									})
-								}),
-							)
+							return cryptomaterial.LinearLayout{
+								Width:       cryptomaterial.WrapContent,
+								Height:      cryptomaterial.WrapContent,
+								Orientation: layout.Vertical,
+								Padding:     layout.UniformInset(values.MarginPadding5),
+								Background:  wsi.Theme.Color.Danger,
+								Border: cryptomaterial.Border{
+									Radius: cryptomaterial.CornerRadius{
+										TopLeft:     int(values.MarginPadding8),
+										TopRight:    int(values.MarginPadding8),
+										BottomRight: int(values.MarginPadding8),
+										BottomLeft:  int(values.MarginPadding8),
+									},
+								},
+							}.Layout2(gtx, func(gtx C) D {
+								return layout.Center.Layout(gtx, func(gtx C) D {
+									lbl := material.Body2(wsi.Theme.Base, values.String(values.StrBackupWarning))
+									lbl.Color = wsi.Theme.Color.White
+									return lbl.Layout(gtx)
+								})
+							})
 						})
 					})
 				}),
