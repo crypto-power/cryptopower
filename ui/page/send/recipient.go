@@ -104,6 +104,9 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 
 func (rp *recipient) isShowSendToWallet() bool {
 	sourceWalletSelected := rp.sendDestination.walletDropdown.SelectedWallet()
+	if sourceWalletSelected == nil {
+		return false
+	}
 	var wallets []sharedW.Asset
 	switch sourceWalletSelected.GetAssetType() {
 	case libUtil.BTCWalletAsset:

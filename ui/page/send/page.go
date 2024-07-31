@@ -187,6 +187,18 @@ func (pg *Page) pageFields() pageFields {
 
 // initWalletSelector is used for the send modal for wallet selection.
 func (pg *Page) initModalWalletSelector(wallet sharedW.Asset) {
+	pg.walletDropdown = components.NewWalletDropdown(pg.Load).
+		SetChangedCallback(func(wallet sharedW.Asset) {
+			pg.selectedWallet = wallet
+			if pg.accountDropdown != nil {
+				pg.accountDropdown.Setup(wallet)
+				go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
+				pg.setAssetTypeForRecipients()
+			}
+
+		}).
+		Setup()
+
 	pg.accountDropdown = components.NewAccountDropdown(pg.Load).
 		SetChangedCallback(func(account *sharedW.Account) {
 			pg.initAccountsSelectorForRecipients(account)
@@ -219,18 +231,8 @@ func (pg *Page) initModalWalletSelector(wallet sharedW.Asset) {
 			}
 
 			return accountIsValid
-		})
-	pg.walletDropdown = components.NewWalletDropdown(pg.Load).
-		SetChangedCallback(func(wallet sharedW.Asset) {
-			pg.selectedWallet = wallet
-			if pg.accountDropdown != nil {
-				pg.accountDropdown.Setup(wallet)
-				go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
-				pg.setAssetTypeForRecipients()
-			}
-
 		}).
-		Setup()
+		Setup(wallet)
 
 	pg.selectedWallet = pg.walletDropdown.SelectedWallet()
 	if wallet != nil {

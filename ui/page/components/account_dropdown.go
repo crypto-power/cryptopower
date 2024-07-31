@@ -82,6 +82,11 @@ func (d *AccountDropdown) selectedIsValid() bool {
 	if d.selectedAccount == nil {
 		return false
 	}
+
+	if d.selectedWallet.GetWalletID() != d.selectedAccount.WalletID {
+		return false
+	}
+
 	if d.accountIsValid != nil {
 		if !d.accountIsValid(d.selectedAccount) {
 			return false
@@ -150,6 +155,9 @@ func (d *AccountDropdown) getAccountByNumber(accountNumber int32) *sharedW.Accou
 }
 
 func (d *AccountDropdown) SelectedAccount() *sharedW.Account {
+	if d == nil {
+		return nil
+	}
 	return d.selectedAccount
 }
 
