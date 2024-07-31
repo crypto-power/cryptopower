@@ -52,7 +52,7 @@ func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageF
 	// Set the maximum characters the editor can accept.
 	rp.description.Editor.MaxLen = MaxTxLabelSize
 	rp.description.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
-	rp.description.AlwayShowHit()
+	rp.description.AlwaysShowHint()
 
 	return rp
 }

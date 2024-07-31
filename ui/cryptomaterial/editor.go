@@ -83,10 +83,10 @@ type Editor struct {
 
 	isFirstFocus bool
 
-	submitted      bool
-	changed        bool
-	selected       bool
-	isFocusShowHit bool
+	submitted       bool
+	changed         bool
+	selected        bool
+	showHintOnFocus bool
 }
 
 func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
@@ -225,8 +225,8 @@ func (e *Editor) Selected() bool {
 	return selected
 }
 
-func (e *Editor) AlwayShowHit() {
-	e.isFocusShowHit = true
+func (e *Editor) AlwaysShowHint() {
+	e.showHintOnFocus = true
 }
 
 func (e *Editor) Layout(gtx C) D {
@@ -285,7 +285,7 @@ func (e *Editor) layout(gtx C) D {
 	if focused {
 		e.TitleLabel.Text = e.Hint
 		e.TitleLabel.Color, e.LineColor = e.t.Color.Primary, e.t.Color.Primary
-		if !e.isFocusShowHit {
+		if !e.showHintOnFocus {
 			e.Hint = ""
 		}
 	}

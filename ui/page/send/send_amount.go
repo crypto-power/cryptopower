@@ -47,7 +47,7 @@ func newSendAmount(theme *cryptomaterial.Theme, assetType libUtil.AssetType) *se
 	sa.amountEditor.HasCustomButton = true
 	sa.amountEditor.Editor.SingleLine = true
 	sa.amountEditor.IsTitleLabel = false
-	sa.amountEditor.AlwayShowHit()
+	sa.amountEditor.AlwaysShowHint()
 
 	sa.amountEditor.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
 	sa.amountEditor.CustomButton.Text = values.String(values.StrMax)
@@ -59,7 +59,7 @@ func newSendAmount(theme *cryptomaterial.Theme, assetType libUtil.AssetType) *se
 	sa.usdAmountEditor.HasCustomButton = true
 	sa.usdAmountEditor.Editor.SingleLine = true
 	sa.usdAmountEditor.IsTitleLabel = false
-	sa.usdAmountEditor.AlwayShowHit()
+	sa.usdAmountEditor.AlwaysShowHint()
 
 	sa.usdAmountEditor.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
 	sa.usdAmountEditor.CustomButton.Text = values.String(values.StrMax)
