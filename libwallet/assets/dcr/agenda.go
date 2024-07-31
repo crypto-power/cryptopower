@@ -51,15 +51,16 @@ func (c *ConsensusAgenda) saveLastSyncedTimestamp(lastSyncedTimestamp int64) {
 	}
 }
 
-func (c *ConsensusAgenda) GetLastSyncedTimestamp() (lastSyncedTimestamp int64) {
+func (c *ConsensusAgenda) GetLastSyncedTimestamp() (int64, error) {
+	var lastSyncedTimestamp int64
 	err := c.db.Get(configDBBkt, LastSyncedTimestampConfigKey, &lastSyncedTimestamp)
-	if err != nil && err != storm.ErrNotFound {
-		log.Errorf("error reading config value for key: %s, error: %v", LastSyncedTimestampConfigKey, err)
+	if err != nil {
+		return 0, err
 	}
-	return lastSyncedTimestamp
+	return lastSyncedTimestamp, nil
 }
 
-func (c *ConsensusAgenda) saveOrOverwiteAgenda(dataAgenda *DcrdataAgenda) error {
+func (c *ConsensusAgenda) saveOrOverwriteAgenda(dataAgenda *DcrdataAgenda) error {
 	var oldAgenda DcrdataAgenda
 	err := c.db.One("Name", dataAgenda.Name, &oldAgenda)
 	if err != nil && err != storm.ErrNotFound {
@@ -68,7 +69,7 @@ func (c *ConsensusAgenda) saveOrOverwiteAgenda(dataAgenda *DcrdataAgenda) error 
 
 	if oldAgenda.Name != "" {
 		// delete old record before saving new (if it exists)
-		err = c.db.DeleteStruct(oldAgenda)
+		err = c.db.DeleteStruct(&oldAgenda)
 		if err != nil {
 			return err
 		}
@@ -230,7 +231,7 @@ func (c *ConsensusAgenda) Sync(ctx context.Context) error {
 		return err
 	}
 	for _, agendaData := range agendaDatas {
-		if err := c.saveOrOverwiteAgenda(agendaData); err != nil {
+		if err := c.saveOrOverwriteAgenda(agendaData); err != nil {
 			log.Errorf("Error saving agenda: %v", err)
 			return err
 		}

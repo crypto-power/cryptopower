@@ -85,8 +85,9 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 		redirectIcon:        l.Theme.Icons.RedirectIcon,
 		viewVotingDashboard: l.Theme.NewClickable(true),
 		copyRedirectURL:     l.Theme.NewClickable(false),
-		lastSyncTime:        l.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp(),
 	}
+
+	pg.lastSyncTime, _ = pg.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp()
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
@@ -122,7 +123,7 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 
 	pg.initWalletSelector()
 
-	// ticker to update the page and sync proposals after "proposalsSyncInterval" minutes
+	// ticker to update the page and sync consensus after "consensusSyncInterval" minutes
 	pg.ticker = time.NewTicker(time.Second)
 	pg.ticker.Stop()
 	go pg.refreshPageAndSyncInterval()
@@ -146,10 +147,10 @@ func (pg *ConsensusPage) listenForSyncNotifications() {
 		if status == libutils.AgendaStatusSynced {
 			pg.syncCompleted = true
 			pg.isSyncing = false
-			pg.lastSyncTime = pg.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp()
+			pg.lastSyncTime, _ = pg.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp()
 			pg.FetchAgendas()
-			// start the ticker to update the page and sync proposals after "proposalsSyncInterval" minutes
-			pg.ticker.Reset(time.Second * proposalsRefreshView)
+			// start the ticker to update the page and sync proposals after "consensusRefreshView" minutes
+			pg.ticker.Reset(time.Second * consensusRefreshView)
 		}
 	}
 	err := pg.AssetsManager.ConsensusAgenda.AddSyncCallback(consensusSyncCallback, ConsensusPageID)
