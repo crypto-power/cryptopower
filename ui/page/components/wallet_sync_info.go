@@ -10,6 +10,8 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
+	"gioui.org/widget"
+	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -26,10 +28,10 @@ type WalletSyncInfo struct {
 	wallet           sharedW.Asset
 	walletStatusIcon *cryptomaterial.Icon
 	syncSwitch       *cryptomaterial.Switch
-	toBackup         cryptomaterial.Button
 	ForwardButton    cryptomaterial.IconButton
 
-	backup func(sharedW.Asset)
+	backup   func(sharedW.Asset)
+	toBackup widget.Clickable
 
 	// Sync data fields that needs mutex protection.
 	isStatusConnected bool
@@ -55,10 +57,6 @@ func NewWalletSyncInfo(l *load.Load, wallet sharedW.Asset, reload func(), backup
 		syncSwitch:       l.Theme.Switch(),
 		backup:           backup,
 	}
-
-	wsi.toBackup = l.Theme.Button(values.String(values.StrBackupNow))
-	wsi.toBackup.Font.Weight = font.Medium
-	wsi.toBackup.TextSize = l.ConvertTextSize(values.TextSize14)
 
 	wsi.ForwardButton, _ = SubpageHeaderButtons(l)
 	wsi.ForwardButton.Icon = wsi.Theme.Icons.NavigationArrowForward
@@ -110,15 +108,6 @@ func (wsi *WalletSyncInfo) WalletInfoLayout(gtx C) D {
 			layout.Rigid(wsi.syncStatusSection),
 		}
 
-		if !wsi.wallet.IsWalletBackedUp() {
-			items = append(items, layout.Rigid(func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.E.Layout(gtx, wsi.toBackup.Layout)
-			}))
-			if wsi.IsSliderOn() {
-				items = append(items, layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout))
-			}
-		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
 }
@@ -188,9 +177,34 @@ func (wsi *WalletSyncInfo) walletNameAndBackupInfo(gtx C) D {
 					return layout.Inset{
 						Left:  values.MarginPadding9,
 						Right: values.MarginPadding16,
-					}.Layout(gtx, wsi.Theme.Body2(values.String(values.StrBackupWarning)).Layout)
+					}.Layout(gtx, func(gtx C) D {
+						return material.Clickable(gtx, &wsi.toBackup, func(gtx C) D {
+							return cryptomaterial.LinearLayout{
+								Width:       cryptomaterial.WrapContent,
+								Height:      cryptomaterial.WrapContent,
+								Orientation: layout.Vertical,
+								Padding:     layout.UniformInset(values.MarginPadding5),
+								Background:  wsi.Theme.Color.Danger,
+								Border: cryptomaterial.Border{
+									Radius: cryptomaterial.CornerRadius{
+										TopLeft:     int(values.MarginPadding8),
+										TopRight:    int(values.MarginPadding8),
+										BottomRight: int(values.MarginPadding8),
+										BottomLeft:  int(values.MarginPadding8),
+									},
+								},
+							}.Layout2(gtx, func(gtx C) D {
+								return layout.Center.Layout(gtx, func(gtx C) D {
+									lbl := material.Body2(wsi.Theme.Base, values.String(values.StrBackupWarning))
+									lbl.Color = wsi.Theme.Color.White
+									return lbl.Layout(gtx)
+								})
+							})
+						})
+					})
 				}),
 			)
+
 		}))
 	}
 
@@ -676,7 +690,7 @@ func (wsi *WalletSyncInfo) HandleUserInteractions(gtx C) {
 		wsi.reload()
 	}
 
-	if wsi.toBackup.Button.Clicked(gtx) {
+	if wsi.toBackup.Clicked(gtx) {
 		wsi.backup(wsi.wallet)
 	}
 }
