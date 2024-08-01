@@ -107,9 +107,8 @@ func (sa *sendAmount) amountIsValid() bool {
 		// do not overwrite existing errors
 		sa.amountErrorText = values.String(values.StrInvalidAmount)
 	}
-
 	amountEditorErrors := sa.amountErrorText == ""
-	return err == nil && amountEditorErrors
+	return err == nil && amountEditorErrors || sa.SendMax
 }
 
 func (sa *sendAmount) validAmount() (int64, bool, error) {
@@ -219,39 +218,24 @@ func (sa *sendAmount) handle(gtx C) {
 		sa.usdAmountEditor.CustomButton.Background = sa.theme.Color.Gray1
 	}
 
-	for {
-		event, ok := sa.amountEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(sa.amountEditor.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				if sa.sendMaxChangeEvent {
-					sa.sendMaxChangeEvent = false
-					continue
-				}
+	if gtx.Source.Focused(sa.amountEditor.Editor) {
+		if sa.amountEditor.Changed() {
+			if sa.sendMaxChangeEvent {
+				sa.sendMaxChangeEvent = false
+			} else {
 				sa.SendMax = false
 				sa.validateAmount()
 				sa.amountChanged()
 			}
+
 		}
 	}
 
-	for {
-		event, ok := sa.usdAmountEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(sa.usdAmountEditor.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				if sa.usdSendMaxChangeEvent {
-					sa.usdSendMaxChangeEvent = false
-					continue
-				}
+	if gtx.Source.Focused(sa.usdAmountEditor.Editor) {
+		if sa.usdAmountEditor.Changed() {
+			if sa.usdSendMaxChangeEvent {
+				sa.usdSendMaxChangeEvent = false
+			} else {
 				sa.SendMax = false
 				sa.validateUSDAmount()
 				sa.amountChanged()

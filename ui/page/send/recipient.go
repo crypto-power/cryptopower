@@ -104,6 +104,9 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 
 func (rp *recipient) isShowSendToWallet() bool {
 	sourceWalletSelected := rp.sendDestination.walletDropdown.SelectedWallet()
+	if sourceWalletSelected == nil {
+		return false
+	}
 	var wallets []sharedW.Asset
 	switch sourceWalletSelected.GetAssetType() {
 	case libUtil.BTCWalletAsset:
@@ -143,11 +146,11 @@ func (rp *recipient) isSendToAddress() bool {
 func (rp *recipient) isValidated() bool {
 	amountIsValid := rp.amount.amountIsValid()
 	addressIsValid := rp.sendDestination.validate()
-
 	// No need for checking the err message since it is as result of amount and
 	// address validation.
 	// validForSending
 	return amountIsValid && addressIsValid
+
 }
 
 func (rp *recipient) resetFields() {

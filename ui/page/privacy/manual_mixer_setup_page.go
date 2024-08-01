@@ -137,7 +137,7 @@ func (pg *ManualMixerSetupPage) Layout(gtx C) D {
 				// "Mixed account" label, 4px space, mixed account dropdown
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-						return pg.mixedAccountSelector.Layout(gtx, values.StrMixedAccount)
+						return pg.mixedAccountSelector.Layout(gtx, values.String(values.StrMixedAccount))
 					})
 				}),
 
@@ -151,7 +151,7 @@ func (pg *ManualMixerSetupPage) Layout(gtx C) D {
 				// "Unmixed account" label, 4px space, unmixed account dropdown
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-						return pg.mixedAccountSelector.Layout(gtx, values.StrUnmixedAccount)
+						return pg.unmixedAccountSelector.Layout(gtx, values.String(values.StrUnmixedAccount))
 					})
 				}),
 				// 24px space, then warning/caution text

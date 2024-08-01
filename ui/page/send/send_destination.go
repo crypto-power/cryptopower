@@ -58,6 +58,18 @@ func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetTyp
 				_ = dst.accountDropdown.Setup(wallet)
 			}
 		}).
+		WalletValidator(func(wallet sharedW.Asset) bool {
+			if dst.sourceAccount == nil {
+				return true
+			}
+			if wallet.GetWalletID() == dst.sourceAccount.WalletID {
+				account, err := wallet.GetAccountsRaw()
+				if err != nil || len(account.Accounts) <= 2 {
+					return false
+				}
+			}
+			return true
+		}).
 		EnableWatchOnlyWallets(true).
 		Setup()
 	dst.accountDropdown = components.NewAccountDropdown(dst.Load).
