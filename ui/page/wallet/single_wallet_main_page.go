@@ -72,6 +72,8 @@ type SingleWalletMasterPage struct {
 	openWalletSelector     cryptomaterial.IconButton
 	checkBox               cryptomaterial.CheckBoxStyle
 	navigateToSyncBtn      cryptomaterial.Button
+	walletDropdown         *cryptomaterial.DropDown
+	allWallets             []sharedW.Asset
 
 	usdExchangeRate        float64
 	usdExchangeSet         bool
@@ -95,6 +97,7 @@ func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigatio
 		navigateToSyncBtn:  l.Theme.Button(values.String(values.StrStartSync)),
 		showNavigationFunc: showNavigationFunc,
 	}
+	swmp.walletDropdown = swmp.createWalletDropdown()
 
 	swmp.activeTab = make(map[string]string)
 	swmp.hideBalanceButton = swmp.Theme.NewClickable(false)
@@ -106,6 +109,36 @@ func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigatio
 	swmp.initTabOptions()
 
 	return swmp
+}
+
+func (swmp *SingleWalletMasterPage) createWalletDropdown() *cryptomaterial.DropDown {
+	swmp.allWallets = swmp.AssetsManager.AssetWallets()
+	items := []cryptomaterial.DropDownItem{}
+	selectedItem := cryptomaterial.DropDownItem{}
+	for _, w := range swmp.allWallets {
+		item := cryptomaterial.DropDownItem{
+			Text:      fmt.Sprint(w.GetWalletID()),
+			Icon:      components.CoinImageBySymbol(swmp.Load, w.GetAssetType(), w.IsWatchingOnlyWallet()),
+			DisplayFn: swmp.getWalletItemLayout(w),
+		}
+		if w.GetWalletID() == swmp.selectedWallet.GetWalletID() {
+			selectedItem = item
+		}
+		items = append(items, item)
+	}
+	dropdown := swmp.Theme.NewCommonDropDown(items, &selectedItem, values.MarginPadding180, values.WalletsDropdownGroup, false)
+	color := values.TransparentColor(values.TransparentWhite, 1)
+	dropdown.Background = &color
+	return dropdown
+}
+
+func (swmp *SingleWalletMasterPage) getWalletItemLayout(wallet sharedW.Asset) layout.Widget {
+	return func(gtx C) D {
+		lbl := swmp.Theme.SemiBoldLabel(wallet.GetWalletName())
+		lbl.MaxLines = 1
+		lbl.TextSize = values.TextSizeTransform(swmp.IsMobileView(), values.TextSize20)
+		return lbl.Layout(gtx)
+	}
 }
 
 // ID is a unique string that identifies the page and may be used
@@ -283,6 +316,14 @@ func (swmp *SingleWalletMasterPage) OnCurrencyChanged() {
 // displayed.
 // Part of the load.Page interface.
 func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
+	if swmp.walletDropdown.Changed(gtx) {
+		swmp.OnNavigatedFrom()
+		swmp.CloseAllPages()
+		swmp.selectedWallet = swmp.allWallets[swmp.walletDropdown.SelectedIndex()]
+		swmp.initTabOptions()
+		swmp.OnNavigatedTo()
+	}
+
 	if swmp.CurrentPage() != nil {
 		swmp.CurrentPage().HandleUserInteractions(gtx)
 	}
@@ -504,7 +545,6 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 							}.Layout2(gtx, swmp.openWalletSelector.Layout)
 						}),
 						layout.Flexed(1, func(gtx C) D {
-							isWatchOnlyWallet := swmp.selectedWallet.IsWatchingOnlyWallet()
 							return layout.Center.Layout(gtx, func(gtx C) D {
 								alignment := layout.Start
 								orientation := layout.Horizontal
@@ -519,38 +559,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 									Alignment:   alignment,
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return layout.Flex{
-											Axis:      layout.Horizontal,
-											Alignment: layout.Middle,
-										}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												image := components.CoinImageBySymbol(swmp.Load, assetType, isWatchOnlyWallet)
-												if image == nil {
-													return D{}
-												}
-												return image.LayoutTransform(gtx, isMobile, values.MarginPadding24)
-											}),
-											layout.Rigid(func(gtx C) D {
-												lbl := swmp.Theme.H6(swmp.selectedWallet.GetWalletName())
-												lbl.Color = swmp.Theme.Color.PageNavText
-												lbl.TextSize = values.TextSizeTransform(isMobile, values.TextSize20)
-												return layout.Inset{
-													Left: values.MarginPadding10,
-												}.Layout(gtx, lbl.Layout)
-											}),
-											layout.Rigid(func(gtx C) D {
-												if !isWatchOnlyWallet {
-													return D{}
-												}
-
-												return layout.Inset{
-													Left: values.MarginPadding10,
-												}.Layout(gtx, func(gtx C) D {
-													textSize := values.TextSizeTransform(isMobile, values.TextSize16)
-													return components.WalletHighlightLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
-												})
-											}),
-										)
+										return swmp.dropdownWallet(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
 										gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -592,6 +601,31 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return swmp.Theme.Separator().Layout(gtx)
+		}),
+	)
+}
+
+func (swmp *SingleWalletMasterPage) dropdownWallet(gtx C) D {
+	return layout.Flex{
+		Axis:      layout.Horizontal,
+		Alignment: layout.Middle,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Left: values.MarginPadding10,
+			}.Layout(gtx, swmp.walletDropdown.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			if !swmp.selectedWallet.IsWatchingOnlyWallet() {
+				return D{}
+			}
+
+			return layout.Inset{
+				Left: values.MarginPadding10,
+			}.Layout(gtx, func(gtx C) D {
+				textSize := values.TextSizeTransform(swmp.Load.IsMobileView(), values.TextSize16)
+				return components.WalletHighlightLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
+			})
 		}),
 	)
 }
