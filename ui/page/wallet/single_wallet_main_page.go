@@ -559,7 +559,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 									Alignment:   alignment,
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return swmp.dropdownWallet(gtx)
+										return swmp.walletDropdownLayout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
 										gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -605,7 +605,7 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 	)
 }
 
-func (swmp *SingleWalletMasterPage) dropdownWallet(gtx C) D {
+func (swmp *SingleWalletMasterPage) walletDropdownLayout(gtx C) D {
 	return layout.Flex{
 		Axis:      layout.Horizontal,
 		Alignment: layout.Middle,
