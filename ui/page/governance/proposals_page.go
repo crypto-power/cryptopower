@@ -8,6 +8,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
@@ -28,7 +29,7 @@ const (
 	pageSize = int32(20)
 
 	// interval to run sync proposal in minute
-	proposalsSyncInterval = 5
+	proposalsSyncInterval = 30
 	// interval to refresh view in second
 	proposalsRefreshView = 5
 )
@@ -53,9 +54,10 @@ type ProposalsPage struct {
 	filterBtn      *cryptomaterial.Clickable
 	isFilterOpen   bool
 
-	proposalsList *cryptomaterial.ClickableList
-	syncButton    *widget.Clickable
-	searchEditor  cryptomaterial.Editor
+	proposalsList  *cryptomaterial.ClickableList
+	syncButton     *cryptomaterial.Clickable
+	materialLoader material.LoaderStyle
+	searchEditor   cryptomaterial.Editor
 
 	infoButton  cryptomaterial.IconButton
 	updatedIcon *cryptomaterial.Icon
@@ -86,7 +88,8 @@ func NewProposalsPage(l *load.Load, detailData interface{}) *ProposalsPage {
 	pg.updatedIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
 	pg.updatedIcon.Color = pg.Theme.Color.Success
 
-	pg.syncButton = new(widget.Clickable)
+	pg.syncButton = l.Theme.NewClickable(false)
+	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchProposals)
 
 	pg.proposalsList = pg.Theme.NewClickableList(layout.Vertical)
@@ -258,8 +261,10 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 		if pg.isSyncing {
 			return
 		}
-		go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
 		pg.isSyncing = true
+		pg.syncCompleted = false
+		go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
+		pg.ParentWindow().Reload()
 
 		// TODO: check after 1min if sync does not start, set isSyncing to false and cancel sync
 	}
@@ -470,7 +475,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			body := func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
+				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						var text string
 						if isProposalSyncing {
@@ -481,16 +486,31 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 							text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.lastSyncedTime)
 						}
 
-						lastUpdatedInfo := pg.Theme.Label(pg.ConvertTextSize(values.TextSize10), text)
+						lastUpdatedInfo := pg.Theme.Label(pg.ConvertTextSize(values.TextSize12), text)
 						lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 						if pg.syncCompleted {
 							lastUpdatedInfo.Color = pg.Theme.Color.Success
 						}
 
-						return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-							return pg.syncButton.Layout(gtx, func(gtx C) D {
-								return lastUpdatedInfo.Layout(gtx)
-							})
+						return layout.Inset{Bottom: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+							return lastUpdatedInfo.Layout(gtx)
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:     cryptomaterial.WrapContent,
+							Height:    cryptomaterial.WrapContent,
+							Direction: layout.E,
+							Alignment: layout.End,
+							Margin:    layout.Inset{Left: values.MarginPadding2},
+							Clickable: pg.syncButton,
+						}.Layout2(gtx, func(gtx C) D {
+							if isProposalSyncing {
+								gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return layout.Inset{Left: values.MarginPadding5, Bottom: values.MarginPadding2}.Layout(gtx, pg.materialLoader.Layout)
+							}
+							return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).Layout18dp)
 						})
 					}),
 				)

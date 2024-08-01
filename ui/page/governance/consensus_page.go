@@ -10,6 +10,7 @@ import (
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -31,7 +32,7 @@ const (
 	ConsensusPageID = "Consensus"
 
 	// interval to run sync Agendas in minute
-	consensusSyncInterval = 5
+	consensusSyncInterval = 30
 	// interval to refresh the view in second
 	consensusRefreshView = 5
 )
@@ -44,13 +45,13 @@ type ConsensusPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
+	scroll            *components.Scroll[*components.ConsensusItem]
 	assetWallets      []sharedW.Asset
 	selectedDCRWallet *dcr.Asset
 
-	consensusItems []*components.ConsensusItem
-
 	listContainer       *widget.List
-	syncButton          *widget.Clickable
+	syncButton          *cryptomaterial.Clickable
+	materialLoader      material.LoaderStyle
 	viewVotingDashboard *cryptomaterial.Clickable
 	copyRedirectURL     *cryptomaterial.Clickable
 	redirectIcon        *cryptomaterial.Image
@@ -80,14 +81,15 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		syncButton: new(widget.Clickable),
-
 		redirectIcon:        l.Theme.Icons.RedirectIcon,
 		viewVotingDashboard: l.Theme.NewClickable(true),
 		copyRedirectURL:     l.Theme.NewClickable(false),
 	}
 
 	pg.lastSyncTime, _ = pg.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp()
+	pg.scroll = components.NewScroll(l, pageSize, pg.FetchAgendas)
+	pg.syncButton = l.Theme.NewClickable(false)
+	pg.materialLoader = material.Loader(l.Theme.Base)
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
@@ -148,7 +150,8 @@ func (pg *ConsensusPage) listenForSyncNotifications() {
 			pg.syncCompleted = true
 			pg.isSyncing = false
 			pg.lastSyncTime, _ = pg.AssetsManager.ConsensusAgenda.GetLastSyncedTimestamp()
-			pg.FetchAgendas()
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+			pg.ParentWindow().Reload()
 			// start the ticker to update the page and sync proposals after "consensusRefreshView" minutes
 			pg.ticker.Reset(time.Second * consensusRefreshView)
 		}
@@ -170,7 +173,7 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 func (pg *ConsensusPage) syncAndUpdateAgenda() {
 	// Only proceed if allowed make Agenda API call.
 	pg.listenForSyncNotifications()
-	pg.FetchAgendas()
+	pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 	pg.SyncAgenda()
 }
 
@@ -235,7 +238,7 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
 			im.Dismiss()
 			voteModal := newAgendaVoteModal(pg.Load, pg.selectedDCRWallet, agenda, radiogroupbtns.Value, func() {
-				pg.FetchAgendas() // re-fetch agendas when modal is dismissed
+				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true) // re-fetch agendas when modal is dismissed
 			})
 			pg.ParentWindow().ShowModal(voteModal)
 			return true
@@ -245,23 +248,23 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 
 func (pg *ConsensusPage) HandleUserInteractions(gtx C) {
 	for pg.statusDropDown.Changed(gtx) {
-		pg.FetchAgendas()
+		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
 	for pg.orderDropDown.Changed(gtx) {
-		pg.FetchAgendas()
+		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
 	if pg.walletDropDown != nil && pg.walletDropDown.Changed(gtx) {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()].(*dcr.Asset)
-		pg.FetchAgendas()
+		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked(gtx) {
 		pg.ParentWindow().Display(settings.NewAppSettingsPage(pg.Load))
 	}
 
-	for _, item := range pg.consensusItems {
+	for _, item := range pg.scroll.FetchedData() {
 		if item.VoteButton.Clicked(gtx) {
 			pg.agendaVoteChoiceModal(item.Agenda)
 		}
@@ -346,7 +349,7 @@ func (pg *ConsensusPage) SyncAgenda() {
 	pg.ParentWindow().Reload()
 }
 
-func (pg *ConsensusPage) FetchAgendas() {
+func (pg *ConsensusPage) FetchAgendas(offset, pageSize int32) ([]*components.ConsensusItem, int, bool, error) {
 	selectedType := pg.statusDropDown.Selected()
 	orderNewest := pg.orderDropDown.Selected() != values.String(values.StrOldest)
 
@@ -362,9 +365,7 @@ func (pg *ConsensusPage) FetchAgendas() {
 			}
 		}
 	}
-	pg.consensusItems = listItems
-	pg.ParentWindow().Reload()
-	pg.ticker.Reset(time.Second * consensusRefreshView)
+	return listItems, len(listItems), true, nil
 }
 
 func (pg *ConsensusPage) Layout(gtx C) D {
@@ -516,61 +517,65 @@ func (pg *ConsensusPage) layoutRedirectVoting(gtx C) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			var text string
-			if pg.isSyncing {
-				text = values.String(values.StrSyncingState)
-			} else if pg.syncCompleted {
-				text = values.String(values.StrUpdated)
-			} else {
-				text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.lastSyncTime)
-			}
+			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					var text string
+					if pg.isSyncing {
+						text = values.String(values.StrSyncingState)
+					} else if pg.syncCompleted {
+						text = values.String(values.StrUpdated)
+					} else {
+						text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.lastSyncTime)
+					}
 
-			lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
-			lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-			if pg.syncCompleted {
-				lastUpdatedInfo.Color = pg.Theme.Color.Success
-			}
+					lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+					lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+					if pg.syncCompleted {
+						lastUpdatedInfo.Color = pg.Theme.Color.Success
+					}
 
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return pg.syncButton.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Bottom: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 						return lastUpdatedInfo.Layout(gtx)
 					})
-				})
-			})
+				}),
+				layout.Rigid(func(gtx C) D {
+					return cryptomaterial.LinearLayout{
+						Width:     cryptomaterial.WrapContent,
+						Height:    cryptomaterial.WrapContent,
+						Direction: layout.E,
+						Alignment: layout.End,
+						Margin:    layout.Inset{Left: values.MarginPadding2},
+						Clickable: pg.syncButton,
+					}.Layout2(gtx, func(gtx C) D {
+						if pg.isSyncing {
+							gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+							return layout.Inset{Left: values.MarginPadding5, Bottom: values.MarginPadding2}.Layout(gtx, pg.materialLoader.Layout)
+						}
+						return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).Layout18dp)
+					})
+				}),
+			)
 		}),
 	)
 }
 
 func (pg *ConsensusPage) layoutContent(gtx C) D {
-	if len(pg.consensusItems) == 0 {
-		return components.LayoutNoAgendasFound(gtx, pg.Load, pg.isSyncing)
-	}
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			list := layout.List{Axis: layout.Vertical}
-			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, _ int) D {
-				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return list.Layout(gtx, len(pg.consensusItems), func(gtx C, i int) D {
-						return cryptomaterial.LinearLayout{
-							Orientation: layout.Vertical,
-							Width:       cryptomaterial.MatchParent,
-							Height:      cryptomaterial.WrapContent,
-							Background:  pg.Theme.Color.Surface,
-							Direction:   layout.W,
-							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-							Padding:     layout.Inset{Bottom: values.MarginPadding15, Top: values.MarginPadding15},
-							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
-						}.
-							Layout2(gtx, func(gtx C) D {
-								// TODO: Implement dcr wallet selector to enable
-								// voting.
-								hasVotingWallet := pg.selectedDCRWallet != nil // Vote button will be disabled if nil.
-								return components.AgendaItemWidget(gtx, pg.Load, pg.consensusItems[i], hasVotingWallet)
-							})
-					})
+	return pg.scroll.List().Layout(gtx, 1, func(gtx C, _ int) D {
+		return layout.Inset{Right: values.MarginPadding2, Top: values.MarginPadding15, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+			if pg.scroll.ItemsCount() <= 0 {
+				return components.LayoutNoAgendasFound(gtx, pg.Load, pg.isSyncing)
+			}
+			consensusItems := pg.scroll.FetchedData()
+			return pg.listContainer.Layout(gtx, len(consensusItems), func(gtx C, i int) D {
+				return layout.Inset{
+					Top:    values.MarginPadding5,
+					Bottom: values.MarginPadding30,
+				}.Layout(gtx, func(gtx C) D {
+					hasVotingWallet := pg.selectedDCRWallet != nil
+					return components.AgendaItemWidget(gtx, pg.Load, consensusItems[i], hasVotingWallet)
 				})
 			})
-		}),
-	)
+		})
+	})
 }
