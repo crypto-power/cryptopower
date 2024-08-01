@@ -107,9 +107,8 @@ func (sa *sendAmount) amountIsValid() bool {
 		// do not overwrite existing errors
 		sa.amountErrorText = values.String(values.StrInvalidAmount)
 	}
-
 	amountEditorErrors := sa.amountErrorText == ""
-	return err == nil && amountEditorErrors
+	return err == nil && amountEditorErrors || sa.SendMax
 }
 
 func (sa *sendAmount) validAmount() (int64, bool, error) {
