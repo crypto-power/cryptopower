@@ -349,7 +349,7 @@ func (pg *ConsensusPage) SyncAgenda() {
 	pg.ParentWindow().Reload()
 }
 
-func (pg *ConsensusPage) FetchAgendas(offset, pageSize int32) ([]*components.ConsensusItem, int, bool, error) {
+func (pg *ConsensusPage) FetchAgendas(_, _ int32) ([]*components.ConsensusItem, int, bool, error) {
 	selectedType := pg.statusDropDown.Selected()
 	orderNewest := pg.orderDropDown.Selected() != values.String(values.StrOldest)
 
