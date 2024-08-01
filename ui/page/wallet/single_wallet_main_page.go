@@ -37,6 +37,8 @@ const (
 	MainPageID = "Main"
 )
 
+var selectedTab = map[int]string{}
+
 type (
 	C = layout.Context
 	D = layout.Dimensions
@@ -135,7 +137,11 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 
 	needBackup := !swmp.selectedWallet.IsWalletBackedUp()
 
-	if swmp.CurrentPage() == nil {
+	walletID := swmp.selectedWallet.GetWalletID()
+	if tab, ok := selectedTab[walletID]; ok {
+		swmp.PageNavigationTab.SetSelectedSegment(tab)
+		swmp.navigateToSelectedTab()
+	} else if swmp.CurrentPage() == nil {
 		swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet)) // TODO: Should pagestack have a start page? YES!
 	} else {
 		swmp.CurrentPage().OnNavigatedTo()
@@ -295,50 +301,9 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 		swmp.showNavigationFunc()
 	}
 
-	displayPage := func(pg app.Page) {
-		// Load the current wallet balance on page reload.
-		swmp.updateBalance()
-		swmp.Display(pg)
-	}
-
 	if swmp.PageNavigationTab.Changed() {
-		var pg app.Page
-		switch swmp.PageNavigationTab.SelectedSegment() {
-		case values.String(values.StrSend):
-			pg = send.NewSendPage(swmp.Load, swmp.selectedWallet)
-		case values.String(values.StrReceive):
-			pg = receive.NewReceivePage(swmp.Load, swmp.selectedWallet)
-		case values.String(values.StrInfo):
-			pg = info.NewInfoPage(swmp.Load, swmp.selectedWallet)
-		case values.String(values.StrTransactions):
-			txPage := transaction.NewTransactionsPage(swmp.Load, swmp.selectedWallet)
-			txPage.DisableUniformTab()
-			pg = txPage
-		case values.String(values.StrStakeShuffle):
-			dcrW := swmp.selectedWallet.(*dcr.Asset)
-			if dcrW != nil {
-				if !dcrW.AccountMixerConfigIsSet() {
-					pg = privacy.NewSetupPrivacyPage(swmp.Load, dcrW)
-				} else {
-					pg = privacy.NewAccountMixerPage(swmp.Load, dcrW)
-				}
-			}
-		case values.String(values.StrStaking):
-			dcrW := swmp.selectedWallet.(*dcr.Asset)
-			if dcrW == nil {
-				log.Error(values.ErrDCRSupportedOnly)
-			} else {
-				pg = staking.NewStakingPage(swmp.Load, dcrW)
-			}
-		case values.String(values.StrAccounts):
-			pg = accounts.NewAccountPage(swmp.Load, swmp.selectedWallet)
-		case values.String(values.StrSettings):
-			pg = NewSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc)
-		}
-
-		swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = pg.ID()
-
-		displayPage(pg)
+		selectedTab[swmp.selectedWallet.GetWalletID()] = swmp.PageNavigationTab.SelectedSegment()
+		swmp.navigateToSelectedTab()
 	}
 
 	// update active page tab. This is needed for scenarios where a page is
@@ -364,6 +329,52 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
 		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
 	}
+}
+
+func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
+	displayPage := func(pg app.Page) {
+		// Load the current wallet balance on page reload.
+		swmp.updateBalance()
+		swmp.Display(pg)
+	}
+
+	var pg app.Page
+	switch swmp.PageNavigationTab.SelectedSegment() {
+	case values.String(values.StrSend):
+		pg = send.NewSendPage(swmp.Load, swmp.selectedWallet)
+	case values.String(values.StrReceive):
+		pg = receive.NewReceivePage(swmp.Load, swmp.selectedWallet)
+	case values.String(values.StrInfo):
+		pg = info.NewInfoPage(swmp.Load, swmp.selectedWallet)
+	case values.String(values.StrTransactions):
+		txPage := transaction.NewTransactionsPage(swmp.Load, swmp.selectedWallet)
+		txPage.DisableUniformTab()
+		pg = txPage
+	case values.String(values.StrStakeShuffle):
+		dcrW := swmp.selectedWallet.(*dcr.Asset)
+		if dcrW != nil {
+			if !dcrW.AccountMixerConfigIsSet() {
+				pg = privacy.NewSetupPrivacyPage(swmp.Load, dcrW)
+			} else {
+				pg = privacy.NewAccountMixerPage(swmp.Load, dcrW)
+			}
+		}
+	case values.String(values.StrStaking):
+		dcrW := swmp.selectedWallet.(*dcr.Asset)
+		if dcrW == nil {
+			log.Error(values.ErrDCRSupportedOnly)
+		} else {
+			pg = staking.NewStakingPage(swmp.Load, dcrW)
+		}
+	case values.String(values.StrAccounts):
+		pg = accounts.NewAccountPage(swmp.Load, swmp.selectedWallet)
+	case values.String(values.StrSettings):
+		pg = NewSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc)
+	}
+
+	swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = pg.ID()
+
+	displayPage(pg)
 }
 
 // KeysToHandle returns a Filter's slice that describes a set of key combinations
