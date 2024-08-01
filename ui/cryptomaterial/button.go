@@ -20,13 +20,14 @@ import (
 
 type Button struct {
 	material.ButtonStyle
-	th                 *Theme
-	label              Label
-	clickable          *widget.Clickable
-	isEnabled          bool
-	disabledBackground color.NRGBA
-	disabledTextColor  color.NRGBA
-	HighlightColor     color.NRGBA
+	th                  *Theme
+	label               Label
+	clickable           *widget.Clickable
+	isEnabled           bool
+	disabledBackground  color.NRGBA
+	disabledTextColor   color.NRGBA
+	HighlightColor      color.NRGBA
+	isDisableHoverColor bool
 
 	Margin layout.Inset
 }
@@ -149,6 +150,10 @@ func (b *Button) Enabled() bool {
 	return b.isEnabled
 }
 
+func (b *Button) DisableHoverColor() {
+	b.isDisableHoverColor = true
+}
+
 func (b Button) Clicked(gtx C) bool {
 	return b.clickable.Clicked(gtx)
 }
@@ -198,7 +203,7 @@ func (b Button) buttonStyleLayout(gtx layout.Context, w layout.Widget) layout.Di
 			if !b.Enabled() {
 				b.setDisabledColors()
 				background = b.disabledBackground
-			} else if b.clickable.Hovered() {
+			} else if b.clickable.Hovered() && !b.isDisableHoverColor {
 				background = Hovered(b.HighlightColor)
 			}
 

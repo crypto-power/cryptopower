@@ -111,7 +111,7 @@ type Asset interface {
 	NewUnsignedTx(accountNumber int32, utxos []*UnspentOutput) error
 	AddSendDestination(id int, address string, unitAmount int64, sendMax bool) error
 	ComputeTxSizeEstimation(dstAddress string, utxos []*UnspentOutput) (int, error)
-	Broadcast(passphrase, label string) ([]byte, error)
+	Broadcast(passphrase, label string) (string, error)
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
 	IsUnsignedTxExist() bool
 	RemoveSendDestination(id int)

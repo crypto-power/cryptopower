@@ -37,13 +37,15 @@ type sendConfirmModal struct {
 	asset           sharedW.Asset
 	exchangeRateSet bool
 	txLabel         string
+	sentHandle      func(string)
 }
 
-func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset) *sendConfirmModal {
+func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset, sentHandle func(string)) *sendConfirmModal {
 	scm := &sendConfirmModal{
 		Load:           l,
 		authoredTxData: data,
 		asset:          asset,
+		sentHandle:     sentHandle,
 	}
 	scm.Modal = l.Theme.ModalFloatTitle("send_confirm_modal", l.IsMobileView(), scm.firstLoad)
 
@@ -88,12 +90,15 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 	scm.setLoading(true)
 	go func() {
 		defer scm.setLoading(false)
-		_, err := scm.asset.Broadcast(password, scm.txLabel)
+		txHash, err := scm.asset.Broadcast(password, scm.txLabel)
 		if err != nil {
 			scm.SetError(err.Error())
 			return
 		}
-		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), modal.DefaultClickFunc())
+		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), func(_ bool, _ *modal.InfoModal) bool {
+			scm.sentHandle(txHash)
+			return true
+		})
 		scm.ParentWindow().ShowModal(successModal)
 
 		scm.txSent()
@@ -102,23 +107,12 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 }
 
 func (scm *sendConfirmModal) Handle(gtx C) {
-	for {
-		event, ok := scm.passwordEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(scm.passwordEditor.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				scm.confirmButton.SetEnabled(scm.passwordEditor.Editor.Text() != "")
-			case widget.SubmitEvent:
-				scm.broadcastTransaction()
-			}
-		}
+	if scm.passwordEditor.Changed() {
+		scm.confirmButton.SetEnabled(scm.passwordEditor.Editor.Text() != "")
+		scm.passwordEditor.SetError("")
 	}
 
-	if scm.confirmButton.Clicked(gtx) {
+	if scm.passwordEditor.Submitted() || scm.confirmButton.Clicked(gtx) {
 		scm.broadcastTransaction()
 	}
 
@@ -130,11 +124,11 @@ func (scm *sendConfirmModal) Handle(gtx C) {
 }
 
 func (scm *sendConfirmModal) Layout(gtx C) D {
+	dp16 := values.MarginPadding16
 	w := []layout.Widget{
 		func(gtx C) D {
 			scm.SetPadding(unit.Dp(0))
 			min := gtx.Constraints.Min
-
 			return layout.Stack{Alignment: layout.Center}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
 					defer clip.RRect{
@@ -151,8 +145,7 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 				}),
 				layout.Stacked(func(gtx C) D {
 					gtx.Constraints.Min = min
-
-					return layout.Inset{Top: values.MarginPadding24, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding24, Bottom: dp16}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -165,17 +158,13 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 									layout.Rigid(func(gtx C) D {
 										sendInfoLabel := scm.Theme.Label(unit.Sp(16), values.String(values.StrSendConfModalTitle))
 										return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-											return layout.Center.Layout(gtx, func(gtx C) D {
-												return sendInfoLabel.Layout(gtx)
-											})
+											return layout.Center.Layout(gtx, sendInfoLabel.Layout)
 										})
 									}),
 									layout.Rigid(func(gtx C) D {
 										balLabel := scm.Theme.Label(unit.Sp(24), scm.sendAmount+" ("+scm.sendAmountUSD+")")
 										return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-											return layout.Center.Layout(gtx, func(gtx C) D {
-												return balLabel.Layout(gtx)
-											})
+											return layout.Center.Layout(gtx, balLabel.Layout)
 										})
 									}),
 								)
@@ -187,8 +176,8 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 		},
 		func(gtx C) D {
 			return layout.Inset{
-				Left: values.MarginPadding16,
-				Top:  values.MarginPadding16, Right: values.MarginPadding16,
+				Left: dp16,
+				Top:  dp16, Right: dp16,
 			}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
@@ -201,12 +190,10 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 							}),
 							layout.Rigid(scm.setWalletLogo),
 							layout.Rigid(func(gtx C) D {
-								return layout.Inset{}.Layout(gtx, func(gtx C) D {
-									txt := scm.Theme.Label(unit.Sp(16), sendWallet.GetWalletName())
-									txt.Color = scm.Theme.Color.Text
-									txt.Font.Weight = font.Medium
-									return txt.Layout(gtx)
-								})
+								txt := scm.Theme.Label(unit.Sp(16), sendWallet.GetWalletName())
+								txt.Color = scm.Theme.Color.Text
+								txt.Font.Weight = font.Medium
+								return txt.Layout(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
 								card := scm.Theme.Card()
@@ -217,11 +204,9 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 								}
 								return inset.Layout(gtx, func(gtx C) D {
 									return card.Layout(gtx, func(gtx C) D {
-										return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
-											txt := scm.Theme.Caption(scm.sourceAccount.Name)
-											txt.Color = scm.Theme.Color.GrayText1
-											return txt.Layout(gtx)
-										})
+										txt := scm.Theme.Caption(scm.sourceAccount.Name)
+										txt.Color = scm.Theme.Color.GrayText1
+										return layout.UniformInset(values.MarginPadding2).Layout(gtx, txt.Layout)
 									})
 								})
 							}),
@@ -233,7 +218,7 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								txt := scm.Theme.Body2(values.String(values.StrTo))
 								txt.Color = scm.Theme.Color.GrayText2
@@ -242,16 +227,15 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 							layout.Rigid(scm.toDestinationLayout),
 						)
 					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, scm.Theme.Separator().Layout)
-					}),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding8}.Layout),
+					layout.Rigid(scm.Theme.Separator().Layout),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding8}.Layout),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 							txFeeText := scm.txFee
 							if scm.exchangeRateSet {
 								txFeeText = fmt.Sprintf("%s (%s)", scm.txFee, scm.txFeeUSD)
 							}
-
 							return scm.contentRow(gtx, values.String(values.StrFee), txFeeText, "")
 						})
 					}),
@@ -266,10 +250,10 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 			})
 		},
 		func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16}.Layout(gtx, scm.passwordEditor.Layout)
+			return layout.Inset{Left: dp16, Right: dp16}.Layout(gtx, scm.passwordEditor.Layout)
 		},
 		func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Left: dp16, Right: dp16, Bottom: dp16}.Layout(gtx, func(gtx C) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {

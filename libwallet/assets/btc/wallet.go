@@ -56,10 +56,6 @@ type Asset struct {
 	// been introduced.
 	fees feeEstimateCache
 
-	// rescanStarting is set while reloading the wallet and dropping
-	// transactions from the wallet db.
-	rescanStarting uint32 // atomic
-
 	notificationListenersMu sync.RWMutex
 
 	syncData                        *SyncData

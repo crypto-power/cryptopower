@@ -59,6 +59,10 @@ type Page struct {
 	infoButton        cryptomaterial.IconButton
 	selectedWallet    sharedW.Asset
 	navigateToSyncBtn cryptomaterial.Button
+
+	closeButton       cryptomaterial.Button
+	qrCopyButton      *widget.Clickable
+	addressCopyButton *widget.Clickable
 }
 
 func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
@@ -76,6 +80,8 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 		newAddr:           l.Theme.NewClickable(false),
 		card:              l.Theme.Card(),
 		backdrop:          new(widget.Clickable),
+		qrCopyButton:      new(widget.Clickable),
+		addressCopyButton: new(widget.Clickable),
 		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
 		selectedWallet:    wallet,
 	}
@@ -90,6 +96,10 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *Page {
 	} else {
 		pg.hideWalletDropdown = true
 	}
+
+	pg.closeButton = pg.Theme.OutlineButton(values.String(values.StrCancel))
+	pg.closeButton.TextSize = values.TextSize16
+	pg.closeButton.Inset = layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}
 	pg.initWalletSelectors(wallet)
 
 	return pg
@@ -229,100 +239,122 @@ func (pg *Page) Layout(gtx C) D {
 func (pg *Page) contentLayout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
-	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
-		textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
-		uniformSize := values.MarginPadding16
-		if pg.modalLayout != nil {
-			uniformSize = values.MarginPadding0
-		}
-		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			return layout.UniformInset(values.MarginPaddingTransform(pg.IsMobileView(), uniformSize)).Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(pg.headerLayout),
-					layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
-					layout.Rigid(func(gtx C) D {
-						if pg.hideWalletDropdown {
-							return D{}
-						}
-
-						return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+	contents := func(gtx C) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
+			textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+			uniformSize := values.MarginPadding16
+			if pg.modalLayout != nil {
+				uniformSize = values.MarginPadding0
+			}
+			return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+				return layout.UniformInset(values.MarginPaddingTransform(pg.IsMobileView(), uniformSize)).Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(pg.headerLayout),
+						layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
+						layout.Rigid(func(gtx C) D {
+							if pg.hideWalletDropdown {
+								return D{}
+							}
 							return pg.walletDropdown.Layout(gtx, values.StrDestinationWallet)
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-							return pg.accountDropdown.Layout(gtx, values.String(values.StrAccount))
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return components.VerticalInset(values.MarginPadding24).Layout(gtx, pg.Theme.Separator().Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if !pg.selectedWallet.IsWatchingOnlyWallet() {
-							return D{}
-						}
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						warning := pg.Theme.Label(textSize16, values.String(values.StrWarningWatchWallet))
-						warning.Color = pg.Theme.Color.Danger
-						return layout.Center.Layout(gtx, warning.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if !pg.selectedWallet.IsSynced() && pg.modalLayout != nil {
-							// If wallet is not synced, display a message and don't display the sections
-							gtx.Constraints.Min.X = gtx.Constraints.Max.X
-							return layout.Center.Layout(gtx, func(gtx C) D {
-								widgets := []func(gtx C) D{
-									func(gtx C) D {
-										warning := pg.Theme.Label(textSize16, values.String(values.StrFunctionUnavailable))
-										warning.Color = pg.Theme.Color.Danger
-										warning.Alignment = text.Middle
-										return warning.Layout(gtx)
-
-									},
-									func(gtx C) D {
-										if pg.selectedWallet.IsSyncing() {
-											syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(_ sharedW.Asset) {})
-											blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
-											text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
-											blockInfo := pg.Theme.Label(textSize16, text)
-											return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, blockInfo.Layout)
-										}
-
-										return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.navigateToSyncBtn.Layout)
-									},
-								}
-								options := components.FlexOptions{
-									Axis:      layout.Vertical,
-									Alignment: layout.Middle,
-								}
-								return components.FlexLayout(gtx, options, widgets)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+								return pg.accountDropdown.Layout(gtx, values.String(values.StrAccount))
 							})
-						}
-						// If wallet is synced, display the original sections
-						return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								txt := pg.Theme.Body2(values.String(values.StrMyAddress))
-								txt.TextSize = values.TextSize16
-								txt.Color = pg.Theme.Color.GrayText2
-								return txt.Layout(gtx)
-							}),
-							layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-							layout.Rigid(func(gtx C) D {
-								if pg.qrImage == nil {
-									return D{}
-								}
-								return pg.Theme.ImageIcon(gtx, *pg.qrImage, 150)
-							}),
-							layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-							layout.Rigid(pg.addressLayout),
-							layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
-							layout.Rigid(pg.copyAndNewAddressLayout),
-						)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return components.VerticalInset(values.MarginPadding24).Layout(gtx, pg.Theme.Separator().Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							if !pg.selectedWallet.IsWatchingOnlyWallet() {
+								return D{}
+							}
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+							warning := pg.Theme.Label(textSize16, values.String(values.StrWarningWatchWallet))
+							warning.Color = pg.Theme.Color.Danger
+							return layout.Center.Layout(gtx, warning.Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							if !pg.selectedWallet.IsSynced() && pg.modalLayout != nil {
+								// If wallet is not synced, display a message and don't display the sections
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return layout.Center.Layout(gtx, func(gtx C) D {
+									widgets := []func(gtx C) D{
+										func(gtx C) D {
+											warning := pg.Theme.Label(textSize16, values.String(values.StrFunctionUnavailable))
+											warning.Color = pg.Theme.Color.Danger
+											warning.Alignment = text.Middle
+											return warning.Layout(gtx)
+
+										},
+										func(gtx C) D {
+											if pg.selectedWallet.IsSyncing() {
+												syncInfo := components.NewWalletSyncInfo(pg.Load, pg.selectedWallet, func() {}, func(_ sharedW.Asset) {})
+												blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, pg.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
+												text := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
+												blockInfo := pg.Theme.Label(textSize16, text)
+												return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, blockInfo.Layout)
+											}
+
+											return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.navigateToSyncBtn.Layout)
+										},
+									}
+									options := components.FlexOptions{
+										Axis:      layout.Vertical,
+										Alignment: layout.Middle,
+									}
+									return components.FlexLayout(gtx, options, widgets)
+								})
+							}
+							// If wallet is synced, display the original sections
+							return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									txt := pg.Theme.Body2(values.String(values.StrMyAddress))
+									txt.TextSize = values.TextSize16
+									txt.Color = pg.Theme.Color.GrayText2
+									return txt.Layout(gtx)
+								}),
+								layout.Rigid(layout.Spacer{Height: values.MarginPadding10}.Layout),
+								layout.Rigid(func(gtx C) D {
+									if pg.qrImage == nil {
+										return D{}
+									}
+									return pg.qrCopyButton.Layout(gtx, func(gtx C) D {
+										return pg.Theme.ImageIcon(gtx, *pg.qrImage, 150)
+									})
+								}),
+								layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+								layout.Rigid(pg.addressLayout),
+								layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
+								layout.Rigid(pg.copyAndNewAddressLayout),
+							)
+						}),
+					)
+				})
+			})
+		})
+	}
+
+	if pg.modalLayout == nil {
+		return contents(gtx)
+	}
+
+	return layout.Stack{Alignment: layout.S}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			return layout.Inset{Bottom: values.MarginPadding50}.Layout(gtx, contents)
+		}),
+		layout.Stacked(func(gtx C) D {
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(pg.Theme.Separator().Layout),
+					layout.Rigid(func(gtx C) D {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return pg.closeButton.Layout(gtx)
 					}),
 				)
 			})
-		})
-	})
+		}),
+	)
 }
 
 func (pg *Page) copyAndNewAddressLayout(gtx C) D {
@@ -400,12 +432,14 @@ func (pg *Page) addressLayout(gtx C) D {
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return border.Layout(gtx, func(gtx C) D {
-		return components.VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), "")
-			if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
-				lbl.Text = pg.currentAddress
-			}
-			return layout.Center.Layout(gtx, lbl.Layout)
+		return pg.addressCopyButton.Layout(gtx, func(gtx C) D {
+			return components.VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
+				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), "")
+				if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
+					lbl.Text = pg.currentAddress
+				}
+				return layout.Center.Layout(gtx, lbl.Layout)
+			})
 		})
 	})
 }
@@ -469,7 +503,7 @@ generateAddress:
 
 func (pg *Page) handleCopyEvent(gtx C) {
 	// Prevent copying again if the timer hasn't expired
-	if pg.copy.Clicked(gtx) && !pg.isCopying {
+	if (pg.copy.Clicked(gtx) || pg.qrCopyButton.Clicked(gtx) || pg.addressCopyButton.Clicked(gtx)) && !pg.isCopying {
 		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.currentAddress))})
 		pg.Toast.Notify(values.String(values.StrCopied))
 	}
@@ -487,7 +521,7 @@ func (pg *Page) OnNavigatedFrom() {
 }
 
 func (pg *Page) Handle(gtx C) {
-	if pg.modalLayout.BackdropClicked(gtx, true) {
+	if pg.modalLayout.BackdropClicked(gtx, true) || pg.closeButton.Clicked(gtx) {
 		pg.modalLayout.Dismiss()
 	} else {
 		pg.HandleUserInteractions(gtx)

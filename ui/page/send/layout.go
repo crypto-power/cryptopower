@@ -38,6 +38,10 @@ func (pg *Page) initLayoutWidgets() {
 	pg.nextButton.Inset = layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}
 	pg.nextButton.SetEnabled(false)
 
+	pg.closeButton = pg.Theme.OutlineButton(values.String(values.StrCancel))
+	pg.closeButton.TextSize = values.TextSize16
+	pg.closeButton.Inset = layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}
+
 	pg.toCoinSelection = pg.Theme.NewClickable(false)
 }
 
@@ -321,7 +325,20 @@ func (pg *Page) balanceSection(gtx C) D {
 			}),
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return pg.nextButton.Layout(gtx)
+				flexChilds := make([]layout.FlexChild, 0)
+				if pg.modalLayout != nil {
+					flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
+						gtx.Constraints.Min.X = (gtx.Constraints.Max.X / 2) - 5
+						return pg.closeButton.Layout(gtx)
+					}))
+					flexChilds = append(flexChilds, layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout))
+				}
+
+				flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return pg.nextButton.Layout(gtx)
+				}))
+				return layout.Flex{}.Layout(gtx, flexChilds...)
 			}),
 		)
 	})
