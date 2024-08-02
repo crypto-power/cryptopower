@@ -20,6 +20,8 @@ import (
 
 const WalletSelectorPageID = "wallet_selector"
 
+var expandedAssetType string
+
 type (
 	C = layout.Context
 	D = layout.Dimensions
@@ -113,6 +115,8 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 		pg.assetCollapsibles[asset] = pg.Load.Theme.Collapsible()
 		pg.addWalClickable[asset] = pg.Load.Theme.NewClickable(false)
 		pg.addWalClickable[asset].Radius = cryptomaterial.Radius(14)
+
+		pg.assetCollapsibles[asset].SetExpanded(expandedAssetType == asset.String())
 	}
 
 	go func() {
@@ -223,6 +227,13 @@ func (pg *WalletSelectorPage) HandleUserInteractions(gtx C) {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) OnNavigatedFrom() {
+	supportedAssets := pg.AssetsManager.AllAssetTypes()
+	expandedAssetType = ""
+	for _, asset := range supportedAssets {
+		if pg.assetCollapsibles[asset].IsExpanded() {
+			expandedAssetType = asset.String()
+		}
+	}
 	pg.stopSyncProgressListeners()
 }
 
