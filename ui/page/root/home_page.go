@@ -119,6 +119,8 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	}
 	hp.walletSelectorPage.showNavigationFunc = hp.showNavigationFunc
 
+	// make screen always awake
+	_ = hp.Load.Device.SetScreenAwake(true)
 	return hp
 }
 

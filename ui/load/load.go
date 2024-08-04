@@ -6,9 +6,11 @@
 package load
 
 import (
+	giouiApp "gioui.org/app"
 	"golang.org/x/text/message"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/device"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -38,9 +40,17 @@ type Load struct {
 	DarkModeSettingChanged func(bool)
 	LanguageSettingChanged func()
 	CurrencySettingChanged func()
+	Device                 *device.Device
 
 	// TODO: Kill this property!
 	ToggleSync func(sharedW.Asset, NeedUnlockRestore)
+}
+
+func NewLoad(appInfo *AppInfo, window *giouiApp.Window) *Load {
+	return &Load{
+		AppInfo: appInfo,
+		Device:  device.NewDevice(window),
+	}
 }
 
 func (l *Load) RefreshTheme(window app.WindowNavigator) {

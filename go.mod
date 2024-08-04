@@ -6,6 +6,7 @@ require (
 	decred.org/dcrdex v0.6.3
 	decred.org/dcrwallet/v4 v4.1.1
 	gioui.org v0.7.0
+	git.wow.st/gmp/jni v0.0.0-20210610011705-34026c7e22d0
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/ararog/timeago v0.0.0-20160328174124-e9969cf18b8d
