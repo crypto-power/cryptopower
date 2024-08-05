@@ -63,6 +63,7 @@ type AssetsManager struct {
 	cancelFuncs  []context.CancelFunc
 	chainsParams utils.ChainsParams
 
+	ConsensusAgenda *dcr.ConsensusAgenda
 	Politeia        *politeia.Politeia
 	InstantSwap     *instantswap.InstantSwap
 	ExternalService *ext.Service
@@ -177,6 +178,8 @@ func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType, dexTest
 	if err != nil {
 		return nil, err
 	}
+
+	mgr.ConsensusAgenda = dcr.NewConsensusAgenda(mgr.chainsParams.DCR, mwDB)
 
 	mgr.params.DB = mwDB
 	mgr.Politeia = politeia
@@ -453,7 +456,7 @@ func (mgr *AssetsManager) PiKeys() [][]byte {
 // AllVoteAgendas returns all agendas of all stake versions for the active
 // network and this version of the software.
 func (mgr *AssetsManager) AllVoteAgendas(newestFirst bool) ([]*dcr.Agenda, error) {
-	return dcr.AllVoteAgendas(mgr.chainsParams.DCR, newestFirst)
+	return mgr.ConsensusAgenda.AllVoteAgendas(mgr.chainsParams.DCR, newestFirst)
 }
 
 // sortWallets returns the watchonly wallets ordered last.

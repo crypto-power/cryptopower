@@ -175,17 +175,18 @@ type Agenda struct {
 // dcrdata api https://dcrdata.decred.org/api/agendas for mainnet or
 // https://testnet.decred.org/api/agendas for testnet.
 type DcrdataAgenda struct {
+	ID            int    `storm:"id,increment"`
 	Name          string `json:"name"`
-	Description   string `json:"-"`
+	Description   string `json:"description"`
 	Status        string `json:"status"`
-	VotingStarted int64  `json:"-"`
-	VotingDone    int64  `json:"-"`
-	Activated     int64  `json:"-"`
-	HardForked    int64  `json:"-"`
-	StartTime     string `json:"-"`
-	ExpireTime    string `json:"-"`
-	VoteVersion   uint32 `json:"-"`
-	Mask          uint16 `json:"-"`
+	VotingStarted int64  `json:"votingStarted"`
+	VotingDone    int64  `json:"votingdone"`
+	Activated     int64  `json:"activated"`
+	HardForked    int64  `json:"hardforked"`
+	StartTime     string `json:"starttime"`
+	ExpireTime    string `json:"expiretime"`
+	VoteVersion   uint32 `json:"voteversion"`
+	Mask          uint16 `json:"mask"`
 }
 
 /** end agenda types */

@@ -8,6 +8,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
@@ -26,6 +27,11 @@ const (
 
 	// pageSize defines the number of proposals that can be fetched at ago.
 	pageSize = int32(20)
+
+	// interval to run sync proposal in minute
+	proposalsSyncInterval = 30
+	// interval to refresh view in second
+	proposalsRefreshView = 5
 )
 
 type (
@@ -48,9 +54,10 @@ type ProposalsPage struct {
 	filterBtn      *cryptomaterial.Clickable
 	isFilterOpen   bool
 
-	proposalsList *cryptomaterial.ClickableList
-	syncButton    *widget.Clickable
-	searchEditor  cryptomaterial.Editor
+	proposalsList  *cryptomaterial.ClickableList
+	syncButton     *cryptomaterial.Clickable
+	materialLoader material.LoaderStyle
+	searchEditor   cryptomaterial.Editor
 
 	infoButton  cryptomaterial.IconButton
 	updatedIcon *cryptomaterial.Icon
@@ -61,12 +68,17 @@ type ProposalsPage struct {
 	syncCompleted    bool
 	isSyncing        bool
 	proposalsFetched bool
+
+	lastSyncedTime int64
+	proposal       *libwallet.Proposal
+	ticker         *time.Ticker
 }
 
-func NewProposalsPage(l *load.Load) *ProposalsPage {
+func NewProposalsPage(l *load.Load, detailData interface{}) *ProposalsPage {
 	pg := &ProposalsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ProposalsPageID),
+		lastSyncedTime:   l.AssetsManager.Politeia.GetLastSyncedTimeStamp(),
 	}
 
 	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
@@ -76,7 +88,8 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.updatedIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
 	pg.updatedIcon.Color = pg.Theme.Color.Success
 
-	pg.syncButton = new(widget.Clickable)
+	pg.syncButton = l.Theme.NewClickable(false)
+	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchProposals)
 
 	pg.proposalsList = pg.Theme.NewClickableList(layout.Vertical)
@@ -114,7 +127,33 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)
 	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
 
+	// ticker to update the page and sync proposals after "proposalsSyncInterval" minutes
+	pg.ticker = time.NewTicker(time.Second)
+	pg.ticker.Stop()
+	go pg.refreshPageAndSyncInterval()
+
+	// open proposal details page if detailData is not nil
+	if detailData != nil {
+		pg.proposal = detailData.(*libwallet.Proposal)
+		time.AfterFunc(time.Millisecond*200, func() { // wait for the page to be displayed
+			pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, pg.proposal))
+		})
+	}
+
 	return pg
+}
+
+func (pg *ProposalsPage) refreshPageAndSyncInterval() {
+	for range pg.ticker.C {
+		if pg.syncCompleted {
+			pg.syncCompleted = false
+		}
+		pg.ParentWindow().Reload()
+		if !pg.isSyncing && time.Since(time.Unix(pg.lastSyncedTime, 0)) > time.Minute*proposalsSyncInterval && pg.proposalsFetched {
+			pg.isSyncing = true
+			go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
+		}
+	}
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -219,16 +258,15 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 	}
 
 	for pg.syncButton.Clicked(gtx) {
-		go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
+		if pg.isSyncing {
+			return
+		}
 		pg.isSyncing = true
+		pg.syncCompleted = false
+		go func() { _ = pg.AssetsManager.Politeia.Sync(context.Background()) }()
+		pg.ParentWindow().Reload()
 
 		// TODO: check after 1min if sync does not start, set isSyncing to false and cancel sync
-	}
-
-	if !pg.proposalsFetched && pg.isGovernanceAPIAllowed() {
-		// TODO: What scenario leads to this??
-		pg.syncAndUpdateProposals()
-		pg.proposalsFetched = true
 	}
 
 	if pg.infoButton.Button.Clicked(gtx) {
@@ -238,13 +276,6 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 			SetCancelable(true).
 			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(infoModal)
-	}
-
-	if pg.syncCompleted {
-		time.AfterFunc(time.Second*3, func() {
-			pg.syncCompleted = false
-			pg.ParentWindow().Reload()
-		})
 	}
 
 	for pg.filterBtn.Clicked(gtx) {
@@ -260,6 +291,7 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) OnNavigatedFrom() {
+	pg.ticker.Stop()
 	pg.AssetsManager.Politeia.RemoveSyncCallback(ProposalsPageID)
 }
 
@@ -443,7 +475,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			body := func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
+				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						var text string
 						if isProposalSyncing {
@@ -451,16 +483,35 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 						} else if pg.syncCompleted {
 							text = values.String(values.StrUpdated)
 						} else {
-							text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.AssetsManager.Politeia.GetLastSyncedTimeStamp())
+							text = values.String(values.StrUpdated) + " " + pageutils.TimeAgo(pg.lastSyncedTime)
 						}
 
-						lastUpdatedInfo := pg.Theme.Label(pg.ConvertTextSize(values.TextSize10), text)
+						lastUpdatedInfo := pg.Theme.Label(pg.ConvertTextSize(values.TextSize12), text)
 						lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 						if pg.syncCompleted {
 							lastUpdatedInfo.Color = pg.Theme.Color.Success
 						}
 
-						return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+						return layout.Inset{Bottom: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+							return lastUpdatedInfo.Layout(gtx)
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:     cryptomaterial.WrapContent,
+							Height:    cryptomaterial.WrapContent,
+							Direction: layout.E,
+							Alignment: layout.End,
+							Margin:    layout.Inset{Left: values.MarginPadding2},
+							Clickable: pg.syncButton,
+						}.Layout2(gtx, func(gtx C) D {
+							if isProposalSyncing {
+								gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return layout.Inset{Left: values.MarginPadding5, Bottom: values.MarginPadding2}.Layout(gtx, pg.materialLoader.Layout)
+							}
+							return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).Layout18dp)
+						})
 					}),
 				)
 			}
@@ -475,7 +526,10 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 			pg.syncCompleted = true
 			pg.isSyncing = false
 			go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
+			pg.lastSyncedTime = pg.AssetsManager.Politeia.GetLastSyncedTimeStamp()
 			pg.ParentWindow().Reload()
+			// start the ticker to update the page and sync proposals after "proposalsSyncInterval" minutes
+			pg.ticker.Reset(time.Second * proposalsRefreshView)
 		}
 	}
 	err := pg.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, ProposalsPageID)
