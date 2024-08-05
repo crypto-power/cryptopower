@@ -26,6 +26,9 @@ type SegmentedControl struct {
 	leftNavBtn,
 	rightNavBtn *Clickable
 
+	leftNavBtnVisible  bool
+	rightNavBtnVisible bool
+
 	Padding        layout.Inset
 	ContentPadding layout.Inset
 	Alignment      layout.Alignment
@@ -58,6 +61,8 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		segmentTitles:        segmentTitles,
 		leftNavBtn:           t.NewClickable(false),
 		rightNavBtn:          t.NewClickable(false),
+		leftNavBtnVisible:    false,
+		rightNavBtnVisible:   true,
 		isSwipeActionEnabled: true,
 		segmentType:          segmentType,
 		slideAction:          NewSlideAction(),
@@ -207,6 +212,12 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 		Alignment:   layout.Middle,
 	}.Layout(gtx,
 		layout.Flexed(flexWidthLeft, func(gtx C) D {
+			if !sc.leftNavBtnVisible {
+				return D{
+					Size:     gtx.Constraints.Min,
+					Baseline: 0,
+				}
+			}
 			return sc.leftNavBtn.Layout(gtx, sc.theme.NewIcon(sc.theme.Icons.ChevronLeft).Layout24dp)
 		}),
 		layout.Flexed(flexWidthCenter, func(gtx C) D {
@@ -246,6 +257,12 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 			})
 		}),
 		layout.Flexed(flexWidthRight, func(gtx C) D {
+			if !sc.rightNavBtnVisible {
+				return D{
+					Size:     gtx.Constraints.Min,
+					Baseline: 0,
+				}
+			}
 			return sc.rightNavBtn.Layout(gtx, sc.theme.NewIcon(sc.theme.Icons.ChevronRight).Layout24dp)
 		}),
 	)
@@ -338,6 +355,7 @@ func (sc *SegmentedControl) dynamicSplitTileLayout(gtx C) D {
 func (sc *SegmentedControl) handleEvents(gtx C) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
+	sc.updateArrowVisibility()
 	if segmentItemClicked, clickedSegmentIndex := sc.list.ItemClicked(); segmentItemClicked {
 		if sc.selectedIndex != clickedSegmentIndex {
 			sc.changed = true
@@ -355,6 +373,20 @@ func (sc *SegmentedControl) handleEvents(gtx C) {
 		sc.list.Position.OffsetLast = 0
 		sc.list.Position.BeforeEnd = false
 		sc.list.ScrollToEnd = true
+	}
+}
+
+func (sc *SegmentedControl) updateArrowVisibility() {
+	if sc.list.Position.First == 0 {
+		sc.leftNavBtnVisible = false
+	} else {
+		sc.leftNavBtnVisible = true
+	}
+
+	if sc.list.Position.First+sc.list.Position.Count >= len(sc.segmentTitles) {
+		sc.rightNavBtnVisible = false
+	} else {
+		sc.rightNavBtnVisible = true
 	}
 }
 
