@@ -316,6 +316,12 @@ func (swmp *SingleWalletMasterPage) OnCurrencyChanged() {
 	swmp.updateExchangeSetting()
 }
 
+func (swmp *SingleWalletMasterPage) changeTab(tab string) {
+	selectedTab[swmp.selectedWallet.GetWalletID()] = tab
+	swmp.PageNavigationTab.SetSelectedSegment(tab)
+	swmp.navigateToSelectedTab()
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -410,7 +416,7 @@ func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
 	case values.String(values.StrAccounts):
 		pg = accounts.NewAccountPage(swmp.Load, swmp.selectedWallet)
 	case values.String(values.StrSettings):
-		pg = NewSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc)
+		pg = NewSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc, swmp.changeTab)
 	}
 
 	swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = pg.ID()

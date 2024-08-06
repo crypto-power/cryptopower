@@ -20,6 +20,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/page/security"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	s "github.com/crypto-power/cryptopower/ui/page/settings"
@@ -67,11 +68,12 @@ type SettingsPage struct {
 	connectToPeer     *cryptomaterial.Switch
 
 	walletCallbackFunc func()
+	changeTab          func(string)
 
 	peerAddr string
 }
 
-func NewSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func()) *SettingsPage {
+func NewSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func(), changeTab func(string)) *SettingsPage {
 	pg := &SettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(WalletSettingsPageID),
@@ -99,6 +101,7 @@ func NewSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func
 			List: layout.List{Axis: layout.Vertical},
 		},
 		walletCallbackFunc: walletCallbackFunc,
+		changeTab:          changeTab,
 	}
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
@@ -683,6 +686,7 @@ func (pg *SettingsPage) HandleUserInteractions(gtx C) {
 					}
 
 					im.Dismiss()
+					pg.changeTab(info.InfoID)
 					return true
 				})
 
