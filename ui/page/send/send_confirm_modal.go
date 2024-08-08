@@ -76,7 +76,6 @@ func (scm *sendConfirmModal) SetError(err string) {
 
 func (scm *sendConfirmModal) setLoading(loading bool) {
 	scm.isSending = loading
-	scm.Modal.SetDisabled(loading)
 }
 
 func (scm *sendConfirmModal) OnDismiss() {}
@@ -93,6 +92,8 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 		txHash, err := scm.asset.Broadcast(password, scm.txLabel)
 		if err != nil {
 			scm.SetError(err.Error())
+			scm.confirmButton.SetEnabled(false)
+			scm.ParentWindow().Reload()
 			return
 		}
 		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), func(_ bool, _ *modal.InfoModal) bool {

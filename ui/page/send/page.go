@@ -139,7 +139,6 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	pg.addRecipient()
 	pg.initLayoutWidgets()
 	pg.setAssetTypeForRecipients()
-	_ = pg.accountDropdown.Setup(pg.selectedWallet)
 	return pg
 }
 
@@ -190,16 +189,19 @@ func (pg *Page) pageFields() pageFields {
 // initWalletSelector is used for the send modal for wallet selection.
 func (pg *Page) initModalWalletSelector(wallet sharedW.Asset) {
 	pg.walletDropdown = components.NewWalletDropdown(pg.Load).
-		SetChangedCallback(func(wallet sharedW.Asset) {
-			pg.selectedWallet = wallet
+		SetChangedCallback(func(w sharedW.Asset) {
+			pg.selectedWallet = w
 			if pg.accountDropdown != nil {
-				pg.accountDropdown.Setup(wallet)
+				pg.accountDropdown.Setup(w, pg.sourceAccount)
 				go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 				pg.setAssetTypeForRecipients()
 			}
 
 		}).
-		Setup()
+		Setup(wallet)
+	if pg.selectedWallet == nil {
+		pg.selectedWallet = pg.walletDropdown.SelectedWallet()
+	}
 
 	pg.accountDropdown = components.NewAccountDropdown(pg.Load).
 		SetChangedCallback(func(account *sharedW.Account) {
@@ -208,6 +210,9 @@ func (pg *Page) initModalWalletSelector(wallet sharedW.Asset) {
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
+			if pg.selectedWallet == nil {
+				return false
+			}
 			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
 
 			if pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
@@ -234,13 +239,7 @@ func (pg *Page) initModalWalletSelector(wallet sharedW.Asset) {
 
 			return accountIsValid
 		}).
-		Setup(wallet)
-
-	pg.selectedWallet = pg.walletDropdown.SelectedWallet()
-	if wallet != nil {
-		pg.selectedWallet = wallet
-	}
-	pg.walletDropdown.SetSelectedWallet(pg.selectedWallet)
+		Setup(pg.selectedWallet)
 }
 
 // RestyleWidgets restyles select widgets to match the current theme. This is
@@ -345,6 +344,9 @@ func (pg *Page) validateAndConstructTx() {
 }
 
 func (pg *Page) constructTx() {
+	if pg.accountDropdown == nil {
+		return
+	}
 	sourceAccount := pg.accountDropdown.SelectedAccount()
 	if sourceAccount == nil {
 		return
