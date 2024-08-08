@@ -93,6 +93,8 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 		txHash, err := scm.asset.Broadcast(password, scm.txLabel)
 		if err != nil {
 			scm.SetError(err.Error())
+			scm.confirmButton.SetEnabled(false)
+			scm.ParentWindow().Reload()
 			return
 		}
 		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), func(_ bool, _ *modal.InfoModal) bool {
