@@ -363,7 +363,7 @@ func (pg *Page) copyAndNewAddressLayout(gtx C) D {
 			}),
 			layout.Rigid(layout.Spacer{Width: values.MarginPadding32}.Layout),
 			layout.Rigid(func(gtx C) D {
-				return pg.buttonIconLayout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh), values.String(values.StrRegenerate), pg.newAddr)
+				return pg.buttonIconLayout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh), values.String(values.StrNextAddress), pg.newAddr)
 			}),
 		)
 	})
