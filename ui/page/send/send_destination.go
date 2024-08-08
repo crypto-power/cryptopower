@@ -130,7 +130,7 @@ func (dst *destination) validateDestinationAddress() (string, error) {
 		return address, fmt.Errorf(values.String(values.StrDestinationMissing))
 	}
 
-	if dst.walletDropdown.SelectedWallet().IsAddressValid(address) {
+	if dst.walletDropdown != nil && dst.walletDropdown.SelectedWallet() != nil && dst.walletDropdown.SelectedWallet().IsAddressValid(address) {
 		dst.destinationAddressEditor.SetError("")
 		return address, nil
 	}

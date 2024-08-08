@@ -50,6 +50,9 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 	pg.mixedAccountSelector = components.NewAccountDropdown(l).
 		SetChangedCallback(func(_ *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
+			if pg.unmixedAccountSelector == nil {
+				return true
+			}
 			wal := pg.Load.AssetsManager.WalletWithID(account.WalletID)
 
 			var unmixedAccNo int32 = -1

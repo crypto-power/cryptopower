@@ -37,11 +37,18 @@ func NewWalletDropdown(l *load.Load, assetType ...utils.AssetType) *WalletDropdo
 	return wd
 }
 
-func (d *WalletDropdown) Setup() *WalletDropdown {
+func (d *WalletDropdown) Setup(args ...sharedW.Asset) *WalletDropdown {
+	if len(args) > 0 {
+		d.selectedWallet = args[0]
+		if d.selectedWallet == nil {
+			args = []sharedW.Asset{}
+		}
+	}
 	d.allWallets = make([]sharedW.Asset, 0)
 	wallets := d.AssetsManager.AssetWallets(d.assetTypes...)
 	items := []cryptomaterial.DropDownItem{}
 	if len(wallets) > 0 {
+		isFirst := true
 		for _, w := range wallets {
 			if w.IsWatchingOnlyWallet() && !d.isWatchOnlyEnabled || d.walletIsValid != nil && !d.walletIsValid(w) {
 				continue
@@ -53,44 +60,21 @@ func (d *WalletDropdown) Setup() *WalletDropdown {
 			}
 			items = append(items, item)
 			d.allWallets = append(d.allWallets, w)
-		}
-
-		if len(items) > 0 && !d.selectedIsValid() {
-			id := items[0].Text
-			walletID, err := strconv.Atoi(id)
-			if err == nil {
-				d.selectedWallet = d.getWalletByID(walletID)
-				d.dropdown.SetSelectedValue(id)
+			if len(args) < 1 {
+				if isFirst { // select the first valid wallet
+					isFirst = false
+					d.selectedWallet = w
+				}
+			} else {
+				wallet := args[0]
+				if w != nil && wallet.GetWalletID() == w.GetWalletID() {
+					d.selectedWallet = w
+				}
 			}
 		}
 	}
 	d.dropdown.SetItems(items)
 	return d
-}
-
-func (d *WalletDropdown) selectedIsValid() bool {
-	if d.selectedWallet == nil {
-		return false
-	}
-
-	if d.walletIsValid != nil {
-		if !d.walletIsValid(d.selectedWallet) {
-			return false
-		}
-	}
-
-	if d.isWatchOnlyEnabled {
-		if !d.selectedWallet.IsWatchingOnlyWallet() {
-			return false
-		}
-	}
-
-	for _, w := range d.allWallets {
-		if w.GetWalletID() == d.selectedWallet.GetWalletID() {
-			return true
-		}
-	}
-	return false
 }
 
 // EnableWatchOnlyWallets enables selection of watchOnly wallets and their accounts.
@@ -103,6 +87,7 @@ func (d *WalletDropdown) SetSelectedWallet(wallet sharedW.Asset) {
 	if wallet == nil {
 		return
 	}
+	d.selectedWallet = wallet
 	d.dropdown.SetSelectedValue(fmt.Sprint(wallet.GetWalletID()))
 }
 
@@ -219,24 +204,19 @@ func (d *WalletDropdown) ListenForTxNotifications(window app.WindowNavigator) {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(_ int, _ *sharedW.Transaction) {
 			// refresh wallets/Accounts list when new transaction is received
-
-			if d.selectedWallet == nil {
-				return
+			// only if selected wallet is not valid.
+			if d.walletChangedCallback != nil && d.selectedWallet != nil {
+				d.walletChangedCallback(d.selectedWallet)
+				window.Reload()
 			}
-			d.Setup()
-			window.Reload()
 		},
 		OnBlockAttached: func(_ int, _ int32) {
-			if d.selectedWallet == nil {
-				return
-			}
 			// refresh wallet and account balance on every new block
 			// only if sync is completed.
-			if !d.selectedWallet.IsSynced() {
-				return
+			if d.walletChangedCallback != nil && d.selectedWallet != nil {
+				d.walletChangedCallback(d.selectedWallet)
+				window.Reload()
 			}
-			d.Setup()
-			window.Reload()
 		},
 	}
 	if d.selectedWallet == nil {

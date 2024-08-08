@@ -473,9 +473,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 			// Source wallet picker
 			osm.sourceWalletSelector = components.
 				NewWalletDropdown(osm.Load, sourceCurrency).
-				Setup()
-
-			osm.sourceWalletSelector.SetSelectedWallet(sourceWallet)
+				Setup(sourceWallet)
 
 			// Source account picker
 			osm.sourceAccountSelector = components.NewAccountDropdown(osm.Load).
@@ -499,9 +497,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 			// Destination wallet picker
 			osm.destinationWalletSelector = components.NewWalletDropdown(osm.Load, toCurrency).
 				EnableWatchOnlyWallets(true).
-				Setup()
-
-			osm.destinationWalletSelector.SetSelectedWallet(destinationWallet)
+				Setup(destinationWallet)
 
 			// Destination account picker
 			osm.destinationAccountSelector = components.NewAccountDropdown(osm.Load).

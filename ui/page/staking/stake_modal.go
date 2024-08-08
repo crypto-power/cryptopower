@@ -94,11 +94,7 @@ func (tb *ticketBuyerModal) OnResume() {
 			tb.ParentWindow().ShowModal(errModal)
 		}
 
-		if account != nil {
-			tb.accountDropdown.SetSelectedAccount(account)
-		} else {
-			_ = tb.accountDropdown.Setup(tb.dcrImpl)
-		}
+		_ = tb.accountDropdown.Setup(tb.dcrImpl, account)
 
 		tb.vspSelector.SelectVSP(tbConfig.VspHost)
 		w := tb.dcrImpl

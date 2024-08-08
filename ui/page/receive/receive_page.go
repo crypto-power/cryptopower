@@ -114,7 +114,10 @@ func (pg *Page) initWalletSelectors(wallet sharedW.Asset) {
 			}
 		}).
 		EnableWatchOnlyWallets(true).
-		Setup()
+		Setup(wallet)
+	if pg.selectedWallet == nil {
+		pg.selectedWallet = pg.walletDropdown.SelectedWallet()
+	}
 	pg.accountDropdown = components.NewAccountDropdown(pg.Load).
 		SetChangedCallback(func(account *sharedW.Account) {
 			currentAddress, err := pg.selectedWallet.CurrentAddress(account.Number)
@@ -135,13 +138,7 @@ func (pg *Page) initWalletSelectors(wallet sharedW.Asset) {
 			}
 			return false
 		}).
-		Setup(wallet)
-	pg.selectedWallet = pg.walletDropdown.SelectedWallet()
-	if wallet != nil {
-		pg.selectedWallet = wallet
-	}
-	pg.walletDropdown.SetSelectedWallet(pg.selectedWallet)
-	_ = pg.accountDropdown.Setup(pg.selectedWallet)
+		Setup(pg.selectedWallet)
 }
 
 // OnResume is called to initialize data and get UI elements ready to be

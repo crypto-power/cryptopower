@@ -46,13 +46,13 @@ func newAgendaVoteModal(l *load.Load, dcrWallet *dcr.Asset, agenda *dcr.Agenda, 
 		AccountValidator(func(_ *sharedW.Account) bool {
 			return true
 		}).
-		Setup(dcrWallet)
+		Setup(dcrWallet, avm.accountSelected)
 
 	return avm
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	_ = avm.accountDropdown.Setup(avm.dcrImpl)
+	_ = avm.accountDropdown.Setup(avm.dcrImpl, avm.accountSelected)
 }
 
 // - Layout

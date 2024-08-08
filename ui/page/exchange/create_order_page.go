@@ -1317,16 +1317,13 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	}
 
 	// Source wallet picker
-	pg.sourceWalletSelector = components.
-		NewWalletDropdown(pg.Load, pg.fromCurrency).
-		Setup()
-
 	if noSourceWallet {
 		isConfigUpdateRequired = true
-		sourceWallet = pg.sourceWalletSelector.SelectedWallet()
-	} else {
-		pg.sourceWalletSelector.SetSelectedWallet(sourceWallet)
 	}
+	pg.sourceWalletSelector = components.
+		NewWalletDropdown(pg.Load, pg.fromCurrency).
+		Setup(sourceWallet)
+	sourceWallet = pg.sourceWalletSelector.SelectedWallet()
 
 	// Source account picker
 	pg.sourceAccountSelector = components.NewAccountDropdown(pg.Load).
@@ -1351,16 +1348,13 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	})
 
 	// Destination wallet picker
-	pg.destinationWalletSelector = components.
-		NewWalletDropdown(pg.Load, pg.toCurrency).
-		Setup()
-
 	if noDestinationWallet {
 		isConfigUpdateRequired = true
-		destinationWallet = pg.destinationWalletSelector.SelectedWallet()
-	} else {
-		pg.destinationWalletSelector.SetSelectedWallet(destinationWallet)
 	}
+	pg.destinationWalletSelector = components.
+		NewWalletDropdown(pg.Load, pg.toCurrency).
+		Setup(destinationWallet)
+	destinationWallet = pg.destinationWalletSelector.SelectedWallet()
 
 	// Destination account picker
 	pg.destinationAccountSelector = components.NewAccountDropdown(pg.Load).

@@ -27,6 +27,9 @@ func TranslateErr(errStr string) string {
 		if strings.Contains(errStr, "strconv.ParseFloat") {
 			return String((StrInvalidAmount))
 		}
+		if strings.Contains(errStr, "inputs have less than") {
+			return String((StrInvalidAmount))
+		}
 	}
 	return errStr
 }

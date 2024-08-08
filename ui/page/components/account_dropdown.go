@@ -34,20 +34,27 @@ func NewAccountDropdown(l *load.Load) *AccountDropdown {
 	return d
 }
 
-func (d *AccountDropdown) Setup(wallet sharedW.Asset) *AccountDropdown {
-	if wallet == nil {
+func (d *AccountDropdown) Setup(w sharedW.Asset, args ...*sharedW.Account) *AccountDropdown {
+	if w == nil {
 		return d
 	}
-	d.selectedWallet = wallet
+	if len(args) > 0 {
+		d.selectedAccount = args[0]
+		if d.selectedAccount == nil {
+			args = []*sharedW.Account{}
+		}
+	}
+
+	d.selectedWallet = w
 	items := []cryptomaterial.DropDownItem{}
 	d.allAccounts = make([]*sharedW.Account, 0)
-	accounts, err := wallet.GetAccountsRaw()
+	accounts, err := d.selectedWallet.GetAccountsRaw()
 	if err != nil {
 		d.selectedAccount = nil
 		d.dropdown.SetItems(items)
 		return d
 	}
-
+	isFirst := true
 	for _, account := range accounts.Accounts {
 		if d.accountIsValid == nil || d.accountIsValid(account) {
 			item := cryptomaterial.DropDownItem{
@@ -57,48 +64,27 @@ func (d *AccountDropdown) Setup(wallet sharedW.Asset) *AccountDropdown {
 			}
 			items = append(items, item)
 			d.allAccounts = append(d.allAccounts, account)
-		}
-	}
-	if len(items) > 0 && !d.selectedIsValid() { // if selected account is not valid, select the first valid account
-		id := items[0].Text
-		accountNum, err := strconv.Atoi(id)
-		if err == nil {
-			d.selectedAccount = d.getAccountByNumber(int32(accountNum))
-			d.dropdown.SetSelectedValue(id)
-			if d.accountChangedCallback != nil {
-				d.accountChangedCallback(d.selectedAccount)
+			if len(args) < 1 { // select the first valid wallet
+				if isFirst {
+					isFirst = false
+					d.selectedAccount = account
+					if d.accountChangedCallback != nil {
+						d.accountChangedCallback(d.selectedAccount)
+					}
+				}
+			} else {
+				acc := args[0]
+				if account != nil && account.AccountNumber == acc.AccountNumber {
+					d.selectedAccount = account
+					if d.accountChangedCallback != nil {
+						d.accountChangedCallback(d.selectedAccount)
+					}
+				}
 			}
 		}
 	}
 	d.dropdown.SetItems(items)
 	return d
-}
-
-func (d *AccountDropdown) selectedIsValid() bool {
-	if d.selectedWallet == nil {
-		return false
-	}
-
-	if d.selectedAccount == nil {
-		return false
-	}
-
-	if d.selectedWallet.GetWalletID() != d.selectedAccount.WalletID {
-		return false
-	}
-
-	if d.accountIsValid != nil {
-		if !d.accountIsValid(d.selectedAccount) {
-			return false
-		}
-	}
-
-	for _, a := range d.allAccounts {
-		if a.AccountNumber == d.selectedAccount.AccountNumber {
-			return true
-		}
-	}
-	return false
 }
 
 func (d *AccountDropdown) ResetAccount() {
@@ -212,24 +198,18 @@ func (d *AccountDropdown) ListenForTxNotifications(window app.WindowNavigator) {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(_ int, _ *sharedW.Transaction) {
 			// refresh wallets/Accounts list when new transaction is received
-
-			if d.selectedWallet == nil {
-				return
+			if d.accountChangedCallback != nil && d.selectedAccount != nil {
+				d.accountChangedCallback(d.selectedAccount)
+				window.Reload()
 			}
-			d.Setup(d.selectedWallet)
-			window.Reload()
 		},
 		OnBlockAttached: func(_ int, _ int32) {
-			if d.selectedWallet == nil {
-				return
-			}
 			// refresh wallet and account balance on every new block
 			// only if sync is completed.
-			if !d.selectedWallet.IsSynced() {
-				return
+			if d.accountChangedCallback != nil && d.selectedAccount != nil {
+				d.accountChangedCallback(d.selectedAccount)
+				window.Reload()
 			}
-			d.Setup(d.selectedWallet)
-			window.Reload()
 		},
 	}
 	if d.selectedWallet == nil {
