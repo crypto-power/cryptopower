@@ -87,7 +87,7 @@ func CreateWindow(appInfo *load.AppInfo) (*Window, error) {
 		IsShutdown: make(chan struct{}, 1),
 	}
 
-	l, err := win.NewLoad(appInfo)
+	l, err := win.NewLoad(appInfo, giouiWindow)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,8 @@ func CreateWindow(appInfo *load.AppInfo) (*Window, error) {
 	return win, nil
 }
 
-func (win *Window) NewLoad(appInfo *load.AppInfo) (*load.Load, error) {
+func (win *Window) NewLoad(appInfo *load.AppInfo, window *giouiApp.Window) (*load.Load, error) {
+	l := load.NewLoad(appInfo, window)
 	th := cryptomaterial.NewTheme(assets.FontCollection(), assets.DecredIcons, false)
 	if th == nil {
 		return nil, errors.New("unexpected error while loading theme")
@@ -117,18 +118,12 @@ func (win *Window) NewLoad(appInfo *load.AppInfo) (*load.Load, error) {
 	}
 	th.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 
-	l := &load.Load{
-		AppInfo: appInfo,
-
-		Theme: th,
-
-		// NB: Toasts implementation is maintained here for the cases where its
-		// very essential to have a toast UI component implementation otherwise
-		// restraints should be exercised when planning to reuse it else where.
-		Toast: notification.NewToast(th),
-
-		Printer: message.NewPrinter(language.English),
-	}
+	l.Theme = th
+	// NB: Toasts implementation is maintained here for the cases where its
+	// very essential to have a toast UI component implementation otherwise
+	// restraints should be exercised when planning to reuse it else where.
+	l.Toast = notification.NewToast(th)
+	l.Printer = message.NewPrinter(language.English)
 
 	appInfo.AssetsManager.SetToast(l.Toast)
 
@@ -195,7 +190,7 @@ func (win *Window) HandleEvents() {
 	acks := make(chan struct{}, 2)
 	go func() {
 		for {
-			ev := win.Event()
+			ev := win.load.Device.ProcessEvent(win.Window)
 			events <- ev
 			<-acks
 			if _, ok := ev.(giouiApp.DestroyEvent); ok {
@@ -212,6 +207,7 @@ func (win *Window) HandleEvents() {
 			displayShutdownPage()
 		case <-win.IsShutdown:
 			// backend processes shutdown is complete, exit UI process too.
+			_ = win.load.Device.SetScreenAwake(false)
 			return
 		case e := <-events:
 			switch evt := e.(type) {
