@@ -76,7 +76,6 @@ func (scm *sendConfirmModal) SetError(err string) {
 
 func (scm *sendConfirmModal) setLoading(loading bool) {
 	scm.isSending = loading
-	scm.Modal.SetDisabled(loading)
 }
 
 func (scm *sendConfirmModal) OnDismiss() {}
