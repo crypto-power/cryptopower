@@ -994,7 +994,7 @@ const (
 	StrFilter                                = "filter"
 	StrExport                                = "export"
 	StrMyAddress                             = "myAddress"
-	StrRegenerate                            = "regenerate"
+	StrNextAddress                           = "nextAddress"
 	StrIntegratedExchange                    = "integratedExchange"
 	StrSeedWords                             = "seedWords"
 	StrAllservers                            = "allservers"
