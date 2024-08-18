@@ -338,9 +338,6 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 
 // CancelSync stops the sync process.
 func (asset *Asset) CancelSync() {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-
 	log.Info("Canceling sync. May take a while for sync to fully cancel.")
 
 	// Cancel all the pending tcp connection at the node level.

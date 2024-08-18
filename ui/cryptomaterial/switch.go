@@ -143,6 +143,9 @@ func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
 }
 
 func (s *Switch) Changed(gtx C) bool {
+	if s.disabled {
+		return false
+	}
 	return s.clk.Update(gtx)
 }
 
