@@ -130,7 +130,7 @@ func (rp *recipient) isShowSendToWallet() bool {
 				accountValids = append(accountValids, *acc)
 			}
 		}
-		return len(accountValids) > 1
+		return len(accountValids) > 0 // it should show the send to wallet if there is at least one valid account.
 	}
 
 	if len(wallets) > 1 {
