@@ -128,7 +128,7 @@ func (swmp *SingleWalletMasterPage) createWalletDropdown() *cryptomaterial.DropD
 		}
 		items = append(items, item)
 	}
-	dropdown := swmp.Theme.NewCommonDropDown(items, &selectedItem, cryptomaterial.WrapContent, values.WalletsDropdownGroup, false)
+	dropdown := swmp.Theme.NewCommonDropDown(items, &selectedItem, values.MarginPadding180, values.WalletsDropdownGroup, false)
 	color := values.TransparentColor(values.TransparentWhite, 1)
 	dropdown.Background = &color
 	return dropdown
