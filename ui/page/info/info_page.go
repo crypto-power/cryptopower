@@ -6,6 +6,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -54,6 +55,9 @@ type WalletInfo struct {
 	viewAllStakeButton cryptomaterial.Button
 
 	walletSyncInfo *components.WalletSyncInfo
+
+	materialLoader     material.LoaderStyle
+	showMaterialLoader bool
 }
 
 func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
@@ -66,6 +70,7 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 		},
 		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
 		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
+		materialLoader:     material.Loader(l.Theme.Base),
 	}
 	pg.walletSyncInfo = components.NewWalletSyncInfo(l, wallet, pg.reload, pg.backup)
 	pg.recentTransactions.Radius = cryptomaterial.Radius(14)
@@ -100,10 +105,10 @@ func (pg *WalletInfo) OnNavigatedTo() {
 	pg.walletSyncInfo.Init()
 	pg.walletSyncInfo.ListenForNotifications() // stopped in OnNavigatedFrom()
 
-	pg.loadTransactions()
+	go pg.loadTransactions()
 
 	if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
-		pg.loadStakes()
+		go pg.loadStakes()
 
 		if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 			pg.listenForMixerNotifications()
@@ -136,7 +141,11 @@ func (pg *WalletInfo) Layout(gtx C) D {
 		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 			items = append(items, layout.Rigid(pg.mixerLayout))
 		}
-
+		if pg.showMaterialLoader {
+			items = append(items, layout.Rigid(func(gtx C) D {
+				return layout.Center.Layout(gtx, pg.materialLoader.Layout)
+			}))
+		}
 		if len(pg.transactions) > 0 {
 			items = append(items, layout.Rigid(pg.recentTransactionLayout))
 		}
@@ -319,6 +328,7 @@ func (pg *WalletInfo) reloadMixerBalances() {
 }
 
 func (pg *WalletInfo) loadTransactions() {
+	pg.showMaterialLoader = true
 	mapInfo, _ := components.TxPageDropDownFields(pg.wallet.GetAssetType(), 0)
 	if len(mapInfo) == 0 {
 		log.Errorf("no tx filters for asset type (%v)", pg.wallet.GetAssetType())
@@ -331,6 +341,8 @@ func (pg *WalletInfo) loadTransactions() {
 		return
 	}
 	pg.transactions = txs
+	pg.showMaterialLoader = false
+	pg.ParentWindow().Reload()
 }
 
 func (pg *WalletInfo) loadStakes() {
@@ -349,6 +361,7 @@ func (pg *WalletInfo) loadStakes() {
 	if len(pg.stakes) > 3 {
 		pg.stakes = pg.stakes[:3]
 	}
+	pg.ParentWindow().Reload()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
