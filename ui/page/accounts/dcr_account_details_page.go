@@ -46,6 +46,7 @@ type AcctDetailsPage struct {
 	totalBalance     string
 	spendableBalance string
 	immatureBalance  string
+	lockeByTicket    string
 	votingAuthority  string
 	hdPath           string
 	keys             string
@@ -83,12 +84,12 @@ func NewDCRAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *AcctDetailsPage) OnNavigatedTo() {
-
 	bal := pg.account.Balance
-	pg.lockedBalance = pg.wallet.ToAmount(bal.Locked.ToInt() + bal.LockedByTickets.ToInt()).String()
+	pg.lockedBalance = bal.Locked.String()
 	pg.totalBalance = bal.Total.String()
 	pg.spendableBalance = bal.Spendable.String()
 	pg.immatureBalance = pg.wallet.ToAmount(bal.ImmatureReward.ToInt() + bal.ImmatureStakeGeneration.ToInt()).String()
+	pg.lockeByTicket = bal.LockedByTickets.String()
 	pg.votingAuthority = bal.VotingAuthority.String()
 
 	pg.hdPath = pg.AssetsManager.DCRHDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
@@ -236,6 +237,9 @@ func (pg *AcctDetailsPage) accountBalanceLayout(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return pg.acctBalLayout(gtx, values.String(values.StrImmature), pg.immatureBalance, false)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return pg.acctBalLayout(gtx, values.String(values.StrLockedByTickets), pg.lockeByTicket, false)
 					}),
 					layout.Rigid(func(gtx C) D {
 						return pg.acctBalLayout(gtx, values.String(values.StrVotingAuthority), pg.votingAuthority, false)
