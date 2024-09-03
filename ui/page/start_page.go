@@ -2,7 +2,6 @@ package page
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -455,20 +454,6 @@ func (sp *startPage) loadingSection(gtx C) D {
 				}
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
 				return inset.Layout(gtx, sp.addWalletButton.Layout)
-			}),
-			layout.Rigid(func(gtx C) D {
-				if sp.loading || !sp.CanChangeNetworkType() {
-					return D{}
-				}
-				switchNetworkText := values.String(values.StrSwitchToTestnet)
-				if sp.AssetsManager.NetType() == libutils.Testnet {
-					switchNetworkText = values.String(values.StrSwitchToMainnet)
-				}
-				switchNetworkLabel := sp.Theme.Label(values.TextSize12, fmt.Sprintf("(%s)", switchNetworkText))
-				switchNetworkLabel.Alignment = text.Middle
-				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-					return sp.networkSwitchButton.Layout(gtx, switchNetworkLabel.Layout)
-				})
 			}),
 		)
 	})
