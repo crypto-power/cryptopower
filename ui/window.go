@@ -353,7 +353,7 @@ func (win *Window) handleUserClick(gtx C) {
 		}
 
 		if evt.Kind == gesture.KindPress {
-			win.load.Theme.AutoHideSoftKeyBoardAndMenuButton(gtx)
+			win.load.Theme.AutoHideMenuButton()
 		}
 	}
 }
