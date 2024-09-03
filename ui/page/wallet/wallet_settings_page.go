@@ -588,8 +588,7 @@ func validatePeerAddressStr(addrs string) (string, bool) {
 		}
 
 		host, _, err := net.SplitHostPort(addr)
-		// If err assume because port was not supplied.
-		if err == nil {
+		if err != nil { // If error, assume it's because no port was supplied, so use the whole address
 			host = addr
 		}
 
