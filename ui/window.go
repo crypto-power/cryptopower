@@ -12,6 +12,7 @@ import (
 	"gioui.org/gesture"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"golang.org/x/text/language"
@@ -46,8 +47,10 @@ type Window struct {
 	// completed shutting down, therefore the UI processes can finally stop.
 	IsShutdown chan struct{}
 
-	// clicker used to create click events for application
-	clicker gesture.Click
+	// dragger is used to handle drag gestures.
+	drag       gesture.Drag
+	isClick    bool
+	isDragging bool
 }
 
 type (
@@ -287,7 +290,7 @@ func (win *Window) prepareToDisplayUI(gtx layout.Context) {
 		return win.load.Theme.DropdownBackdrop.Layout(gtx, modal.Layout)
 	})
 
-	win.clicker.Add(gtx.Ops)
+	win.drag.Add(gtx.Ops)
 
 	// Use a StackLayout to write the above UI components into an operations
 	// list via a graphical context that is linked to the ops.
@@ -347,14 +350,23 @@ func (win *Window) handleEvents(gtx C) {
 // handleUserClick listen touch action of user for mobile.
 func (win *Window) handleUserClick(gtx C) {
 	for {
-		evt, ok := win.clicker.Update(gtx.Source)
+		event, ok := win.drag.Update(gtx.Metric, gtx.Source, gesture.Both)
 		if !ok {
 			break
 		}
-
-		if evt.Kind == gesture.KindPress {
-			win.load.Theme.AutoHideMenuButton()
+		switch event.Kind {
+		case pointer.Press:
+			win.isClick = true
+		case pointer.Drag:
+			win.isDragging = true
+		case pointer.Release:
+			if win.isClick && !win.isDragging {
+				gtx.Execute(key.FocusCmd{})
+			}
+			win.isClick = false
+			win.isDragging = false
 		}
+
 	}
 }
 
