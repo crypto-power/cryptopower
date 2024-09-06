@@ -69,7 +69,6 @@ func (s *SyncData) connectedPeers() int32 {
 func (s *SyncData) generalSyncProgress() *sharedW.GeneralSyncProgress {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	return s.genSyncProgress
 }
 

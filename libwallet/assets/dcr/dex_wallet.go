@@ -211,26 +211,7 @@ func (dw *DEXWallet) LockedOutputs(ctx context.Context, accountName string) ([]c
 // Unspents fetches unspent outputs for the Wallet.
 // Part of the Wallet interface.
 func (dw *DEXWallet) Unspents(ctx context.Context, accountName string) ([]*wallettypes.ListUnspentResult, error) {
-	data, err := dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
-	var array = make([]*wallettypes.ListUnspentResult, len(data))
-	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
-	// dcrwallet v4, copy v4 data into a v3 instance.
-	for _, val := range data {
-		array = append(array, &wallettypes.ListUnspentResult{
-			TxID:          val.TxID,
-			Vout:          val.Vout,
-			Tree:          val.Tree,
-			TxType:        val.TxType,
-			Address:       val.Address,
-			Account:       val.Account,
-			ScriptPubKey:  val.ScriptPubKey,
-			RedeemScript:  val.RedeemScript,
-			Amount:        val.Amount,
-			Confirmations: val.Confirmations,
-			Spendable:     val.Spendable,
-		})
-	}
-	return array, err
+	return dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
 }
 
 // LockUnspent locks or unlocks the specified outpoint.
@@ -565,12 +546,13 @@ func (dw *DEXWallet) UnlockAccount(ctx context.Context, pass []byte, _ string) e
 // SyncStatus returns the wallet's sync status.
 // Part of the Wallet interface.
 func (dw *DEXWallet) SyncStatus(_ context.Context) (*dexasset.SyncStatus, error) {
-	return &dexasset.SyncStatus{
-		Synced:         dw.syncData.isSynced(),
-		TargetHeight:   uint64(dw.syncData.targetHeight()),
-		StartingBlocks: 0,
-		Blocks:         uint64(dw.syncData.syncedTo()),
-	}, nil
+	ss := new(dexasset.SyncStatus)
+	if dw.syncData != nil {
+		ss.Synced = dw.syncData.isSynced()
+		ss.Blocks = uint64(dw.syncData.syncedTo())
+		ss.TargetHeight = uint64(dw.syncData.targetHeight())
+	}
+	return ss, nil
 }
 
 // PeerCount returns the number of network peers to which the wallet or its
