@@ -1084,6 +1084,14 @@ func (pg *DEXOnboarding) HandleUserInteractions(gtx C) {
 			SetPositiveButtonText(values.String(values.StrOk))
 		pg.ParentWindow().ShowModal(infoModal)
 	}
+
+	if pg.bondSourceWalletSelector != nil {
+		pg.bondSourceWalletSelector.Handle(gtx)
+	}
+
+	if pg.bondSourceAccountSelector != nil {
+		pg.bondSourceAccountSelector.Handle(gtx)
+	}
 }
 
 func (pg *DEXOnboarding) setAddServerStep() {
@@ -1352,6 +1360,7 @@ func (pg *DEXOnboarding) checkForPendingBondPayment(host string) {
 			bondAssetType: bondAsset,
 		}
 		pg.bondServer.url = xcHost
+		pg.bondSourceWalletSelector = components.NewWalletDropdown(pg.Load, bondAssetType).Setup()
 		pg.bondSourceAccountSelector = components.
 			NewAccountDropdown(pg.Load).
 			Setup(pg.bondSourceWalletSelector.SelectedWallet())
@@ -1380,11 +1389,16 @@ func (pg *DEXOnboarding) notifyError(errMsg string) {
 // the bond costs.
 func (pg *DEXOnboarding) bondAccountHasEnough() bool {
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
+	ac := pg.bondSourceAccountSelector.SelectedAccount()
+	if ac == nil {
+		return false
+	}
+
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	bondsFeeBuffer := pg.AssetsManager.DexClient().BondsFeeBuffer(bondAsset.ID)
 	bondCost := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	bondAmt := asset.ToAmount(int64(bondCost))
-	ac := pg.bondSourceAccountSelector.SelectedAccount()
+
 	return ac.Balance.Spendable.ToInt() >= bondAmt.ToInt()
 }
 

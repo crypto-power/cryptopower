@@ -150,7 +150,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 		openOrdersAndOrderHistoryContainer: &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		addServerBtn:                       th.NewClickable(false),
 		toggleBuyAndSellBtn:                th.SegmentedControl(buyAndSellBtnStrings, cryptomaterial.SegmentTypeGroup),
-		orderTypesDropdown:                 th.DropDown(orderTypes, nil, values.DEXOrderTypes, true),
+		orderTypesDropdown:                 th.NewCommonDropDown(orderTypes, nil, values.MarginPadding120, values.DEXOrderTypes, true),
 		priceEditor:                        newTextEditor(l.Theme, values.String(values.StrPrice), "", false),
 		switchLotsOrAmount:                 l.Theme.Switch(),
 		lotsOrAmountEditor:                 newTextEditor(l.Theme, values.String(values.StrLots), "", false),
@@ -177,12 +177,6 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 	pg.openOrdersBtn.Font.Weight, pg.orderHistoryBtn.Font.Weight = font.SemiBold, font.SemiBold
 
 	pg.orderTypesDropdown.CollapsedLayoutTextDirection = layout.E
-	pg.orderTypesDropdown.Width = values.MarginPadding120
-	pg.orderTypesDropdown.FontWeight = font.SemiBold
-	pg.orderTypesDropdown.Hoverable = false
-	pg.orderTypesDropdown.SelectedItemIconColor = &pg.Theme.Color.Primary
-	pg.orderTypesDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
-	pg.orderTypesDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
 	pg.priceEditor.IsTitleLabel, pg.lotsOrAmountEditor.IsTitleLabel, pg.totalEditor.IsTitleLabel = false, false, false
 
@@ -337,18 +331,8 @@ func (pg *DEXMarketPage) resetServerAndMarkets() {
 	lastSelectedDexServer := &cryptomaterial.DropDownItem{
 		Text: pg.lastSelectedDEXServer,
 	}
-	pg.serverSelector = pg.Theme.DropDown(servers, lastSelectedDexServer, values.DEXServerDropdownGroup, false)
-	pg.setServerOrMarketDropdownStyle(pg.serverSelector)
+	pg.serverSelector = pg.Theme.NewCommonDropDown(servers, lastSelectedDexServer, dp300, values.DEXServerDropdownGroup, false)
 	pg.setServerMarkets()
-}
-
-func (pg *DEXMarketPage) setServerOrMarketDropdownStyle(d *cryptomaterial.DropDown) {
-	d.Width = dp300
-	d.MakeCollapsedLayoutVisibleWhenExpanded = true
-	d.ExpandedLayoutInset = layout.Inset{Top: values.DP45}
-	d.BorderWidth = dp2
-	d.Hoverable = false
-	d.SelectedItemIconColor = &pg.Theme.Color.Primary
 }
 
 func (pg *DEXMarketPage) setServerMarkets() {
@@ -400,8 +384,7 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		}}
 	}
 
-	pg.marketSelector = pg.Theme.DropDown(markets, lastSelectedItem, values.DEXCurrencyPairGroup, false)
-	pg.setServerOrMarketDropdownStyle(pg.marketSelector)
+	pg.marketSelector = pg.Theme.NewCommonDropDown(markets, lastSelectedItem, dp300, values.DEXCurrencyPairGroup, false)
 	pg.fetchOrderBook()
 }
 
@@ -1678,6 +1661,14 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 
 		dexPasswordModal.SetPasswordTitleVisibility(false)
 		pg.ParentWindow().ShowModal(dexPasswordModal)
+	}
+
+	if pg.walletSelector != nil {
+		pg.walletSelector.Handle(gtx)
+	}
+
+	if pg.accountSelector != nil {
+		pg.accountSelector.Handle(gtx)
 	}
 }
 
