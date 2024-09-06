@@ -141,6 +141,23 @@ func (dw *DEXWallet) AddressInfo(ctx context.Context, address string) (*dexdcr.A
 	return nil, fmt.Errorf("unsupported address type %T", ka)
 }
 
+// WalletOwnsAddress returns whether any of the account controlled by this
+// wallet owns the specified address.
+// Part of the Wallet interface.
+func (dw *DEXWallet) WalletOwnsAddress(ctx context.Context, addr stdaddr.Address) (bool, error) {
+	ka, err := dw.w.KnownAddress(ctx, addr)
+	if err != nil {
+		if errors.Is(err, walleterrors.NotExist) {
+			return false, nil
+		}
+		return false, fmt.Errorf("KnownAddress error: %w", err)
+	}
+	if kind := ka.AccountKind(); kind != dcrwallet.AccountKindBIP0044 && kind != dcrwallet.AccountKindImported {
+		return false, nil
+	}
+	return true, nil
+}
+
 // AccountOwnsAddress checks if the provided address belongs to the
 // specified account.
 // Part of the Wallet interface.
@@ -547,12 +564,13 @@ func (dw *DEXWallet) UnlockAccount(ctx context.Context, pass []byte, _ string) e
 
 // SyncStatus returns the wallet's sync status.
 // Part of the Wallet interface.
-func (dw *DEXWallet) SyncStatus(_ context.Context) (synced bool, progress float32, err error) {
-	syncProgress := dw.syncData.generalSyncProgress()
-	if syncProgress != nil {
-		progress = float32(syncProgress.TotalSyncProgress)
-	}
-	return dw.syncData.isSynced(), progress, nil
+func (dw *DEXWallet) SyncStatus(_ context.Context) (*dexasset.SyncStatus, error) {
+	return &dexasset.SyncStatus{
+		Synced:         dw.syncData.isSynced(),
+		TargetHeight:   uint64(dw.syncData.targetHeight()),
+		StartingBlocks: 0,
+		Blocks:         uint64(dw.syncData.syncedTo()),
+	}, nil
 }
 
 // PeerCount returns the number of network peers to which the wallet or its

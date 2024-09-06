@@ -404,12 +404,7 @@ func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, er
 	}
 
 	messageHash := chainhash.DoubleHashB(buf.Bytes())
-	sigbytes, err := ecdsa.SignCompact(privKey, messageHash, true)
-	if err != nil {
-		return nil, err
-	}
-
-	return sigbytes, nil
+	return ecdsa.SignCompact(privKey, messageHash, true), nil
 }
 
 // VerifyMessage verifies a signed message.

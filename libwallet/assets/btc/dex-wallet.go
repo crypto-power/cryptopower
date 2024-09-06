@@ -264,12 +264,14 @@ func (dw *DEXWallet) syncHeight() int32 {
 
 // SyncStatus is information about the wallet's sync status.
 // Part of dexbtc.Wallet interface.
-func (dw *DEXWallet) SyncStatus() (*dexbtc.SyncStatus, error) {
+func (dw *DEXWallet) SyncStatus() (*asset.SyncStatus, error) {
 	walletBlock := dw.syncedTo()
-	return &dexbtc.SyncStatus{
-		Target:  dw.syncHeight(),
-		Height:  walletBlock.Height,
-		Syncing: dw.syncStatusChecker.IsSyncing(),
+	return &asset.SyncStatus{
+		Synced:         dw.syncStatusChecker.IsSynced(),
+		TargetHeight:   uint64(dw.syncHeight()),
+		StartingBlocks: 0,
+		Blocks:         uint64(walletBlock.Height),
+		Transactions:   new(uint64),
 	}, nil
 }
 
