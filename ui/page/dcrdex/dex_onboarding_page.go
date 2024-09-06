@@ -1460,11 +1460,6 @@ func (pg *DEXOnboarding) validPasswordInputs() bool {
 func (pg *DEXOnboarding) validateSeed() (dex.Bytes, bool) {
 	seedStr := regexp.MustCompile(`\s+`).ReplaceAllString(pg.seedEditor.Editor.Text(), "") // strip whitespace
 
-	// Quick seed validation.
-	if len(seedStr) != 128 /* 64 Bytes 128 hex characters */ {
-		return nil, false
-	}
-
 	seed := []byte(seedStr)
 	seedBytes := make([]byte, len(seed)/2)
 	_, err := hex.Decode(seedBytes, seed)
