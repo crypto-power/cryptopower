@@ -316,6 +316,7 @@ func (d *DropDown) collapsedAndExpandedLayout(gtx C) D {
 // expandedLayout computes dropdown layout when dropdown is opened.
 func (d *DropDown) expandedLayout(gtx C) D {
 	m := op.Record(gtx.Ops)
+	gtx.Constraints.Max.Y = inf
 	d.layout(gtx, d.ExpandedLayoutInset, d.listItemLayout)
 	op.Defer(gtx.Ops, m.Stop())
 	return D{}

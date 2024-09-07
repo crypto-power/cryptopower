@@ -150,7 +150,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 		openOrdersAndOrderHistoryContainer: &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		addServerBtn:                       th.NewClickable(false),
 		toggleBuyAndSellBtn:                th.SegmentedControl(buyAndSellBtnStrings, cryptomaterial.SegmentTypeGroup),
-		orderTypesDropdown:                 th.NewCommonDropDown(orderTypes, nil, values.MarginPadding120, values.DEXOrderTypes, true),
+		orderTypesDropdown:                 th.NewCommonDropDown(orderTypes, nil, values.MarginPadding100, values.DEXOrderTypes, false),
 		priceEditor:                        newTextEditor(l.Theme, values.String(values.StrPrice), "", false),
 		switchLotsOrAmount:                 l.Theme.Switch(),
 		lotsOrAmountEditor:                 newTextEditor(l.Theme, values.String(values.StrLots), "", false),
@@ -540,10 +540,11 @@ func (pg *DEXMarketPage) Layout(gtx C) D {
 		return D{}
 	}
 
-	pageContent := []func(gtx C) D{
-		pg.priceAndVolumeDetail,
-		pg.orderFormAndOrderBook,
-		pg.openOrdersAndHistory,
+	pageContent := []layout.FlexChild{
+		layout.Rigid(pg.serverAndCurrencySelection),
+		layout.Rigid(pg.priceAndVolumeDetail),
+		layout.Rigid(pg.orderFormAndOrderBook),
+		layout.Rigid(pg.openOrdersAndHistory),
 	}
 
 	return cryptomaterial.LinearLayout{
@@ -557,17 +558,7 @@ func (pg *DEXMarketPage) Layout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
-			return layout.Stack{}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return layout.Inset{Top: 110}.Layout(gtx, func(gtx C) D {
-						l := &layout.List{Axis: vertical}
-						return l.Layout(gtx, len(pageContent), func(gtx C, i int) D {
-							return pageContent[i](gtx)
-						})
-					})
-				}),
-				layout.Stacked(pg.serverAndCurrencySelection),
-			)
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, pageContent...)
 		})
 	})
 }
@@ -576,6 +567,7 @@ func (pg *DEXMarketPage) serverAndCurrencySelection(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
 		Height:     gtx.Dp(100),
+		Margin:     layout.Inset{Top: dp5, Bottom: dp5},
 		Background: pg.Theme.Color.Surface,
 		Padding:    layout.UniformInset(dp16),
 		Border: cryptomaterial.Border{
@@ -929,8 +921,9 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 							return pg.toggleBuyAndSellBtn.GroupTileLayout(gtx)
 						}),
 						layout.Flexed(1, func(gtx C) D {
-							pg.orderTypesDropdown.Background = &pg.Theme.Color.Surface
-							return layout.Inset{Bottom: dp5, Top: dp5}.Layout(gtx, pg.orderTypesDropdown.Layout)
+							return layout.E.Layout(gtx, func(gtx C) D {
+								return layout.Inset{Bottom: dp5, Top: dp5}.Layout(gtx, pg.orderTypesDropdown.Layout)
+							})
 						}),
 					)
 				}),
@@ -1236,7 +1229,7 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 		Width:      cryptomaterial.MatchParent,
 		Height:     sectionHeight,
 		Background: pg.Theme.Color.Surface,
-		Margin:     layout.Inset{Top: dp5, Bottom: 30},
+		Margin:     layout.Inset{Top: dp5, Bottom: dp5},
 		Padding:    layout.UniformInset(dp10),
 		Border: cryptomaterial.Border{
 			Radius: cryptomaterial.Radius(8),
