@@ -43,7 +43,7 @@ func NewGovernancePage(l *load.Load, detailData interface{}) *Page {
 		detailData:      detailData,
 	}
 
-	pg.tab = l.Theme.SegmentedControl(governanceTabTitles, cryptomaterial.SegmentTypeGroup)
+	pg.tab = l.Theme.SegmentedControl(governanceTabTitles, cryptomaterial.SegmentTypeGroupMax)
 
 	pg.tabCategoryList.IsHoverable = false
 

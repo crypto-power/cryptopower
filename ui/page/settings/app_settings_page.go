@@ -172,6 +172,7 @@ func (pg *AppSettingsPage) pageHeaderLayout(gtx C) layout.Dimensions {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
+							Top:   values.MarginPadding2,
 							Right: values.MarginPadding16,
 						}.Layout(gtx, pg.backButton.Layout)
 					}),

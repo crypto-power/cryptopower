@@ -10,7 +10,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -101,7 +100,7 @@ func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app
 		addWalletButton:     l.Theme.Button(values.String(values.StrAddWallet)),
 		nextButton:          l.Theme.Button(values.String(values.StrNext)),
 		skipButton:          l.Theme.OutlineButton(values.String(values.StrSkip)),
-		backButton:          getBackButton(l),
+		backButton:          components.GetBackButton(l),
 		networkSwitchButton: l.Theme.NewClickable(true),
 		introductionSlider:  l.Theme.Slider(),
 		logo:                l.Theme.Icons.AppIcon,
@@ -122,19 +121,6 @@ func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app
 	sp.initPage()
 
 	return sp
-}
-
-func getBackButton(l *load.Load) cryptomaterial.IconButton {
-	backClickable := new(widget.Clickable)
-	backButton := l.Theme.NewIconButton(l.Theme.Icons.NavigationArrowBack, backClickable)
-	size := values.MarginPadding24
-	if l.IsMobileView() {
-		size = values.MarginPadding16
-	}
-	backButton.Size = size
-	backButton.Inset = layout.UniformInset(values.MarginPadding0)
-	l.Theme.AddBackClick(backClickable)
-	return backButton
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and

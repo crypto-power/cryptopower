@@ -126,6 +126,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			seed, err := pg.wallet.DecryptSeed(password)
 			if err != nil {
 				m.SetError(err.Error())
+				m.ParentWindow().Reload()
 				return false
 			}
 			m.Dismiss()

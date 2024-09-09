@@ -50,7 +50,7 @@ func GetBackButton(l *load.Load) cryptomaterial.IconButton {
 	backButton := l.Theme.NewIconButton(l.Theme.Icons.NavigationArrowBack, backClickable)
 	size := values.MarginPadding24
 	if l.IsMobileView() {
-		size = values.MarginPadding16
+		size = values.MarginPadding20
 	}
 	backButton.Size = size
 	backButton.Inset = layout.UniformInset(values.MarginPadding0)

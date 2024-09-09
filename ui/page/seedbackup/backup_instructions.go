@@ -120,6 +120,11 @@ func (pg *BackupInstructionsPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) Layout(gtx C) D {
+	for i := range pg.checkBoxes {
+		if pg.checkBoxes[i].CheckBox.Update(gtx) {
+			pg.ParentWindow().Reload()
+		}
+	}
 	sp := components.SubPage{
 		Load:       pg.Load,
 		Title:      values.String(values.StrKeepInMind),

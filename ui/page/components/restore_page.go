@@ -234,9 +234,11 @@ func (pg *Restore) HandleUserInteractions(gtx C) {
 	if pg.tabs.Changed() {
 		pg.tabIndex = pg.tabs.SelectedIndex()
 	}
-
-	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed(gtx) {
-		pg.seedRestorePage.setEditorFocus()
+	if pg.toggleSeedInput.Changed(gtx) {
+		if !pg.toggleSeedInput.IsChecked() {
+			pg.seedRestorePage.setEditorFocus()
+			pg.ParentWindow().Reload()
+		}
 	}
 
 	if pg.tabIndex == 0 {
