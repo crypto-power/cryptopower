@@ -139,7 +139,7 @@ func (pg *Restore) headerLayout(gtx C) D {
 		layout.Flexed(1, func(gtx C) D {
 			if pg.IsMobileView() {
 				return layout.E.Layout(gtx, func(gtx C) D {
-					return pg.tabs.Layout(gtx, func(gtx C) D {
+					return pg.tabs.Layout(gtx, func(_ C) D {
 						return D{}
 					}, pg.IsMobileView())
 				})
