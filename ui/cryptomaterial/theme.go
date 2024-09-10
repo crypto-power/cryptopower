@@ -336,14 +336,6 @@ func (t *Theme) WatchOnlyAssetIcon(asset utils.AssetType) *Image {
 	return icon
 }
 
-func (t *Theme) AutoHideMenuButton() {
-	for _, e := range t.allEditors {
-		if e.isShowMenu {
-			e.isShowMenu = false
-		}
-	}
-}
-
 func (t *Theme) AddBackClick(clickable *widget.Clickable) {
 	t.backButtons = append(t.backButtons, clickable)
 }

@@ -75,7 +75,6 @@ type Editor struct {
 	click gesture.Click
 
 	copy, paste   Button
-	isShowMenu    bool
 	isDisableMenu bool
 
 	// add space for error lable if it is true
@@ -241,19 +240,11 @@ func (e *Editor) Layout(gtx C) D {
 
 func (e *Editor) update(gtx C) {
 	for {
-		ev, ok := e.click.Update(gtx.Source)
+		_, ok := e.click.Update(gtx.Source)
 		if !ok {
 			break
 		}
-
-		switch ev.NumClicks {
-		case 1:
-			gtx.Execute(key.FocusCmd{Tag: e.Editor})
-		case 2:
-			e.isShowMenu = true
-		default:
-			e.isShowMenu = false
-		}
+		e.SetFocus()
 	}
 	for {
 		ev, ok := e.Editor.Update(gtx)
@@ -387,8 +378,7 @@ func (e *Editor) editorLayout(gtx C) D {
 }
 
 func (e *Editor) editorMenusLayout(gtx C, editorHeight int) {
-	e.isShowMenu = e.isShowMenu && (gtx.Source.Focused(e.Editor) || e.copy.Hovered() || e.paste.Hovered())
-	if e.isShowMenu {
+	if gtx.Source.Focused(e.Editor) || e.copy.Hovered() || e.paste.Hovered() {
 		flexChilds := make([]layout.FlexChild, 0)
 		if len(e.Editor.Text()) > 0 {
 			flexChilds = append(flexChilds, layout.Rigid(e.copy.Layout))
@@ -496,12 +486,10 @@ func (e *Editor) handleEvents(gtx C) {
 
 	if e.copy.Clicked(gtx) {
 		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(e.Editor.Text()))})
-		e.isShowMenu = false
 	}
 
 	if e.paste.Clicked(gtx) {
 		gtx.Execute(clipboard.ReadCmd{Tag: e.Editor})
-		e.isShowMenu = false
 	}
 }
 
