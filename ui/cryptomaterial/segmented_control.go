@@ -48,6 +48,7 @@ type SegmentedControl struct {
 	allowCycle            bool
 	isMobileView          bool
 	disableUniformPadding bool
+	AutoScrollToItem      bool
 }
 
 // Segmented control is a linear set of two or more segments, each of which functions as a button.
@@ -361,6 +362,9 @@ func (sc *SegmentedControl) handleEvents(gtx C) {
 			sc.changed = true
 		}
 		sc.selectedIndex = clickedSegmentIndex
+		if sc.AutoScrollToItem {
+			sc.list.ScrollTo(clickedSegmentIndex)
+		}
 	}
 
 	if sc.leftNavBtn.Clicked(gtx) {

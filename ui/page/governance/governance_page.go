@@ -43,8 +43,8 @@ func NewGovernancePage(l *load.Load, detailData interface{}) *Page {
 		detailData:      detailData,
 	}
 
-	pg.tab = l.Theme.SegmentedControl(governanceTabTitles, cryptomaterial.SegmentTypeGroupMax)
-
+	pg.tab = l.Theme.SegmentedControl(governanceTabTitles, cryptomaterial.SegmentTypeGroup)
+	pg.tab.AutoScrollToItem = true
 	pg.tabCategoryList.IsHoverable = false
 
 	pg.initSplashScreenWidgets()

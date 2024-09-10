@@ -107,29 +107,62 @@ func (pg *Restore) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *Restore) Layout(gtx C) D {
 	body := func(gtx C) D {
-		sp := SubPage{
-			Load:       pg.Load,
-			Title:      values.String(values.StrRestoreWallet),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				return pg.restoreLayout(gtx)
-			},
-		}
-		return sp.Layout(pg.ParentWindow(), gtx)
+		return cryptomaterial.LinearLayout{
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.MatchParent,
+			Orientation: layout.Vertical,
+			Alignment:   layout.Start,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return pg.headerLayout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return pg.bodyLayout(gtx)
+			}),
+		)
 	}
 	return cryptomaterial.UniformPadding(gtx, body, pg.IsMobileView())
 }
 
+func (pg *Restore) headerLayout(gtx C) D {
+	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Right: values.MarginPadding4,
+					}.Layout(gtx, pg.backButton.Layout)
+				}),
+				layout.Rigid(pg.Load.Theme.SemiBoldLabelWithSize(pg.ConvertTextSize(values.TextSize20), values.String(values.StrRestoreWallet)).Layout),
+			)
+		}),
+		layout.Flexed(1, func(gtx C) D {
+			if pg.IsMobileView() {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return pg.tabs.Layout(gtx, func(gtx C) D {
+						return D{}
+					}, pg.IsMobileView())
+				})
+			}
+			return D{}
+		}),
+	)
+}
+
+func (pg *Restore) bodyLayout(gtx C) D {
+	if !pg.IsMobileView() {
+		return pg.tabs.Layout(gtx, func(gtx C) D {
+			return pg.restoreLayout(gtx)
+		}, pg.IsMobileView())
+	}
+	return pg.restoreLayout(gtx)
+}
+
 func (pg *Restore) restoreLayout(gtx C) D {
-	return pg.tabs.Layout(gtx, func(gtx C) D {
-		if pg.tabs.SelectedIndex() == 0 {
-			return pg.seedWordsLayout(gtx)
-		}
-		return pg.seedInputLayout(gtx)
-	}, pg.IsMobileView())
+	if pg.tabs.SelectedIndex() == 0 {
+		return pg.seedWordsLayout(gtx)
+	}
+	return pg.seedInputLayout(gtx)
 }
 
 func (pg *Restore) seedWordsLayout(gtx C) D {
@@ -234,11 +267,14 @@ func (pg *Restore) HandleUserInteractions(gtx C) {
 	if pg.tabs.Changed() {
 		pg.tabIndex = pg.tabs.SelectedIndex()
 	}
-	if pg.toggleSeedInput.Changed(gtx) {
-		if !pg.toggleSeedInput.IsChecked() {
-			pg.seedRestorePage.setEditorFocus()
-			pg.ParentWindow().Reload()
-		}
+
+	if pg.backButton.Button.Clicked(gtx) {
+		pg.ParentNavigator().CloseCurrentPage()
+	}
+
+	if pg.toggleSeedInput.Changed(gtx) && !pg.toggleSeedInput.IsChecked() {
+		pg.seedRestorePage.setEditorFocus()
+		pg.ParentWindow().Reload()
 	}
 
 	if pg.tabIndex == 0 {

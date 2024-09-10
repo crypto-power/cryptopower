@@ -188,7 +188,7 @@ func (pg *SeedRestore) restore(gtx C) D {
 				)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}.Layout(gtx, pg.restoreButtonSection)
+				return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, pg.restoreButtonSection)
 			}),
 		)
 	})
