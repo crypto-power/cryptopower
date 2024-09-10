@@ -763,17 +763,20 @@ func (pg *AppSettingsPage) showDEXSeedModal() {
 }
 
 func formatDEXSeedAsString(seed dex.Bytes) string {
-	chunkRegex := regexp.MustCompile(`.{1,32}`)
-	chunks := chunkRegex.FindAllString(seed.String(), -1)
+	if len(seed) == 128 { // 64 bytes, 128 hex character legacy seed
+		chunkRegex := regexp.MustCompile(`.{1,32}`)
+		chunks := chunkRegex.FindAllString(seed.String(), -1)
 
-	var seedChunks []string
-	subChunkRegex := regexp.MustCompile(`.{1,8}`)
-	for _, chunk := range chunks {
-		subChunks := subChunkRegex.FindAllString(chunk, -1)
-		seedChunks = append(seedChunks, strings.Join(subChunks, "  "))
+		var seedChunks []string
+		subChunkRegex := regexp.MustCompile(`.{1,8}`)
+		for _, chunk := range chunks {
+			subChunks := subChunkRegex.FindAllString(chunk, -1)
+			seedChunks = append(seedChunks, strings.Join(subChunks, "  "))
+		}
+
+		return strings.Join(seedChunks, "\n")
 	}
-
-	return strings.Join(seedChunks, "\n")
+	return seed.String()
 }
 
 func ChangeNetworkType(load *load.Load, windowNav app.WindowNavigator, newNetType string) {
