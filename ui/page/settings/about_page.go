@@ -102,10 +102,10 @@ func (pg *AboutPage) pageHeaderLayout(gtx layout.Context) layout.Dimensions {
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
 							Right: values.MarginPadding16,
-							Top:   values.MarginPaddingMinus2,
+							Top:   values.MarginPadding2,
 						}.Layout(gtx, pg.backButton.Layout)
 					}),
-					layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrAbout)).Layout),
+					layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize20), values.String(values.StrAbout)).Layout),
 				)
 			})
 		}),

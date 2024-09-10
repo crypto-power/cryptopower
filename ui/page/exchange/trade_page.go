@@ -58,6 +58,7 @@ func NewTradePage(l *load.Load) *TradePage {
 	}
 
 	tab = l.Theme.SegmentedControl(filteredTabTitles, cryptomaterial.SegmentTypeGroup)
+	tab.AutoScrollToItem = true
 	rad := cryptomaterial.Radius(14)
 	pg.exchangeBtn = l.Theme.NewClickable(false)
 	pg.exchangeBtn.Radius = rad

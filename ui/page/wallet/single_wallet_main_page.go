@@ -328,6 +328,10 @@ func (swmp *SingleWalletMasterPage) changeTab(tab string) {
 // displayed.
 // Part of the load.Page interface.
 func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
+	if swmp.checkBox.CheckBox.Update(gtx) {
+		swmp.ParentWindow().Reload()
+	}
+
 	if swmp.walletDropdown.Changed(gtx) {
 		swmp.OnNavigatedFrom()
 		swmp.CloseAllPages()

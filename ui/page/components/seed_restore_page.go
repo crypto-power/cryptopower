@@ -48,7 +48,8 @@ type SeedRestore struct {
 	isRestoring     bool
 	restoreComplete func(newWallet sharedW.Asset)
 
-	seedList *layout.List
+	seedList        *layout.List
+	scrollContainer *widget.List
 
 	validateSeed    cryptomaterial.Button
 	resetSeedFields cryptomaterial.Button
@@ -83,6 +84,7 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 		Load:            l,
 		restoreComplete: onRestoreComplete,
 		seedList:        &layout.List{Axis: layout.Vertical},
+		scrollContainer: &widget.List{List: layout.List{Axis: layout.Vertical, Alignment: layout.Middle}},
 		suggestionLimit: 3,
 		openPopupIndex:  -1,
 		walletName:      walletName,
@@ -169,28 +171,27 @@ func (pg *SeedRestore) Layout(gtx C) D {
 }
 
 func (pg *SeedRestore) restore(gtx C) D {
-	return layout.Stack{Alignment: layout.S}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Orientation: layout.Vertical,
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.WrapContent,
-				Background:  pg.Theme.Color.Surface,
-				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-				Padding:     layout.UniformInset(values.MarginPadding15),
-			}.Layout(gtx,
-				layout.Rigid(pg.seedEditorViewDesktop),
-				layout.Rigid(layout.Spacer{Height: values.MarginPadding5}.Layout),
-				layout.Rigid(pg.resetSeedFields.Layout),
-			)
-		}),
-		layout.Stacked(func(gtx C) D {
-			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-			return layout.S.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, pg.restoreButtonSection)
-			})
-		}),
-	)
+	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return cryptomaterial.LinearLayout{
+					Orientation: layout.Vertical,
+					Width:       cryptomaterial.MatchParent,
+					Height:      cryptomaterial.WrapContent,
+					Background:  pg.Theme.Color.Surface,
+					Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+					Padding:     layout.UniformInset(values.MarginPadding15),
+				}.Layout(gtx,
+					layout.Rigid(pg.seedEditorViewDesktop),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding5}.Layout),
+					layout.Rigid(pg.resetSeedFields.Layout),
+				)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, pg.restoreButtonSection)
+			}),
+		)
+	})
 }
 
 func (pg *SeedRestore) restoreButtonSection(gtx C) D {

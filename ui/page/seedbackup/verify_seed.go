@@ -195,6 +195,7 @@ func (pg *VerifySeedPage) verifySeed() {
 				}
 
 				m.SetError(err.Error())
+				m.ParentWindow().Reload()
 				return false
 			}
 
@@ -210,6 +211,10 @@ func (pg *VerifySeedPage) verifySeed() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) HandleUserInteractions(gtx C) {
+	if pg.toggleSeedInput.Changed(gtx) {
+		pg.ParentWindow().Reload()
+	}
+
 	for i, multiSeed := range pg.multiSeedList {
 		for j, clickable := range multiSeed.clickables {
 			if clickable.Clicked(gtx) {
