@@ -136,7 +136,7 @@ func NewProposalsPage(l *load.Load, detailData interface{}) *ProposalsPage {
 	if detailData != nil {
 		pg.proposal = detailData.(*libwallet.Proposal)
 		time.AfterFunc(time.Millisecond*200, func() { // wait for the page to be displayed
-			pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, pg.proposal))
+			pg.ParentWindow().Display(NewProposalDetailsPage(pg.Load, pg.proposal))
 		})
 	}
 
@@ -254,7 +254,7 @@ func (pg *ProposalsPage) HandleUserInteractions(gtx C) {
 	if clicked, selectedItem := pg.proposalsList.ItemClicked(); clicked {
 		proposalItems := pg.scroll.FetchedData()
 		selectedProposal := proposalItems[selectedItem].Proposal
-		pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
+		pg.ParentWindow().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
 	}
 
 	for pg.syncButton.Clicked(gtx) {
