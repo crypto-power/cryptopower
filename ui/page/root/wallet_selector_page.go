@@ -202,8 +202,8 @@ func (pg *WalletSelectorPage) HandleUserInteractions(gtx C) {
 		// Create a local copy of asset for each iteration
 		asset := asset
 		if clickable.Clicked(gtx) {
-			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
-				pg.ParentNavigator().ClosePagesAfter(WalletSelectorPageID)
+			pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
+				pg.ParentWindow().CloseCurrentPage()
 				// enable sync for the newly created wallet
 				wallets, wExists := pg.walletsList[asset]
 				var mostRecentWallet *walletWithBalance
