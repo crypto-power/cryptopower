@@ -76,6 +76,8 @@ type Editor struct {
 
 	copy, paste   Button
 	isDisableMenu bool
+	isShowMenu    bool
+	focused       bool
 
 	// add space for error lable if it is true
 	isSpaceError bool
@@ -240,12 +242,21 @@ func (e *Editor) Layout(gtx C) D {
 
 func (e *Editor) update(gtx C) {
 	for {
-		_, ok := e.click.Update(gtx.Source)
+		ev, ok := e.click.Update(gtx.Source)
 		if !ok {
 			break
 		}
-		e.SetFocus()
+		if e.click.Pressed() {
+			if ev.NumClicks > 1 || (e.focused && !e.isShowMenu) {
+				e.isShowMenu = true
+			} else {
+				e.isShowMenu = false
+			}
+		}
 	}
+
+	e.focused = gtx.Source.Focused(e.Editor)
+
 	for {
 		ev, ok := e.Editor.Update(gtx)
 		if !ok {
@@ -378,24 +389,26 @@ func (e *Editor) editorLayout(gtx C) D {
 }
 
 func (e *Editor) editorMenusLayout(gtx C, editorHeight int) {
-	if gtx.Source.Focused(e.Editor) || e.copy.Hovered() || e.paste.Hovered() {
+	e.isShowMenu = e.isShowMenu && (gtx.Source.Focused(e.Editor) || e.copy.Hovered() || e.paste.Hovered())
+	if e.isShowMenu {
 		flexChilds := make([]layout.FlexChild, 0)
-		if len(e.Editor.Text()) > 0 {
+		if len(e.Editor.SelectedText()) > 0 {
 			flexChilds = append(flexChilds, layout.Rigid(e.copy.Layout))
 			flexChilds = append(flexChilds, layout.Rigid(e.t.Line(20, 1).Layout))
 		}
 		flexChilds = append(flexChilds, layout.Rigid(e.paste.Layout))
-		macro := op.Record(gtx.Ops)
+		gtxCopy := gtx
+		macro := op.Record(gtxCopy.Ops)
 		LinearLayout{
 			Width:      WrapContent,
 			Height:     WrapContent,
 			Background: e.t.Color.Surface,
-			Margin:     layout.Inset{Top: gtx.Metric.PxToDp(-(editorHeight - 10))},
+			Margin:     layout.Inset{Top: gtxCopy.Metric.PxToDp(-(editorHeight - 10))},
 			Padding:    layout.UniformInset(values.MarginPadding5),
 			Alignment:  layout.Middle,
 			Border:     Border{Radius: Radius(8), Color: e.t.Color.Gray2, Width: unit.Dp(0.5)},
-		}.Layout(gtx, flexChilds...)
-		op.Defer(gtx.Ops, macro.Stop())
+		}.Layout(gtxCopy, flexChilds...)
+		op.Defer(gtxCopy.Ops, macro.Stop())
 	}
 }
 
@@ -485,11 +498,13 @@ func (e *Editor) handleEvents(gtx C) {
 	}
 
 	if e.copy.Clicked(gtx) {
-		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(e.Editor.Text()))})
+		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(e.Editor.SelectedText()))})
+		e.isShowMenu = false
 	}
 
 	if e.paste.Clicked(gtx) {
 		gtx.Execute(clipboard.ReadCmd{Tag: e.Editor})
+		e.isShowMenu = false
 	}
 }
 

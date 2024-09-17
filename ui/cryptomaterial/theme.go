@@ -7,6 +7,7 @@ import (
 	"image/color"
 
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -221,6 +222,25 @@ func (t *Theme) closeAllDropdowns() {
 	for _, dropDown := range t.dropDownMenus {
 		dropDown.expanded = false
 	}
+}
+
+func (t *Theme) ShowKeyboardIfEditorFocused(gtx C) bool {
+	for _, e := range t.allEditors {
+		for {
+			ev, ok := gtx.Event(pointer.Filter{
+				Target: e.Editor,
+				Kinds:  pointer.Release,
+			})
+			if !ok {
+				break
+			}
+			if _, ok := ev.(pointer.Event); ok {
+				gtx.Execute(key.SoftKeyboardCmd{Show: true})
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // isDropdownGroupCollapsed iterate over Dropdowns registered as a member

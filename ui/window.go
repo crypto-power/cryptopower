@@ -361,13 +361,14 @@ func (win *Window) handleUserClick(gtx C) {
 			win.isDragging = true
 		case pointer.Release:
 			if win.isClick && !win.isDragging {
-				gtx.Execute(key.FocusCmd{})
+				gtx.Execute(key.SoftKeyboardCmd{Show: false})
 			}
 			win.isClick = false
 			win.isDragging = false
 		}
-
 	}
+
+	win.load.Theme.ShowKeyboardIfEditorFocused(gtx)
 }
 
 // handleShortKeys listen keys pressed.
