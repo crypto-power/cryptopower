@@ -26,7 +26,7 @@ const (
 	AppName  string = "cryptopower"
 	AppMajor uint   = 2
 	AppMinor uint   = 0
-	AppPatch uint   = 0
+	AppPatch uint   = 1
 )
 
 // go build -v -ldflags "-X github.com/crypto-power/cryptopower/version.appPreRelease= -X github.com/crypto-power/cryptopower/version.appBuild=`git rev-parse --short HEAD`"
