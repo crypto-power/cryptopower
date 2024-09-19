@@ -64,7 +64,7 @@ func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetTyp
 			}
 			if wallet.GetWalletID() == dst.sourceAccount.WalletID {
 				account, err := wallet.GetAccountsRaw()
-				if err != nil || len(account.Accounts) <= 2 {
+				if err != nil || len(account.Accounts) < 2 {
 					return false
 				}
 			}
