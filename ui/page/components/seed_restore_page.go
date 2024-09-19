@@ -313,37 +313,27 @@ func (pg *SeedRestore) editorSeedsEventsHandler(gtx C) {
 	for i := 0; i < len(pg.seedEditors.editors); i++ {
 		editor := pg.seedEditors.editors[i]
 		text := editor.Edit.Editor.Text()
-
-		if gtx.Source.Focused(editor.Edit.Editor) {
+		if editor.Edit.Changed() {
 			seedEvent(i, text)
 		}
 
-		for {
-			event, ok := editor.Edit.Editor.Update(gtx)
-			if !ok {
-				break
+		if editor.Edit.Submitted() {
+			if pg.openPopupIndex != -1 {
+				if len(pg.suggestions) > 0 {
+					pg.seedEditors.editors[i].Edit.Editor.SetText(pg.seedMenu[pg.selected].text)
+					pg.seedClicked = true
+				}
 			}
-			switch event.(type) {
-			case widget.ChangeEvent:
-				seedEvent(i, text)
 
-			case widget.SubmitEvent:
-				if pg.openPopupIndex != -1 {
-					if len(pg.suggestions) > 0 {
-						pg.seedEditors.editors[i].Edit.Editor.SetText(pg.seedMenu[pg.selected].text)
-					}
-				}
+			//  Handles Enter and Return keyboard events.
+			if i != defaultNumberOfSeeds {
+				gtx.Execute(key.FocusCmd{Tag: pg.seedEditors.editors[i+1].Edit.Editor})
+				pg.selected = 0
+			}
 
-				//  Handles Enter and Return keyboard events.
-				if i != defaultNumberOfSeeds {
-					gtx.Execute(key.FocusCmd{Tag: pg.seedEditors.editors[i+1].Edit.Editor})
-					pg.selected = 0
-				}
-
-				if i == defaultNumberOfSeeds {
-					pg.selected = 0
-					pg.isLastEditor = true
-				}
+			if i == defaultNumberOfSeeds {
+				pg.selected = 0
+				pg.isLastEditor = true
 			}
 		}
 	}
