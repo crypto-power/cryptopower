@@ -313,7 +313,7 @@ func (pg *SeedRestore) editorSeedsEventsHandler(gtx C) {
 	for i := 0; i < len(pg.seedEditors.editors); i++ {
 		editor := pg.seedEditors.editors[i]
 		text := editor.Edit.Editor.Text()
-		if editor.Edit.Changed() {
+		if editor.Edit.Changed() || editor.Edit.Selected() {
 			seedEvent(i, text)
 		}
 
@@ -375,11 +375,9 @@ func (pg *SeedRestore) layoutSeedMenu(gtx C, optionsSeedMenuIndex int) {
 	}
 
 	m := op.Record(gtx.Ops)
-	_, caretPos := pg.seedEditors.editors[pg.seedEditors.focusIndex].Edit.Editor.CaretPos()
 	inset.Layout(gtx, func(gtx C) D {
 		border := widget.Border{Color: pg.Theme.Color.Gray4, CornerRadius: values.MarginPadding5, Width: values.MarginPadding2}
-		if !pg.seedEditorChanged() && pg.nextcurrentCaretPosition != caretPos {
-			pg.nextcurrentCaretPosition = -1
+		if !pg.seedEditorChanged() {
 			return border.Layout(gtx, func(gtx C) D {
 				return pg.optionsMenuCard.Layout(gtx, func(gtx C) D {
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
