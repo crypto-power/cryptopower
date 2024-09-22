@@ -243,6 +243,7 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 	}
 
 	swmp.PageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
+	swmp.PageNavigationTab.SetEnableSwipe(false)
 	dp5 := values.MarginPadding5
 	swmp.PageNavigationTab.ContentPadding = layout.Inset{
 		Left:  dp5,
