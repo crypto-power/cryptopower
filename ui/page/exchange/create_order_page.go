@@ -261,7 +261,7 @@ func (pg *CreateOrderPage) displayCreateWalletModal(isSourceWallet bool, asset l
 		SetCancelable(true).
 		SetContentAlignment(layout.Center, layout.W, layout.Center).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
+			pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 				pg.walletCreationSuccessFunc(isSourceWallet, asset)
 			}, asset))
 			return true
@@ -278,7 +278,7 @@ func (pg *CreateOrderPage) walletCreationSuccessFunc(isSourceWallet bool, asset 
 	} else {
 		pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{asset})
 	}
-	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
+	pg.ParentWindow().CloseCurrentPage()
 	pg.ParentWindow().Reload()
 }
 
@@ -475,7 +475,7 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 
 	if pg.createWalletBtn.Button.Clicked(gtx) {
 		assetToCreate := pg.AssetToCreate()
-		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
+		pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 			pg.walletCreationSuccessFunc(false, assetToCreate)
 		}, assetToCreate))
 	}
