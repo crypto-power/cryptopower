@@ -107,8 +107,7 @@ type selectedUTXOsInfo struct {
 
 func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	pg := &Page{
-		Load: l,
-
+		Load:              l,
 		authoredTxData:    &authoredTxData{},
 		exchangeRate:      -1,
 		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
@@ -146,7 +145,7 @@ func (pg *Page) addRecipient() {
 	if pg.selectedWallet == nil {
 		return
 	}
-	rc := newRecipient(pg.Load, pg.selectedWallet, pg.pageFields, pg.currentIDRecipient)
+	rc := newRecipient(pg.Load, pg.selectedWallet, pg.pageFields, pg.currentIDRecipient, pg.ParentWindow())
 	rc.onAddressChanged(func() {
 		pg.validateAndConstructTx()
 	})

@@ -951,4 +951,6 @@ const EN = `
 "restrictDetail" = "Restriction Detail"
 "rateUnavailable" = "The rate unavailable this time, please reset it later in settings."
 "privacy" = "Privacy"
+"removeRecipient" = "Remove recipient"
+"removeRecipientWarning" = "Are you sure you want to proceed with removing the recipient?"
 `

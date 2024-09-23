@@ -7,10 +7,12 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -18,6 +20,7 @@ type recipient struct {
 	*load.Load
 	id int
 
+	navigator   app.WindowNavigator
 	deleteBtn   *cryptomaterial.Clickable
 	description cryptomaterial.Editor
 
@@ -30,9 +33,10 @@ type recipient struct {
 	deleteRecipient func(int)
 }
 
-func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields, id int) *recipient {
+func newRecipient(l *load.Load, selectedWallet sharedW.Asset, pageParam getPageFields, id int, navigator app.WindowNavigator) *recipient {
 	rp := &recipient{
 		Load:           l,
+		navigator:      navigator,
 		selectedWallet: selectedWallet,
 		pageParam:      pageParam,
 		id:             id,
@@ -251,7 +255,7 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 		layout.Rigid(titleTxt.Layout),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
-				return rp.deleteBtn.Layout(gtx, rp.Theme.NewIcon(rp.Theme.Icons.ChevronLeft).Layout20dp)
+				return rp.deleteBtn.Layout(gtx, rp.Theme.NewIcon(rp.Theme.Icons.DeleteIcon).Layout20dp)
 			})
 		}),
 	)
@@ -380,7 +384,9 @@ func (rp *recipient) handle(gtx C) {
 	}
 
 	if rp.deleteBtn.Clicked(gtx) {
-		rp.deleteRecipient(rp.id)
+		title := values.String(values.StrRemoveRecipient)
+		msg := values.String(values.StrRemoveRecipientWarning)
+		rp.showWarningModalDialog(title, msg)
 	}
 
 	// if destination switch is equal to Address
@@ -409,4 +415,22 @@ func (rp *recipient) handle(gtx C) {
 			}
 		}
 	}
+}
+
+func (rp *recipient) showWarningModalDialog(title, msg string) {
+	warningModal := modal.NewCustomModal(rp.Load).
+		Title(title).
+		Body(msg).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetNegativeButtonCallback(func() {
+
+		}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		PositiveButtonStyle(rp.Theme.Color.Surface, rp.Theme.Color.Danger).
+		SetPositiveButtonText(values.String(values.StrRemove)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			rp.deleteRecipient(rp.id)
+			return true
+		})
+	rp.navigator.ShowModal(warningModal)
 }
