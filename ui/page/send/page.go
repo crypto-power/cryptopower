@@ -46,9 +46,10 @@ type Page struct {
 
 	pageContainer *widget.List
 
-	walletDropdown     *components.WalletDropdown
-	accountDropdown    *components.AccountDropdown
-	hideWalletDropdown bool
+	walletDropdown  *components.WalletDropdown
+	accountDropdown *components.AccountDropdown
+
+	hideWalletDropdown, hideAdvancedOptions bool
 
 	// recipient  *recipient
 	recipients []*recipient
@@ -122,10 +123,12 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 		pg.hideWalletDropdown = false
+		pg.hideAdvancedOptions = true
 	} else {
 		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
 		pg.selectedWallet = wallet
 		pg.hideWalletDropdown = true
+		pg.hideAdvancedOptions = false
 	}
 	pg.initModalWalletSelector(wallet) // will auto select the first wallet in the dropdown as pg.selectedWallet
 	callbackFunc := func() libUtil.AssetType {

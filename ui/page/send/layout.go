@@ -215,6 +215,9 @@ func (pg *Page) notSyncedLayout(gtx C) D {
 }
 
 func (pg *Page) advanceOptionsLayout(gtx C) D {
+	if pg.hideAdvancedOptions { // Hide advanced options on the send modal to create more space
+		return D{}
+	}
 	marginMinus32 := values.MarginPadding0
 	if pg.modalLayout != nil {
 		marginMinus32 = values.MarginPaddingMinus32
