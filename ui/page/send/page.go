@@ -541,7 +541,7 @@ func (pg *Page) getDestinationAddresses() []string {
 	for i := range pg.recipients {
 		recipient := pg.recipients[i]
 		destinationAddress := recipient.destinationAddress()
-		if destinationAddress != "" && recipient.isSendToAddress() {
+		if destinationAddress != "" {
 			addresses = append(addresses, destinationAddress)
 		}
 	}
@@ -603,12 +603,8 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 	// }
 
 	if pg.toCoinSelection.Clicked(gtx) {
-		if len(pg.getDestinationAddresses()) == len(pg.recipients) {
-			if pg.modalLayout != nil {
-				pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
-			} else {
-				pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
-			}
+		if (len(pg.getDestinationAddresses()) == len(pg.recipients)) || !pg.recipients[0].isSendToAddress() {
+			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
 		}
 	}
 
