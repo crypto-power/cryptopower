@@ -858,8 +858,8 @@ func (swmp *SingleWalletMasterPage) showBackupInfo() {
 
 func (swmp *SingleWalletMasterPage) backup(wallet sharedW.Asset) {
 	currentPage := swmp.ParentWindow().CurrentPageID()
-	swmp.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(_ *load.Load, navigator app.WindowNavigator) {
-		swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
+	swmp.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, wallet, func(_ *load.Load, navigator app.WindowNavigator) {
+		wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
 		navigator.ClosePagesAfter(currentPage)
 	}))
 }

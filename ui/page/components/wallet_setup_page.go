@@ -434,6 +434,9 @@ func (pg *CreateWallet) handleEditorEvents(gtx C) {
 
 	// create wallet action
 	if (pg.continueBtn.Clicked(gtx) || isSubmit) && pg.validCreateWalletInputs() {
+		if pg.checkWalletNameExists() {
+			return
+		}
 		go pg.createWallet()
 	}
 
@@ -565,6 +568,10 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 
 	// restore wallet actions
 	if pg.restoreBtn.Clicked(gtx) && pg.validRestoreWalletInputs() {
+		if pg.checkWalletNameExists() {
+			return
+		}
+
 		afterRestore := func(newWallet sharedW.Asset) {
 			// todo setup mixer for restored accounts automatically
 			pg.walletCreationSuccessCallback(newWallet)
@@ -572,6 +579,20 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 		ast := libutils.AssetType(pg.assetTypeDropdown.Selected())
 		pg.ParentWindow().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), ast, afterRestore))
 	}
+}
+
+func (pg *CreateWallet) checkWalletNameExists() bool {
+	walletName := pg.walletName.Editor.Text()
+	exists, err := pg.AssetsManager.WalletNameIsExists(walletName)
+	if err != nil {
+		pg.walletName.SetError(err.Error())
+		return true
+	}
+	if exists {
+		pg.walletName.SetError(values.StringF(values.StrWalletExist, walletName))
+		return true
+	}
+	return false
 }
 
 func (pg *CreateWallet) passwordsMatch(editors ...*widget.Editor) bool {
