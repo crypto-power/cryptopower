@@ -76,6 +76,22 @@ func (pg *Page) contentLayout(gtx C) D {
 		}
 	}
 
+	// Prevent total balance section from being sticky on mobile, this creates more view area.
+	if pg.IsMobileView() {
+		pageContent = append(pageContent, pg.balanceSection)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
+					mp := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding8)
+					if i == len(pageContent)-1 {
+						mp = values.MarginPadding0
+					}
+					return layout.Inset{Bottom: mp}.Layout(gtx, pageContent[i])
+				})
+			}),
+		)
+	}
+
 	cgtx := gtx
 	macro := op.Record(cgtx.Ops)
 	dims := pg.balanceSection(cgtx)
