@@ -423,7 +423,7 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 }
 
 func (pg *CreateWallet) handleEditorEvents(gtx C) {
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &pg.watchOnlyWalletHex, &pg.passwordEditor, &pg.confirmPasswordEditor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(gtx, &pg.watchOnlyWalletHex, &pg.walletName, &pg.passwordEditor, &pg.confirmPasswordEditor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.walletName.SetError("")
@@ -583,7 +583,7 @@ func (pg *CreateWallet) HandleUserInteractions(gtx C) {
 
 func (pg *CreateWallet) checkWalletNameExists() bool {
 	walletName := pg.walletName.Editor.Text()
-	exists, err := pg.AssetsManager.WalletNameIsExists(walletName)
+	exists, err := pg.AssetsManager.DoesWalletNameExist(walletName)
 	if err != nil {
 		pg.walletName.SetError(err.Error())
 		return true

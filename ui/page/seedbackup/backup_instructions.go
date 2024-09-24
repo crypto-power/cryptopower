@@ -161,7 +161,7 @@ func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Wid
 	bodyLayout := func(gtx C) D {
 		return layout.Stack{}.Layout(gtx,
 			layout.Expanded(func(gtx C) D {
-				return body(gtx)
+				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, body)
 			}),
 			layout.Stacked(func(gtx C) D {
 				if !showActionBtn {

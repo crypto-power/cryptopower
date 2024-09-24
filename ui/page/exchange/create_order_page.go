@@ -739,7 +739,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		Orientation: layout.Vertical,
 		Background:  pg.Theme.Color.Surface,
 		Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-		Margin:      layout.Inset{Right: values.MarginPadding8, Bottom: values.MarginPadding8},
+		Margin:      layout.Inset{Bottom: values.MarginPadding8},
 	}.Layout2(gtx, func(gtx C) D {
 		return inset.Layout(gtx, func(gtx C) D {
 			return cryptomaterial.LinearLayout{
