@@ -88,6 +88,7 @@ type DEXMarketPage struct {
 	serverSelector        *cryptomaterial.DropDown
 	lastSelectedDEXServer string
 	addServerBtn          *cryptomaterial.Clickable
+	xc                    *core.Exchange
 
 	marketSelector               *cryptomaterial.DropDown
 	noMarketOrServerDisconnected atomic.Bool
@@ -341,6 +342,7 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		if err != nil {
 			pg.notifyError(err.Error())
 		} else {
+			pg.xc = xc
 			serverIsDisconnected = xc.ConnectionStatus != comms.Connected
 			for _, m := range xc.Markets {
 				base, quote := convertAssetIDToAssetType(m.BaseID), convertAssetIDToAssetType(m.QuoteID)
@@ -664,9 +666,8 @@ func (pg *DEXMarketPage) selectedMarketInfo() (mkt *core.Market) {
 		return
 	}
 
-	xc := pg.exchange()
-	if xc != nil {
-		mkt = xc.Markets[dexMarketName]
+	if pg.xc != nil {
+		mkt = pg.xc.Markets[dexMarketName]
 	}
 
 	return mkt
@@ -677,16 +678,6 @@ func (pg *DEXMarketPage) selectedMarketInfo() (mkt *core.Market) {
 func (pg *DEXMarketPage) formatSelectedMarketAsDEXMarketName() string {
 	dexMarketName, _ := dex.MarketName(pg.selectedMarketOrderBook.base, pg.selectedMarketOrderBook.quote)
 	return dexMarketName
-}
-
-func (pg *DEXMarketPage) exchange() *core.Exchange {
-	host := pg.serverSelector.Selected()
-	xc, err := pg.AssetsManager.DexClient().Exchange(host)
-	if err != nil {
-		pg.notifyError(err.Error())
-		return nil
-	}
-	return xc
 }
 
 func (pg *DEXMarketPage) priceAndVolumeColumn(gtx C, title1 string, body1 func(gtx C) D, title2, body2 string) D {
@@ -743,7 +734,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	var overlaySet bool
 	var overlayMsg string
 	var actionBtn *cryptomaterial.Button
-	xc := pg.exchange()
+	xc := pg.xc
 	dexClient := pg.AssetsManager.DexClient()
 	hasZeroEffectiveTier := dexClient.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
 	if !dexClient.IsLoggedIn() {
