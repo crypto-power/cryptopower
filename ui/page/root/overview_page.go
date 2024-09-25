@@ -697,7 +697,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 						card := pg.Theme.Card()
 						radius := cryptomaterial.CornerRadius{TopLeft: 20, BottomLeft: 20, TopRight: 20, BottomRight: 20}
 						card.Radius = cryptomaterial.Radius(8)
-						card.Color = pg.Theme.Color.DefaultThemeColors().SurfaceHighlight
+						card.Color = pg.Theme.Color.DefaultThemeColors().Surface
 						if pg.AssetsManager.IsDarkModeOn() {
 							card.Color = pg.Theme.Color.DefaultThemeColors().Background
 						}

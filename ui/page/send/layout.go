@@ -148,7 +148,7 @@ func (pg *Page) sendLayout(gtx C) D {
 }
 
 func (pg *Page) titleLayout(gtx C) D {
-	return layout.Flex{}.Layout(gtx,
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Right: values.MarginPadding6}.Layout(gtx, func(gtx C) D {
 				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize20), values.String(values.StrSend))

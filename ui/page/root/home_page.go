@@ -891,14 +891,14 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 
 func (hp *HomePage) balanceLayout(gtx C) D {
 	if hp.AssetsManager.ExchangeRateFetchingEnabled() && totalBalanceUSD != "" {
-		return layout.Flex{}.Layout(gtx,
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
 				icon := hp.Theme.Icons.VisibilityOffIcon
 				if hp.isBalanceHidden {
 					icon = hp.Theme.Icons.VisibilityIcon
 				}
-				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{}.Layout(gtx, func(gtx C) D {
 					return hp.hideBalanceButton.Layout(gtx, hp.Theme.NewIcon(icon).Layout24dp)
 				})
 			}),
