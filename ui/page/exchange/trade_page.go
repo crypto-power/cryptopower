@@ -83,6 +83,7 @@ func (pg *TradePage) ID() string {
 func (pg *TradePage) OnNavigatedTo() {
 	// on mobile view, we display the cex tab by default
 	if pg.IsMobileView() {
+		tab.SetSelectedSegment(tabTitles[1])
 		pg.Display(NewCreateOrderPage(pg.Load))
 	} else if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
@@ -97,13 +98,8 @@ func (pg *TradePage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) HandleUserInteractions(gtx C) {
-	selectedIndex := tab.SelectedIndex()
-	if pg.IsMobileView() {
-		selectedIndex++ // Adjust index for mobile view
-	}
-
 	if pg.CurrentPage() == nil || tab.Changed() {
-		switch selectedIndex {
+		switch tab.SelectedIndex() {
 		case 0: // DCRDEX
 			if pg.CurrentPageID() != dcrdex.DCRDEXPageID {
 				pg.Display(dcrdex.NewDEXPage(pg.Load))

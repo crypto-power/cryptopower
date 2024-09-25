@@ -27,6 +27,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 
@@ -613,6 +614,18 @@ func (mgr *AssetsManager) DeleteBadWallet(walletID int) error {
 	}
 
 	return nil
+}
+
+// Check if wallet name already exists
+func (mgr *AssetsManager) DoesWalletNameExist(walletName string) (bool, error) {
+	wallet := wallet.Wallet{}
+	err := mgr.params.DB.One("Name", walletName, &wallet)
+	if err == nil {
+		return true, nil
+	} else if err != storm.ErrNotFound {
+		return false, err
+	}
+	return false, nil
 }
 
 // RootDirFileSizeInBytes returns the total directory size of

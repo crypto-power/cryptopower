@@ -16,7 +16,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
-	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/page/staking"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -60,7 +59,7 @@ type WalletInfo struct {
 	showMaterialLoader bool
 }
 
-func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
+func NewInfoPage(l *load.Load, wallet sharedW.Asset, backup func(sharedW.Asset)) *WalletInfo {
 	pg := &WalletInfo{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(InfoID),
@@ -72,7 +71,7 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 		materialLoader:     material.Loader(l.Theme.Base),
 	}
-	pg.walletSyncInfo = components.NewWalletSyncInfo(l, wallet, pg.reload, pg.backup)
+	pg.walletSyncInfo = components.NewWalletSyncInfo(l, wallet, pg.reload, backup)
 	pg.recentTransactions.Radius = cryptomaterial.Radius(14)
 	pg.recentTransactions.IsShadowEnabled = true
 	pg.recentStakes.Radius = cryptomaterial.Radius(14)
@@ -119,13 +118,6 @@ func (pg *WalletInfo) OnNavigatedTo() {
 
 func (pg *WalletInfo) reload() {
 	pg.ParentWindow().Reload()
-}
-
-func (pg *WalletInfo) backup(wallet sharedW.Asset) {
-	currentPage := pg.ParentWindow().CurrentPageID()
-	pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, wallet, func(_ *load.Load, navigator app.WindowNavigator) {
-		navigator.ClosePagesAfter(currentPage)
-	}))
 }
 
 // Layout draws the page UI components into the provided layout context

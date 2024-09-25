@@ -175,7 +175,7 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 		swmp.PageNavigationTab.SetSelectedSegment(tab)
 		swmp.navigateToSelectedTab()
 	} else if swmp.CurrentPage() == nil {
-		swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet)) // TODO: Should pagestack have a start page? YES!
+		swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet, swmp.backup)) // TODO: Should pagestack have a start page? YES!
 	} else {
 		swmp.CurrentPage().OnNavigatedTo()
 	}
@@ -243,6 +243,7 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 	}
 
 	swmp.PageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
+	swmp.PageNavigationTab.SetEnableSwipe(false)
 	dp5 := values.MarginPadding5
 	swmp.PageNavigationTab.ContentPadding = layout.Inset{
 		Left:  dp5,
@@ -372,7 +373,7 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 	if swmp.navigateToSyncBtn.Button.Clicked(gtx) {
 		swmp.ToggleSync(swmp.selectedWallet, func(b bool) {
 			swmp.selectedWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
-			swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet))
+			swmp.Display(info.NewInfoPage(swmp.Load, swmp.selectedWallet, swmp.backup))
 		})
 	}
 
@@ -396,7 +397,7 @@ func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
 	case values.String(values.StrReceive):
 		pg = receive.NewReceivePage(swmp.Load, swmp.selectedWallet)
 	case values.String(values.StrInfo):
-		pg = info.NewInfoPage(swmp.Load, swmp.selectedWallet)
+		pg = info.NewInfoPage(swmp.Load, swmp.selectedWallet, swmp.backup)
 	case values.String(values.StrTransactions):
 		txPage := transaction.NewTransactionsPage(swmp.Load, swmp.selectedWallet)
 		txPage.DisableUniformTab()
@@ -849,11 +850,16 @@ func (swmp *SingleWalletMasterPage) showBackupInfo() {
 		PositiveButtonStyle(swmp.Load.Theme.Color.Primary, swmp.Load.Theme.Color.InvText).
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			swmp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, swmp.selectedWallet, func(_ *load.Load, _ app.WindowNavigator) {
-				swmp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
-				swmp.ParentNavigator().ClosePagesAfter(MainPageID)
-			}))
+			swmp.backup(swmp.selectedWallet)
 			return true
 		})
 	swmp.ParentWindow().ShowModal(backupNowOrLaterModal)
+}
+
+func (swmp *SingleWalletMasterPage) backup(wallet sharedW.Asset) {
+	currentPage := swmp.ParentWindow().CurrentPageID()
+	swmp.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(swmp.Load, wallet, func(_ *load.Load, navigator app.WindowNavigator) {
+		wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
+		navigator.ClosePagesAfter(currentPage)
+	}))
 }

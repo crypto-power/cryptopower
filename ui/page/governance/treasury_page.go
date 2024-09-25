@@ -182,7 +182,7 @@ func (pg *TreasuryPage) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.createWalletBtn.Button.Clicked(gtx) {
-		pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
+		pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 			pg.walletCreationSuccessFunc()
 		}, libutils.DCRWalletAsset))
 	}
@@ -409,6 +409,6 @@ func (pg *TreasuryPage) decredWalletRequired(gtx C) D {
 
 func (pg *TreasuryPage) walletCreationSuccessFunc() {
 	pg.OnNavigatedTo()
-	pg.ParentNavigator().ClosePagesAfter(TreasuryPageID)
+	pg.ParentWindow().CloseCurrentPage()
 	pg.ParentWindow().Reload()
 }

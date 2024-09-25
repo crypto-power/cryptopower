@@ -166,21 +166,23 @@ func (pg *AppSettingsPage) layoutMobile(gtx C, body func(gtx C) D) D {
 }
 
 func (pg *AppSettingsPage) pageHeaderLayout(gtx C) layout.Dimensions {
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return layout.W.Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Top:   values.MarginPadding2,
-							Right: values.MarginPadding16,
-						}.Layout(gtx, pg.backButton.Layout)
-					}),
-					layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize20), values.String(values.StrSettings)).Layout),
-				)
-			})
-		}),
-	)
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Center.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding500)
+		if pg.Load.IsMobileView() {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		}
+		gtx.Constraints.Max.X = gtx.Constraints.Min.X
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Top:   values.MarginPadding2,
+					Right: values.MarginPadding16,
+				}.Layout(gtx, pg.backButton.Layout)
+			}),
+			layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize20), values.String(values.StrSettings)).Layout),
+		)
+	})
 }
 
 func (pg *AppSettingsPage) pageContentLayout(gtx C) D {
