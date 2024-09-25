@@ -260,10 +260,10 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 		pg.showNavigationFunc(true)
 		walletCallbackFunc := func() {
 			pg.showNavigationFunc(false)
-			pg.ParentNavigator().CloseCurrentPage()
+			pg.ParentWindow().CloseCurrentPage()
 		}
 		swmp := wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
-		pg.ParentNavigator().Display(swmp)
+		pg.ParentWindow().Display(swmp)
 		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
 		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
@@ -276,10 +276,10 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 			pg.showNavigationFunc(true)
 			callback := func() {
 				pg.showNavigationFunc(false)
-				pg.ParentNavigator().CloseCurrentPage()
+				pg.ParentWindow().CloseCurrentPage()
 			}
 			swmp := wallet.NewSingleWalletMasterPage(pg.Load, info.GetWallet(), callback)
-			pg.ParentNavigator().Display(swmp)
+			pg.ParentWindow().Display(swmp)
 		}
 	}
 }
