@@ -31,7 +31,7 @@ type SyncData struct {
 	cancelRescan context.CancelFunc
 	syncCanceled chan struct{}
 
-	bestBlockheight int32 // Synced peers best block height.
+	bestBlockHeight int32 // Synced peers best block height.
 
 	// Flag to notify syncCanceled callback if the sync was canceled so as to be restarted.
 	restartSyncRequested bool
@@ -48,6 +48,18 @@ func (s *SyncData) isSynced() bool {
 	return s.synced
 }
 
+func (s *SyncData) syncedTo() int32 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.bestBlockHeight
+}
+
+func (s *SyncData) targetHeight() int32 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.scanStartHeight
+}
+
 func (s *SyncData) connectedPeers() int32 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -57,7 +69,6 @@ func (s *SyncData) connectedPeers() int32 {
 func (s *SyncData) generalSyncProgress() *sharedW.GeneralSyncProgress {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	return s.genSyncProgress
 }
 

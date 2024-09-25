@@ -17,11 +17,11 @@ import (
 // isReset is used to reset the offset value.
 type ScrollFunc[T any] func(offset, pageSize int32) (data []T, count int, isReset bool, err error)
 
-type scrollDerection int
+type scrollDirection int
 
 const (
-	down scrollDerection = 1
-	up   scrollDerection = 2
+	down scrollDirection = 1
+	up   scrollDirection = 2
 )
 
 type dataList[T any] struct {
@@ -48,7 +48,7 @@ type Scroll[T any] struct {
 
 	// scrollView defines the scroll view length in pixels.
 	scrollView int
-	direction  scrollDerection
+	direction  scrollDirection
 
 	isLoadingItems bool
 	loadedAllItems bool

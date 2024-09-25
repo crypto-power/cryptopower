@@ -141,6 +141,23 @@ func (dw *DEXWallet) AddressInfo(ctx context.Context, address string) (*dexdcr.A
 	return nil, fmt.Errorf("unsupported address type %T", ka)
 }
 
+// WalletOwnsAddress returns whether any of the account controlled by this
+// wallet owns the specified address.
+// Part of the Wallet interface.
+func (dw *DEXWallet) WalletOwnsAddress(ctx context.Context, addr stdaddr.Address) (bool, error) {
+	ka, err := dw.w.KnownAddress(ctx, addr)
+	if err != nil {
+		if errors.Is(err, walleterrors.NotExist) {
+			return false, nil
+		}
+		return false, fmt.Errorf("KnownAddress error: %w", err)
+	}
+	if kind := ka.AccountKind(); kind != dcrwallet.AccountKindBIP0044 && kind != dcrwallet.AccountKindImported {
+		return false, nil
+	}
+	return true, nil
+}
+
 // AccountOwnsAddress checks if the provided address belongs to the
 // specified account.
 // Part of the Wallet interface.
@@ -194,26 +211,7 @@ func (dw *DEXWallet) LockedOutputs(ctx context.Context, accountName string) ([]c
 // Unspents fetches unspent outputs for the Wallet.
 // Part of the Wallet interface.
 func (dw *DEXWallet) Unspents(ctx context.Context, accountName string) ([]*wallettypes.ListUnspentResult, error) {
-	data, err := dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
-	var array = make([]*wallettypes.ListUnspentResult, len(data))
-	// To faciliate backwards compatibity with dcrdex that is yet to upgrade to
-	// dcrwallet v4, copy v4 data into a v3 instance.
-	for _, val := range data {
-		array = append(array, &wallettypes.ListUnspentResult{
-			TxID:          val.TxID,
-			Vout:          val.Vout,
-			Tree:          val.Tree,
-			TxType:        val.TxType,
-			Address:       val.Address,
-			Account:       val.Account,
-			ScriptPubKey:  val.ScriptPubKey,
-			RedeemScript:  val.RedeemScript,
-			Amount:        val.Amount,
-			Confirmations: val.Confirmations,
-			Spendable:     val.Spendable,
-		})
-	}
-	return array, err
+	return dw.w.ListUnspent(ctx, 0, math.MaxInt32, nil, accountName)
 }
 
 // LockUnspent locks or unlocks the specified outpoint.
@@ -547,12 +545,14 @@ func (dw *DEXWallet) UnlockAccount(ctx context.Context, pass []byte, _ string) e
 
 // SyncStatus returns the wallet's sync status.
 // Part of the Wallet interface.
-func (dw *DEXWallet) SyncStatus(_ context.Context) (synced bool, progress float32, err error) {
-	syncProgress := dw.syncData.generalSyncProgress()
-	if syncProgress != nil {
-		progress = float32(syncProgress.TotalSyncProgress)
+func (dw *DEXWallet) SyncStatus(_ context.Context) (*dexasset.SyncStatus, error) {
+	ss := new(dexasset.SyncStatus)
+	if dw.syncData != nil && dw.ctx.Err() == nil { // dex might call this method during wallet shutdown.
+		ss.Synced = dw.syncData.isSynced()
+		ss.Blocks = uint64(dw.syncData.syncedTo())
+		ss.TargetHeight = uint64(dw.syncData.targetHeight())
 	}
-	return dw.syncData.isSynced(), progress, nil
+	return ss, nil
 }
 
 // PeerCount returns the number of network peers to which the wallet or its

@@ -177,7 +177,7 @@ func (asset *Asset) fetchHeadersStarted() {
 	asset.syncData.syncStage = HeadersFetchSyncStage
 	asset.syncData.scanStartTime = time.Now()
 	asset.syncData.scanStartHeight = lowestBlockHeight
-	asset.syncData.bestBlockheight = peerInitialHeight // Best block synced in the connected peers
+	asset.syncData.bestBlockHeight = peerInitialHeight // Best block synced in the connected peers
 	asset.syncData.totalInactiveDuration = 0
 	showLogs := asset.syncData.showLogs
 	asset.syncData.mu.Unlock()
@@ -195,7 +195,7 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 	asset.syncData.mu.RLock()
 	startHeight := asset.syncData.scanStartHeight
 	startTime := asset.syncData.scanStartTime
-	peersBestBlock := asset.syncData.bestBlockheight
+	peersBestBlock := asset.syncData.bestBlockHeight
 	headerSpentTime := asset.syncData.headersScanTimeSpent
 	asset.syncData.mu.RUnlock()
 
@@ -216,7 +216,7 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 
 		if lastFetchedHeaderHeight <= peersBestBlock {
 			asset.syncData.mu.Lock()
-			asset.syncData.bestBlockheight = peersBestBlock
+			asset.syncData.bestBlockHeight = peersBestBlock
 			asset.syncData.mu.Unlock()
 		}
 	}
@@ -256,7 +256,7 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 			TotalTimeRemaining: secondsToDuration(timeRemaining),
 		},
 	}
-	headersFetchedData.TotalHeadersToFetch = asset.syncData.bestBlockheight
+	headersFetchedData.TotalHeadersToFetch = asset.syncData.bestBlockHeight
 	headersFetchedData.HeadersFetchProgress = syncProgress
 	headersFetchedData.HeadersFetchTimeSpent = time.Since(startTime)
 

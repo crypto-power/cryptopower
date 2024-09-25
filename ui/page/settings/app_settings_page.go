@@ -137,7 +137,6 @@ func (pg *AppSettingsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) Layout(gtx C) D {
-	pg.handleDEXSeedCopyEvent(gtx)
 	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.pageHeaderLayout),
@@ -598,6 +597,17 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.AssetsManager.LogFile(), values.String(values.StrAppLog)))
 	}
 
+	if pg.copyDEXSeed.Clicked(gtx) {
+		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.dexSeed.String()))})
+		pg.copyDEXSeed.Text = values.String(values.StrCopied)
+		pg.copyDEXSeed.Color = pg.Theme.Color.Success
+		time.AfterFunc(time.Second*3, func() {
+			pg.copyDEXSeed.Text = values.String(values.StrCopy)
+			pg.copyDEXSeed.Color = pg.Theme.Color.Primary
+			pg.ParentWindow().Reload()
+		})
+	}
+
 	if pg.deleteDEX.Clicked(gtx) {
 		// Show warning modal.
 		deleteDEXModal := modal.NewCustomModal(pg.Load).
@@ -737,19 +747,6 @@ func (pg *AppSettingsPage) HandleUserInteractions(gtx C) {
 	}
 }
 
-func (pg *AppSettingsPage) handleDEXSeedCopyEvent(gtx C) {
-	if pg.copyDEXSeed.Clicked(gtx) {
-		gtx.Execute(clipboard.WriteCmd{Data: io.NopCloser(strings.NewReader(pg.dexSeed.String()))})
-		pg.copyDEXSeed.Text = values.String(values.StrCopied)
-		pg.copyDEXSeed.Color = pg.Theme.Color.Success
-		time.AfterFunc(time.Second*3, func() {
-			pg.copyDEXSeed.Text = values.String(values.StrCopy)
-			pg.copyDEXSeed.Color = pg.Theme.Color.Primary
-			pg.ParentWindow().Reload()
-		})
-	}
-}
-
 func (pg *AppSettingsPage) showDEXSeedModal() {
 	seedModal := modal.NewSuccessModal(pg.Load, values.String(values.StrDEXSeed), modal.DefaultClickFunc()).
 		UseCustomWidget(func(gtx C) D {
@@ -769,17 +766,20 @@ func (pg *AppSettingsPage) showDEXSeedModal() {
 }
 
 func formatDEXSeedAsString(seed dex.Bytes) string {
-	chunkRegex := regexp.MustCompile(`.{1,32}`) // 64 bytes, 128 hex characters.
-	chunks := chunkRegex.FindAllString(seed.String(), -1)
+	if len(seed) == 128 { // 64 bytes, 128 hex character legacy seed
+		chunkRegex := regexp.MustCompile(`.{1,32}`)
+		chunks := chunkRegex.FindAllString(seed.String(), -1)
 
-	var seedChunks []string
-	subChunkRegex := regexp.MustCompile(`.{1,8}`)
-	for _, chunk := range chunks {
-		subChunks := subChunkRegex.FindAllString(chunk, -1)
-		seedChunks = append(seedChunks, strings.Join(subChunks, "  "))
+		var seedChunks []string
+		subChunkRegex := regexp.MustCompile(`.{1,8}`)
+		for _, chunk := range chunks {
+			subChunks := subChunkRegex.FindAllString(chunk, -1)
+			seedChunks = append(seedChunks, strings.Join(subChunks, "  "))
+		}
+
+		return strings.Join(seedChunks, "\n")
 	}
-
-	return strings.Join(seedChunks, "\n")
+	return seed.String()
 }
 
 func ChangeNetworkType(load *load.Load, windowNav app.WindowNavigator, newNetType string) {

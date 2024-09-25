@@ -88,6 +88,7 @@ type DEXMarketPage struct {
 	serverSelector        *cryptomaterial.DropDown
 	lastSelectedDEXServer string
 	addServerBtn          *cryptomaterial.Clickable
+	xc                    *core.Exchange
 
 	marketSelector               *cryptomaterial.DropDown
 	noMarketOrServerDisconnected atomic.Bool
@@ -150,7 +151,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 		openOrdersAndOrderHistoryContainer: &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		addServerBtn:                       th.NewClickable(false),
 		toggleBuyAndSellBtn:                th.SegmentedControl(buyAndSellBtnStrings, cryptomaterial.SegmentTypeGroup),
-		orderTypesDropdown:                 th.DropDown(orderTypes, nil, values.DEXOrderTypes, true),
+		orderTypesDropdown:                 th.NewCommonDropDown(orderTypes, nil, values.MarginPadding100, values.DEXOrderTypes, false),
 		priceEditor:                        newTextEditor(l.Theme, values.String(values.StrPrice), "", false),
 		switchLotsOrAmount:                 l.Theme.Switch(),
 		lotsOrAmountEditor:                 newTextEditor(l.Theme, values.String(values.StrLots), "", false),
@@ -177,12 +178,6 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 	pg.openOrdersBtn.Font.Weight, pg.orderHistoryBtn.Font.Weight = font.SemiBold, font.SemiBold
 
 	pg.orderTypesDropdown.CollapsedLayoutTextDirection = layout.E
-	pg.orderTypesDropdown.Width = values.MarginPadding120
-	pg.orderTypesDropdown.FontWeight = font.SemiBold
-	pg.orderTypesDropdown.Hoverable = false
-	pg.orderTypesDropdown.SelectedItemIconColor = &pg.Theme.Color.Primary
-	pg.orderTypesDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
-	pg.orderTypesDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
 	pg.priceEditor.IsTitleLabel, pg.lotsOrAmountEditor.IsTitleLabel, pg.totalEditor.IsTitleLabel = false, false, false
 
@@ -242,17 +237,9 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 					case core.TopicDEXConnected:
 						pg.noMarketOrServerDisconnected.Store(true)
 						pg.setServerMarkets()
-						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
-							modal := modal.NewSuccessModal(pg.Load, n.Details(), modal.DefaultClickFunc())
-							pg.ParentWindow().ShowModal(modal)
-						}
 					case core.TopicDEXDisconnected, core.TopicDexConnectivity:
 						if n.Topic() == core.TopicDEXDisconnected {
 							pg.noMarketOrServerDisconnected.Store(false)
-						}
-
-						if pg.ParentNavigator().CurrentPage().ID() == DEXMarketPageID {
-							pg.notifyError(n.Details())
 						}
 					}
 
@@ -278,6 +265,8 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 			pg.priceEditor.Editor.SetText(trimmedAmtString(price))
 		}
 	}
+
+	pg.priceEditor.SetFocus()
 
 	if dexc.IsLoggedIn() {
 		go pg.refreshOrders()
@@ -337,18 +326,8 @@ func (pg *DEXMarketPage) resetServerAndMarkets() {
 	lastSelectedDexServer := &cryptomaterial.DropDownItem{
 		Text: pg.lastSelectedDEXServer,
 	}
-	pg.serverSelector = pg.Theme.DropDown(servers, lastSelectedDexServer, values.DEXServerDropdownGroup, false)
-	pg.setServerOrMarketDropdownStyle(pg.serverSelector)
+	pg.serverSelector = pg.Theme.NewCommonDropDown(servers, lastSelectedDexServer, dp300, values.DEXServerDropdownGroup, false)
 	pg.setServerMarkets()
-}
-
-func (pg *DEXMarketPage) setServerOrMarketDropdownStyle(d *cryptomaterial.DropDown) {
-	d.Width = dp300
-	d.MakeCollapsedLayoutVisibleWhenExpanded = true
-	d.ExpandedLayoutInset = layout.Inset{Top: values.DP45}
-	d.BorderWidth = dp2
-	d.Hoverable = false
-	d.SelectedItemIconColor = &pg.Theme.Color.Primary
 }
 
 func (pg *DEXMarketPage) setServerMarkets() {
@@ -363,6 +342,7 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		if err != nil {
 			pg.notifyError(err.Error())
 		} else {
+			pg.xc = xc
 			serverIsDisconnected = xc.ConnectionStatus != comms.Connected
 			for _, m := range xc.Markets {
 				base, quote := convertAssetIDToAssetType(m.BaseID), convertAssetIDToAssetType(m.QuoteID)
@@ -400,8 +380,7 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		}}
 	}
 
-	pg.marketSelector = pg.Theme.DropDown(markets, lastSelectedItem, values.DEXCurrencyPairGroup, false)
-	pg.setServerOrMarketDropdownStyle(pg.marketSelector)
+	pg.marketSelector = pg.Theme.NewCommonDropDown(markets, lastSelectedItem, dp300, values.DEXCurrencyPairGroup, false)
 	pg.fetchOrderBook()
 }
 
@@ -551,16 +530,16 @@ func (pg *DEXMarketPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXMarketPage) Layout(gtx C) D {
-	pg.handleEditorEvents(gtx)
 	if pg.isDEXReset() {
 		pg.ParentNavigator().CloseCurrentPage()
 		return D{}
 	}
 
-	pageContent := []func(gtx C) D{
-		pg.priceAndVolumeDetail,
-		pg.orderFormAndOrderBook,
-		pg.openOrdersAndHistory,
+	pageContent := []layout.FlexChild{
+		layout.Rigid(pg.serverAndCurrencySelection),
+		layout.Rigid(pg.priceAndVolumeDetail),
+		layout.Rigid(pg.orderFormAndOrderBook),
+		layout.Rigid(pg.openOrdersAndHistory),
 	}
 
 	return cryptomaterial.LinearLayout{
@@ -574,17 +553,7 @@ func (pg *DEXMarketPage) Layout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, _ int) D {
-			return layout.Stack{}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return layout.Inset{Top: 110}.Layout(gtx, func(gtx C) D {
-						l := &layout.List{Axis: vertical}
-						return l.Layout(gtx, len(pageContent), func(gtx C, i int) D {
-							return pageContent[i](gtx)
-						})
-					})
-				}),
-				layout.Stacked(pg.serverAndCurrencySelection),
-			)
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, pageContent...)
 		})
 	})
 }
@@ -593,6 +562,7 @@ func (pg *DEXMarketPage) serverAndCurrencySelection(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
 		Height:     gtx.Dp(100),
+		Margin:     layout.Inset{Top: dp5, Bottom: dp5},
 		Background: pg.Theme.Color.Surface,
 		Padding:    layout.UniformInset(dp16),
 		Border: cryptomaterial.Border{
@@ -696,9 +666,8 @@ func (pg *DEXMarketPage) selectedMarketInfo() (mkt *core.Market) {
 		return
 	}
 
-	xc := pg.exchange()
-	if xc != nil {
-		mkt = xc.Markets[dexMarketName]
+	if pg.xc != nil {
+		mkt = pg.xc.Markets[dexMarketName]
 	}
 
 	return mkt
@@ -709,16 +678,6 @@ func (pg *DEXMarketPage) selectedMarketInfo() (mkt *core.Market) {
 func (pg *DEXMarketPage) formatSelectedMarketAsDEXMarketName() string {
 	dexMarketName, _ := dex.MarketName(pg.selectedMarketOrderBook.base, pg.selectedMarketOrderBook.quote)
 	return dexMarketName
-}
-
-func (pg *DEXMarketPage) exchange() *core.Exchange {
-	host := pg.serverSelector.Selected()
-	xc, err := pg.AssetsManager.DexClient().Exchange(host)
-	if err != nil {
-		pg.notifyError(err.Error())
-		return nil
-	}
-	return xc
 }
 
 func (pg *DEXMarketPage) priceAndVolumeColumn(gtx C, title1 string, body1 func(gtx C) D, title2, body2 string) D {
@@ -775,7 +734,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	var overlaySet bool
 	var overlayMsg string
 	var actionBtn *cryptomaterial.Button
-	xc := pg.exchange()
+	xc := pg.xc
 	dexClient := pg.AssetsManager.DexClient()
 	hasZeroEffectiveTier := dexClient.IsLoggedIn() && xc != nil && xc.Auth.EffectiveTier == 0 && xc.Auth.PendingStrength == 0
 	if !dexClient.IsLoggedIn() {
@@ -946,8 +905,9 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 							return pg.toggleBuyAndSellBtn.GroupTileLayout(gtx)
 						}),
 						layout.Flexed(1, func(gtx C) D {
-							pg.orderTypesDropdown.Background = &pg.Theme.Color.Surface
-							return layout.Inset{Bottom: dp5, Top: dp5}.Layout(gtx, pg.orderTypesDropdown.Layout)
+							return layout.E.Layout(gtx, func(gtx C) D {
+								return layout.Inset{Bottom: dp5, Top: dp5}.Layout(gtx, pg.orderTypesDropdown.Layout)
+							})
 						}),
 					)
 				}),
@@ -1140,14 +1100,8 @@ func (pg *DEXMarketPage) orderbook(gtx C) D {
 		Orientation: vertical,
 		Direction:   layout.Center,
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: horizontal}.Layout(gtx,
-				layout.Rigid(pg.semiBoldLabelText(values.String(values.StrOrderBooks)).Layout),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, pg.seeFullOrderBookBtn.Layout)
-				}),
-			)
-		}),
+		layout.Rigid(pg.semiBoldLabelText(values.String(values.StrOrderBooks)).Layout),
+		// TODO: Show pg.seeFullOrderBookBtn when we have a page to view full order book.
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: dp10}.Layout(gtx, func(gtx C) D {
 				return pg.orderBookRow(gtx,
@@ -1253,7 +1207,7 @@ func (pg *DEXMarketPage) openOrdersAndHistory(gtx C) D {
 		Width:      cryptomaterial.MatchParent,
 		Height:     sectionHeight,
 		Background: pg.Theme.Color.Surface,
-		Margin:     layout.Inset{Top: dp5, Bottom: 30},
+		Margin:     layout.Inset{Top: dp5, Bottom: dp5},
 		Padding:    layout.UniformInset(dp10),
 		Border: cryptomaterial.Border{
 			Radius: cryptomaterial.Radius(8),
@@ -1391,7 +1345,9 @@ func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.D
 func (pg *DEXMarketPage) setBuyOrSell() {
 	isSell := pg.isSellOrder()
 	pg.lotsOrAmountEditor.Editor.ReadOnly = !isSell
+	pg.lotsOrAmountEditor.UpdateFocus(!pg.lotsOrAmountEditor.Editor.ReadOnly)
 	pg.totalEditor.Editor.ReadOnly = isSell
+	pg.totalEditor.UpdateFocus(!pg.totalEditor.Editor.ReadOnly)
 
 	if !isSell { // Buy
 		pg.createOrderBtn.Text = values.String(values.StrBuy)
@@ -1414,7 +1370,6 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsOrAmountSub
 }
 
 func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
-
 	var toggleBuyAndSellBtnChanged bool
 	if pg.toggleBuyAndSellBtn.Changed() {
 		toggleBuyAndSellBtnChanged = true
@@ -1436,16 +1391,7 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 	}
 
 	var reEstimateFee bool
-	// Handle updates to Price Editor first.
-	for {
-		event, ok := pg.totalEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-		if !isChangeEvent(event) {
-			continue
-		}
-
+	for pg.priceEditor.Changed() {
 		pg.priceEditor.SetError("")
 		priceStr := pg.priceEditor.Editor.Text()
 		if isMktOrder || priceStr == "" {
@@ -1458,89 +1404,39 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 			continue
 		}
 
-		reEstimateFee = true
 		formattedPrice := price - mkt.MsgRateToConventional(mkt.ConventionalRateToMsg(price)%mkt.RateStep)
 		if formattedPrice != price {
-			start, end := pg.priceEditor.Editor.Selection()
 			pg.priceEditor.Editor.SetText(trimmedAmtString(formattedPrice))
-			pg.priceEditor.Editor.SetCaret(start, end)
 		}
 
-		calculateOk := pg.calculateTotalOrder(mkt)
-		if calculateOk {
-			continue
-		}
-
-		// Use the lots/Amt field to calculate total order.
-		lotsOrAmt, ok := pg.orderLotsOrAmt()
-		if !ok {
-			continue
-		}
-
-		if pg.orderWithLots() {
-			total := msgRate(price) * mkt.LotSize * uint64(lotsOrAmt)
-			pg.totalEditor.Editor.SetText(trimmedConventionalAmtString(total))
-		} else {
-			pg.totalEditor.Editor.SetText(trimmedAmtString(lotsOrAmt * price))
+		if ok := pg.calculateOrderAmount(mkt, false); ok {
+			reEstimateFee = true
 		}
 	}
 
 	// Handle updates to Total Editor.
-	for {
-		event, ok := pg.totalEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-		if !isChangeEvent(event) || pg.totalEditor.Editor.ReadOnly {
-			continue
-		}
-
+	for pg.totalEditor.Changed() && !pg.totalEditor.Editor.ReadOnly {
 		pg.totalEditor.SetError("")
 		totalStr := pg.totalEditor.Editor.Text()
 		if totalStr == "" {
 			continue
 		}
 
-		if ok := pg.calculateTotalOrder(mkt); !ok {
-			pg.totalEditor.SetError(values.String(values.StrInvalidAmount))
-			continue
+		if ok := pg.calculateOrderAmount(mkt, false); ok {
+			reEstimateFee = true
 		}
-
-		reEstimateFee = true
 	}
 
 	// Handle updates to LotsOrAmount Editor.
-	for {
-		event, ok := pg.totalEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-		if !isChangeEvent(event) || pg.lotsOrAmountEditor.Editor.ReadOnly {
-			continue
-		}
-
+	for pg.lotsOrAmountEditor.Changed() && !pg.lotsOrAmountEditor.Editor.ReadOnly {
 		pg.lotsOrAmountEditor.SetError("")
 		lotsOrAmtStr := pg.lotsOrAmountEditor.Editor.Text()
 		if lotsOrAmtStr == "" {
 			continue
 		}
 
-		price := pg.orderPrice(mkt)
-		if pg.orderWithLots() {
-			if lots, err := strconv.Atoi(lotsOrAmtStr); err != nil || lots <= 0 {
-				pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidLot))
-			} else if price > 0 {
-				reEstimateFee = true
-				total := msgRate(price) * mkt.LotSize * uint64(lots)
-				pg.totalEditor.Editor.SetText(trimmedConventionalAmtString(total))
-			}
-		}
-
-		if amt, err := strconv.ParseFloat(lotsOrAmtStr, 64); err != nil || amt <= 0 {
-			pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidAmount))
-		} else if price > 0 {
+		if ok := pg.calculateOrderAmount(mkt, false); ok {
 			reEstimateFee = true
-			pg.totalEditor.Editor.SetText(trimmedAmtString(amt * price))
 		}
 	}
 
@@ -1554,12 +1450,13 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 
 	if pg.switchLotsOrAmount.Changed(gtx) {
 		pg.lotsOrAmountEditor.SetError("")
-		pg.calculateTotalOrder(mkt)
+		pg.calculateOrderAmount(mkt, true)
 		if pg.orderWithLots() {
 			pg.lotsOrAmountEditor.ExtraText = ""
 		} else {
 			pg.lotsOrAmountEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
 		}
+		pg.ParentWindow().Reload()
 	}
 }
 
@@ -1679,6 +1576,16 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		dexPasswordModal.SetPasswordTitleVisibility(false)
 		pg.ParentWindow().ShowModal(dexPasswordModal)
 	}
+
+	if pg.walletSelector != nil {
+		pg.walletSelector.Handle(gtx)
+	}
+
+	if pg.accountSelector != nil {
+		pg.accountSelector.Handle(gtx)
+	}
+
+	pg.handleEditorEvents(gtx)
 }
 
 // validatedOrderFormInfo checks the the order info supplied by the user are
@@ -1919,8 +1826,9 @@ func anyMatchActive(matches []*core.Match) bool {
 
 func (pg *DEXMarketPage) hasValidOrderInfo() bool {
 	mkt := pg.selectedMarketInfo()
-	_, lotsOrAmtOk := pg.orderLotsOrAmt() // TODO: Check that their tier limit has not been exceeded by this trade.
+	_, lotsOrAmtOk := pg.orderLotsOrAmt()
 	_, totalOk := pg.totalOrderAmt()
+	// TODO: Check that their tier limit has not been exceeded by this trade.
 	return pg.orderPrice(mkt) > 0 && lotsOrAmtOk && totalOk
 }
 
@@ -1947,27 +1855,73 @@ func (pg *DEXMarketPage) orderPrice(mkt *core.Market) (price float64) {
 	return price
 }
 
-// calculateTotalOrder uses the value set as total to calculate the order amount
-// or lots. Returns true if the value set as total is valid.
-func (pg *DEXMarketPage) calculateTotalOrder(mkt *core.Market) bool {
-	totalAmt, err := strconv.ParseFloat(pg.totalEditor.Editor.Text(), 64)
-	if err != nil || totalAmt <= 0 {
+// calculateOrderAmount uses the value set as total, amount of lots or base
+// currency amount to calculate the order amount or lots. Returns true if
+// there's no invalid number.
+func (pg *DEXMarketPage) calculateOrderAmount(mkt *core.Market, isSwitchLotsOrAmtChanged bool) bool {
+	orderPrice := pg.orderPrice(mkt)
+	if orderPrice == 0 {
 		return false
 	}
 
-	orderPrice := pg.orderPrice(mkt)
-	var amt float64
-	if orderPrice > 0 {
-		amt = totalAmt / orderPrice
-	}
+	if !pg.isSellOrder() {
+		amtStr := pg.totalEditor.Editor.Text()
+		if amtStr == "" {
+			return false
+		}
 
-	if !pg.orderWithLots() {
-		pg.lotsOrAmountEditor.Editor.SetText(trimmedAmtString(amt))
-	} else if amt > 0 && mkt != nil {
-		lots := int(amt / mkt.MsgRateToConventional(mkt.LotSize))
-		pg.lotsOrAmountEditor.Editor.SetText(fmt.Sprint(lots))
+		// It's a buy order, user supplies how much total they want to buy and
+		// we calculate based on that.
+		totalAmt, err := strconv.ParseFloat(amtStr, 64)
+		if err != nil || totalAmt <= 0 {
+			pg.totalEditor.SetError(values.String(values.StrInvalidAmount))
+			return false
+		}
+
+		amt := totalAmt / orderPrice
+		lots := int64(amt / mkt.MsgRateToConventional(mkt.LotSize))
+
+		if !pg.orderWithLots() && lots != 0 {
+			pg.lotsOrAmountEditor.Editor.SetText(trimmedAmtString(amt))
+		} else if lots > 0 && mkt != nil {
+			pg.lotsOrAmountEditor.Editor.SetText(fmt.Sprint(lots))
+		} else {
+			pg.lotsOrAmountEditor.Editor.SetText("")
+		}
 	} else {
-		pg.lotsOrAmountEditor.Editor.SetText("")
+		// It's a sell order, user provides how much they want to sell in lots
+		// or base currency amount.
+		lotsOrAmtStr := pg.lotsOrAmountEditor.Editor.Text()
+		if lotsOrAmtStr == "" {
+			return false
+		}
+
+		pg.totalEditor.Editor.SetText("")
+		if pg.orderWithLots() {
+			if lots, err := strconv.ParseFloat(lotsOrAmtStr, 64); err != nil || lots <= 0 {
+				pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidLot))
+			} else {
+				if isSwitchLotsOrAmtChanged {
+					// User switched from amount to lots, convert amount to it's lot equivalent.
+					amt := lots
+					pg.lotsOrAmountEditor.Editor.SetText(fmt.Sprint(uint64(amt / mkt.MsgRateToConventional(mkt.LotSize))))
+					pg.lotsOrAmountEditor.Changed() // undo recorded change event to prevent another call due to this update
+				}
+				pg.totalEditor.Editor.SetText(trimmedConventionalAmtString(lots * mkt.MsgRateToConventional(mkt.LotSize) * orderPrice))
+			}
+		} else {
+			if amt, err := strconv.ParseFloat(lotsOrAmtStr, 64); err != nil || amt <= 0 {
+				pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidAmount))
+			} else {
+				if isSwitchLotsOrAmtChanged {
+					// User switched from lots to amount, convert lots to it's amount equivalent.
+					lots := amt
+					pg.lotsOrAmountEditor.Editor.SetText(trimmedAmtString(lots * mkt.MsgRateToConventional(mkt.LotSize)))
+					pg.lotsOrAmountEditor.Changed() // undo recorded change event to prevent another call due to this update
+				}
+				pg.totalEditor.Editor.SetText(trimmedAmtString(amt * orderPrice))
+			}
+		}
 	}
 
 	return true
@@ -1991,19 +1945,15 @@ func (pg *DEXMarketPage) notifyError(errMsg string) {
 }
 
 func trimmedAmtString(amt float64) string {
-	return trimmedConventionalAmtString(msgRate(amt))
+	return trimmedConventionalAmtString(amt)
 }
 
 func conventionalAmt(rate uint64) float64 {
 	return float64(rate) / defaultConversionFactor
 }
 
-func msgRate(amt float64) uint64 {
-	return uint64(amt * defaultConversionFactor)
-}
-
-func trimmedConventionalAmtString(r uint64) string {
-	s := strconv.FormatFloat(conventionalAmt(r), 'f', 8, 64)
+func trimmedConventionalAmtString(r float64) string {
+	s := strconv.FormatFloat(r, 'f', 8, 64)
 	return strings.TrimRight(strings.TrimRight(s, "0"), ".")
 }
 

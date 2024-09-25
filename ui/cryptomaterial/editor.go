@@ -208,6 +208,10 @@ func (e *Editor) SetFocus() {
 	e.isFirstFocus = true
 }
 
+func (e *Editor) UpdateFocus(focus bool) {
+	e.isFirstFocus = focus
+}
+
 func (e *Editor) Changed() bool {
 	changed := e.changed
 	e.changed = false
