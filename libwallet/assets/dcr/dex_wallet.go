@@ -547,7 +547,7 @@ func (dw *DEXWallet) UnlockAccount(ctx context.Context, pass []byte, _ string) e
 // Part of the Wallet interface.
 func (dw *DEXWallet) SyncStatus(_ context.Context) (*dexasset.SyncStatus, error) {
 	ss := new(dexasset.SyncStatus)
-	if dw.syncData != nil {
+	if dw.syncData != nil && dw.ctx.Err() == nil { // dex might call this method during wallet shutdown.
 		ss.Synced = dw.syncData.isSynced()
 		ss.Blocks = uint64(dw.syncData.syncedTo())
 		ss.TargetHeight = uint64(dw.syncData.targetHeight())

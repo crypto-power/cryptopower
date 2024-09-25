@@ -143,6 +143,8 @@ type DEXOnboarding struct {
 	materialLoader    material.LoaderStyle
 	isLoading         bool
 	existingDEXServer string
+
+	bondFeeCache map[uint32]uint64
 }
 
 // NewDEXOnboarding creates a new DEX onboarding pages. Specify
@@ -168,6 +170,7 @@ func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
 		nextBtn:               th.Button(values.String(values.StrNext)),
 		materialLoader:        material.Loader(th.Base),
 		existingDEXServer:     existingDEXServer,
+		bondFeeCache:          make(map[uint32]uint64),
 	}
 
 	pg.onBoardingSteps = map[onboardingStep]dexOnboardingStep{
@@ -245,6 +248,11 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 	// Remove bond confirmation listener if any.
 	if pg.bondSourceWalletSelector != nil {
 		pg.bondSourceWalletSelector.SelectedWallet().RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
+	}
+
+	// Clear cache
+	if len(pg.bondFeeCache) != 0 {
+		pg.bondFeeCache = make(map[uint32]uint64)
 	}
 }
 
@@ -833,9 +841,14 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	assetType := asset.GetAssetType()
-	icon := pg.Theme.AssetIcon(assetType)
 	bondAsset := pg.bondServer.bondAssets[assetType]
-	bondsFeeBuffer := pg.AssetsManager.DexClient().BondsFeeBuffer(bondAsset.ID)
+	bondsFeeBuffer, found := pg.bondFeeCache[bondAsset.ID]
+	if !found {
+		bondsFeeBuffer = pg.AssetsManager.DexClient().BondsFeeBuffer(bondAsset.ID)
+		pg.bondFeeCache[bondAsset.ID] = bondsFeeBuffer
+	}
+
+	icon := pg.Theme.AssetIcon(assetType)
 	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if icon == nil {
@@ -1395,7 +1408,12 @@ func (pg *DEXOnboarding) bondAccountHasEnough() bool {
 	}
 
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
-	bondsFeeBuffer := pg.AssetsManager.DexClient().BondsFeeBuffer(bondAsset.ID)
+	bondsFeeBuffer, found := pg.bondFeeCache[bondAsset.ID]
+	if !found {
+		bondsFeeBuffer = pg.AssetsManager.DexClient().BondsFeeBuffer(bondAsset.ID)
+		pg.bondFeeCache[bondAsset.ID] = bondsFeeBuffer
+	}
+
 	bondCost := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	bondAmt := asset.ToAmount(int64(bondCost))
 
