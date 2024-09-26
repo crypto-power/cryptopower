@@ -296,6 +296,12 @@ func (pg *Page) OnNavigatedTo() {
 		// go load.GetAPIFeeRate(pg.selectedWallet)
 		go pg.feeRateSelector.UpdatedFeeRate(pg.selectedWallet)
 	}
+
+	for _, re := range pg.recipients { // focus on destination address editor
+		re.sendDestination.destinationAddressEditor.SetFocus()
+		pg.pageContainer.List.ScrollTo(1) // scroll to the first item in the list
+		break
+	}
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -652,8 +658,24 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 	}
 
 	// handle recipient user interactions
+	// TODO: Automatically calculate ScrollTo position
 	for _, re := range pg.recipients {
 		re.HandleUserInteractions(gtx)
+		if re.sendDestination.destinationAddressEditor.Pressed(gtx) {
+			pg.pageContainer.List.ScrollTo(1)
+		}
+		if re.amount.amountEditor.Pressed(gtx) {
+			pg.pageContainer.List.ScrollTo(1)
+		}
+		if re.amount.usdAmountEditor.Pressed(gtx) {
+			pg.pageContainer.List.ScrollTo(1)
+			if pg.IsMobileView() {
+				pg.pageContainer.List.ScrollTo(3)
+			}
+		}
+		if re.description.Pressed(gtx) {
+			pg.pageContainer.List.ScrollTo(3)
+		}
 	}
 }
 
