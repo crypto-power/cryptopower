@@ -42,6 +42,9 @@ type DropDown struct {
 	shadow                   *Shadow
 	expandedViewAlignment    layout.Direction
 
+	list   *widget.List
+	scroll ListStyle
+
 	noSelectedItem DropDownItem
 
 	FontWeight  font.Weight
@@ -132,8 +135,11 @@ func (t *Theme) DropdownWithCustomPos(items []DropDownItem, group uint, groupPos
 		padding:                      layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8},
 		shadow:                       t.Shadow(),
 		CollapsedLayoutTextDirection: layout.W,
+		list: &widget.List{
+			List: layout.List{Axis: layout.Vertical, Alignment: layout.Middle},
+		},
 	}
-
+	d.scroll = t.List(d.list)
 	d.revs = reversePos
 	d.expandedViewAlignment = layout.NW
 	d.ExpandedLayoutInset = layout.Inset{Left: unit.Dp(dropdownInset)}
@@ -327,8 +333,7 @@ func (d *DropDown) expandedLayout(gtx C) D {
 }
 
 func (d *DropDown) listItemLayout(gtx C) D {
-	list := &layout.List{Axis: layout.Vertical}
-	return list.Layout(gtx, len(d.items), func(gtx C, index int) D {
+	return d.scroll.Layout(gtx, len(d.items), func(gtx C, index int) D {
 		if len(d.items) == 0 {
 			return D{}
 		}
