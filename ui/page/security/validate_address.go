@@ -90,7 +90,7 @@ func (pg *ValidateAddressPage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 					return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 							layout.Rigid(pg.addressSection()),

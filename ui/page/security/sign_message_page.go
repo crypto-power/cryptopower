@@ -123,7 +123,7 @@ func (pg *SignMessagePage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 						return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
