@@ -37,6 +37,7 @@ type ValidateAddressPage struct {
 	clearBtn, validateBtn cryptomaterial.Button
 	stateValidate         int
 	backButton            cryptomaterial.IconButton
+	pageContainer         *widget.List
 }
 
 func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddressPage {
@@ -44,6 +45,9 @@ func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddress
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ValidateAddressPageID),
 		wallet:           wallet,
+		pageContainer: &widget.List{
+			List: layout.List{Axis: layout.Vertical},
+		},
 	}
 
 	pg.backButton = components.GetBackButton(l)
@@ -86,10 +90,12 @@ func (pg *ValidateAddressPage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-						layout.Rigid(pg.addressSection()),
-					)
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+					return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+							layout.Rigid(pg.addressSection()),
+						)
+					})
 				})
 			},
 		}

@@ -50,6 +50,8 @@ type SignMessagePage struct {
 	clearButton, signButton, copyButton        cryptomaterial.Button
 	copySignature                              *cryptomaterial.Clickable
 
+	pageContainer *widget.List
+
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
 }
@@ -86,6 +88,9 @@ func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 		signButton:         signButton,
 		copyButton:         l.Theme.Button(values.String(values.StrCopy)),
 		copySignature:      l.Theme.NewClickable(false),
+		pageContainer: &widget.List{
+			List: layout.List{Axis: layout.Vertical},
+		},
 	}
 
 	pg.signedMessageLabel.Color = l.Theme.Color.GrayText2
@@ -118,15 +123,17 @@ func (pg *SignMessagePage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-					return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(pg.description()),
-							layout.Rigid(pg.editors(pg.addressEditor)),
-							layout.Rigid(pg.editors(pg.messageEditor)),
-							layout.Rigid(pg.drawButtonsRow()),
-							layout.Rigid(pg.drawResult()),
-						)
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+						return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(pg.description()),
+								layout.Rigid(pg.editors(pg.addressEditor)),
+								layout.Rigid(pg.editors(pg.messageEditor)),
+								layout.Rigid(pg.drawButtonsRow()),
+								layout.Rigid(pg.drawResult()),
+							)
+						})
 					})
 				})
 			},
