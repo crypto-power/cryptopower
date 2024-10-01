@@ -158,6 +158,7 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
 	swmp.updateBalance()
+	swmp.isBalanceHidden = swmp.AssetsManager.IsTotalBalanceVisible()
 	// updateExchangeSetting also calls updateBalance() but because of the API
 	// call it may take a while before the balance and USD conversion is updated.
 	// updateBalance() is called above first to prevent crash when balance value
@@ -379,7 +380,7 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 
 	if swmp.hideBalanceButton.Clicked(gtx) {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
-		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
+		swmp.AssetsManager.SetTotalBalanceVisibility(swmp.isBalanceHidden)
 	}
 }
 
