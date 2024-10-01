@@ -96,10 +96,16 @@ type DEXMarketPage struct {
 	toggleBuyAndSellBtn *cryptomaterial.SegmentedControl
 	orderTypesDropdown  *cryptomaterial.DropDown
 
-	priceEditor        cryptomaterial.Editor
+	priceEditor cryptomaterial.Editor
+	// TODO: Remove switchLotsOrAmount and related checks for amounts input on
+	// lotsOrAmountEditor. It seems we prefer users learning how to trade with
+	// lots since it's more straight forward. If we intend to allow users
+	// provide an amount and convert to lots for them before this todo is done,
+	// we can just just display this switch instead of the lot size.
 	switchLotsOrAmount *cryptomaterial.Switch
 	lotsOrAmountEditor cryptomaterial.Editor
 	totalEditor        cryptomaterial.Editor
+	lotsInfoBtn        *cryptomaterial.Clickable
 
 	maxBuyOrSellStr     string
 	orderFeeEstimateStr string
@@ -155,6 +161,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 		priceEditor:                        newTextEditor(l.Theme, values.String(values.StrPrice), "", false),
 		switchLotsOrAmount:                 l.Theme.Switch(),
 		lotsOrAmountEditor:                 newTextEditor(l.Theme, values.String(values.StrLots), "", false),
+		lotsInfoBtn:                        th.NewClickable(false),
 		totalEditor:                        newTextEditor(th, values.String(values.StrTotal), "", false),
 		maxBuyOrSellStr:                    "---",
 		orderFeeEstimateStr:                "------",
@@ -779,10 +786,10 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 	} else {
 		if sell { // Show base asset available balance.
 			tradeDirection = values.String(values.StrSell)
-			availableAssetBal, baseOrQuoteAssetSym = pg.availableWalletAccountBalanceString(false)
+			availableAssetBal, baseOrQuoteAssetSym = pg.availableWalletAccountBalance(false)
 		} else {
 			tradeDirection = values.String(values.StrBuy)
-			availableAssetBal, baseOrQuoteAssetSym = pg.availableWalletAccountBalanceString(true)
+			availableAssetBal, baseOrQuoteAssetSym = pg.availableWalletAccountBalance(true)
 		}
 	}
 
@@ -820,15 +827,28 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 								layout.Rigid(func(gtx C) D {
 									return layout.Inset{Bottom: dp5}.Layout(gtx, func(gtx C) D {
 										var labelText string
+										var lotSize string
 										if pg.orderWithLots() {
 											labelText = fmt.Sprintf("%s (%s)", values.String(values.StrLots), lotsOrAmountSubtext)
+											if mkt := pg.selectedMarketInfo(); mkt != nil {
+												lotSize = values.StringF(values.StrLotSizeFmt, fmt.Sprintf("%s %s", trimmedConventionalAmtString(mkt.MsgRateToConventional(mkt.LotSize)), convertAssetIDToAssetType(pg.selectedMarketOrderBook.base)))
+											}
 										} else {
 											labelText = fmt.Sprintf("%s (%s)", values.String(values.StrAmount), lotsOrAmountSubtext)
 										}
 										return layout.Flex{Axis: horizontal}.Layout(gtx,
 											layout.Rigid(pg.semiBoldLabelText(labelText).Layout),
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{Top: dp5, Left: dp2}.Layout(gtx, func(gtx C) D {
+													return pg.lotsInfoBtn.Layout(gtx, pg.Theme.Icons.InfoAction.Layout16dp)
+												})
+											}),
 											layout.Flexed(1, func(gtx C) D {
-												return layout.E.Layout(gtx, pg.switchLotsOrAmount.Layout)
+												if lotSize == "" {
+													return D{}
+												}
+
+												return layout.E.Layout(gtx, pg.Theme.Label(values.TextSize14, lotSize).Layout)
 											}),
 										)
 									})
@@ -998,10 +1018,9 @@ func trimZeros(s string) string {
 	return strings.TrimSuffix(strings.TrimRight(s, "0"), ".")
 }
 
-// availableWalletAccountBalanceString returns the balance of the DEX wallet
-// account for the quote or base asset of the selected market. Returns the
-// wallet's spendable balance as string.
-func (pg *DEXMarketPage) availableWalletAccountBalanceString(forQuoteAsset bool) (bal float64, assetSym string) {
+// availableWalletAccountBalance returns the balance of the DEX wallet account
+// for the quote or base asset of the selected market.
+func (pg *DEXMarketPage) availableWalletAccountBalance(forQuoteAsset bool) (bal float64, assetSym string) {
 	if pg.noMarketOrServerDisconnected.Load() {
 		return 0, ""
 	}
@@ -1348,6 +1367,8 @@ func (pg *DEXMarketPage) setBuyOrSell() {
 	pg.lotsOrAmountEditor.UpdateFocus(!pg.lotsOrAmountEditor.Editor.ReadOnly)
 	pg.totalEditor.Editor.ReadOnly = isSell
 	pg.totalEditor.UpdateFocus(!pg.totalEditor.Editor.ReadOnly)
+	pg.lotsOrAmountEditor.Editor.SetText("")
+	pg.totalEditor.Editor.SetText("")
 
 	if !isSell { // Buy
 		pg.createOrderBtn.Text = values.String(values.StrBuy)
@@ -1474,7 +1495,7 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		selectedServer := pg.serverSelector.Selected()
 		xc, err := dexc.Exchange(selectedServer)
 		if err != nil && xc.Auth.EffectiveTier == 0 /* need to post bond now */ {
-			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer))
+			pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, selectedServer, nil))
 		} else {
 			pg.lastSelectedDEXServer = selectedServer
 			pg.setServerMarkets()
@@ -1482,7 +1503,9 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.addServerBtn.Clicked(gtx) {
-		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, ""))
+		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, "", func() {
+			pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load, ""))
+		}))
 	}
 
 	if pg.openOrdersBtn.Clicked(gtx) {
@@ -1506,6 +1529,18 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 		log.Info("button click listener for full order book view is not implemented")
 	}
 
+	if pg.lotsInfoBtn.Clicked(gtx) {
+		infoModal := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrLots)).
+			UseCustomWidget(func(gtx layout.Context) layout.Dimensions {
+				return pg.Theme.Body2(values.String(values.StrLotsExplanation)).Layout(gtx)
+			}).
+			SetCancelable(true).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			SetPositiveButtonText(values.String(values.StrOk))
+		pg.ParentWindow().ShowModal(infoModal)
+	}
+
 	if pg.immediateOrderInfoBtn.Clicked(gtx) {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrImmediateOrder)).
@@ -1520,7 +1555,7 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 
 	// TODO: postBondBtn should open a separate page when its design is ready.
 	if pg.postBondBtn.Clicked(gtx) {
-		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, pg.serverSelector.Selected()))
+		pg.ParentNavigator().ClearStackAndDisplay(NewDEXOnboarding(pg.Load, pg.serverSelector.Selected(), nil))
 	}
 
 	if pg.loginBtn.Clicked(gtx) {
@@ -1827,9 +1862,16 @@ func anyMatchActive(matches []*core.Match) bool {
 func (pg *DEXMarketPage) hasValidOrderInfo() bool {
 	mkt := pg.selectedMarketInfo()
 	_, lotsOrAmtOk := pg.orderLotsOrAmt()
-	_, totalOk := pg.totalOrderAmt()
+	orderAmt, totalOk := pg.totalOrderAmt()
 	// TODO: Check that their tier limit has not been exceeded by this trade.
-	return pg.orderPrice(mkt) > 0 && lotsOrAmtOk && totalOk
+	orderPriceIsOk := pg.orderPrice(mkt) > 0 && lotsOrAmtOk && totalOk
+	if !orderPriceIsOk {
+		return false
+	}
+
+	// Fetch wallet balance from dex and ensure wallet can fund dex order.
+	walletBalance, _ := pg.availableWalletAccountBalance(!pg.isSellOrder())
+	return orderPriceIsOk && orderAmt < walletBalance
 }
 
 func (pg *DEXMarketPage) orderLotsOrAmt() (float64, bool) {
@@ -1867,6 +1909,7 @@ func (pg *DEXMarketPage) calculateOrderAmount(mkt *core.Market, isSwitchLotsOrAm
 	if !pg.isSellOrder() {
 		amtStr := pg.totalEditor.Editor.Text()
 		if amtStr == "" {
+			pg.lotsOrAmountEditor.Editor.SetText("")
 			return false
 		}
 
@@ -1874,6 +1917,7 @@ func (pg *DEXMarketPage) calculateOrderAmount(mkt *core.Market, isSwitchLotsOrAm
 		// we calculate based on that.
 		totalAmt, err := strconv.ParseFloat(amtStr, 64)
 		if err != nil || totalAmt <= 0 {
+			pg.lotsOrAmountEditor.Editor.SetText("")
 			pg.totalEditor.SetError(values.String(values.StrInvalidAmount))
 			return false
 		}
@@ -1898,7 +1942,7 @@ func (pg *DEXMarketPage) calculateOrderAmount(mkt *core.Market, isSwitchLotsOrAm
 
 		pg.totalEditor.Editor.SetText("")
 		if pg.orderWithLots() {
-			if lots, err := strconv.ParseFloat(lotsOrAmtStr, 64); err != nil || lots <= 0 {
+			if lots, err := strconv.ParseFloat(lotsOrAmtStr, 64); err != nil || lots <= 0 || float64(int64(lots)) != lots {
 				pg.lotsOrAmountEditor.SetError(values.String(values.StrInvalidLot))
 			} else {
 				if isSwitchLotsOrAmtChanged {

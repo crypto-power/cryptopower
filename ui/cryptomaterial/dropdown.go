@@ -323,6 +323,10 @@ func (d *DropDown) collapsedAndExpandedLayout(gtx C) D {
 func (d *DropDown) expandedLayout(gtx C) D {
 	m := op.Record(gtx.Ops)
 	gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+	// This allows the dropdown to over lap other elements on the screen and not
+	// limit the dropdown items to the height of its parent
+	// (gtx.Constraints.Max.Y).
+	gtx.Constraints.Max.Y = inf
 	d.updateDropdownWidth(gtx, true)
 	d.updateDropdownBackground(true)
 	d.ExpandedLayoutInset.Layout(gtx, func(gtx C) D {
