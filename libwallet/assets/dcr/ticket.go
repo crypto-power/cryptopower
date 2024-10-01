@@ -13,7 +13,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
-	vspd "github.com/decred/vspd/types/v2"
+	vspd "github.com/decred/vspd/types/v3"
 )
 
 func (asset *Asset) TotalStakingRewards() (int64, error) {
