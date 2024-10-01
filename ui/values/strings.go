@@ -1059,4 +1059,5 @@ const (
 	StrRateKucoinWarning                     = "rateKucoinWarning"
 	StrRestrictedDetail                      = "restrictDetail"
 	StrRateUnavailable                       = "rateUnavailable"
+	StrPrivacy                               = "privacy"
 )

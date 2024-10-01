@@ -950,4 +950,5 @@ const EN = `
 "rateKucoinWarning" = "*Some countries are restricted on Kucoin and may not be able to fetch rate."
 "restrictDetail" = "Restriction Detail"
 "rateUnavailable" = "The rate unavailable this time, please reset it later in settings."
+"privacy" = "Privacy"
 `

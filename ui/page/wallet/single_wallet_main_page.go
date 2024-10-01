@@ -50,7 +50,7 @@ var PageNavigationMap = map[string]string{
 	values.String(values.StrReceive):      receive.ReceivePageID,
 	values.String(values.StrTransactions): transaction.TransactionsPageID,
 	values.String(values.StrSettings):     WalletSettingsPageID,
-	values.String(values.StrStakeShuffle): privacy.AccountMixerPageID,
+	values.String(values.StrPrivacy):      privacy.AccountMixerPageID,
 	values.String(values.StrStaking):      staking.OverviewPageID,
 }
 
