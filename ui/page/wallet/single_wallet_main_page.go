@@ -425,6 +425,7 @@ func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
 	}
 
 	swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = pg.ID()
+	swmp.PageNavigationTab.ScrollTo(swmp.PageNavigationTab.SelectedIndex())
 
 	displayPage(pg)
 }
