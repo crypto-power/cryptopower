@@ -260,10 +260,10 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 		pg.showNavigationFunc(true)
 		walletCallbackFunc := func() {
 			pg.showNavigationFunc(false)
-			pg.ParentNavigator().CloseCurrentPage()
+			pg.ParentWindow().CloseCurrentPage()
 		}
 		swmp := wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
-		pg.ParentNavigator().Display(swmp)
+		pg.ParentWindow().Display(swmp)
 		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
 		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
@@ -276,10 +276,10 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 			pg.showNavigationFunc(true)
 			callback := func() {
 				pg.showNavigationFunc(false)
-				pg.ParentNavigator().CloseCurrentPage()
+				pg.ParentWindow().CloseCurrentPage()
 			}
 			swmp := wallet.NewSingleWalletMasterPage(pg.Load, info.GetWallet(), callback)
-			pg.ParentNavigator().Display(swmp)
+			pg.ParentWindow().Display(swmp)
 		}
 	}
 }
@@ -697,7 +697,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 						card := pg.Theme.Card()
 						radius := cryptomaterial.CornerRadius{TopLeft: 20, BottomLeft: 20, TopRight: 20, BottomRight: 20}
 						card.Radius = cryptomaterial.Radius(8)
-						card.Color = pg.Theme.Color.DefaultThemeColors().SurfaceHighlight
+						card.Color = pg.Theme.Color.DefaultThemeColors().Surface
 						if pg.AssetsManager.IsDarkModeOn() {
 							card.Color = pg.Theme.Color.DefaultThemeColors().Background
 						}

@@ -189,10 +189,10 @@ func (vm *voteModal) Handle(gtx C) {
 		vm.Dismiss()
 		selectedWallet, _ := vm.walletSelector.selectedWallet.(*dcr.Asset)
 		walletCallbackFunc := func() {
-			vm.ParentNavigator().CloseCurrentPage()
+			vm.ParentWindow().CloseCurrentPage()
 		}
 		swmp := wallet.NewSingleWalletMasterPage(vm.Load, selectedWallet, walletCallbackFunc)
-		vm.ParentNavigator().Display(swmp)
+		vm.ParentWindow().Display(swmp)
 		swmp.Display(staking.NewStakingPage(vm.Load, selectedWallet)) // Display staking page on the main page.]
 		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStaking))
 	}

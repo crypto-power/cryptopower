@@ -184,9 +184,9 @@ func (pg *WalletSelectorPage) HandleUserInteractions(gtx C) {
 		pg.showNavigationFunc(true)
 
 		callback := func() {
-			pg.ParentNavigator().CloseCurrentPage()
+			pg.ParentWindow().CloseCurrentPage()
 		}
-		pg.ParentNavigator().Display(wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, callback))
+		pg.ParentWindow().Display(wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, callback))
 	}
 
 	for _, walletsOfType := range pg.badWalletsList {

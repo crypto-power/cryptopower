@@ -1060,4 +1060,6 @@ const (
 	StrRestrictedDetail                      = "restrictDetail"
 	StrRateUnavailable                       = "rateUnavailable"
 	StrPrivacy                               = "privacy"
+	StrRemoveRecipient                       = "removeRecipient"
+	StrRemoveRecipientWarning                = "removeRecipientWarning"
 )

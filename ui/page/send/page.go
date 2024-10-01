@@ -46,9 +46,10 @@ type Page struct {
 
 	pageContainer *widget.List
 
-	walletDropdown     *components.WalletDropdown
-	accountDropdown    *components.AccountDropdown
-	hideWalletDropdown bool
+	walletDropdown  *components.WalletDropdown
+	accountDropdown *components.AccountDropdown
+
+	hideWalletDropdown, hideAdvancedOptions bool
 
 	// recipient  *recipient
 	recipients []*recipient
@@ -107,8 +108,7 @@ type selectedUTXOsInfo struct {
 
 func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	pg := &Page{
-		Load: l,
-
+		Load:              l,
 		authoredTxData:    &authoredTxData{},
 		exchangeRate:      -1,
 		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
@@ -123,10 +123,12 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend), pg.IsMobileView(), nil)
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
 		pg.hideWalletDropdown = false
+		pg.hideAdvancedOptions = true
 	} else {
 		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
 		pg.selectedWallet = wallet
 		pg.hideWalletDropdown = true
+		pg.hideAdvancedOptions = false
 	}
 	pg.initModalWalletSelector(wallet) // will auto select the first wallet in the dropdown as pg.selectedWallet
 	callbackFunc := func() libUtil.AssetType {
@@ -146,7 +148,7 @@ func (pg *Page) addRecipient() {
 	if pg.selectedWallet == nil {
 		return
 	}
-	rc := newRecipient(pg.Load, pg.selectedWallet, pg.pageFields, pg.currentIDRecipient)
+	rc := newRecipient(pg.Load, pg.selectedWallet, pg.pageFields, pg.currentIDRecipient, pg.ParentWindow())
 	rc.onAddressChanged(func() {
 		pg.validateAndConstructTx()
 	})
@@ -539,7 +541,7 @@ func (pg *Page) getDestinationAddresses() []string {
 	for i := range pg.recipients {
 		recipient := pg.recipients[i]
 		destinationAddress := recipient.destinationAddress()
-		if destinationAddress != "" && recipient.isSendToAddress() {
+		if destinationAddress != "" {
 			addresses = append(addresses, destinationAddress)
 		}
 	}
@@ -601,12 +603,8 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 	// }
 
 	if pg.toCoinSelection.Clicked(gtx) {
-		if len(pg.getDestinationAddresses()) == len(pg.recipients) {
-			if pg.modalLayout != nil {
-				pg.ParentWindow().ShowModal(NewManualCoinSelectionPage(pg.Load, pg))
-			} else {
-				pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
-			}
+		if (len(pg.getDestinationAddresses()) == len(pg.recipients)) || !pg.recipients[0].isSendToAddress() {
+			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
 		}
 	}
 

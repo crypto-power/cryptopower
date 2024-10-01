@@ -249,7 +249,7 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 	swmp.PageNavigationTab.ContentPadding = layout.Inset{
 		Left:  dp5,
 		Right: dp5,
-		Top:   values.MarginPaddingTransform(swmp.IsMobileView(), values.MarginPadding32),
+		Top:   values.MarginPaddingTransform(swmp.IsMobileView(), values.MarginPadding16),
 	}
 }
 
@@ -493,8 +493,8 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 				layout.Rigid(swmp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
-						Top:    values.MarginPadding24,
-						Bottom: values.MarginPadding16,
+						Top:    values.MarginPadding0,
+						Bottom: values.MarginPadding0,
 					}.Layout(gtx, func(gtx C) D {
 						return swmp.PageNavigationTab.Layout(gtx, func(gtx C) D {
 							if swmp.CurrentPage() == nil {
@@ -507,7 +507,7 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 								// Disable page functionality if a page is not synced or rescanning is in progress.
 								if swmp.selectedWallet.IsSyncing() {
 									syncInfo := components.NewWalletSyncInfo(swmp.Load, swmp.selectedWallet, func() {}, func(_ sharedW.Asset) {})
-									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan)
+									blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, swmp.selectedWallet.GetBestBlock().Height, syncInfo.FetchSyncProgress().HeadersToFetchOrScan())
 									title := values.String(values.StrFunctionUnavailable)
 									subTitle := fmt.Sprintf("%s "+blockHeightFetched, values.String(values.StrBlockHeaderFetched))
 									return components.DisablePageWithOverlay(swmp.Load, swmp.CurrentPage(), gtx,

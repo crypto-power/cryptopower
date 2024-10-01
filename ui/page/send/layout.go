@@ -76,6 +76,22 @@ func (pg *Page) contentLayout(gtx C) D {
 		}
 	}
 
+	// Prevent total balance section from being sticky on mobile, this creates more view area.
+	if pg.IsMobileView() {
+		pageContent = append(pageContent, pg.balanceSection)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
+					mp := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding8)
+					if i == len(pageContent)-1 {
+						mp = values.MarginPadding0
+					}
+					return layout.Inset{Bottom: mp}.Layout(gtx, pageContent[i])
+				})
+			}),
+		)
+	}
+
 	cgtx := gtx
 	macro := op.Record(cgtx.Ops)
 	dims := pg.balanceSection(cgtx)
@@ -87,7 +103,7 @@ func (pg *Page) contentLayout(gtx C) D {
 	return layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-				mp := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding32)
+				mp := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding8)
 				if i == len(pageContent)-1 {
 					mp = values.MarginPadding0
 				}
@@ -107,20 +123,23 @@ func (pg *Page) sendLayout(gtx C) D {
 	return pg.sectionWrapper(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
+				if pg.hideWalletDropdown { // Hide title while on the send page
+					return D{}
+				}
 				return layout.Inset{
-					Bottom: values.MarginPadding16,
+					Bottom: values.MarginPadding8,
 				}.Layout(gtx, pg.titleLayout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.hideWalletDropdown {
 					return D{}
 				}
-				return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 					return pg.walletDropdown.Layout(gtx, values.String(values.StrSourceWallet))
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
 					return pg.accountDropdown.Layout(gtx, values.String(values.StrSourceAccount))
 				})
 			}),
@@ -129,7 +148,7 @@ func (pg *Page) sendLayout(gtx C) D {
 }
 
 func (pg *Page) titleLayout(gtx C) D {
-	return layout.Flex{}.Layout(gtx,
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Right: values.MarginPadding6}.Layout(gtx, func(gtx C) D {
 				lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize20), values.String(values.StrSend))
@@ -215,6 +234,9 @@ func (pg *Page) notSyncedLayout(gtx C) D {
 }
 
 func (pg *Page) advanceOptionsLayout(gtx C) D {
+	if pg.hideAdvancedOptions { // Hide advanced options on the send modal to create more space
+		return D{}
+	}
 	marginMinus32 := values.MarginPadding0
 	if pg.modalLayout != nil {
 		marginMinus32 = values.MarginPaddingMinus32
