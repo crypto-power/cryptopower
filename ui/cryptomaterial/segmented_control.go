@@ -86,6 +86,7 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 	sc.slideActionTitle.Draged(func(dragDirection SwipeDirection) {
 		isNext := dragDirection == SwipeRight
 		sc.handleActionEvent(isNext)
+		sc.list.ScrollTo(sc.selectedIndex)
 	})
 
 	return sc
@@ -451,4 +452,10 @@ func (sc *SegmentedControl) handleActionEvent(isNext bool) {
 		sc.slideActionTitle.PushRight()
 	}
 	sc.changed = true
+}
+
+func (sc *SegmentedControl) ScrollTo(index int) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.list.ScrollTo(index)
 }

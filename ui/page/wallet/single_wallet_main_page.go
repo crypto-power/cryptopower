@@ -50,7 +50,7 @@ var PageNavigationMap = map[string]string{
 	values.String(values.StrReceive):      receive.ReceivePageID,
 	values.String(values.StrTransactions): transaction.TransactionsPageID,
 	values.String(values.StrSettings):     WalletSettingsPageID,
-	values.String(values.StrStakeShuffle): privacy.AccountMixerPageID,
+	values.String(values.StrPrivacy):      privacy.AccountMixerPageID,
 	values.String(values.StrStaking):      staking.OverviewPageID,
 }
 
@@ -158,6 +158,7 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
 	swmp.updateBalance()
+	swmp.isBalanceHidden = swmp.AssetsManager.IsTotalBalanceVisible()
 	// updateExchangeSetting also calls updateBalance() but because of the API
 	// call it may take a while before the balance and USD conversion is updated.
 	// updateBalance() is called above first to prevent crash when balance value
@@ -379,7 +380,7 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions(gtx C) {
 
 	if swmp.hideBalanceButton.Clicked(gtx) {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
-		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
+		swmp.AssetsManager.SetTotalBalanceVisibility(swmp.isBalanceHidden)
 	}
 }
 
@@ -425,6 +426,7 @@ func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
 	}
 
 	swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = pg.ID()
+	swmp.PageNavigationTab.ScrollTo(swmp.PageNavigationTab.SelectedIndex())
 
 	displayPage(pg)
 }

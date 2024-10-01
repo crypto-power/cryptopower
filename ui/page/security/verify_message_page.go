@@ -34,6 +34,7 @@ type VerifyMessagePage struct {
 	clearBtn, verifyButton cryptomaterial.Button
 	backButton             cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
+	pageContainer          *widget.List
 
 	addressIsValid bool
 }
@@ -43,6 +44,9 @@ func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifyMessagePageID),
 		wallet:           wallet,
+		pageContainer: &widget.List{
+			List: layout.List{Axis: layout.Vertical},
+		},
 	}
 
 	addressEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
@@ -96,15 +100,17 @@ func (pg *VerifyMessagePage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-					return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(pg.description()),
-							layout.Rigid(pg.inputRow(pg.addressEditor)),
-							layout.Rigid(pg.inputRow(pg.signatureEditor)),
-							layout.Rigid(pg.inputRow(pg.messageEditor)),
-							layout.Rigid(pg.verifyAndClearButtons()),
-						)
+				return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
+					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+						return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(pg.description()),
+								layout.Rigid(pg.inputRow(pg.addressEditor)),
+								layout.Rigid(pg.inputRow(pg.signatureEditor)),
+								layout.Rigid(pg.inputRow(pg.messageEditor)),
+								layout.Rigid(pg.verifyAndClearButtons()),
+							)
+						})
 					})
 				})
 			},

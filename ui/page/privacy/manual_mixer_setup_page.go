@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"gioui.org/layout"
+	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -32,6 +33,8 @@ type ManualMixerSetupPage struct {
 	toPrivacySetup cryptomaterial.Button
 	backIcon       *cryptomaterial.Icon
 
+	pageContainer *widget.List
+
 	dcrWallet *dcr.Asset
 }
 
@@ -41,6 +44,9 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 		GenericPageModal: app.NewGenericPageModal(ManualMixerSetupPageID),
 		toPrivacySetup:   l.Theme.Button(values.String(values.StrSetUp)),
 		dcrWallet:        dcrWallet,
+		pageContainer: &widget.List{
+			List: layout.List{Axis: layout.Vertical},
+		},
 	}
 	pg.backClickable = pg.Theme.NewClickable(true)
 	pg.backIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationArrowBack)
@@ -132,42 +138,48 @@ func (pg *ManualMixerSetupPage) Layout(gtx C) D {
 				layout.Rigid(pg.backButtonAndPageHeading),
 				// 24px/16px space (mobile/desktop)
 				layout.Rigid(func(gtx C) D {
-					if pg.IsMobileView() {
-						return layout.Spacer{Height: values.MarginPadding24}.Layout(gtx)
-					}
-					return layout.Spacer{Height: values.MarginPadding16}.Layout(gtx)
-				}),
-				// "Mixed account" label, 4px space, mixed account dropdown
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-						return pg.mixedAccountSelector.Layout(gtx, values.String(values.StrMixedAccount))
-					})
-				}),
+					return pg.Theme.List(pg.pageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
+						return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								if pg.IsMobileView() {
+									return layout.Spacer{Height: values.MarginPadding24}.Layout(gtx)
+								}
+								return layout.Spacer{Height: values.MarginPadding16}.Layout(gtx)
+							}),
+							// "Mixed account" label, 4px space, mixed account dropdown
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+									return pg.mixedAccountSelector.Layout(gtx, values.String(values.StrMixedAccount))
+								})
+							}),
 
-				// 16px/12px space (mobile/desktop)
-				layout.Rigid(func(gtx C) D {
-					if pg.IsMobileView() {
-						return layout.Spacer{Height: values.MarginPadding16}.Layout(gtx)
-					}
-					return layout.Spacer{Height: values.MarginPadding12}.Layout(gtx)
-				}),
-				// "Unmixed account" label, 4px space, unmixed account dropdown
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-						return pg.unmixedAccountSelector.Layout(gtx, values.String(values.StrUnmixedAccount))
+							// 16px/12px space (mobile/desktop)
+							layout.Rigid(func(gtx C) D {
+								if pg.IsMobileView() {
+									return layout.Spacer{Height: values.MarginPadding16}.Layout(gtx)
+								}
+								return layout.Spacer{Height: values.MarginPadding12}.Layout(gtx)
+							}),
+							// "Unmixed account" label, 4px space, unmixed account dropdown
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+									return pg.unmixedAccountSelector.Layout(gtx, values.String(values.StrUnmixedAccount))
+								})
+							}),
+							// 24px space, then warning/caution text
+							layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+							layout.Rigid(pg.cautionCard),
+							// 40px/60px space (mobile/desktop), then "Set up" button.
+							layout.Rigid(func(gtx C) D {
+								if pg.IsMobileView() {
+									return layout.Spacer{Height: values.MarginPadding40}.Layout(gtx)
+								}
+								return layout.Spacer{Height: values.MarginPadding60}.Layout(gtx)
+							}),
+							layout.Rigid(pg.toPrivacySetup.Layout),
+						)
 					})
 				}),
-				// 24px space, then warning/caution text
-				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
-				layout.Rigid(pg.cautionCard),
-				// 40px/60px space (mobile/desktop), then "Set up" button.
-				layout.Rigid(func(gtx C) D {
-					if pg.IsMobileView() {
-						return layout.Spacer{Height: values.MarginPadding40}.Layout(gtx)
-					}
-					return layout.Spacer{Height: values.MarginPadding60}.Layout(gtx)
-				}),
-				layout.Rigid(pg.toPrivacySetup.Layout),
 			)
 		})
 	})
