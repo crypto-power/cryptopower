@@ -3,7 +3,7 @@ module github.com/crypto-power/cryptopower
 go 1.21
 
 require (
-	decred.org/dcrdex v0.6.3
+	decred.org/dcrdex v1.0.0
 	decred.org/dcrwallet/v4 v4.1.3
 	gioui.org v0.7.1
 	git.wow.st/gmp/jni v0.0.0-20210610011705-34026c7e22d0
@@ -225,4 +225,4 @@ require (
 replace github.com/lib/pq => github.com/lib/pq v1.10.4
 
 // https://github.com/ukane-philemon/dcrdex/tree/btc-node
-replace decred.org/dcrdex v0.6.3 => github.com/ukane-philemon/dcrdex v0.0.0-20240906090529-912997266ecf
+replace decred.org/dcrdex v1.0.0 => github.com/ukane-philemon/dcrdex v0.0.0-20240906090529-912997266ecf

@@ -958,6 +958,8 @@ const (
 	Str24hVolume                             = "24hVolume"
 	Str24hHigh                               = "24hHigh"
 	StrLots                                  = "lots"
+	StrLotSizeFmt                            = "lotSizeFmt"
+	StrLotsExplanation                       = "lotsExplanation"
 	StrInvalidLot                            = "invalidLot"
 	StrInvalidPrice                          = "invalidPrice"
 	StrBuy                                   = "buy"

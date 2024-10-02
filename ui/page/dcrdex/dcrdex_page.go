@@ -103,7 +103,7 @@ func (pg *DEXPage) prepareInitialPage() {
 		}
 
 		if showOnBoardingPage {
-			pg.Display(NewDEXOnboarding(pg.Load, ""))
+			pg.Display(NewDEXOnboarding(pg.Load, "", nil))
 		} else {
 			pg.Display(NewDEXMarketPage(pg.Load, ""))
 		}

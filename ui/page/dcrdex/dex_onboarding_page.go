@@ -121,10 +121,13 @@ type DEXOnboarding struct {
 	bondServer     *bondServerInfo
 
 	// Sub Step Add Server
-	wantCustomServer     bool
-	serverURLEditor      cryptomaterial.Editor
-	serverCertEditor     cryptomaterial.Editor
-	goBackToChooseServer *cryptomaterial.Clickable
+	wantCustomServer bool
+	serverURLEditor  cryptomaterial.Editor
+	serverCertEditor cryptomaterial.Editor
+	// goBackToChooseServerOrMarketPage redirects a user back to the choose
+	// server screen if dex has not initialized and no previously registered dex
+	// server is found, else the user is redirect to the markets page.
+	goBackToChooseServerOrMarketPage *cryptomaterial.Clickable
 	// TODO: add a file selector to choose server cert.
 
 	// Step Post Bond
@@ -140,9 +143,10 @@ type DEXOnboarding struct {
 	goBackBtn cryptomaterial.Button
 	nextBtn   cryptomaterial.Button
 
-	materialLoader    material.LoaderStyle
-	isLoading         bool
-	existingDEXServer string
+	materialLoader         material.LoaderStyle
+	isLoading              bool
+	existingDEXServer      string
+	redirectToMarketPageFn func()
 
 	bondFeeCache map[uint32]uint64
 }
@@ -150,27 +154,28 @@ type DEXOnboarding struct {
 // NewDEXOnboarding creates a new DEX onboarding pages. Specify
 // existingDEXServer to use the DEX onboarding flow to allow user post bonds for
 // a particular server.
-func NewDEXOnboarding(l *load.Load, existingDEXServer string) *DEXOnboarding {
+func NewDEXOnboarding(l *load.Load, existingDEXServer string, redirectToMarketPageFn func()) *DEXOnboarding {
 	th := l.Theme
 	pg := &DEXOnboarding{
-		Load:                  l,
-		GenericPageModal:      app.NewGenericPageModal(DEXOnboardingPageID),
-		scrollContainer:       &widget.List{List: layout.List{Axis: layout.Vertical, Alignment: layout.Middle}},
-		passwordEditor:        newPasswordEditor(th, values.String(values.StrNewPassword)),
-		confirmPasswordEditor: newPasswordEditor(th, values.String(values.StrConfirmPassword)),
-		seedEditor:            newTextEditor(l.Theme, values.String(values.StrOptionalRestorationSeed), values.String(values.StrOptionalRestorationSeed), true),
-		addServerBtn:          th.NewClickable(false),
-		bondServer:            &bondServerInfo{},
-		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
-		serverCertEditor:      newTextEditor(th, values.String(values.StrCertificateOPtional), values.String(values.StrInputCertificate), true),
-		goBackToChooseServer:  th.NewClickable(false),
-		bondStrengthEditor:    newTextEditor(th, values.String(values.StrBondStrength), "1", false),
-		bondStrengthMoreInfo:  th.NewClickable(false),
-		goBackBtn:             th.Button(values.String(values.StrBack)),
-		nextBtn:               th.Button(values.String(values.StrNext)),
-		materialLoader:        material.Loader(th.Base),
-		existingDEXServer:     existingDEXServer,
-		bondFeeCache:          make(map[uint32]uint64),
+		Load:                             l,
+		GenericPageModal:                 app.NewGenericPageModal(DEXOnboardingPageID),
+		scrollContainer:                  &widget.List{List: layout.List{Axis: layout.Vertical, Alignment: layout.Middle}},
+		passwordEditor:                   newPasswordEditor(th, values.String(values.StrNewPassword)),
+		confirmPasswordEditor:            newPasswordEditor(th, values.String(values.StrConfirmPassword)),
+		seedEditor:                       newTextEditor(l.Theme, values.String(values.StrOptionalRestorationSeed), values.String(values.StrOptionalRestorationSeed), true),
+		addServerBtn:                     th.NewClickable(false),
+		bondServer:                       &bondServerInfo{},
+		serverURLEditor:                  newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
+		serverCertEditor:                 newTextEditor(th, values.String(values.StrCertificateOPtional), values.String(values.StrInputCertificate), true),
+		goBackToChooseServerOrMarketPage: th.NewClickable(false),
+		bondStrengthEditor:               newTextEditor(th, values.String(values.StrBondStrength), "1", false),
+		bondStrengthMoreInfo:             th.NewClickable(false),
+		goBackBtn:                        th.Button(values.String(values.StrBack)),
+		nextBtn:                          th.Button(values.String(values.StrNext)),
+		materialLoader:                   material.Loader(th.Base),
+		existingDEXServer:                existingDEXServer,
+		bondFeeCache:                     make(map[uint32]uint64),
+		redirectToMarketPageFn:           redirectToMarketPageFn,
 	}
 
 	pg.onBoardingSteps = map[onboardingStep]dexOnboardingStep{
@@ -260,7 +265,6 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) Layout(gtx C) D {
-	pg.handleEditorEvents(gtx)
 	if !pg.AssetsManager.DEXCInitialized() {
 		pg.ParentNavigator().CloseCurrentPage()
 		return D{}
@@ -463,7 +467,7 @@ func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 				Alignment:   layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if !pg.wantCustomServer {
+					if !pg.wantCustomServer && pg.redirectToMarketPageFn == nil {
 						return D{}
 					}
 
@@ -471,7 +475,7 @@ func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 						Width:       cryptomaterial.WrapContent,
 						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Horizontal,
-						Clickable:   pg.goBackToChooseServer,
+						Clickable:   pg.goBackToChooseServerOrMarketPage,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return pg.Theme.Icons.NavigationArrowBack.Layout(gtx, pg.Theme.Color.Gray1)
@@ -1047,6 +1051,8 @@ func (pg *DEXOnboarding) handleEditorEvents(gtx C) {
 				pg.isLoading = false
 			}()
 		}
+
+		pg.ParentWindow().Reload()
 	}
 }
 
@@ -1064,9 +1070,13 @@ func (pg *DEXOnboarding) HandleUserInteractions(gtx C) {
 		pg.serverCertEditor.Editor.SetText("")
 	}
 
-	if pg.goBackToChooseServer.Clicked(gtx) {
+	if pg.goBackToChooseServerOrMarketPage.Clicked(gtx) {
 		pg.wantCustomServer = false
-		pg.currentStep = onboardingChooseServer
+		if pg.redirectToMarketPageFn != nil {
+			pg.redirectToMarketPageFn()
+		} else {
+			pg.currentStep = onboardingChooseServer
+		}
 		pg.serverURLEditor.SetError("")
 		pg.serverCertEditor.SetError("")
 	}
@@ -1105,6 +1115,8 @@ func (pg *DEXOnboarding) HandleUserInteractions(gtx C) {
 	if pg.bondSourceAccountSelector != nil {
 		pg.bondSourceAccountSelector.Handle(gtx)
 	}
+
+	pg.handleEditorEvents(gtx)
 }
 
 func (pg *DEXOnboarding) setAddServerStep() {
