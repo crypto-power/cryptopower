@@ -195,7 +195,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 
 	pg.immediateOrderCheckbox.Font.Weight = font.SemiBold
 
-	pg.setBuyOrSell()
+	pg.refreshOrderForm()
 
 	return pg
 }
@@ -256,6 +256,10 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 					if n.Topic() == core.TopicAsyncOrderFailure {
 						pg.notifyError(n.Details())
 					}
+					// TODO: Handle Inflight Orders if we eventually use
+					// core.TradeAsync. We are expected to update mkt.Inflight
+					// order list to remove or add an inflight order based on
+					// the order topic.
 					pg.refreshOrders()
 					pg.ParentWindow().Reload()
 				case core.NoteTypeBalance, core.NoteTypeSpots:
@@ -400,6 +404,7 @@ func (pg *DEXMarketPage) fetchOrderBook() {
 		quote:       quoteAssetID,
 		baseSymbol:  base,
 		quoteSymbol: quote,
+		marketID:    pg.formatSelectedMarketAsDEXMarketName(),
 	}
 	pg.closeAndResetOrderbookListener()
 
@@ -419,7 +424,6 @@ func (pg *DEXMarketPage) fetchOrderBook() {
 		// Fetch order book and only update if we're still on the same market.
 		book, feed, err := pg.AssetsManager.DexClient().SyncBook(pg.serverSelector.Selected(), baseAssetID, quoteAssetID)
 		if err == nil && pg.selectedMarketOrderBook.base == baseAssetID && pg.selectedMarketOrderBook.quote == quoteAssetID {
-			pg.selectedMarketOrderBook.marketID = pg.formatSelectedMarketAsDEXMarketName()
 			pg.selectedMarketOrderBook.feed = feed
 			pg.selectedMarketOrderBook.book = book
 			pg.closeOrderBookListener = feed.Close
@@ -1361,7 +1365,7 @@ func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.D
 	})
 }
 
-func (pg *DEXMarketPage) setBuyOrSell() {
+func (pg *DEXMarketPage) refreshOrderForm() {
 	isSell := pg.isSellOrder()
 	pg.lotsOrAmountEditor.Editor.ReadOnly = !isSell
 	pg.lotsOrAmountEditor.UpdateFocus(!pg.lotsOrAmountEditor.Editor.ReadOnly)
@@ -1369,6 +1373,7 @@ func (pg *DEXMarketPage) setBuyOrSell() {
 	pg.totalEditor.UpdateFocus(!pg.totalEditor.Editor.ReadOnly)
 	pg.lotsOrAmountEditor.Editor.SetText("")
 	pg.totalEditor.Editor.SetText("")
+	pg.refreshPriceField()
 
 	if !isSell { // Buy
 		pg.createOrderBtn.Text = values.String(values.StrBuy)
@@ -1394,22 +1399,15 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 	var toggleBuyAndSellBtnChanged bool
 	if pg.toggleBuyAndSellBtn.Changed() {
 		toggleBuyAndSellBtnChanged = true
-		pg.setBuyOrSell()
+		pg.refreshOrderForm()
+	}
+
+	if pg.orderTypesDropdown.Changed(gtx) {
+		pg.refreshPriceField()
 	}
 
 	isMktOrder := pg.isMarketOrder()
 	mkt := pg.selectedMarketInfo()
-	if pg.orderTypesDropdown.Changed(gtx) {
-		isMktOrder = pg.isMarketOrder()
-		pg.priceEditor.Editor.ReadOnly = isMktOrder
-		if isMktOrder {
-			pg.priceEditor.Editor.SetText(values.String(values.StrMarket))
-		} else if price := pg.orderPrice(mkt); price > 0 {
-			pg.priceEditor.Editor.SetText(trimmedAmtString(price))
-		} else {
-			pg.priceEditor.Editor.SetText("")
-		}
-	}
 
 	var reEstimateFee bool
 	for pg.priceEditor.Changed() {
@@ -1481,6 +1479,20 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 	}
 }
 
+func (pg *DEXMarketPage) refreshPriceField() {
+	mkt := pg.selectedMarketInfo()
+	isMktOrder := pg.isMarketOrder()
+	pg.priceEditor.Editor.ReadOnly = isMktOrder
+	if isMktOrder {
+		pg.priceEditor.Editor.SetText(values.String(values.StrMarket))
+	} else if mkt != nil && mkt.SpotPrice != nil {
+		price := mkt.MsgRateToConventional(mkt.SpotPrice.Rate)
+		pg.priceEditor.Editor.SetText(trimmedAmtString(price))
+	} else {
+		pg.priceEditor.Editor.SetText("")
+	}
+}
+
 // HandleUserInteractions is called just before Layout() to determine if any
 // user interaction recently occurred on the page and may be used to update the
 // page's UI components shortly before they are displayed.
@@ -1516,6 +1528,7 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 
 	if pg.marketSelector.Changed(gtx) {
 		pg.fetchOrderBook()
+		pg.refreshOrderForm()
 	}
 
 	if pg.orderHistoryBtn.Clicked(gtx) {
@@ -1604,7 +1617,7 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 					return false
 				}
 
-				_, err = dexc.TradeAsync([]byte(password), orderForm)
+				_, err = dexc.Trade([]byte(password), orderForm)
 				return err == nil
 			})
 
