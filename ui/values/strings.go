@@ -290,6 +290,8 @@ const (
 	StrDestinationWalletNotSynced            = "destinationWalletNotSynced"
 	StrDEX                                   = "dex"
 	StrDexContent                            = "dexContent"
+	StrDexError                              = "dexError"
+	StrActiveDexOrderError                   = "activeDexOrderError"
 	StrDexDataReset                          = "dexDataReset"
 	StrDexDataResetFalse                     = "dexDataResetFalse"
 	StrTradeSettingsMsg                      = "tradeSettingsMsg"
