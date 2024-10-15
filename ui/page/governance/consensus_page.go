@@ -466,7 +466,7 @@ func (pg *ConsensusPage) leftDropdown(gtx C) D {
 			if pg.walletDropDown == nil {
 				return D{}
 			}
-			if len(pg.assetWallets) == 0 {
+			if len(pg.assetWallets) < 2 {
 				return D{}
 			}
 			return layout.W.Layout(gtx, pg.walletDropDown.Layout)
