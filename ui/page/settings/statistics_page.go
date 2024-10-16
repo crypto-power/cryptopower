@@ -10,13 +10,12 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -75,18 +74,13 @@ func (pg *StatPage) OnNavigatedTo() {
 		log.Errorf("Error getting wallet accounts: %s", err.Error())
 	} else {
 		// Filter imported account.
-		accounts := make([]*sharedW.Account, 0)
+		filteredAccounts := make([]*sharedW.Account, 0)
 		for _, v := range acc.Accounts {
-			if pg.wallet.GetAssetType() == libutils.BTCWalletAsset && v.AccountNumber != btc.ImportedAccountNumber {
-				accounts = append(accounts, v)
+			if !utils.IsImportedAccount(pg.wallet.GetAssetType(), v) {
+				filteredAccounts = append(filteredAccounts, v)
 			}
-
-			if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && v.Number != dcr.ImportedAccountNumber {
-				accounts = append(accounts, v)
-			}
-
 		}
-		acc.Accounts = accounts
+		acc.Accounts = filteredAccounts
 		pg.accounts = acc
 	}
 

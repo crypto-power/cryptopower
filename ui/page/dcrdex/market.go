@@ -32,6 +32,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	pageutils "github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -1618,7 +1619,14 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 				}
 
 				_, err = dexc.Trade([]byte(password), orderForm)
-				return err == nil
+				if err != nil {
+					return false
+				}
+
+				// Clear the trade form to allow for another trade entry
+				pg.refreshOrderForm()
+
+				return true
 			})
 
 		dexPasswordModal.SetPasswordTitleVisibility(false)
@@ -1706,7 +1714,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 
 	pg.accountSelector = components.NewAccountDropdown(pg.Load).
 		AccountValidator(func(a *sharedW.Account) bool {
-			return !a.IsWatchOnly
+			return !a.IsWatchOnly && !utils.IsImportedAccount(pg.walletSelector.SelectedWallet().GetAssetType(), a)
 		}).
 		Setup(pg.walletSelector.SelectedWallet())
 
@@ -1760,7 +1768,7 @@ func (pg *DEXMarketPage) showSelectDEXWalletModal(missingWallet libutils.AssetTy
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Bottom: dp2}.Layout(gtx, func(gtx C) D {
-						return pg.accountSelector.Layout(gtx, values.StrSelectAcc)
+						return pg.accountSelector.Layout(gtx, values.String(values.StrSelectAcc))
 					})
 				}),
 			)
