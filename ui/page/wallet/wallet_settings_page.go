@@ -147,13 +147,12 @@ func (pg *SettingsPage) loadWalletAccount() {
 	}
 
 	for _, acct := range accounts.Accounts {
-		if acct.Number == dcr.ImportedAccountNumber {
-			continue
+		if !utils.IsImportedAccount(pg.wallet.GetAssetType(), acct) {
+			walletAccounts = append(walletAccounts, &accountData{
+				Account:   acct,
+				clickable: pg.Theme.NewClickable(false),
+			})
 		}
-		walletAccounts = append(walletAccounts, &accountData{
-			Account:   acct,
-			clickable: pg.Theme.NewClickable(false),
-		})
 	}
 
 	pg.accounts = walletAccounts

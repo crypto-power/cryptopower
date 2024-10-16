@@ -26,7 +26,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/renderers"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -597,16 +596,16 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 			return centerLayout(gtx, dp20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrSelectBondWalletMsg)).Layout)
+			return centerLayout(gtx, 0, dp20, pg.Theme.Body1(values.String(values.StrSelectBondWalletMsg)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-				return pg.bondSourceWalletSelector.Layout(gtx, values.StrSupportedWallets)
+				return pg.bondSourceWalletSelector.Layout(gtx, values.String(values.StrSupportedWallets))
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-				return pg.bondSourceAccountSelector.Layout(gtx, values.StrAccount)
+				return pg.bondSourceAccountSelector.Layout(gtx, values.String(values.StrAccount))
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
@@ -616,7 +615,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 			return layout.S.Layout(gtx, pg.Theme.Body1(values.String(values.StrSelectBondStrengthMsg)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return centerLayout(gtx, dp20, dp16, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
+			return layout.Inset{Top: dp20, Bottom: dp16}.Layout(gtx, pg.Theme.Body2(values.String(values.StrPostBondDesc)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -767,7 +766,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 			return centerLayout(gtx, dp20, dp12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return centerLayout(gtx, 0, 0, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
+			return centerLayout(gtx, 0, 0, pg.Theme.Body2(values.String(values.StrPostBondDesc)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -1051,8 +1050,6 @@ func (pg *DEXOnboarding) handleEditorEvents(gtx C) {
 				pg.isLoading = false
 			}()
 		}
-
-		pg.ParentWindow().Reload()
 	}
 }
 
@@ -1198,7 +1195,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		Setup()
 	pg.bondSourceAccountSelector = components.NewAccountDropdown(pg.Load).
 		AccountValidator(func(a *sharedW.Account) bool {
-			return !a.IsWatchOnly && pg.validateBondWalletOrAccount(pg.bondSourceWalletSelector.SelectedWallet().GetAssetType(), dexc.WalletAccountNumberConfigKey, fmt.Sprint(a.AccountNumber))
+			return !a.IsWatchOnly && pg.validateBondWalletOrAccount(pg.bondSourceWalletSelector.SelectedWallet().GetAssetType(), dexc.WalletAccountNumberConfigKey, fmt.Sprint(a.AccountNumber)) && !utils.IsImportedAccount(pg.bondSourceWalletSelector.SelectedWallet().GetAssetType(), a)
 		}).
 		SetChangedCallback(func(_ *sharedW.Account) {
 			pg.bondAccountHasEnough()
@@ -1269,6 +1266,8 @@ func (pg *DEXOnboarding) postBond() {
 	}
 
 	pg.isLoading = true
+	pg.ParentWindow().Reload()
+
 	walletID, err := dexClient.WalletIDForAsset(bondAsset.ID)
 	if err != nil {
 		pg.notifyError(err.Error())
