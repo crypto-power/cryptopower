@@ -11,7 +11,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -27,7 +26,6 @@ type DEXPage struct {
 
 	*load.Load
 
-	switchToTestnetBtn   cryptomaterial.Button
 	openTradeMainPage    *cryptomaterial.Clickable
 	splashPageInfoButton cryptomaterial.IconButton
 	splashPageContainer  *widget.List
@@ -47,9 +45,8 @@ func NewDEXPage(l *load.Load) *DEXPage {
 			Alignment: layout.Middle,
 			Axis:      layout.Vertical,
 		}},
-		showSplashPage:     true,
-		switchToTestnetBtn: l.Theme.Button(values.String(values.StrSwitchToTestnet)),
-		materialLoader:     material.Loader(l.Theme.Base),
+		showSplashPage: true,
+		materialLoader: material.Loader(l.Theme.Base),
 	}
 
 	if dp.AssetsManager.DEXCInitialized() && dp.AssetsManager.DexClient().InitializedWithPassword() {
@@ -117,8 +114,7 @@ func (pg *DEXPage) prepareInitialPage() {
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	isMainnet := pg.AssetsManager.NetType() == libutils.Mainnet
-	if !isMainnet && (!pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil) { // dexc must have been reset.
+	if !pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil { // dexc must have been reset.
 		pg.showSplashPage = true
 		if !pg.dexIsLoading {
 			pg.ParentNavigator().CloseAllPages()
@@ -132,19 +128,8 @@ func (pg *DEXPage) Layout(gtx C) D {
 		})
 	}
 
-	var msg string
-	var actionBtn *cryptomaterial.Button
-	if isMainnet {
-		if pg.CanChangeNetworkType() {
-			actionBtn = &pg.switchToTestnetBtn
-		}
-		msg = values.String(values.StrDexMainnetNotReady)
-	} else if hasMultipleWallets := pg.isMultipleAssetTypeWalletAvailable(); !hasMultipleWallets {
-		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	}
-
-	if msg != "" {
-		return components.DisablePageWithOverlay(pg.Load, nil, gtx, msg, "", actionBtn)
+	if hasMultipleWallets := pg.isMultipleAssetTypeWalletAvailable(); !hasMultipleWallets {
+		return components.DisablePageWithOverlay(pg.Load, nil, gtx, values.String(values.StrMultipleAssetRequiredMsg), "", nil)
 	}
 
 	return pg.CurrentPage().Layout(gtx)
@@ -170,10 +155,6 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *DEXPage) HandleUserInteractions(gtx C) {
-	if pg.switchToTestnetBtn.Button.Clicked(gtx) {
-		settings.ChangeNetworkType(pg.Load, pg.ParentWindow(), string(libutils.Testnet))
-	}
-
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions(gtx)
 	}

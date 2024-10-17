@@ -907,8 +907,8 @@ func (mgr *AssetsManager) DEXCInitialized() bool {
 // initialized first so the DEX client can bind previously added wallets when it
 // starts.
 func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
-	// Ignore attempts to InitializeDEX on mainnet and on mobile.
-	if mgr.NetType() == utils.Mainnet || appos.Current().IsMobile() {
+	// Ignore attempts to InitializeDEX on mobile.
+	if appos.Current().IsMobile() {
 		return
 	}
 
