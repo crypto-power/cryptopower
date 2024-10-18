@@ -351,7 +351,7 @@ func (pg *AppSettingsPage) networkSettings() layout.Widget {
 
 func (pg *AppSettingsPage) dexSettings() layout.Widget {
 	return func(gtx C) D {
-		if pg.AssetsManager.NetType() == libutils.Mainnet || !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
+		if !pg.AssetsManager.DEXCInitialized() || !pg.AssetsManager.DexClient().InitializedWithPassword() {
 			return D{}
 		}
 
