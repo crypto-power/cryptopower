@@ -23,6 +23,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/notification"
 	"github.com/crypto-power/cryptopower/ui/page"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -173,19 +174,56 @@ func (win *Window) HandleEvents() {
 
 	var isShuttingDown bool
 
-	displayShutdownPage := func() {
+	displayShutdownPage := func(windowAlreadyDestroyed bool) {
 		if isShuttingDown {
 			return
 		}
-		isShuttingDown = true
 
-		log.Info("...Initiating the app shutdown protocols...")
-		// clear all stack and display the shutdown page as backend processes are
-		// terminating.
-		win.navigator.ClearStackAndDisplay(page.NewStartPage(win.ctx, win.load, true))
-		win.ctxCancel()
-		// Trigger the backend processes shutdown.
-		win.Quit <- struct{}{}
+		doShutdown := func() {
+			isShuttingDown = true
+
+			log.Info("...Initiating the app shutdown protocols...")
+
+			// clear all stack and display the shutdown page as backend processes are
+			// terminating.
+			win.navigator.ClearStackAndDisplay(page.NewStartPage(win.ctx, win.load, true))
+			win.ctxCancel()
+
+			// Trigger the backend processes shutdown.
+			win.Quit <- struct{}{}
+		}
+
+		if !win.load.AssetsManager.DEXCInitialized() || windowAlreadyDestroyed {
+			doShutdown()
+			return
+		}
+
+		ord, inflight, err := win.load.AssetsManager.DexClient().ActiveOrders()
+		if err != nil {
+			log.Errorf("AssetsManager.DexClient().ActiveOrders error: %v", err)
+			return
+		}
+
+		if len(ord) == 0 && len(inflight) == 0 {
+			doShutdown()
+			return
+		}
+
+		// User has active orders, show an error modal and only allow shutdown
+		// if user allows it.
+		m := modal.NewErrorModal(win.load, values.String(values.StrDexError), modal.DefaultClickFunc())
+		m.SetPositiveButtonText(values.String(values.StrYes)).SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			doShutdown()
+			return true
+		}).
+			SetNegativeButtonText(values.String(values.StrNo)).
+			SetNegativeButtonCallback(func() {
+				win.navigator.Display(win.navigator.CurrentPage())
+			}).
+			SetCancelable(true).
+			Body(values.String(values.StrActiveDexOrderError))
+
+		win.navigator.ShowModal(m)
 	}
 
 	// Create window chan event and listen events from window event
@@ -207,7 +245,7 @@ func (win *Window) HandleEvents() {
 		// ready first.
 		select {
 		case <-done:
-			displayShutdownPage()
+			displayShutdownPage(false)
 		case <-win.IsShutdown:
 			// backend processes shutdown is complete, exit UI process too.
 			_ = win.load.Device.SetScreenAwake(false)
@@ -215,7 +253,7 @@ func (win *Window) HandleEvents() {
 		case e := <-events:
 			switch evt := e.(type) {
 			case giouiApp.DestroyEvent:
-				displayShutdownPage()
+				displayShutdownPage(true)
 				acks <- struct{}{}
 			case giouiApp.FrameEvent:
 				ops := win.handleFrameEvent(evt)
