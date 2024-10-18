@@ -11,6 +11,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -90,7 +91,7 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 			}
 
 			// Imported, watch only and default wallet accounts are invalid to use as an unmixed account
-			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum
+			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum && !utils.IsImportedAccount(dcrWallet.GetAssetType(), account)
 
 			// Account is invalid if already selected by mixed account selector.
 			if !accountIsValid || account.Number == mixedAccNo {
