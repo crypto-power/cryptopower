@@ -322,10 +322,37 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 		syncIsScanning = wsi.wallet.(*dcr.Asset).IsSycnRescanning()
 	}
 	dp8 := values.MarginPadding8
+
+	totalStep := 2
+	if !wsi.isBtcOrLtcAsset() {
+		totalStep = 3
+	}
+	syncStep := 1
+	syncProgress1 := values.String(values.StrFetchingBlockHeaders)
+	if wsi.wallet.IsSyncing() {
+		if !wsi.isBtcOrLtcAsset() {
+			if isAddDiscovering {
+				syncStep = 2
+				syncProgress1 = values.String(values.StrAddressDiscovering)
+			} else if syncIsScanning {
+				syncStep = 3
+				syncProgress1 = values.String(values.StrRescanningBlocks)
+			}
+		}
+	} else if wsi.wallet.IsRescanning() {
+		syncStep = 2
+		syncProgress1 = values.String(values.StrRescanningBlocks)
+	} else if wsi.wallet.IsSynced() {
+		syncProgress1 = values.String(values.StrComplete)
+	}
+
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return wsi.labelTexSize16Layout(values.StringF(values.StrSyncSteps, syncStep, totalStep), dp8, false)(gtx)
+					}),
 					layout.Rigid(wsi.labelTexSize16Layout(values.String(values.StrLatestBlock), dp8, true)),
 					layout.Rigid(func(gtx C) D {
 						if !isInProgress {
@@ -357,6 +384,9 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
+							return wsi.labelTexSize16Layout(syncProgress1, dp8, false)(gtx)
+						}),
+						layout.Rigid(func(gtx C) D {
 							latestBlockTitle := fmt.Sprintf("%d (%s)", bestBlock.Height, pageutils.TimeAgo(bestBlock.Timestamp))
 							return wsi.labelTexSize16Layout(latestBlockTitle, dp8, false)(gtx)
 						}),
@@ -381,17 +411,6 @@ func (wsi *WalletSyncInfo) syncContent(gtx C, uniform layout.Inset) D {
 							syncProgress := values.String(values.StrWalletNotSynced)
 							if wsi.wallet.IsSyncing() {
 								syncProgress = values.StringF(values.StrSyncingProgressStat, daysBehind)
-								if !wsi.isBtcOrLtcAsset() {
-									if isAddDiscovering {
-										syncProgress = values.String(values.StrAddressDiscovering)
-									} else if syncIsScanning {
-										syncProgress = values.String(values.StrRescanningBlocks)
-									}
-								}
-							} else if wsi.wallet.IsRescanning() {
-								syncProgress = values.String(values.StrRescanningBlocks)
-							} else if wsi.wallet.IsSynced() {
-								syncProgress = values.String(values.StrComplete)
 							}
 
 							return wsi.labelTexSize16Layout(syncProgress, dp8, false)(gtx)
