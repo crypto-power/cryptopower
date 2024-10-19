@@ -96,11 +96,11 @@ type DEXMarketPage struct {
 	toggleBuyAndSellBtn *cryptomaterial.SegmentedControl
 	orderTypesDropdown  *cryptomaterial.DropDown
 
-	priceEditor    cryptomaterial.Editor
-	lotsEditor     cryptomaterial.Editor
-	totalEditor    cryptomaterial.Editor
-	quantityEditor cryptomaterial.Editor
-	lotsInfoBtn    *cryptomaterial.Clickable
+	priceEditor  cryptomaterial.Editor
+	lotsEditor   cryptomaterial.Editor
+	totalEditor  cryptomaterial.Editor
+	amountEditor cryptomaterial.Editor
+	lotsInfoBtn  *cryptomaterial.Clickable
 
 	maxBuyOrSellStr     string
 	orderFeeEstimateStr string
@@ -156,7 +156,7 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 		lotsEditor:                         newTextEditor(l.Theme, values.String(values.StrLots), "", false),
 		lotsInfoBtn:                        th.NewClickable(false),
 		totalEditor:                        newTextEditor(th, values.String(values.StrTotal), "", false),
-		quantityEditor:                     newTextEditor(th, values.String(values.StrQuantity), "", false),
+		amountEditor:                       newTextEditor(th, values.String(values.StrAmount), "", false),
 		maxBuyOrSellStr:                    "---",
 		orderFeeEstimateStr:                "------",
 		loginBtn:                           th.Button(values.String(values.StrLogin)),
@@ -180,9 +180,9 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 
 	pg.orderTypesDropdown.CollapsedLayoutTextDirection = layout.E
 
-	pg.priceEditor.IsTitleLabel, pg.lotsEditor.IsTitleLabel, pg.totalEditor.IsTitleLabel, pg.quantityEditor.IsTitleLabel = false, false, false, false
+	pg.priceEditor.IsTitleLabel, pg.lotsEditor.IsTitleLabel, pg.totalEditor.IsTitleLabel, pg.amountEditor.IsTitleLabel = false, false, false, false
 
-	pg.quantityEditor.Editor.ReadOnly = true
+	pg.amountEditor.Editor.ReadOnly = true
 	pg.totalEditor.Editor.ReadOnly = true
 
 	pg.seeFullOrderBookBtn.HighlightColor, pg.seeFullOrderBookBtn.Background = color.NRGBA{}, color.NRGBA{}
@@ -415,7 +415,7 @@ func (pg *DEXMarketPage) fetchOrderBook() {
 	// Update order form editors.
 	pg.priceEditor.ExtraText = pg.selectedMarketOrderBook.quoteSymbol + " / " + pg.selectedMarketOrderBook.baseSymbol
 	pg.totalEditor.ExtraText = pg.selectedMarketOrderBook.quoteSymbol
-	pg.quantityEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
+	pg.amountEditor.ExtraText = pg.selectedMarketOrderBook.baseSymbol
 
 	pg.showLoader = true
 	go func() {
@@ -869,9 +869,9 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 						layout.Rigid(func(gtx C) D {
 							return orderFormRow(gtx, vertical, []layout.FlexChild{
 								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Bottom: dp5}.Layout(gtx, pg.semiBoldLabelText(fmt.Sprintf("%s (%s)", values.String(values.StrQuantity), lotsSubText)).Layout)
+									return layout.Inset{Bottom: dp5}.Layout(gtx, pg.semiBoldLabelText(fmt.Sprintf("%s (%s)", values.String(values.StrAmount), lotsSubText)).Layout)
 								}),
-								layout.Rigid(pg.quantityEditor.Layout),
+								layout.Rigid(pg.amountEditor.Layout),
 							})
 						}),
 						layout.Rigid(func(gtx C) D {
@@ -970,19 +970,17 @@ func (pg *DEXMarketPage) missingMarketWallet() libutils.AssetType {
 	return ""
 }
 
-func (pg *DEXMarketPage) estimateOrderFee() {
+func (pg *DEXMarketPage) setMaxBuyAndMaxSell() {
 	pg.maxBuyOrSellStr = "---"
-	pg.orderFeeEstimateStr = values.String(values.StrNotAvailable)
+	host, base, quote := pg.serverSelector.Selected(), pg.selectedMarketOrderBook.base, pg.selectedMarketOrderBook.quote
+
+	dexc := pg.AssetsManager.DexClient()
 
 	mkt := pg.selectedMarketInfo()
 	price := pg.orderPrice(mkt)
 	if price <= 0 && !pg.isSellOrder() {
 		return
 	}
-
-	host, base, quote := pg.serverSelector.Selected(), pg.selectedMarketOrderBook.base, pg.selectedMarketOrderBook.quote
-
-	dexc := pg.AssetsManager.DexClient()
 
 	var est *core.MaxOrderEstimate
 	var err error
@@ -995,18 +993,9 @@ func (pg *DEXMarketPage) estimateOrderFee() {
 		return
 	}
 
-	swapFee := conventionalAmt(est.Swap.MaxFees)
-	redeemFee := conventionalAmt(est.Redeem.RealisticBestCase)
-	baseSym := convertAssetIDToAssetType(base)
-	quoteSym := convertAssetIDToAssetType(quote)
-	maxBuyOrSellAssetSym := baseSym
-	// Swap fees are denominated in the outgoing asset's unit, while Redeem fees
-	// are denominated in the incoming asset's unit.
-	if pg.isSellOrder() { // Outgoing is base asset
-		pg.orderFeeEstimateStr = values.StringF(values.StrSwapAndRedeemFee, fmt.Sprintf("%f %s", swapFee, baseSym), fmt.Sprintf("%f %s", redeemFee, quoteSym))
-	} else { // Outgoing is quote asset
-		maxBuyOrSellAssetSym = quoteSym
-		pg.orderFeeEstimateStr = values.StringF(values.StrSwapAndRedeemFee, fmt.Sprintf("%f %s", swapFee, quoteSym), fmt.Sprintf("%f %s", redeemFee, baseSym))
+	maxBuyOrSellAssetSym := convertAssetIDToAssetType(base)
+	if !pg.isSellOrder() {
+		maxBuyOrSellAssetSym = convertAssetIDToAssetType(quote)
 	}
 
 	/* TODO: Check reputation value i.e parcel limit - used parcel. If estimated
@@ -1017,6 +1006,43 @@ func (pg *DEXMarketPage) estimateOrderFee() {
 		est.Swap.Lots, values.String(values.StrLots),
 		trimZeros(fmt.Sprintf("%f", conventionalAmt(est.Swap.Value))), maxBuyOrSellAssetSym,
 	)
+}
+
+func (pg *DEXMarketPage) estimateOrderFee() {
+	pg.orderFeeEstimateStr = values.String(values.StrNotAvailable)
+
+	mkt := pg.selectedMarketInfo()
+	price := pg.orderPrice(mkt)
+	if price <= 0 && !pg.isSellOrder() {
+		return
+	}
+
+	dexc := pg.AssetsManager.DexClient()
+
+	form := pg.validatedOrderFormInfo()
+	if form == nil {
+		return
+	}
+
+	// Use fee estimate from pre-order.
+	orderEst, err := dexc.PreOrder(form)
+	if err != nil || orderEst.Swap == nil || orderEst.Swap.Estimate == nil || orderEst.Redeem == nil || orderEst.Redeem.Estimate == nil {
+		return
+	}
+
+	s := orderEst.Swap.Estimate
+	r := orderEst.Redeem.Estimate
+	swapFee := conventionalAmt(s.MaxFees)
+	redeemFee := conventionalAmt(r.RealisticBestCase)
+	baseSym := convertAssetIDToAssetType(pg.selectedMarketOrderBook.base)
+	quoteSym := convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)
+	// Swap fees are denominated in the outgoing asset's unit, while Redeem fees
+	// are denominated in the incoming asset's unit.
+	if pg.isSellOrder() { // Outgoing is base asset
+		pg.orderFeeEstimateStr = values.StringF(values.StrSwapAndRedeemFee, fmt.Sprintf("%f %s", swapFee, baseSym), fmt.Sprintf("%f %s", redeemFee, quoteSym))
+	} else { // Outgoing is quote asset
+		pg.orderFeeEstimateStr = values.StringF(values.StrSwapAndRedeemFee, fmt.Sprintf("%f %s", swapFee, quoteSym), fmt.Sprintf("%f %s", redeemFee, baseSym))
+	}
 }
 
 func trimZeros(s string) string {
@@ -1371,8 +1397,9 @@ func (pg *DEXMarketPage) refreshOrderForm() {
 	pg.lotsEditor.UpdateFocus(true)
 	pg.lotsEditor.Editor.SetText("")
 	pg.totalEditor.Editor.SetText("")
-	pg.quantityEditor.Editor.SetText("")
+	pg.amountEditor.Editor.SetText("")
 	pg.refreshPriceField()
+	pg.orderFeeEstimateStr = values.String(values.StrNotAvailable)
 
 	if !isSell { // Buy
 		pg.createOrderBtn.Text = values.String(values.StrBuy)
@@ -1395,10 +1422,9 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsSubText str
 }
 
 func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
-	var toggleBuyAndSellBtnChanged bool
 	if pg.toggleBuyAndSellBtn.Changed() {
-		toggleBuyAndSellBtnChanged = true
 		pg.refreshOrderForm()
+		pg.setMaxBuyAndMaxSell()
 	}
 
 	if pg.orderTypesDropdown.Changed(gtx) {
@@ -1445,7 +1471,7 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 		}
 	}
 
-	if (reEstimateFee || toggleBuyAndSellBtnChanged) && !pg.showLoader {
+	if reEstimateFee && !pg.showLoader {
 		pg.showLoader = true
 		go func() {
 			pg.estimateOrderFee()
@@ -1504,6 +1530,7 @@ func (pg *DEXMarketPage) HandleUserInteractions(gtx C) {
 	if pg.marketSelector.Changed(gtx) {
 		pg.fetchOrderBook()
 		pg.refreshOrderForm()
+		pg.setMaxBuyAndMaxSell()
 	}
 
 	if pg.orderHistoryBtn.Clicked(gtx) {
@@ -1895,7 +1922,7 @@ func (pg *DEXMarketPage) calculateOrderAmount(mkt *core.Market) bool {
 	if orderPrice == 0 {
 		pg.lotsEditor.Editor.SetText("")
 		pg.totalEditor.Editor.SetText("")
-		pg.quantityEditor.Editor.SetText("")
+		pg.amountEditor.Editor.SetText("")
 		return false
 	}
 
@@ -1903,7 +1930,7 @@ func (pg *DEXMarketPage) calculateOrderAmount(mkt *core.Market) bool {
 	lotsStr := pg.lotsEditor.Editor.Text()
 	if lotsStr == "" {
 		pg.totalEditor.Editor.SetText("")
-		pg.quantityEditor.Editor.SetText("")
+		pg.amountEditor.Editor.SetText("")
 		return false
 	}
 
@@ -1911,14 +1938,14 @@ func (pg *DEXMarketPage) calculateOrderAmount(mkt *core.Market) bool {
 	if err != nil || lots <= 0 || float64(int64(lots)) != lots {
 		pg.lotsEditor.SetError(values.String(values.StrInvalidLot))
 		pg.totalEditor.Editor.SetText("")
-		pg.quantityEditor.Editor.SetText("")
+		pg.amountEditor.Editor.SetText("")
 		return false
 	}
 
-	quantity := lots * mkt.MsgRateToConventional(mkt.LotSize)
-	amtText := trimmedConventionalAmtString(quantity * orderPrice)
+	amount := lots * mkt.MsgRateToConventional(mkt.LotSize)
+	amtText := trimmedConventionalAmtString(amount * orderPrice)
 	pg.totalEditor.Editor.SetText(amtText)
-	pg.quantityEditor.Editor.SetText(fmt.Sprint(trimmedConventionalAmtString(quantity)))
+	pg.amountEditor.Editor.SetText(fmt.Sprint(trimmedConventionalAmtString(amount)))
 
 	return true
 }
