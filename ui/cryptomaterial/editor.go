@@ -204,6 +204,10 @@ func (e *Editor) FirstPressed(gtx C) bool {
 
 }
 
+func (e *Editor) IsFocused() bool {
+	return e.focused
+}
+
 func (e *Editor) SetFocus() {
 	e.isFirstFocus = true
 }
@@ -289,8 +293,12 @@ func (e *Editor) layout(gtx C) D {
 
 	focused := gtx.Source.Focused(e.Editor)
 	if focused {
+		// Only non-read only editors should indicate an active state on focus.
+		if !e.Editor.ReadOnly {
+			e.LineColor = e.t.Color.Primary
+		}
+		e.TitleLabel.Color = e.t.Color.Primary
 		e.TitleLabel.Text = e.Hint
-		e.TitleLabel.Color, e.LineColor = e.t.Color.Primary, e.t.Color.Primary
 		if !e.showHintOnFocus {
 			e.Hint = ""
 		}

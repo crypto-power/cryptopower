@@ -636,6 +636,7 @@ const EN = `
 "to" = "To"
 "token" = "Token:   %s"
 "total" = "Total"
+"quantity" = "Quantity"
 "totalAmount" = "Total Amount"
 "totalBalance" = "Total Balance"
 "totalCost" = "Total cost"

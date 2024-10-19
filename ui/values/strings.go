@@ -746,6 +746,7 @@ const (
 	StrTo                                    = "to"
 	StrToken                                 = "token"
 	StrTotal                                 = "total"
+	StrQuantity                              = "quantity"
 	StrTotalAmount                           = "totalAmount"
 	StrTotalBalance                          = "totalBalance"
 	StrTotalCost                             = "totalCost"
