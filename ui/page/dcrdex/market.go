@@ -253,10 +253,7 @@ func (pg *DEXMarketPage) OnNavigatedTo() {
 					if n.Topic() == core.TopicAsyncOrderFailure {
 						pg.notifyError(n.Details())
 					}
-					// TODO: Handle Inflight Orders if we eventually use
-					// core.TradeAsync. We are expected to update mkt.Inflight
-					// order list to remove or add an inflight order based on
-					// the order topic.
+
 					pg.refreshOrders()
 					pg.ParentWindow().Reload()
 				case core.NoteTypeBalance, core.NoteTypeSpots:
@@ -1362,8 +1359,8 @@ func (pg *DEXMarketPage) orderColumn(header bool, txt string, columnWidth unit.D
 		var showCancelBtn bool
 		if !header {
 			ord := pg.orders[orderIndex]
-			notInflight := ord.Stamp > 0
-			showCancelBtn = pg.openOrdersDisplayed && !ord.Cancelling && notInflight && ord.cancelBtn != nil
+			orderIsStamped := ord.Stamp > 0
+			showCancelBtn = pg.openOrdersDisplayed && !ord.Cancelling && orderIsStamped && ord.cancelBtn != nil
 			if showCancelBtn {
 				padding = layout.Inset{Top: dp8, Bottom: dp8}
 			}
@@ -1846,16 +1843,6 @@ func (pg *DEXMarketPage) refreshOrders() {
 		}
 
 		pg.orders = append(pg.orders, ord)
-	}
-
-	if pg.openOrdersDisplayed {
-		// Check for inflight orders and append them to the returned order
-		// slice.
-		if mkt := pg.selectedMarketInfo(); mkt != nil && len(mkt.InFlightOrders) > 0 {
-			for _, ord := range mkt.InFlightOrders {
-				pg.orders = append(pg.orders, &clickableOrder{Order: ord.Order})
-			}
-		}
 	}
 
 	// Always sort orders.
