@@ -12,7 +12,11 @@ import (
 	"strings"
 
 	"decred.org/dcrdex/dex/encode"
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/values"
 
@@ -162,5 +166,18 @@ func USDMarketFromAsset(asset utils.AssetType) (values.Market, error) {
 		return values.LTCUSDTMarket, nil
 	default:
 		return values.UnknownMarket, fmt.Errorf("unsupported asset type: %s", asset)
+	}
+}
+
+func IsImportedAccount(assetType libutils.AssetType, acc *sharedW.Account) bool {
+	switch assetType {
+	case libutils.BTCWalletAsset:
+		return acc.AccountNumber == btc.ImportedAccountNumber
+
+	case libutils.DCRWalletAsset:
+		return acc.Number == dcr.ImportedAccountNumber
+
+	default:
+		return false
 	}
 }
