@@ -201,6 +201,22 @@ func (osm *orderSettingsModal) Handle(gtx C) {
 	if osm.feeRateSelector.SaveRate.Clicked(gtx) {
 		osm.feeRateSelector.OnEditRateClicked(osm.sourceWalletSelector.SelectedWallet())
 	}
+
+	if osm.sourceWalletSelector != nil {
+		osm.sourceWalletSelector.Handle(gtx)
+	}
+
+	if osm.sourceAccountSelector != nil {
+		osm.sourceAccountSelector.Handle(gtx)
+	}
+
+	if osm.destinationWalletSelector != nil {
+		osm.destinationWalletSelector.Handle(gtx)
+	}
+
+	if osm.destinationAccountSelector != nil {
+		osm.destinationAccountSelector.Handle(gtx)
+	}
 }
 
 func (osm *orderSettingsModal) handleCopyEvent(gtx C) {
@@ -300,11 +316,11 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return layout.Inset{
 																			Bottom: values.MarginPadding16,
 																		}.Layout(gtx, func(gtx C) D {
-																			return osm.sourceWalletSelector.Layout(gtx, values.StrSource)
+																			return osm.sourceWalletSelector.Layout(gtx, "")
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		return osm.sourceAccountSelector.Layout(gtx, values.StrSource)
+																		return osm.sourceAccountSelector.Layout(gtx, "")
 																	}),
 																	layout.Rigid(func(gtx C) D {
 																		if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
@@ -347,14 +363,14 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return layout.Inset{
 																			Bottom: values.MarginPadding16,
 																		}.Layout(gtx, func(gtx C) D {
-																			return osm.destinationWalletSelector.Layout(gtx, values.StrSource)
+																			return osm.destinationWalletSelector.Layout(gtx, "")
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {
 																		return layout.Inset{
 																			Bottom: values.MarginPadding16,
 																		}.Layout(gtx, func(gtx C) D {
-																			return osm.destinationAccountSelector.Layout(gtx, values.StrSource)
+																			return osm.destinationAccountSelector.Layout(gtx, "")
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {

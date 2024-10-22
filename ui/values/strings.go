@@ -1065,4 +1065,6 @@ const (
 	StrPrivacy                               = "privacy"
 	StrRemoveRecipient                       = "removeRecipient"
 	StrRemoveRecipientWarning                = "removeRecipientWarning"
+	StrUnexpectedErrorMsgFmt                 = "unexpectedErrorMsgFmt"
+	StrUnexpectedError                       = "unexpectedError"
 )

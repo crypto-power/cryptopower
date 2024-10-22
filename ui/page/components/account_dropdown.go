@@ -179,6 +179,10 @@ func (d *AccountDropdown) Handle(gtx C) {
 func (d *AccountDropdown) Layout(gtx C, title string) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			if title == "" {
+				return D{}
+			}
+
 			lbl := d.Theme.H6(title)
 			lbl.TextSize = values.TextSizeTransform(d.IsMobileView(), values.TextSize16)
 			lbl.Font.Weight = font.SemiBold
