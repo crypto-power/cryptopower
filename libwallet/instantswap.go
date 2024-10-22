@@ -126,47 +126,57 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 		market := values.NewMarket(fromCur, toCur)
 		source := mgr.RateSource.Name()
-		ticker := mgr.RateSource.GetTicker(market, false) // TODO: (@ukane-philemon) Can we proceed if there is no rate information from rate source? I think we should.
+		ticker := mgr.RateSource.GetTicker(market, false)
 		if ticker == nil {
-			return errors.E(op, fmt.Errorf("unable to get market rate from %s", source))
-		}
+			log.Errorf("unable to get market(%s) rate from %s.", market, source)
+			log.Infof("Proceeding without checking market rate deviation...")
+		} else {
+			exchangeServerRate := res.ExchangeRate // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
+			rateSourceRate := ticker.LastTradePrice
 
-		exchangeServerRate := res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
-		rateSourceRate := ticker.LastTradePrice
-		// Current rate source supported Binance and Bittrex always returns
-		// ticker.LastTradePrice in's the quote asset unit e.g DCR-BTC, LTC-BTC.
-		// We will also do this when and if USDT is supported.
-		if strings.EqualFold(fromCur, "btc") {
-			rateSourceRate = 1 / ticker.LastTradePrice
-		}
+			// Current rate source supported Binance and Bittrex always returns
+			// ticker.LastTradePrice in's the quote asset unit e.g DCR-BTC, LTC-BTC.
+			// We will also do this when and if USDT is supported.
+			if strings.EqualFold(fromCur, "btc") {
+				rateSourceRate = 1 / ticker.LastTradePrice
+			}
 
-		serverRateStr := values.StringF(values.StrServerRate, params.Order.ExchangeServer.Server, fromCur, exchangeServerRate, toCur)
-		log.Info(serverRateStr)
-		binanceRateStr := values.StringF(values.StrCurrencyConverterRate, source, fromCur, rateSourceRate, toCur)
-		log.Info(binanceRateStr)
+			serverRateStr := values.StringF(values.StrServerRate, params.Order.ExchangeServer.Server, fromCur, exchangeServerRate, toCur)
+			log.Info(serverRateStr)
+			binanceRateStr := values.StringF(values.StrCurrencyConverterRate, source, fromCur, rateSourceRate, toCur)
+			log.Info(binanceRateStr)
 
-		// check if the server rate deviates from the market rate by ± 5%
-		// exit if true
-		percentageDiff := math.Abs((exchangeServerRate-rateSourceRate)/((exchangeServerRate+rateSourceRate)/2)) * 100
-		if percentageDiff > params.MaxDeviationRate {
-			log.Error("exchange rate deviates from the market rate by more than 5%")
-			return errors.E(op, "exchange rate deviates from the market rate by more than 5%")
+			// Check if the server rate deviates from the market rate by ± 5%
+			// exit if true
+			percentageDiff := math.Abs((exchangeServerRate-rateSourceRate)/((exchangeServerRate+rateSourceRate)/2)) * 100
+			if percentageDiff > params.MaxDeviationRate {
+				errMsg := fmt.Errorf("exchange rate deviates from the market rate by (%.2f%%) more than %.2f%%", percentageDiff-params.MaxDeviationRate, params.MaxDeviationRate)
+				log.Error(errMsg)
+				return errors.E(op, errMsg)
+			}
 		}
 
 		// set the max send amount to the max limit set by the server
-		invoicedAmount := res.Min
+		invoicedAmount := res.Max
+		walletBalance := sourceAccountBalance.Spendable.ToCoin()
 
-		// if the max send limit is 0, then the server does not have a max limit constraint
-		// so we can send the entire source wallet balance
-		// if res.Max == 0 {
-		// 	invoicedAmount = sourceAccountBalance.Spendable.ToCoin() - params.BalanceToMaintain // deduct the balance to maintain from the source wallet balance
-		// }
+		estimatedBalanceAfterExchange := walletBalance - invoicedAmount
+		// if the max send limit is 0, then the server does not have a max limit
+		// constraint so we can send the entire source wallet balance
+		if res.Max == 0 || estimatedBalanceAfterExchange < params.BalanceToMaintain {
+			invoicedAmount = walletBalance - params.BalanceToMaintain // deduct the balance to maintain from the source wallet balance
+		}
 
-		log.Info("Order Scheduler: check balance after exchange")
-		estimatedBalanceAfterExchange := sourceAccountBalance.Spendable.ToCoin() - invoicedAmount
-		if estimatedBalanceAfterExchange < params.BalanceToMaintain {
-			log.Error("source wallet balance after the exchange would be less than the set balance to maintain")
-			return errors.E(op, "source wallet balance after the exchange would be less than the set balance to maintain") // stop scheduling if the source wallet balance after the exchange would be less than the set balance to maintain
+		if invoicedAmount <= 0 {
+			errMsg := fmt.Errorf("balance to maintain is the same or greater than wallet balance(Current Balance: %v, Balance to Maintain: %v)", walletBalance, params.BalanceToMaintain)
+			log.Error(errMsg)
+			return errors.E(op, errMsg)
+		}
+
+		if invoicedAmount == walletBalance {
+			errMsg := "Specify a little balance to maintain to cover for transaction fees... e.g 0.001 for DCR to BTC or LTC swaps"
+			log.Error(errMsg)
+			return errors.E(op, errMsg)
 		}
 
 		log.Info("Order Scheduler: creating order")
@@ -179,8 +189,8 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		lastOrderTime = time.Now()
 
 		log.Info("Order Scheduler: creating unsigned transaction")
-		// construct the transaction to send the invoiced amount to the exchange server
 
+		// construct the transaction to send the invoiced amount to the exchange server
 		err = sourceWallet.NewUnsignedTx(params.Order.SourceAccountNumber, nil)
 		if err != nil {
 			return errors.E(op, err)
@@ -194,7 +204,12 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
 		}
 
-		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %d", order.DepositAddress, amount)
+		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %d", order.DepositAddress, params.Order.InvoicedAmount)
+		// TODO: Broadcast will fail below if params.Order.InvoicedAmount is the
+		// same as the current wallet balance. We should be able to consider
+		// wallet fees for the transaction whilst constructing the transaction.
+		// As a temporary band aid, a check has been added above to error if
+		// swap amount does not consider tx fees.
 		err = sourceWallet.AddSendDestination(0, order.DepositAddress, amount, false)
 		if err != nil {
 			log.Error("error adding send destination: ", err.Error())
