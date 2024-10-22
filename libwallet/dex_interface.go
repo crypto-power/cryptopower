@@ -41,5 +41,6 @@ type DEXClient interface {
 	WalletIDForAsset(assetID uint32) (*int, error)
 	MaxBuy(host string, base, quote uint32, rate uint64) (*core.MaxOrderEstimate, error)
 	MaxSell(host string, base, quote uint32) (*core.MaxOrderEstimate, error)
+	PreOrder(form *core.TradeForm) (*core.OrderEstimate, error)
 	Cancel(oid dex.Bytes) error
 }
