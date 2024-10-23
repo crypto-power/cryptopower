@@ -159,7 +159,6 @@ func (cm *CreatePasswordModal) SetNegativeButtonCallback(callback func()) *Creat
 
 func (cm *CreatePasswordModal) setLoading(loading bool) {
 	cm.isLoading = loading
-	cm.Modal.SetDisabled(loading)
 }
 
 func (cm *CreatePasswordModal) SetCancelable(min bool) *CreatePasswordModal {
