@@ -297,6 +297,7 @@ const EN = `
 "insufficientFund" = "Insufficient funds"
 "invalidAddress" = "Invalid address"
 "invalidAmount" = "Invalid amount"
+"invalidRateFmt" = "rate is lower than the market's minimum rate. %v < %v"
 "invalidHex"     = "Invalid hex"
 "invalidPassphrase" = "Password entered was not valid."
 "invalidSeedPhrase" = "Invalid seed phrase"
