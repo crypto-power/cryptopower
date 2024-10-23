@@ -425,6 +425,7 @@ func (win *Window) listenSoftKey(gtx C) {
 			case key.Event:
 				if event.Name == key.NameBack && event.State == key.Press {
 					win.load.Theme.OnTapBack()
+					win.navigator.Reload()
 				}
 			}
 		}
