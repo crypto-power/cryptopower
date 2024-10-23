@@ -465,12 +465,12 @@ func (asset *Asset) stopUpdatingAddressDiscoveryProgress() {
 func (asset *Asset) rescanStarted() {
 	asset.stopUpdatingAddressDiscoveryProgress()
 
-	asset.syncData.mu.Lock()
-	defer asset.syncData.mu.Unlock()
-
 	if !asset.IsSyncing() {
 		return // ignore if sync is not in progress
 	}
+
+	asset.syncData.mu.Lock()
+	defer asset.syncData.mu.Unlock()
 
 	asset.syncData.activeSyncData.isRescanning = true
 	asset.syncData.activeSyncData.syncStage = HeadersRescanSyncStage
