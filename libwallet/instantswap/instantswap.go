@@ -2,9 +2,11 @@ package instantswap
 
 import (
 	"context"
-	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -24,7 +26,6 @@ import (
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/trocador"
 )
 
-//go:embed instant.json
 var instants []byte
 var privKeyMap = map[Server]string{
 	Trocador:  "",
@@ -33,9 +34,21 @@ var privKeyMap = map[Server]string{
 }
 
 func init() {
+	// Call checkAndCreateInstantJSON to ensure instant.json is available
+	if err := checkAndCreateInstantJSON(); err != nil {
+		panic(errors.Errorf("Error setting up instant.json: %s", err.Error()))
+	}
+
+	// Load the instant.json content into the instants variable
+	instantFilePath := getFilePath("instant.json") // Ensure correct path is used for reading
+	instants, err := os.ReadFile(instantFilePath)
+	if err != nil {
+		panic(errors.Errorf("Error reading instant.json: %s", err.Error()))
+	}
+
 	// init private key map and ensure only supported exchange is filled
 	var newPrivKeyMap = make(map[Server]string)
-	err := json.Unmarshal(instants, &newPrivKeyMap)
+	err = json.Unmarshal(instants, &newPrivKeyMap)
 	if err != nil {
 		panic(err)
 	}
@@ -53,6 +66,51 @@ func init() {
 	}
 	// add flypme to privKeyMap because it does not requires private key to access
 	privKeyMap[FlypMe] = ""
+}
+
+// checkAndCreateInstantJSON checks if instant.json exists, and if not, copies instant_example.json to instant.json.
+func checkAndCreateInstantJSON() error {
+	exampleFile := getFilePath("instant_example.json")
+	instantFile := getFilePath("instant.json")
+
+	// Check if instant.json exists
+	if _, err := os.Stat(instantFile); os.IsNotExist(err) {
+		// If instant.json doesn't exist, copy from instant_example.json
+		err := copyFile(exampleFile, instantFile)
+		if err != nil {
+			return errors.Errorf("failed to copy %s to %s: %s", exampleFile, instantFile, err.Error())
+		}
+		fmt.Println("instant.json created from instant_example.json")
+	} else if err != nil {
+		return errors.Errorf("failed to check if %s exists: %s", instantFile, err.Error())
+	}
+
+	return nil
+}
+
+// copyFile copies a file from src to dst.
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
+// getFilePath constructs the file path relative to the current directory.
+func getFilePath(fileName string) string {
+	basePath, _ := os.Getwd() // Get current working directory
+	filePath := filepath.Join(basePath, "libwallet", "instantswap", fileName)
+	return filePath
 }
 
 func GetInstantExchangePrivKey(server Server) (string, bool) {
