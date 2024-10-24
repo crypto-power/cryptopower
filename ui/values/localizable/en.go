@@ -956,4 +956,7 @@ const EN = `
 "privacy" = "Privacy"
 "removeRecipient" = "Remove recipient"
 "removeRecipientWarning" = "Are you sure you want to proceed with removing the recipient?"
+"dataFileErrorTitle" = "Data file error"
+"dataFileErrorBody" = "We have detected a problem with your data files from an older version. To fix it, you will need to re-enter your wallet seed phrase. Can you do this now?"
+"databaseType" = "Database type"
 `

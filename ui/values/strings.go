@@ -1065,4 +1065,7 @@ const (
 	StrPrivacy                               = "privacy"
 	StrRemoveRecipient                       = "removeRecipient"
 	StrRemoveRecipientWarning                = "removeRecipientWarning"
+	StrDataFileErrorTitle                    = "dataFileErrorTitle"
+	StrDataFileErrorBody                     = "dataFileErrorBody"
+	StrDatabaseType                          = "databaseType"
 )

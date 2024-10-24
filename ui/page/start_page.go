@@ -2,10 +2,12 @@ package page
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	gioApp "gioui.org/app"
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -14,6 +16,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -24,6 +27,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/preference"
 	"github.com/crypto-power/cryptopower/ui/values"
+	"github.com/shirou/gopsutil/mem"
 )
 
 const (
@@ -140,12 +144,13 @@ func (sp *startPage) OnNavigatedTo() {
 		sp.setLanguagePref(true)
 		// Set the log levels.
 		sp.AssetsManager.GetLogLevels()
-		if sp.AssetsManager.IsStartupSecuritySet() {
-			sp.unlock()
-		} else {
-			sp.loading = true
-			go func() { _ = sp.openWalletsAndDisplayHomePage("") }()
+		// Mobile devices usually have very limited amount of ram available to an application
+		// Ensure mobile users are using badgedb
+		if appos.Current().IsMobile() {
+			sp.checkDBFile()
+			return
 		}
+		sp.checkStartupSecurityAndStartApp()
 	} else {
 		sp.loading = false
 	}
@@ -728,4 +733,74 @@ func (sp *startPage) updateSettings() {
 	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHTTPAPI, true)
 	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, true)
 	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.UpdateAPI, true)
+}
+
+func (sp *startPage) checkDBFile() {
+	isNewDB := sp.AssetsManager.DBDriver() == "badgerdb"
+	numberOfRam, err := getNumberOfRam()
+	if err != nil {
+		log.Errorf("Error getting number of ram: %v", err)
+		return
+	}
+	fmt.Println("number of ram", numberOfRam)
+
+	if numberOfRam < 4 && !isNewDB {
+		sp.showRemoveWalletWarning()
+		return
+	}
+
+	sp.checkStartupSecurityAndStartApp()
+}
+
+func (sp *startPage) checkStartupSecurityAndStartApp() {
+	if sp.AssetsManager.IsStartupSecuritySet() {
+		sp.unlock()
+	} else {
+		sp.loading = true
+		go func() { _ = sp.openWalletsAndDisplayHomePage("") }()
+	}
+}
+
+func (sp *startPage) clearAppDir() {
+	homeDir, err := gioApp.DataDir()
+	if err != nil {
+		log.Error("unable to get home dir: %v", err)
+		// return nil, fmt.Errorf("unable to get android home dir: %v", err)
+	}
+
+	err = os.RemoveAll(homeDir)
+	if err != nil {
+		// If an error occurs, handle it (e.g., log it or show a message)
+		// showErrorMessage(err)
+		log.Error("unable to remove home dir: %v", err)
+		return
+	}
+}
+
+func (sp *startPage) showRemoveWalletWarning() {
+	warningModal := modal.NewCustomModal(sp.Load).
+		Title(values.String(values.StrDataFileErrorTitle)).
+		Body(values.String(values.StrDataFileErrorBody)).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetNegativeButtonCallback(func() {
+			sp.checkStartupSecurityAndStartApp()
+		}).
+		SetNegativeButtonText(values.String(values.StrNo)).
+		PositiveButtonStyle(sp.Theme.Color.Surface, sp.Theme.Color.Danger).
+		SetPositiveButtonText(values.String(values.StrYes)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			sp.clearAppDir()
+			return true
+		})
+	sp.ParentWindow().ShowModal(warningModal)
+}
+
+// Function to get the number of RAM in GB
+func getNumberOfRam() (int, error) {
+	vmStat, err := mem.VirtualMemory()
+	if err != nil {
+		return 0, err
+	}
+	// Convert bytes to gigabytes
+	return int(vmStat.Total / (1024 * 1024 * 1024)), nil
 }
