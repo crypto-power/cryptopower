@@ -414,9 +414,9 @@ func (win *Window) listenSoftKey(gtx C) {
 	// check for presses of the back key.
 	if runtime.GOOS == "android" {
 		for {
-			event, ok := gtx.Event(key.FocusFilter{Target: win},
-				key.Filter{Focus: win, Name: key.NameBack},
-			)
+			event, ok := gtx.Event(key.Filter{
+				Name: key.NameBack,
+			})
 			if !ok {
 				break
 			}
@@ -425,6 +425,7 @@ func (win *Window) listenSoftKey(gtx C) {
 			case key.Event:
 				if event.Name == key.NameBack && event.State == key.Press {
 					win.load.Theme.OnTapBack()
+					win.navigator.Reload()
 				}
 			}
 		}
