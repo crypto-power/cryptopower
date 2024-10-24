@@ -39,7 +39,7 @@ type SyncData struct {
 	rescanning          bool
 	numOfConnectedPeers int32
 
-	*activeSyncData
+	activeSyncData *activeSyncData
 }
 
 func (s *SyncData) isSynced() bool {
@@ -57,7 +57,10 @@ func (s *SyncData) syncedTo() int32 {
 func (s *SyncData) targetHeight() int32 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.scanStartHeight
+	if s.activeSyncData == nil {
+		return 0
+	}
+	return s.activeSyncData.scanStartHeight
 }
 
 func (s *SyncData) connectedPeers() int32 {
@@ -69,7 +72,10 @@ func (s *SyncData) connectedPeers() int32 {
 func (s *SyncData) generalSyncProgress() *sharedW.GeneralSyncProgress {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.genSyncProgress
+	if s.activeSyncData == nil {
+		return nil
+	}
+	return s.activeSyncData.genSyncProgress
 }
 
 // reading/writing of properties of this struct are protected by syncData.mu.
@@ -167,10 +173,10 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveDuration time.Duration) {
 		return
 	}
 
-	asset.syncData.totalInactiveDuration += totalInactiveDuration
+	asset.syncData.activeSyncData.totalInactiveDuration += totalInactiveDuration
 	if asset.syncData.numOfConnectedPeers == 0 {
 		// assume it would take another 60 seconds to reconnect to peers
-		asset.syncData.totalInactiveDuration += secondsToDuration(60.0)
+		asset.syncData.activeSyncData.totalInactiveDuration += secondsToDuration(60.0)
 	}
 }
 
@@ -228,7 +234,7 @@ func (asset *Asset) SpvSync() error {
 	asset.syncData.syncing = true
 	asset.syncData.cancelSync = cancel
 	asset.syncData.syncCanceled = make(chan struct{})
-	asset.syncData.syncer = syncer
+	asset.syncData.activeSyncData.syncer = syncer
 	asset.syncData.mu.Unlock()
 
 	for _, listener := range asset.syncProgressListeners() {
@@ -326,8 +332,8 @@ func (asset *Asset) CurrentSyncStage() utils.SyncStage {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
-	if asset.syncData != nil && asset.syncData.syncing {
-		return asset.syncData.syncStage
+	if asset.syncData != nil && asset.syncData.syncing && asset.syncData.activeSyncData != nil {
+		return asset.syncData.activeSyncData.syncStage
 	}
 	return InvalidSyncStage
 }
@@ -336,8 +342,8 @@ func (asset *Asset) IsAddressDiscovering() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
-	if asset.syncData != nil && asset.syncData.syncing {
-		return asset.syncData.isAddressDiscovery
+	if asset.syncData != nil && asset.syncData.syncing && asset.syncData.activeSyncData != nil {
+		return asset.syncData.activeSyncData.isAddressDiscovery
 	}
 
 	return false
@@ -347,8 +353,8 @@ func (asset *Asset) IsSycnRescanning() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
-	if asset.syncData != nil && asset.syncData.syncing {
-		return asset.syncData.isRescanning
+	if asset.syncData != nil && asset.syncData.syncing && asset.syncData.activeSyncData != nil {
+		return asset.syncData.activeSyncData.isRescanning
 	}
 
 	return false
@@ -370,11 +376,11 @@ func (asset *Asset) SyncData() *SyncData {
 }
 
 func (asset *Asset) PeerInfoRaw() ([]sharedW.PeerInfo, error) {
-	if !asset.IsConnectedToDecredNetwork() {
+	if !asset.IsConnectedToDecredNetwork() || asset.syncData.activeSyncData == nil {
 		return nil, errors.New(utils.ErrNotConnected)
 	}
 
-	syncer := asset.syncData.syncer
+	syncer := asset.syncData.activeSyncData.syncer
 
 	infos := make([]sharedW.PeerInfo, 0, len(syncer.GetRemotePeers()))
 	for _, rp := range syncer.GetRemotePeers() {

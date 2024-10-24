@@ -792,7 +792,7 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 		}
 	}
 
-	balStr = fmt.Sprintf("%f %s", availableAssetBal, baseOrQuoteAssetSym)
+	balStr = fmt.Sprintf("%s %s", trimmedConventionalAmtString(availableAssetBal), baseOrQuoteAssetSym)
 	totalSubText, lotsSubText := pg.orderFormEditorSubtext()
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
@@ -1420,6 +1420,11 @@ func (pg *DEXMarketPage) orderFormEditorSubtext() (totalSubText, lotsSubText str
 }
 
 func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
+	isMktOrder := pg.isMarketOrder()
+	if pg.priceEditor.Editor.Text() == "" && !isMktOrder && !pg.priceEditor.IsFocused() {
+		pg.refreshPriceField()
+	}
+
 	if pg.toggleBuyAndSellBtn.Changed() {
 		pg.refreshOrderForm()
 		pg.setMaxBuyAndMaxSell()
@@ -1429,11 +1434,10 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 		pg.refreshPriceField()
 	}
 
-	isMktOrder := pg.isMarketOrder()
 	mkt := pg.selectedMarketInfo()
 
 	var reEstimateFee bool
-	for pg.priceEditor.Changed() {
+	for pg.priceEditor.Changed() && pg.priceEditor.IsFocused() {
 		pg.priceEditor.SetError("")
 		priceStr := pg.priceEditor.Editor.Text()
 		if isMktOrder || priceStr == "" {
@@ -1446,7 +1450,13 @@ func (pg *DEXMarketPage) handleEditorEvents(gtx C) {
 			continue
 		}
 
-		formattedPrice := price - mkt.MsgRateToConventional(mkt.ConventionalRateToMsg(price)%mkt.RateStep)
+		mktRate := mkt.ConventionalRateToMsg(price)
+		if mktRate < mkt.MinimumRate {
+			pg.priceEditor.SetError(values.StringF(values.StrInvalidRateFmt, trimmedConventionalAmtString(price), trimmedConventionalAmtString(mkt.MsgRateToConventional(mkt.MinimumRate))))
+			continue
+		}
+
+		formattedPrice := price - mkt.MsgRateToConventional(mktRate%mkt.RateStep)
 		if formattedPrice != price {
 			pg.priceEditor.Editor.SetText(trimmedConventionalAmtString(formattedPrice))
 		}
@@ -1484,9 +1494,17 @@ func (pg *DEXMarketPage) refreshPriceField() {
 	pg.priceEditor.Editor.ReadOnly = isMktOrder
 	if isMktOrder {
 		pg.priceEditor.Editor.SetText(values.String(values.StrMarket))
-	} else if mkt != nil && mkt.SpotPrice != nil {
-		price := mkt.MsgRateToConventional(mkt.SpotPrice.Rate)
-		pg.priceEditor.Editor.SetText(trimmedConventionalAmtString(price))
+	} else if mkt != nil {
+		orderPrice := pg.orderPrice(mkt)
+		if orderPrice == 0 {
+			pg.priceEditor.Editor.SetText("")
+		} else {
+			pg.priceEditor.Editor.SetText(trimmedConventionalAmtString(orderPrice))
+			formattedPrice := orderPrice - mkt.MsgRateToConventional(mkt.ConventionalRateToMsg(orderPrice)%mkt.RateStep)
+			if formattedPrice != orderPrice {
+				pg.priceEditor.Editor.SetText(trimmedConventionalAmtString(formattedPrice))
+			}
+		}
 	} else {
 		pg.priceEditor.Editor.SetText("")
 	}
@@ -1903,6 +1921,14 @@ func (pg *DEXMarketPage) orderPrice(mkt *core.Market) (price float64) {
 	limitOrdPriceStr := pg.priceEditor.Editor.Text()
 	if !pg.isMarketOrder() && limitOrdPriceStr != "" {
 		price, _ = strconv.ParseFloat(limitOrdPriceStr, 64)
+	} else if mkt != nil && !pg.isSellOrder() {
+		var midGap uint64
+		if pg.selectedMarketOrderBook.book != nil {
+			midGap, _ = pg.selectedMarketOrderBook.book.MidGap()
+		}
+		if midGap != 0 {
+			price = mkt.MsgRateToConventional(midGap)
+		}
 	} else if mkt != nil && mkt.SpotPrice != nil {
 		price = mkt.MsgRateToConventional(mkt.SpotPrice.Rate)
 	}

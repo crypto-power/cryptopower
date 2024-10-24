@@ -428,8 +428,12 @@ func (dw *DEXWallet) medianTime(ctx context.Context, iBlkHeader *wire.BlockHeade
 // GetBlock returns the *wire.MsgBlock.
 // Part of the Wallet interface.
 func (dw *DEXWallet) GetBlock(ctx context.Context, blockHash *chainhash.Hash) (*wire.MsgBlock, error) {
+	if dw.syncData == nil || dw.syncData.activeSyncData == nil {
+		return nil, errors.New("invalid sync state")
+	}
+
 	// TODO: Use a block cache.
-	blocks, err := dw.syncData.syncer.Blocks(ctx, []*chainhash.Hash{blockHash})
+	blocks, err := dw.syncData.activeSyncData.syncer.Blocks(ctx, []*chainhash.Hash{blockHash})
 	if err != nil {
 		return nil, err
 	}
@@ -547,7 +551,7 @@ func (dw *DEXWallet) UnlockAccount(ctx context.Context, pass []byte, _ string) e
 // Part of the Wallet interface.
 func (dw *DEXWallet) SyncStatus(_ context.Context) (*dexasset.SyncStatus, error) {
 	ss := new(dexasset.SyncStatus)
-	if dw.syncData != nil && dw.ctx.Err() == nil { // dex might call this method during wallet shutdown.
+	if dw.syncData != nil && dw.syncData.activeSyncData != nil {
 		ss.Synced = dw.syncData.isSynced()
 		ss.Blocks = uint64(dw.syncData.syncedTo())
 		ss.TargetHeight = uint64(dw.syncData.targetHeight())

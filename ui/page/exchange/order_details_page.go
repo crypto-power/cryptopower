@@ -3,7 +3,6 @@ package exchange
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gioui.org/layout"
 	"gioui.org/widget/material"
@@ -13,6 +12,7 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 	api "github.com/crypto-power/instantswap/instantswap"
@@ -78,13 +78,14 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 
 	go func() {
 		pg.isRefreshing = true
-		pg.orderInfo, err = pg.getOrderInfo(pg.orderInfo.UUID)
+		orderInfo, err := pg.getOrderInfo(pg.orderInfo.UUID)
 		if err != nil {
-			pg.isRefreshing = false
 			log.Error(err)
+			pg.notifyError(err)
+		} else {
+			pg.orderInfo = orderInfo
 		}
 
-		time.Sleep(1 * time.Second)
 		pg.isRefreshing = false
 	}()
 
@@ -109,9 +110,14 @@ func (pg *OrderDetailsPage) HandleUserInteractions(gtx C) {
 	if pg.refreshBtn.Clicked(gtx) {
 		go func() {
 			pg.isRefreshing = true
-			pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
+			orderInfo, err := pg.getOrderInfo(pg.orderInfo.UUID)
+			if err != nil {
+				log.Error(err)
+				pg.notifyError(err)
+			} else {
+				pg.orderInfo = orderInfo
+			}
 
-			time.Sleep(1 * time.Second)
 			pg.isRefreshing = false
 		}()
 	}
@@ -121,8 +127,13 @@ func (pg *OrderDetailsPage) HandleUserInteractions(gtx C) {
 	}
 }
 
+func (pg *OrderDetailsPage) notifyError(err error) {
+	m := modal.NewErrorModal(pg.Load, values.String(values.StrUnexpectedError), modal.DefaultClickFunc()).Body(values.StringF(values.StrUnexpectedErrorMsgFmt, err))
+	pg.ParentWindow().ShowModal(m)
+}
+
 func (pg *OrderDetailsPage) Layout(gtx C) D {
-	container := func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
 			Title:      values.String(values.StrOrderDetails),
@@ -133,9 +144,7 @@ func (pg *OrderDetailsPage) Layout(gtx C) D {
 			Body: pg.layout,
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
-	}
-
-	return cryptomaterial.UniformPadding(gtx, container)
+	})
 }
 
 func (pg *OrderDetailsPage) layout(gtx C) D {

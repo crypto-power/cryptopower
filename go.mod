@@ -41,6 +41,7 @@ require (
 	github.com/decred/slog v1.2.0
 	github.com/decred/vspd/client/v3 v3.0.0
 	github.com/decred/vspd/types/v2 v2.1.0
+	github.com/decred/vspd/types/v3 v3.0.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/gen2brain/beeep v0.0.0-20220402123239-6a3042f4b71a
 	github.com/gomarkdown/markdown v0.0.0-20230922105210-14b16010c2ee
@@ -126,7 +127,6 @@ require (
 	github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e // indirect
 	github.com/decred/go-socks v1.1.0 // indirect
 	github.com/decred/vspd/client/v4 v4.0.0 // indirect
-	github.com/decred/vspd/types/v3 v3.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
