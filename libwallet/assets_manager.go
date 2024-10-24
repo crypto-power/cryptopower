@@ -38,6 +38,9 @@ const LogFilename = "cryptopower.log"
 // assetIdentifier use for listen balance of all wallet changed
 const assetIdentifier = "assets_manager"
 
+const BoltDB = "bdb"        // Bolt db driver
+const BadgerDB = "badgerdb" // Badger db driver
+
 // Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
 	DCR struct {
@@ -139,7 +142,10 @@ func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType, dexTest
 	}
 
 	// validate the network type before proceeding to initialize the othe fields.
-	dbDriver := "bdb" // TODO: Should be a constant.
+	dbDriver := BoltDB
+	if appos.Current().IsMobile() {
+		dbDriver = BadgerDB
+	}
 	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType, dexTestAddr)
 	if err != nil {
 		return nil, err
