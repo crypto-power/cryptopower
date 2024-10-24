@@ -93,7 +93,6 @@ func (com *confirmOrderModal) SetError(err string) {
 
 func (com *confirmOrderModal) setLoading(loading bool) {
 	com.isCreating = loading
-	com.Modal.SetDisabled(loading)
 }
 
 func (com *confirmOrderModal) OnDismiss() {}

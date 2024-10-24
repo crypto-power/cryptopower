@@ -59,7 +59,6 @@ func (tm *TextInputModal) Hint(hint string) *TextInputModal {
 
 func (tm *TextInputModal) setLoading(loading bool) {
 	tm.isLoading = loading
-	tm.Modal.SetDisabled(loading)
 }
 
 func (tm *TextInputModal) ShowAccountInfoTip(show bool) *TextInputModal {

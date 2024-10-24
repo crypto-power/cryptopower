@@ -82,7 +82,6 @@ func (cm *CreateWatchOnlyModal) EnableName(enable bool) *CreateWatchOnlyModal {
 
 func (cm *CreateWatchOnlyModal) setLoading(loading bool) {
 	cm.isLoading = loading
-	cm.Modal.SetDisabled(loading)
 }
 
 func (cm *CreateWatchOnlyModal) SetCancelable(min bool) *CreateWatchOnlyModal {

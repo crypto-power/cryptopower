@@ -184,7 +184,6 @@ func (in *InfoModal) CheckBox(checkbox cryptomaterial.CheckBoxStyle, mustBeCheck
 
 func (in *InfoModal) setLoading(loading bool) {
 	in.isLoading = loading
-	in.Modal.SetDisabled(loading)
 }
 
 func (in *InfoModal) Title(title string) *InfoModal {
