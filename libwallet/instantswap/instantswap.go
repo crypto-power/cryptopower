@@ -2,6 +2,7 @@ package instantswap
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"decred.org/dcrwallet/v4/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/instantswap/instantswap"
 
 	// load instantswap exchange packages
@@ -26,6 +28,8 @@ import (
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/trocador"
 )
 
+//go:embed instant.json
+
 var instants []byte
 var privKeyMap = map[Server]string{
 	Trocador:  "",
@@ -34,6 +38,12 @@ var privKeyMap = map[Server]string{
 }
 
 func init() {
+	if appos.Current().IsMobile() {
+		// Initialize private key map from embedded data
+		initPrivKeyMap(instants)
+		return
+	}
+
 	// Call checkAndCreateInstantJSON to ensure instant.json is available
 	if err := checkAndCreateInstantJSON(); err != nil {
 		panic(errors.Errorf("Error setting up instant.json: %s", err.Error()))
@@ -41,24 +51,27 @@ func init() {
 
 	// Load the instant.json content into the instants variable
 	instantFilePath := getFilePath("instant.json") // Ensure correct path is used for reading
-	instants, err := os.ReadFile(instantFilePath)
+	instantsData, err := os.ReadFile(instantFilePath)
 	if err != nil {
 		panic(errors.Errorf("Error reading instant.json: %s", err.Error()))
 	}
 
-	// init private key map and ensure only supported exchange is filled
+	// Initialize private key map
+	initPrivKeyMap(instantsData)
+}
+
+// initPrivKeyMap initializes the private key map from the JSON data
+func initPrivKeyMap(data []byte) {
 	var newPrivKeyMap = make(map[Server]string)
-	err = json.Unmarshal(instants, &newPrivKeyMap)
+	err := json.Unmarshal(data, &newPrivKeyMap)
 	if err != nil {
 		panic(err)
 	}
-	// assign available key to privKeyMap
 	for key := range privKeyMap {
 		if val, ok := newPrivKeyMap[key]; ok {
 			privKeyMap[key] = val
 		}
 	}
-	// delete instant exchange with no key
 	for key, val := range privKeyMap {
 		if val == "" {
 			delete(privKeyMap, key)
