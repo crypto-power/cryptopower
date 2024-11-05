@@ -82,10 +82,11 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 		if err != nil {
 			log.Error(err)
 			pg.notifyError(err)
-		} else {
-			pg.orderInfo = orderInfo
+			pg.isRefreshing = false
+			return
 		}
 
+		pg.orderInfo = orderInfo
 		pg.isRefreshing = false
 	}()
 
@@ -114,10 +115,11 @@ func (pg *OrderDetailsPage) HandleUserInteractions(gtx C) {
 			if err != nil {
 				log.Error(err)
 				pg.notifyError(err)
-			} else {
-				pg.orderInfo = orderInfo
+				pg.isRefreshing = false
+				return
 			}
 
+			pg.orderInfo = orderInfo
 			pg.isRefreshing = false
 		}()
 	}

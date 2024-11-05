@@ -21,10 +21,15 @@ import (
 )
 
 const (
-	// BTCBlockTime is the average time it takes to mine a block on the BTC network.
+	// BTCBlockTime is the average time it takes to mine a block on the BTC
+	// network.
 	BTCBlockTime = 10 * time.Minute
-	// DCRBlockTime is the average time it takes to mine a block on the DCR network.
+	// DCRBlockTime is the average time it takes to mine a block on the DCR
+	// network.
 	DCRBlockTime = 5 * time.Minute
+	// LTCBlockTime is approx. how long it takes to mine a block on the Litecoin
+	// network.
+	LTCBlockTime = 3 * time.Minute
 
 	// DefaultMarketDeviation is the maximum deviation the server rate
 	// can deviate from the market rate.
@@ -204,7 +209,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
 		}
 
-		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %d", order.DepositAddress, params.Order.InvoicedAmount)
+		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %.2f", order.DepositAddress, params.Order.InvoicedAmount)
 		// TODO: Broadcast will fail below if params.Order.InvoicedAmount is the
 		// same as the current wallet balance. We should be able to consider
 		// wallet fees for the transaction whilst constructing the transaction.
@@ -231,6 +236,11 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				return mgr.InstantSwap.SchedulerCtx.Err()
 			}
 
+			// assetHasExplorer holds whether or not the receiving asset has an
+			// instantswap explorer implemented. We only needed to do this for LTC.
+			// TODO: Remove when instantswap has implemented an LTC explorer.
+			assetHasExplorer := true
+
 			// depending on the block time for the asset, the order may take a while to complete
 			// so we wait for the estimated block time before checking the order status
 			switch params.Order.ToCurrency {
@@ -240,6 +250,10 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			case utils.DCRWalletAsset.String():
 				log.Info("Order Scheduler: waiting for dcr block time (5 minutes)")
 				time.Sleep(DCRBlockTime)
+			case utils.LTCWalletAsset.String():
+				assetHasExplorer = false
+				log.Info("Order Scheduler: waiting for ltc block time (~3 minutes)")
+				time.Sleep(LTCBlockTime)
 			}
 
 			log.Info("Order Scheduler: get newly created order info")
@@ -262,41 +276,53 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				isRefunded = true
 			}
 
-			log.Info("Order Scheduler: instantiate block explorer")
-			// verify that the order was completed successfully from the blockchain explorer
-			config := blockexplorer.Config{
-				EnableOutput: false,
-				Symbol:       params.Order.ToCurrency,
-			}
-			explorer, err := blockexplorer.NewExplorer(config) // TODO: Confirm if this still works as intended
-			if err != nil {
-				log.Error("error instantiating block explorer: ", err.Error())
-				return errors.E(op, err)
-			}
+			var isCompleted bool
+			var amountReceivedMatch bool
 
-			verificationInfo := blockexplorer.TxVerifyRequest{
-				TxId:      orderInfo.TxID,
-				Amount:    orderInfo.ReceiveAmount,
-				CreatedAt: orderInfo.CreatedAt,
-				Address:   orderInfo.DestinationAddress,
-				Confirms:  DefaultConfirmations,
-			}
+			if assetHasExplorer {
+				log.Info("Order Scheduler: instantiate block explorer")
+				// verify that the order was completed successfully from the blockchain explorer
+				config := blockexplorer.Config{
+					EnableOutput: false,
+					Symbol:       params.Order.ToCurrency,
+				}
+				explorer, err := blockexplorer.NewExplorer(config) // TODO: Confirm if this still works as intended
+				if err != nil {
+					log.Error("error instantiating block explorer: ", err.Error())
+					return errors.E(op, err)
+				}
 
-			log.Infof("Order Scheduler: verifying transaction with ID: %s", orderInfo.TxID)
-			verification, err := explorer.VerifyTransaction(verificationInfo)
-			if err != nil {
-				log.Error("error verifying transaction: ", err.Error())
-				return errors.E(op, err)
-			}
+				verificationInfo := blockexplorer.TxVerifyRequest{
+					TxId:      orderInfo.TxID,
+					Amount:    orderInfo.ReceiveAmount,
+					CreatedAt: orderInfo.CreatedAt,
+					Address:   orderInfo.DestinationAddress,
+					Confirms:  DefaultConfirmations,
+				}
 
-			if verification.Verified {
-				if verification.BlockExplorerAmount.ToCoin() != orderInfo.ReceiveAmount {
+				log.Infof("Order Scheduler: verifying transaction with ID: %s", orderInfo.TxID)
+				verification, err := explorer.VerifyTransaction(verificationInfo)
+				if err != nil {
+					log.Error("error verifying transaction: ", err.Error())
+					return errors.E(op, err)
+				}
+
+				amountReceivedMatch = verification.BlockExplorerAmount.ToCoin() == orderInfo.ReceiveAmount
+				if verification.Verified && !amountReceivedMatch {
 					log.Infof("received amount: %f", verification.BlockExplorerAmount.ToCoin())
 					log.Infof("expected amount: %f", orderInfo.ReceiveAmount)
 					log.Error("received amount does not match the expected amount")
 					return errors.E(op, err)
 				}
 
+				isCompleted = verification.Verified && amountReceivedMatch
+			} else {
+				// Instantswap asset explorer not implemented, use order status
+				// to determine whether an order has been completed.
+				isCompleted = orderInfo.Status == api.OrderStatusCompleted
+			}
+
+			if isCompleted {
 				if isRefunded {
 					log.Info("order was refunded successfully")
 				} else {
