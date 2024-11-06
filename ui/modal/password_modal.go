@@ -102,7 +102,6 @@ func (pm *PasswordModal) NegativeButton(text string, clicked func()) *PasswordMo
 
 func (pm *PasswordModal) SetLoading(loading bool) {
 	pm.isLoading = loading
-	pm.Modal.SetDisabled(loading)
 }
 
 func (pm *PasswordModal) SetCancelable(min bool) *PasswordModal {

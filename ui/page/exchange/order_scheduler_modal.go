@@ -139,7 +139,6 @@ func (osm *orderSchedulerModal) OnResume() {
 
 func (osm *orderSchedulerModal) setLoading(loading bool) {
 	osm.isStarting = loading
-	osm.Modal.SetDisabled(loading)
 }
 
 func (osm *orderSchedulerModal) OnDismiss() {
