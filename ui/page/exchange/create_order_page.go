@@ -1107,7 +1107,7 @@ func (pg *CreateOrderPage) orderSchedulerLayout(gtx C) D {
 									}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
 								}),
 								layout.Rigid(func(gtx C) D {
-									title := pg.Theme.Label(textSize16, pg.AssetsManager.GetShedulerRuntime())
+									title := pg.Theme.Label(textSize16, pg.AssetsManager.GetSchedulerRuntime())
 									title.Color = pg.Theme.Color.GrayText2
 									return title.Layout(gtx)
 								}),
