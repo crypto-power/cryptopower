@@ -102,12 +102,30 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber)
 		if err != nil {
 			log.Error("unable to get account balance")
-			return errors.E(op, err)
+			return err
 		}
 
-		if sourceAccountBalance.Spendable.ToCoin() <= params.BalanceToMaintain {
+		walletBalance := sourceAccountBalance.Spendable.ToCoin()
+		if walletBalance <= params.BalanceToMaintain {
+			if !lastOrderTime.IsZero() { // some orders have already been concluded
+				return nil
+			}
+
 			log.Error("source wallet balance is less than or equals the set balance to maintain")
 			return errors.E(op, "source wallet balance is less than or equals the set balance to maintain") // stop scheduling if the source wallet balance is less than or equals the set balance to maintain
+		}
+
+		if !lastOrderTime.IsZero() {
+			log.Info("Order Scheduler: creating next order based on selected frequency")
+
+			// calculate time until the next order
+			timeUntilNextOrder := params.Frequency - time.Since(lastOrderTime)
+			if timeUntilNextOrder <= 0 {
+				log.Info("Order Scheduler: the scheduler start time is equal to or greater than the frequency, starting next order immediately")
+			} else {
+				log.Infof("Order Scheduler: %s until the next order is executed", timeUntilNextOrder)
+				time.Sleep(timeUntilNextOrder)
+			}
 		}
 
 		fromCur := params.Order.FromCurrency
@@ -164,7 +182,6 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 		// set the max send amount to the max limit set by the server
 		invoicedAmount := res.Max
-		walletBalance := sourceAccountBalance.Spendable.ToCoin()
 
 		estimatedBalanceAfterExchange := walletBalance - invoicedAmount
 		// if the max send limit is 0, then the server does not have a max limit
@@ -223,7 +240,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		}
 
 		log.Info("Order Scheduler: broadcasting tx")
-		_, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
+		txHash, err := sourceWallet.Broadcast(params.SpendingPassphrase, "")
 		if err != nil {
 			log.Error("error broadcasting tx: ", err.Error())
 			return errors.E(op, err)
@@ -255,6 +272,11 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			orderInfo, err := mgr.InstantSwap.GetOrderInfo(exchangeObject, order.UUID)
 			if err != nil {
 				return errors.E(op, err)
+			}
+
+			// If this is empty for any reason, default to the actual tx hash.
+			if orderInfo.TxID == "" {
+				orderInfo.TxID = txHash
 			}
 
 			if orderInfo.Status == api.OrderStatusRefunded {
@@ -315,19 +337,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				break // order is completed, break out of the loop
 			}
 
-			log.Info("Order Scheduler: order is not completed, checking again")
 			continue // order is not completed, check again
-		}
-
-		log.Info("Order Scheduler: creating next order based on selected frequency")
-
-		// calculate time until the next order
-		timeUntilNextOrder := params.Frequency - time.Since(lastOrderTime)
-		if timeUntilNextOrder <= 0 {
-			log.Info("Order Scheduler: the scheduler start time is equal to or greater than the frequency, starting next order immediately")
-		} else {
-			log.Infof("Order Scheduler: %s until the next order is executed", timeUntilNextOrder)
-			time.Sleep(timeUntilNextOrder)
 		}
 	}
 }

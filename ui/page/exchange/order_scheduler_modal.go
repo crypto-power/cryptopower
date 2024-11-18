@@ -493,7 +493,7 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 				// the error modal.
 				successModal.Dismiss()
 
-				errModal := modal.NewErrorModal(osm.Load, values.String(values.StrOrderScheduler), modal.DefaultClickFunc()).
+				errModal := modal.NewErrorModal(osm.Load, values.String(values.StrUnexpectedError), modal.DefaultClickFunc()).
 					Body(values.StringF(values.StrUnexpectedErrorMsgFmt, err.Error()))
 				osm.ParentWindow().ShowModal(errModal)
 			}
