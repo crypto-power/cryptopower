@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	decred.org/dcrdex v1.0.0
-	decred.org/dcrwallet/v4 v4.1.3
+	decred.org/dcrwallet/v4 v4.2.0
 	gioui.org v0.7.0
 	git.wow.st/gmp/jni v0.0.0-20210610011705-34026c7e22d0
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
@@ -67,7 +67,7 @@ require (
 )
 
 require (
-	decred.org/cspp/v2 v2.2.0 // indirect
+	decred.org/cspp/v2 v2.3.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.8 // indirect
@@ -108,7 +108,7 @@ require (
 	github.com/decred/dcrd/blockchain/standalone/v2 v2.2.1 // indirect
 	github.com/decred/dcrd/certgen v1.2.0 // indirect
 	github.com/decred/dcrd/container/lru v1.0.0 // indirect
-	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
+	github.com/decred/dcrd/crypto/blake256 v1.1.0 // indirect
 	github.com/decred/dcrd/crypto/rand v1.0.0 // indirect
 	github.com/decred/dcrd/crypto/ripemd160 v1.0.2 // indirect
 	github.com/decred/dcrd/database/v2 v2.0.2 // indirect
@@ -121,7 +121,7 @@ require (
 	github.com/decred/dcrd/gcs/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/gcs/v4 v4.1.0 // indirect
 	github.com/decred/dcrd/lru v1.1.2 // indirect
-	github.com/decred/dcrd/mixing v0.4.1 // indirect
+	github.com/decred/dcrd/mixing v0.4.2 // indirect
 	github.com/decred/dcrd/rpcclient/v8 v8.0.1 // indirect
 	github.com/decred/dcrd/txscript/v3 v3.0.0 // indirect
 	github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e // indirect
@@ -225,4 +225,4 @@ require (
 replace github.com/lib/pq => github.com/lib/pq v1.10.4
 
 // https://github.com/ukane-philemon/dcrdex/tree/btc-node
-replace decred.org/dcrdex v1.0.0 => github.com/ukane-philemon/dcrdex v0.0.0-20240906090529-912997266ecf
+replace decred.org/dcrdex v1.0.0 => github.com/ukane-philemon/dcrdex v0.0.0-20241119213828-522570591e38
