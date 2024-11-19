@@ -16,15 +16,21 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/crypto-power/instantswap/blockexplorer"
+	_ "github.com/crypto-power/instantswap/blockexplorer/blockcypher" //nolint:revive
 	_ "github.com/crypto-power/instantswap/blockexplorer/btcexplorer" //nolint:revive
 	_ "github.com/crypto-power/instantswap/blockexplorer/dcrexplorer"
 )
 
 const (
-	// BTCBlockTime is the average time it takes to mine a block on the BTC network.
+	// BTCBlockTime is the average time it takes to mine a block on the BTC
+	// network.
 	BTCBlockTime = 10 * time.Minute
-	// DCRBlockTime is the average time it takes to mine a block on the DCR network.
+	// DCRBlockTime is the average time it takes to mine a block on the DCR
+	// network.
 	DCRBlockTime = 5 * time.Minute
+	// LTCBlockTime is approx. how long it takes to mine a block on the Litecoin
+	// network.
+	LTCBlockTime = 3 * time.Minute
 
 	// DefaultMarketDeviation is the maximum deviation the server rate
 	// can deviate from the market rate.
@@ -96,12 +102,30 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber)
 		if err != nil {
 			log.Error("unable to get account balance")
-			return errors.E(op, err)
+			return err
 		}
 
-		if sourceAccountBalance.Spendable.ToCoin() <= params.BalanceToMaintain {
+		walletBalance := sourceAccountBalance.Spendable.ToCoin()
+		if walletBalance <= params.BalanceToMaintain {
+			if !lastOrderTime.IsZero() { // some orders have already been concluded
+				return nil
+			}
+
 			log.Error("source wallet balance is less than or equals the set balance to maintain")
 			return errors.E(op, "source wallet balance is less than or equals the set balance to maintain") // stop scheduling if the source wallet balance is less than or equals the set balance to maintain
+		}
+
+		if !lastOrderTime.IsZero() {
+			log.Info("Order Scheduler: creating next order based on selected frequency")
+
+			// calculate time until the next order
+			timeUntilNextOrder := params.Frequency - time.Since(lastOrderTime)
+			if timeUntilNextOrder <= 0 {
+				log.Info("Order Scheduler: the scheduler start time is equal to or greater than the frequency, starting next order immediately")
+			} else {
+				log.Infof("Order Scheduler: %s until the next order is executed", timeUntilNextOrder)
+				time.Sleep(timeUntilNextOrder)
+			}
 		}
 
 		fromCur := params.Order.FromCurrency
@@ -126,47 +150,56 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 		market := values.NewMarket(fromCur, toCur)
 		source := mgr.RateSource.Name()
-		ticker := mgr.RateSource.GetTicker(market, false) // TODO: (@ukane-philemon) Can we proceed if there is no rate information from rate source? I think we should.
+		ticker := mgr.RateSource.GetTicker(market, false)
 		if ticker == nil {
-			return errors.E(op, fmt.Errorf("unable to get market rate from %s", source))
-		}
+			log.Errorf("unable to get market(%s) rate from %s.", market, source)
+			log.Infof("Proceeding without checking market rate deviation...")
+		} else {
+			exchangeServerRate := res.ExchangeRate // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
+			rateSourceRate := ticker.LastTradePrice
 
-		exchangeServerRate := res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
-		rateSourceRate := ticker.LastTradePrice
-		// Current rate source supported Binance and Bittrex always returns
-		// ticker.LastTradePrice in's the quote asset unit e.g DCR-BTC, LTC-BTC.
-		// We will also do this when and if USDT is supported.
-		if strings.EqualFold(fromCur, "btc") {
-			rateSourceRate = 1 / ticker.LastTradePrice
-		}
+			// Current rate source supported Binance and Bittrex always returns
+			// ticker.LastTradePrice in's the quote asset unit e.g DCR-BTC, LTC-BTC.
+			// We will also do this when and if USDT is supported.
+			if strings.EqualFold(fromCur, "btc") {
+				rateSourceRate = 1 / ticker.LastTradePrice
+			}
 
-		serverRateStr := values.StringF(values.StrServerRate, params.Order.ExchangeServer.Server, fromCur, exchangeServerRate, toCur)
-		log.Info(serverRateStr)
-		binanceRateStr := values.StringF(values.StrCurrencyConverterRate, source, fromCur, rateSourceRate, toCur)
-		log.Info(binanceRateStr)
+			serverRateStr := values.StringF(values.StrServerRate, params.Order.ExchangeServer.Server, fromCur, exchangeServerRate, toCur)
+			log.Info(serverRateStr)
+			binanceRateStr := values.StringF(values.StrCurrencyConverterRate, source, fromCur, rateSourceRate, toCur)
+			log.Info(binanceRateStr)
 
-		// check if the server rate deviates from the market rate by ± 5%
-		// exit if true
-		percentageDiff := math.Abs((exchangeServerRate-rateSourceRate)/((exchangeServerRate+rateSourceRate)/2)) * 100
-		if percentageDiff > params.MaxDeviationRate {
-			log.Error("exchange rate deviates from the market rate by more than 5%")
-			return errors.E(op, "exchange rate deviates from the market rate by more than 5%")
+			// Check if the server rate deviates from the market rate by ± 5%
+			// exit if true
+			percentageDiff := math.Abs((exchangeServerRate-rateSourceRate)/((exchangeServerRate+rateSourceRate)/2)) * 100
+			if percentageDiff > params.MaxDeviationRate {
+				errMsg := fmt.Errorf("exchange rate deviates from the market rate by (%.2f%%) more than %.2f%%", percentageDiff-params.MaxDeviationRate, params.MaxDeviationRate)
+				log.Error(errMsg)
+				return errors.E(op, errMsg)
+			}
 		}
 
 		// set the max send amount to the max limit set by the server
-		invoicedAmount := res.Min
+		invoicedAmount := res.Max
 
-		// if the max send limit is 0, then the server does not have a max limit constraint
-		// so we can send the entire source wallet balance
-		// if res.Max == 0 {
-		// 	invoicedAmount = sourceAccountBalance.Spendable.ToCoin() - params.BalanceToMaintain // deduct the balance to maintain from the source wallet balance
-		// }
+		estimatedBalanceAfterExchange := walletBalance - invoicedAmount
+		// if the max send limit is 0, then the server does not have a max limit
+		// constraint so we can send the entire source wallet balance
+		if res.Max == 0 || estimatedBalanceAfterExchange < params.BalanceToMaintain {
+			invoicedAmount = walletBalance - params.BalanceToMaintain // deduct the balance to maintain from the source wallet balance
+		}
 
-		log.Info("Order Scheduler: check balance after exchange")
-		estimatedBalanceAfterExchange := sourceAccountBalance.Spendable.ToCoin() - invoicedAmount
-		if estimatedBalanceAfterExchange < params.BalanceToMaintain {
-			log.Error("source wallet balance after the exchange would be less than the set balance to maintain")
-			return errors.E(op, "source wallet balance after the exchange would be less than the set balance to maintain") // stop scheduling if the source wallet balance after the exchange would be less than the set balance to maintain
+		if invoicedAmount <= 0 {
+			errMsg := fmt.Errorf("balance to maintain is the same or greater than wallet balance(Current Balance: %v, Balance to Maintain: %v)", walletBalance, params.BalanceToMaintain)
+			log.Error(errMsg)
+			return errors.E(op, errMsg)
+		}
+
+		if invoicedAmount == walletBalance {
+			errMsg := "Specify a little balance to maintain to cover for transaction fees... e.g 0.001 for DCR to BTC or LTC swaps"
+			log.Error(errMsg)
+			return errors.E(op, errMsg)
 		}
 
 		log.Info("Order Scheduler: creating order")
@@ -179,8 +212,8 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		lastOrderTime = time.Now()
 
 		log.Info("Order Scheduler: creating unsigned transaction")
-		// construct the transaction to send the invoiced amount to the exchange server
 
+		// construct the transaction to send the invoiced amount to the exchange server
 		err = sourceWallet.NewUnsignedTx(params.Order.SourceAccountNumber, nil)
 		if err != nil {
 			return errors.E(op, err)
@@ -194,7 +227,12 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
 		}
 
-		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %d", order.DepositAddress, amount)
+		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %.2f", order.DepositAddress, params.Order.InvoicedAmount)
+		// TODO: Broadcast will fail below if params.Order.InvoicedAmount is the
+		// same as the current wallet balance. We should be able to consider
+		// wallet fees for the transaction whilst constructing the transaction.
+		// As a temporary band aid, a check has been added above to error if
+		// swap amount does not consider tx fees.
 		err = sourceWallet.AddSendDestination(0, order.DepositAddress, amount, false)
 		if err != nil {
 			log.Error("error adding send destination: ", err.Error())
@@ -202,7 +240,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		}
 
 		log.Info("Order Scheduler: broadcasting tx")
-		_, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
+		txHash, err := sourceWallet.Broadcast(params.SpendingPassphrase, "")
 		if err != nil {
 			log.Error("error broadcasting tx: ", err.Error())
 			return errors.E(op, err)
@@ -225,12 +263,20 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			case utils.DCRWalletAsset.String():
 				log.Info("Order Scheduler: waiting for dcr block time (5 minutes)")
 				time.Sleep(DCRBlockTime)
+			case utils.LTCWalletAsset.String():
+				log.Info("Order Scheduler: waiting for ltc block time (~3 minutes)")
+				time.Sleep(LTCBlockTime)
 			}
 
 			log.Info("Order Scheduler: get newly created order info")
 			orderInfo, err := mgr.InstantSwap.GetOrderInfo(exchangeObject, order.UUID)
 			if err != nil {
 				return errors.E(op, err)
+			}
+
+			// If this is empty for any reason, default to the actual tx hash.
+			if orderInfo.TxID == "" {
+				orderInfo.TxID = txHash
 			}
 
 			if orderInfo.Status == api.OrderStatusRefunded {
@@ -291,19 +337,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				break // order is completed, break out of the loop
 			}
 
-			log.Info("Order Scheduler: order is not completed, checking again")
 			continue // order is not completed, check again
-		}
-
-		log.Info("Order Scheduler: creating next order based on selected frequency")
-
-		// calculate time until the next order
-		timeUntilNextOrder := params.Frequency - time.Since(lastOrderTime)
-		if timeUntilNextOrder <= 0 {
-			log.Info("Order Scheduler: the scheduler start time is equal to or greater than the frequency, starting next order immediately")
-		} else {
-			log.Infof("Order Scheduler: %s until the next order is executed", timeUntilNextOrder)
-			time.Sleep(timeUntilNextOrder)
 		}
 	}
 }
@@ -326,7 +360,8 @@ func (mgr *AssetsManager) IsOrderSchedulerRunning() bool {
 	return mgr.InstantSwap.CancelOrderScheduler != nil
 }
 
-// GetShedulerRuntime returns the duration the order scheduler has been running.
-func (mgr *AssetsManager) GetShedulerRuntime() string {
+// GetSchedulerRuntime returns the duration the order scheduler has been
+// running.
+func (mgr *AssetsManager) GetSchedulerRuntime() string {
 	return time.Since(mgr.InstantSwap.SchedulerStartTime).Round(time.Second).String()
 }

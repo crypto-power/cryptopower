@@ -316,7 +316,6 @@ func (asset *Asset) NeutrinoClient() *ChainService {
 func (asset *Asset) IsSynced() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
-
 	return asset.syncData.synced
 }
 

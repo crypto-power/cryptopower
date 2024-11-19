@@ -17,7 +17,7 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 	api "github.com/crypto-power/instantswap/instantswap"
 )
@@ -31,8 +31,7 @@ type orderSchedulerModal struct {
 
 	pageContainer *widget.List
 
-	orderSchedulerStarted func()
-	onCancel              func()
+	onCancel func()
 
 	cancelBtn              cryptomaterial.Button
 	startBtn               cryptomaterial.Button
@@ -123,11 +122,6 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 	return osm
 }
 
-func (osm *orderSchedulerModal) OnOrderSchedulerStarted(orderSchedulerStarted func()) *orderSchedulerModal {
-	osm.orderSchedulerStarted = orderSchedulerStarted
-	return osm
-}
-
 func (osm *orderSchedulerModal) OnCancel(cancel func()) *orderSchedulerModal {
 	osm.onCancel = cancel
 	return osm
@@ -170,32 +164,24 @@ func (osm *orderSchedulerModal) Handle(gtx C) {
 		}()
 	}
 
-	for {
-		event, ok := osm.balanceToMaintain.Editor.Update(gtx)
-		if !ok {
-			break
+	for osm.balanceToMaintain.Changed() && osm.balanceToMaintain.IsFocused() {
+		balanceToMaintain := osm.balanceToMaintain.Editor.Text()
+		if balanceToMaintain == "" {
+			continue
 		}
 
-		if gtx.Source.Focused(osm.balanceToMaintain.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				if components.InputsNotEmpty(osm.balanceToMaintain.Editor) {
-					f, err := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
-					if err != nil {
-						osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
-						osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
-						return
-					}
+		osm.balanceToMaintainErrorText = ""
+		f, err := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
+		if err != nil {
+			osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
+			osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
+			return
+		}
 
-					if f >= osm.sourceAccountSelector.SelectedAccount().Balance.Spendable.ToCoin() || f < 0 {
-						osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
-						osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
-						return
-					}
-					osm.balanceToMaintainErrorText = ""
-
-				}
-			}
+		if f >= osm.sourceAccountSelector.SelectedAccount().Balance.Spendable.ToCoin() || f < 0 {
+			osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
+			osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
+			return
 		}
 	}
 }
@@ -278,7 +264,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																				if osm.fetchingRate {
 																					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
 																					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																					return osm.materialLoader.Layout(gtx)
+																					return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, osm.materialLoader.Layout)
 																				}
 
 																				fromCur := osm.fromCurrency.String()
@@ -498,12 +484,22 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 			SpendingPassphrase: osm.passwordEditor.Editor.Text(),
 		}
 
+		successModal := modal.NewSuccessModal(osm.Load, values.String(values.StrSchedulerRunning), modal.DefaultClickFunc())
 		go func() {
-			_ = osm.AssetsManager.StartScheduler(context.Background(), params)
+			err = osm.AssetsManager.StartScheduler(context.Background(), params)
+			if err != nil {
+				// Dismiss the success modal if still displayed before showing
+				// the error modal.
+				successModal.Dismiss()
+
+				errModal := modal.NewErrorModal(osm.Load, values.String(values.StrUnexpectedError), modal.DefaultClickFunc()).
+					Body(values.StringF(values.StrUnexpectedErrorMsgFmt, err.Error()))
+				osm.ParentWindow().ShowModal(errModal)
+			}
 		}()
 
 		osm.Dismiss()
-		osm.orderSchedulerStarted()
+		osm.ParentWindow().ShowModal(successModal)
 	}()
 }
 

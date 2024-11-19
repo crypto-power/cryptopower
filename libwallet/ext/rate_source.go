@@ -87,12 +87,19 @@ var (
 		stats: "https://api.kucoin.com/api/v1/market/stats?symbol=%s", // symbol like BTC-USDT
 	}
 
-	// supportedMarkets is a map of markets supported by rate sources
-	// implemented (Binance, Bittrex).
-	supportedMarkets = map[values.Market]*struct{}{
+	// supportedUSDTMarkets is a map of usdt markets supported by rate sources
+	// implemented (Binance, Bittrex etc).
+	supportedUSDTMarkets = map[values.Market]*struct{}{
 		values.BTCUSDTMarket: {},
 		values.DCRUSDTMarket: {},
 		values.LTCUSDTMarket: {},
+	}
+
+	// At the time of implementation, only messari support was added for BTC
+	// markets.
+	supportedBTCMarkets = map[values.Market]*struct{}{
+		values.LTCBTCMarket: {},
+		values.DCRBTCMarket: {},
 	}
 
 	// Rates exceeding rateExpiry are expired and should be removed unless there
@@ -320,7 +327,9 @@ func (cs *CommonRateSource) Refresh(force bool) {
 		tickers = cs.copyRates()
 	}
 
-	for market := range supportedMarkets {
+	// Refresh only supportedUSDTMarkets, supportedBTCMarkets are requested for
+	// special use-case.
+	for market := range supportedUSDTMarkets {
 		t, ok := tickers[market]
 		if ok && time.Since(t.lastUpdate) < rateExpiry {
 			continue
@@ -479,7 +488,7 @@ func (cs *CommonRateSource) coinpaprikaGetTicker(market values.Market) (*Ticker,
 	cs.mtx.Lock()
 	for _, coinInfo := range res {
 		market := values.NewMarket(coinInfo.Symbol, "USDT")
-		_, found := supportedMarkets[market]
+		_, found := supportedUSDTMarkets[market]
 		if !found {
 			continue
 		}
@@ -511,6 +520,7 @@ func messariGetTicker(market values.Market) (*Ticker, error) {
 		Data struct {
 			MarketData struct {
 				Price         float64 `json:"price_usd"`
+				BTCPrice      float64 `json:"price_btc"`
 				PercentChange float64 `json:"percent_change_usd_last_24_hours"`
 			} `json:"market_data"`
 		} `json:"data"`
@@ -523,9 +533,14 @@ func messariGetTicker(market values.Market) (*Ticker, error) {
 
 	ticker := &Ticker{
 		Market:             market.String(), // Ok: e.g BTC-USDT
-		LastTradePrice:     res.Data.MarketData.Price,
 		lastUpdate:         time.Now(),
 		PriceChangePercent: &res.Data.MarketData.PercentChange,
+	}
+
+	if market == values.DCRBTCMarket || market == values.LTCBTCMarket {
+		ticker.LastTradePrice = res.Data.MarketData.BTCPrice
+	} else {
+		ticker.LastTradePrice = res.Data.MarketData.Price
 	}
 
 	return ticker, nil
@@ -601,8 +616,9 @@ func isSupportedMarket(market values.Market, rateSource string) (values.Market, 
 	}
 
 	marketName := values.NewMarket(fromCur, toCur)
-	_, ok := supportedMarkets[marketName]
-	if !ok {
+	_, notUSDTMarket := supportedUSDTMarkets[marketName]
+	_, notBTCMarket := supportedBTCMarkets[marketName]
+	if !notUSDTMarket && !notBTCMarket {
 		return "", false
 	}
 

@@ -406,6 +406,7 @@ const (
 	StrInsufficientFund                      = "insufficientFund"
 	StrInvalidAddress                        = "invalidAddress"
 	StrInvalidAmount                         = "invalidAmount"
+	StrInvalidRateFmt                        = "invalidRateFmt"
 	StrInvalidHex                            = "invalidHex"
 	StrInvalidPassphrase                     = "invalidPassphrase"
 	StrInvalidSeedPhrase                     = "invalidSeedPhrase"
@@ -1065,4 +1066,6 @@ const (
 	StrPrivacy                               = "privacy"
 	StrRemoveRecipient                       = "removeRecipient"
 	StrRemoveRecipientWarning                = "removeRecipientWarning"
+	StrUnexpectedErrorMsgFmt                 = "unexpectedErrorMsgFmt"
+	StrUnexpectedError                       = "unexpectedError"
 )

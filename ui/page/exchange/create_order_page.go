@@ -87,11 +87,11 @@ type orderData struct {
 	exchange       api.IDExchange
 	exchangeServer instantswap.ExchangeServer
 
-	sourceAccountSelector *components.AccountDropdown
 	sourceWalletSelector  *components.WalletDropdown
+	sourceAccountSelector *components.AccountDropdown
 
-	destinationAccountSelector *components.AccountDropdown
 	destinationWalletSelector  *components.WalletDropdown
+	destinationAccountSelector *components.AccountDropdown
 
 	sourceWalletID           int
 	sourceAccountNumber      int32
@@ -310,57 +310,6 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 	pg.stopNtfnListeners()
 }
 
-func (pg *CreateOrderPage) handleEditorEvents(gtx C) {
-	for {
-		event, ok := pg.fromAmountEditor.Edit.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(pg.fromAmountEditor.Edit.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				pg.setToAmount(pg.fromAmountEditor.Edit.Editor.Text())
-			}
-		}
-	}
-
-	for {
-		event, ok := pg.toAmountEditor.Edit.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(pg.toAmountEditor.Edit.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				if pg.inputsNotEmpty(pg.toAmountEditor.Edit.Editor) {
-					f, err := strconv.ParseFloat(pg.toAmountEditor.Edit.Editor.Text(), 32)
-					if err != nil {
-						// empty usd input
-						pg.fromAmountEditor.Edit.Editor.SetText("")
-						pg.amountErrorText = values.String(values.StrInvalidAmount)
-						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-						return
-					}
-					pg.amountErrorText = ""
-					if pg.exchangeRate != -1 {
-						value := f * pg.exchangeRate
-						v := strconv.FormatFloat(value, 'f', 8, 64)
-						pg.amountErrorText = ""
-						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.fromAmountEditor.Edit.Editor.SetText(v)
-					}
-				} else {
-					pg.fromAmountEditor.Edit.Editor.SetText("")
-				}
-			}
-		}
-	}
-}
-
 func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
@@ -451,10 +400,6 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 					pg.destinationAddress = destinationAddress
 
 					orderSchedulerModal := newOrderSchedulerModalModal(pg.Load, pg.orderData).
-						OnOrderSchedulerStarted(func() {
-							infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrSchedulerRunning), modal.DefaultClickFunc())
-							pg.ParentWindow().ShowModal(infoModal)
-						}).
 						OnCancel(func() { // needed to satisfy the modal instance
 							pg.scheduler.SetChecked(false)
 						})
@@ -478,6 +423,53 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 			pg.walletCreationSuccessFunc(false, assetToCreate)
 		}, assetToCreate))
+	}
+
+	if pg.sourceWalletSelector != nil {
+		pg.sourceWalletSelector.Handle(gtx)
+	}
+
+	if pg.sourceAccountSelector != nil {
+		pg.sourceAccountSelector.Handle(gtx)
+	}
+
+	if pg.destinationWalletSelector != nil {
+		pg.destinationWalletSelector.Handle(gtx)
+	}
+
+	if pg.destinationAccountSelector != nil {
+		pg.destinationAccountSelector.Handle(gtx)
+	}
+
+	for pg.fromAmountEditor.Edit.Changed() && pg.fromAmountEditor.Edit.IsFocused() {
+		pg.setToAmount(pg.fromAmountEditor.Edit.Editor.Text())
+	}
+
+	for pg.toAmountEditor.Edit.Changed() && pg.toAmountEditor.Edit.IsFocused() {
+		amountTxt := pg.toAmountEditor.Edit.Editor.Text()
+		if amountTxt == "" {
+			pg.fromAmountEditor.Edit.Editor.SetText("")
+			continue
+		}
+
+		f, err := strconv.ParseFloat(amountTxt, 32)
+		if err != nil {
+			// empty usd input
+			pg.fromAmountEditor.Edit.Editor.SetText("")
+			pg.amountErrorText = values.String(values.StrInvalidAmount)
+			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+			return
+		}
+		pg.amountErrorText = ""
+		if pg.exchangeRate != -1 {
+			value := f * pg.exchangeRate
+			v := strconv.FormatFloat(value, 'f', 8, 64)
+			pg.amountErrorText = ""
+			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+			pg.fromAmountEditor.Edit.Editor.SetText(v)
+		}
 	}
 }
 
@@ -574,6 +566,9 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []libutils.Ass
 
 		pg.fromCurrency = selectedAsset
 		pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
+		if ok := pg.resetSourceWallet(nil); !ok {
+			return selectedAsset, false
+		}
 
 		// If the to and from asset are the same, select a new to asset.
 		if selectedAsset == pg.toCurrency {
@@ -581,11 +576,10 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []libutils.Ass
 			allAssets := pg.AssetsManager.AllAssetTypes()
 			for _, asset := range allAssets {
 				if asset != selectedAsset {
-
 					// Select the first available asset as the new to asset.
-
 					pg.toCurrency = asset
 					pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+					pg.resetDestinationWallet(nil)
 
 					break
 				}
@@ -598,6 +592,9 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []libutils.Ass
 
 		pg.toCurrency = selectedAsset
 		pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+		if ok := pg.resetDestinationWallet(nil); !ok {
+			return selectedAsset, false
+		}
 
 		// If the to and from asset are the same, select a new from asset.
 		if selectedAsset == pg.fromCurrency {
@@ -606,11 +603,10 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []libutils.Ass
 			allAssets := pg.AssetsManager.AllAssetTypes()
 			for _, asset := range allAssets {
 				if asset != selectedAsset {
-
 					// Select the first available asset as the new from asset.
-
 					pg.fromCurrency = asset
 					pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
+					pg.resetSourceWallet(nil)
 
 					break
 				}
@@ -689,7 +685,6 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
-	pg.handleEditorEvents(gtx)
 	if pg.isFirstVisit {
 		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, _ int) D {
 			return pg.splashPage(gtx)
@@ -762,7 +757,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 					return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layoutMobile), overlay)
 				}
 				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layoutDesktop), overlay)
-
 			})
 		})
 	})
@@ -920,7 +914,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 										if pg.fetchingRate {
 											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
 											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											return pg.materialLoader.Layout(gtx)
+											return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.materialLoader.Layout)
 										}
 										txt := pg.Theme.Label(textSize14, pg.exchangeRateInfo)
 										txt.Color = pg.Theme.Color.Gray1
@@ -941,7 +935,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 						if pg.fetchingRate {
 							gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
-							return pg.materialLoader.Layout(gtx)
+							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.materialLoader.Layout)
 						}
 
 						fromCur := strings.ToUpper(pg.fromCurrency.String())
@@ -1042,7 +1036,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 																if pg.AssetsManager.InstantSwap.IsSyncing() {
 																	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
 																	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																	return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+																	return layout.Inset{Top: values.MarginPadding2, Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 																}
 																return pg.Theme.NewIcon(pg.Theme.Icons.NavigationRefresh).LayoutTransform(gtx, pg.IsMobileView(), values.MarginPadding18)
 															})
@@ -1113,7 +1107,7 @@ func (pg *CreateOrderPage) orderSchedulerLayout(gtx C) D {
 									}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
 								}),
 								layout.Rigid(func(gtx C) D {
-									title := pg.Theme.Label(textSize16, pg.AssetsManager.GetShedulerRuntime())
+									title := pg.Theme.Label(textSize16, pg.AssetsManager.GetSchedulerRuntime())
 									title.Color = pg.Theme.Color.GrayText2
 									return title.Layout(gtx)
 								}),
@@ -1203,7 +1197,7 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 
 	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
 		OnOrderCompleted(func(order *instantswap.Order) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 			successModal := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
@@ -1320,10 +1314,63 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	if noSourceWallet {
 		isConfigUpdateRequired = true
 	}
+
+	pg.resetSourceWallet(sourceWallet)
+
+	if sourceAccount != -1 {
+		if _, err := pg.sourceWalletSelector.SelectedWallet().GetAccount(sourceAccount); err != nil {
+			log.Error(err)
+		}
+	}
+
+	if pg.sourceAccountSelector.SelectedAccount() == nil {
+		isConfigUpdateRequired = true
+		_ = pg.sourceAccountSelector.Setup(pg.sourceWalletSelector.SelectedWallet())
+	}
+
+	// Destination wallet picker
+	if noDestinationWallet {
+		isConfigUpdateRequired = true
+	}
+
+	pg.resetDestinationWallet(destinationWallet)
+
+	if destinationAccount != -1 {
+		if _, err := pg.destinationWalletSelector.SelectedWallet().GetAccount(destinationAccount); err != nil {
+			log.Error(err)
+		}
+	}
+
+	if pg.destinationAccountSelector.SelectedAccount() == nil {
+		isConfigUpdateRequired = true
+		_ = pg.destinationAccountSelector.Setup(pg.destinationWalletSelector.SelectedWallet())
+	}
+
+	if isConfigUpdateRequired {
+		pg.updateExchangeConfig()
+	}
+
+	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
+	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+}
+
+func (pg *CreateOrderPage) resetSourceWallet(sourceWallet sharedW.Asset) bool {
+	if sourceWallet == nil {
+		// Try to fetch a wallet that match from currency.
+		wallets := pg.AssetsManager.AssetWallets(pg.fromCurrency)
+		if len(wallets) == 0 {
+			return false
+		}
+
+		sourceWallet = wallets[0]
+	}
+
 	pg.sourceWalletSelector = components.
 		NewWalletDropdown(pg.Load, pg.fromCurrency).
+		SetChangedCallback(func(a sharedW.Asset) {
+			_ = pg.sourceAccountSelector.Setup(a)
+		}).
 		Setup(sourceWallet)
-	sourceWallet = pg.sourceWalletSelector.SelectedWallet()
 
 	// Source account picker
 	pg.sourceAccountSelector = components.NewAccountDropdown(pg.Load).
@@ -1332,29 +1379,26 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		}).
 		Setup(pg.sourceWalletSelector.SelectedWallet())
 
-	if sourceAccount != -1 {
-		if _, err := sourceWallet.GetAccount(sourceAccount); err != nil {
-			log.Error(err)
+	return true
+}
+
+func (pg *CreateOrderPage) resetDestinationWallet(destinationWallet sharedW.Asset) bool {
+	if destinationWallet == nil {
+		// Try to fetch a wallet that match from currency.
+		wallets := pg.AssetsManager.AssetWallets(pg.toCurrency)
+		if len(wallets) == 0 {
+			return false
 		}
+
+		destinationWallet = wallets[0]
 	}
 
-	if pg.sourceAccountSelector.SelectedAccount() == nil {
-		isConfigUpdateRequired = true
-		_ = pg.sourceAccountSelector.Setup(sourceWallet)
-	}
-
-	pg.sourceWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
-		_ = pg.sourceAccountSelector.Setup(selectedWallet)
-	})
-
-	// Destination wallet picker
-	if noDestinationWallet {
-		isConfigUpdateRequired = true
-	}
 	pg.destinationWalletSelector = components.
 		NewWalletDropdown(pg.Load, pg.toCurrency).
+		SetChangedCallback(func(selectedWallet sharedW.Asset) {
+			_ = pg.destinationAccountSelector.Setup(selectedWallet)
+		}).
 		Setup(destinationWallet)
-	destinationWallet = pg.destinationWalletSelector.SelectedWallet()
 
 	// Destination account picker
 	pg.destinationAccountSelector = components.NewAccountDropdown(pg.Load).
@@ -1363,27 +1407,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		}).
 		Setup(pg.destinationWalletSelector.SelectedWallet())
 
-	if destinationAccount != -1 {
-		if _, err := destinationWallet.GetAccount(destinationAccount); err != nil {
-			log.Error(err)
-		}
-	}
-
-	if pg.destinationAccountSelector.SelectedAccount() == nil {
-		isConfigUpdateRequired = true
-		_ = pg.destinationAccountSelector.Setup(destinationWallet)
-	}
-
-	pg.destinationWalletSelector.SetChangedCallback(func(selectedWallet sharedW.Asset) {
-		_ = pg.destinationAccountSelector.Setup(selectedWallet)
-	})
-
-	if isConfigUpdateRequired {
-		pg.updateExchangeConfig()
-	}
-
-	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
-	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+	return true
 }
 
 // updateExchangeConfig Updates the newly created or modified exchange
@@ -1408,11 +1432,11 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 func (pg *CreateOrderPage) listenForNotifications() {
 	orderNotificationListener := &instantswap.OrderNotificationListener{
 		OnExchangeOrdersSynced: func() {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 			pg.ParentWindow().Reload()
 		},
 		OnOrderCreated: func(_ *instantswap.Order) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 			pg.ParentWindow().Reload()
 		},
 		OnOrderSchedulerStarted: func() {
