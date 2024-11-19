@@ -198,13 +198,7 @@ func (win *Window) HandleEvents() {
 			return
 		}
 
-		ord, inflight, err := win.load.AssetsManager.DexClient().ActiveOrders()
-		if err != nil {
-			log.Errorf("AssetsManager.DexClient().ActiveOrders error: %v", err)
-			return
-		}
-
-		if len(ord) == 0 && len(inflight) == 0 {
+		if !win.load.AssetsManager.DexClient().Active() {
 			doShutdown()
 			return
 		}
