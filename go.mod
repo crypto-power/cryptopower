@@ -1,6 +1,6 @@
 module github.com/crypto-power/cryptopower
 
-go 1.21
+go 1.22
 
 require (
 	decred.org/dcrdex v1.0.0
