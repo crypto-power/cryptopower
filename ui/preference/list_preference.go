@@ -50,6 +50,7 @@ var (
 		{Key: localizable.ENGLISH, Value: values.StrEnglish},
 		{Key: localizable.FRENCH, Value: values.StrFrench},
 		{Key: localizable.SPANISH, Value: values.StrSpanish},
+		{Key: localizable.CHINESE, Value: values.StrChinese},
 	}
 
 	// LogOptions are the selectable debug levels.

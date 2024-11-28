@@ -526,4 +526,5 @@ syncCompTime" = "Est. sync completion time"
 "mixedAccHidden" = "La cuenta mixta está oculta"
 "mixedAccDisabled" = "La recepción en una cuenta mixta está deshabilitada por la configuración de StakeShuffle para proteger su privacidad"
 "totalValue" = "Total Value" //TODO
+"chinese" = "Chinese"
 `

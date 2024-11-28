@@ -959,4 +959,5 @@ const EN = `
 "removeRecipientWarning" = "Are you sure you want to proceed with removing the recipient?"
 "unexpectedErrorMsgFmt" = "Something unexpected happened: %s"
 "unexpectedError" = "Unexpected Error"
+"chinese" = "Chinese"
 `

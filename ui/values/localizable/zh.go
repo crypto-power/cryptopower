@@ -904,4 +904,5 @@ const ZH = `
 "removeRecipientWarning" = "您确定要继续移除该收款人吗？"
 "unexpectedErrorMsgFmt" = "发生了意外的错误：%s"
 "unexpectedError" = "意外错误"
+"chinese" = "Chinese"
 `
