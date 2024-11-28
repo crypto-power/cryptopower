@@ -230,6 +230,25 @@ func (pg *SettingsPage) generalSection() layout.Widget {
 func (pg *SettingsPage) debug() layout.Widget {
 	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Bottom: values.MarginPadding24,
+				}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							databaseTypeLabel := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), values.String(values.StrDatabaseType))
+							return databaseTypeLabel.Layout(gtx)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, func(gtx C) D {
+								dbDriverLabel := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), pg.AssetsManager.DBDriver())
+								dbDriverLabel.Color = pg.Theme.Color.GrayText2
+								return dbDriverLabel.Layout(gtx)
+							})
+						}),
+					)
+				})
+			}),
 			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
 			layout.Rigid(func(gtx C) D {
 				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {

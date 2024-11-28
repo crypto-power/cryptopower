@@ -1068,4 +1068,7 @@ const (
 	StrRemoveRecipientWarning                = "removeRecipientWarning"
 	StrUnexpectedErrorMsgFmt                 = "unexpectedErrorMsgFmt"
 	StrUnexpectedError                       = "unexpectedError"
+	StrDataFileErrorTitle                    = "dataFileErrorTitle"
+	StrDataFileErrorBody                     = "dataFileErrorBody"
+	StrDatabaseType                          = "databaseType"
 )
