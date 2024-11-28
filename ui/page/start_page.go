@@ -741,7 +741,7 @@ func (sp *startPage) checkDBFile() {
 	dbDriver := sp.AssetsManager.GetDBDriver()
 
 	isNewDB := dbDriver == sp.AssetsManager.BadgerDB()
-	numberOfRAM, err := getNumberOfRam()
+	numberOfRAM, err := getNumberOfRAM()
 	if err != nil {
 		log.Errorf("Error getting number of ram: %v", err)
 		return
@@ -802,7 +802,7 @@ func (sp *startPage) showRemoveWalletWarning() {
 }
 
 // Function to get the number of RAM in GB
-func getNumberOfRam() (int, error) {
+func getNumberOfRAM() (int, error) {
 	vmStat, err := mem.VirtualMemory()
 	if err != nil {
 		return 0, err
