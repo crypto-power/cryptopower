@@ -794,6 +794,7 @@ func (sp *startPage) showRemoveWalletWarning() {
 	warningModal.SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 		sp.clearAppDir()
 		sp.AssetsManager.SetDBDriver("badgerdb")
+		sp.ParentWindow().Reload()
 		return true
 	})
 
