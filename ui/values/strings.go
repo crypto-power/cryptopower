@@ -1068,4 +1068,5 @@ const (
 	StrRemoveRecipientWarning                = "removeRecipientWarning"
 	StrUnexpectedErrorMsgFmt                 = "unexpectedErrorMsgFmt"
 	StrUnexpectedError                       = "unexpectedError"
+	StrChinese                               = "chinese"
 )
