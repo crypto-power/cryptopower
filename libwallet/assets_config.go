@@ -296,3 +296,19 @@ func (mgr *AssetsManager) SetTotalBalanceVisibility(data bool) {
 func genKey(prefix, identifier interface{}) string {
 	return fmt.Sprintf("%v-%v", prefix, identifier)
 }
+
+// GetDBDriver returns the saved db driver.
+func (mgr *AssetsManager) GetDBDriver() string {
+	var dbDriver string
+	mgr.ReadAppConfigValue(sharedW.DBDriverConfigKey, &dbDriver)
+	if dbDriver == "" {
+		// return default db driver if no option is stored.
+		return BoltDB
+	}
+	return dbDriver
+}
+
+// SetDBDriver sets the db driver.
+func (mgr *AssetsManager) SetDBDriver(dbDriver string) {
+	mgr.SaveAppConfigValue(sharedW.DBDriverConfigKey, dbDriver)
+}

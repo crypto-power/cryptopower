@@ -55,6 +55,7 @@ const (
 	DarkModeConfigKey                = "dark_mode"
 	HideTotalBalanceConfigKey        = "hideTotalUSDBalance"
 	IsCEXFirstVisitConfigKey         = "is_cex_first_visit"
+	DBDriverConfigKey                = "db_driver"
 
 	PassphraseTypePin  int32 = 0
 	PassphraseTypePass int32 = 1
