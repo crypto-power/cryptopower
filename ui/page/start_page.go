@@ -760,7 +760,7 @@ func (sp *startPage) showRemoveWalletWarning() {
 		PositiveButtonStyle(sp.Theme.Color.Surface, sp.Theme.Color.Danger)
 
 	warningModal.SetNegativeButtonCallback(func() {
-		sp.checkStartupSecurityAndStartApp()
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.ctx, sp.Load))
 	})
 
 	warningModal.SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
@@ -772,7 +772,7 @@ func (sp *startPage) showRemoveWalletWarning() {
 }
 
 func (sp *startPage) showRemoveRootDirNotice() {
-	removeRootModal := modal.NewErrorModal(sp.Load, values.String(values.StrDataFileErrorBody), func(isChecked bool, im *modal.InfoModal) bool {
+	removeRootModal := modal.NewErrorModal(sp.Load, values.String(values.StrDataFileErrorBody), func(_ bool, _ *modal.InfoModal) bool {
 		return true
 	}).
 		Title(values.String(values.StrDataFileErrorTitle)).

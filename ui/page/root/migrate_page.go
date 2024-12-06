@@ -63,7 +63,10 @@ func (mp *MigrationPage) OnNavigatedFrom() {
 
 func (mp *MigrationPage) HandleUserInteractions(gtx C) {
 	if mp.migrateButton.Clicked(gtx) {
-		mp.AssetsManager.RemoveRootDir()
+		err := mp.AssetsManager.RemoveRootDir()
+		if err != nil {
+			log.Error("unable to remove root dir: %v", err)
+		}
 		newmgr, err := libwallet.NewAssetsManager(path.Dir(mp.AssetsManager.RootDir()), mp.AssetsManager.ParamLogDir(), mp.AssetsManager.NetType(), mp.AssetsManager.DEXTestAddr())
 		if err != nil {
 			log.Errorf("Error create new asset manager: %v", err)
