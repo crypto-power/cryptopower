@@ -466,6 +466,7 @@ func (dw *DEXWallet) GetTransaction(ctx context.Context, txHash *chainhash.Hash)
 
 	ret := dexdcr.WalletTransaction{
 		BlockHash: b.String(),
+		MsgTx:     &txd.MsgTx,
 	}
 
 	if txd.Block.Height != -1 {
