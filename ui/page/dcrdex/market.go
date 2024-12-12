@@ -335,7 +335,7 @@ func (pg *DEXMarketPage) resetServerAndMarkets() {
 	lastSelectedDexServer := &cryptomaterial.DropDownItem{
 		Text: pg.lastSelectedDEXServer,
 	}
-	pg.serverSelector = pg.Theme.NewCommonDropDown(servers, lastSelectedDexServer, dp300, values.DEXServerDropdownGroup, false)
+	pg.serverSelector = pg.Theme.NewCommonDropDown(servers, lastSelectedDexServer, cryptomaterial.MatchParent, values.DEXServerDropdownGroup, false)
 	pg.setServerMarkets()
 }
 
@@ -389,7 +389,7 @@ func (pg *DEXMarketPage) setServerMarkets() {
 		}}
 	}
 
-	pg.marketSelector = pg.Theme.NewCommonDropDown(markets, lastSelectedItem, dp300, values.DEXCurrencyPairGroup, false)
+	pg.marketSelector = pg.Theme.NewCommonDropDown(markets, lastSelectedItem, cryptomaterial.MatchParent, values.DEXCurrencyPairGroup, false)
 	pg.fetchOrderBook()
 }
 
@@ -576,18 +576,20 @@ func (pg *DEXMarketPage) serverAndCurrencySelection(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Flexed(0.5, func(gtx C) D {
-			return layout.Flex{Axis: vertical}.Layout(gtx,
-				layout.Rigid(pg.semiBoldLabelText(values.String(values.StrServer)).Layout),
-				layout.Rigid(func(gtx C) D {
-					pg.serverSelector.Background = &pg.Theme.Color.Surface
-					pg.serverSelector.BorderColor = &pg.Theme.Color.Gray5
-					return layout.Inset{Top: dp2}.Layout(gtx, pg.serverSelector.Layout)
-				}),
-			)
+			return layout.Inset{Left: values.MarginPadding10, Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: vertical}.Layout(gtx,
+					layout.Rigid(pg.semiBoldLabelText(values.String(values.StrServer)).Layout),
+					layout.Rigid(func(gtx C) D {
+						pg.serverSelector.Background = &pg.Theme.Color.Surface
+						pg.serverSelector.BorderColor = &pg.Theme.Color.Gray5
+						return layout.Inset{Top: dp2}.Layout(gtx, pg.serverSelector.Layout)
+					}),
+				)
+			})
 		}),
 		layout.Flexed(0.5, func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding60}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: vertical, Alignment: layout.End}.Layout(gtx,
+			return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: vertical}.Layout(gtx,
 					layout.Rigid(pg.semiBoldLabelText(values.String(values.StrCurrencyPair)).Layout),
 					layout.Rigid(func(gtx C) D {
 						pg.marketSelector.Background = &pg.Theme.Color.Surface
@@ -716,19 +718,25 @@ func (pg *DEXMarketPage) semiBoldLabelSize14(txt string) cryptomaterial.Label {
 
 func (pg *DEXMarketPage) orderFormAndOrderBook(gtx C) D {
 	elementWidth := (gtx.Constraints.Max.X - 20) / 2
+	orientation := horizontal
+	if pg.IsMobileView() {
+		orientation = vertical
+		elementWidth = gtx.Constraints.Max.X
+	}
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Orientation: horizontal,
+		Orientation: orientation,
+		Spacing:     0,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Max.X = elementWidth
-			return layout.W.Layout(gtx, pg.orderForm)
+			return pg.orderForm(gtx)
 		}),
-		layout.Rigid(layout.Spacer{Width: values.MarginPadding20}.Layout),
+		layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Max.X = elementWidth
-			return layout.E.Layout(gtx, pg.orderbook)
+			return pg.orderbook(gtx)
 		}),
 	)
 }
@@ -936,7 +944,6 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 				}),
 			)
 		}
-
 		if !overlaySet {
 			return formLayout(gtx)
 		}
