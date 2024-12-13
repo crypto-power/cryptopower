@@ -131,6 +131,44 @@ func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 	return pg
 }
 
+func NewTransactionsPageWithType(l *load.Load, selectedTab int, wallet sharedW.Asset) *TransactionsPage {
+	pg := &TransactionsPage{
+		Load:             l,
+		GenericPageModal: app.NewGenericPageModal(TransactionsPageID),
+		separator:        l.Theme.Separator(),
+		transactionList:  l.Theme.NewClickableList(layout.Vertical),
+		txCategoryTab:    l.Theme.SegmentedControl(txTabs, cryptomaterial.SegmentTypeGroup),
+		selectedWallet:   wallet,
+		isShowTitle:      true,
+	}
+	pg.selectedTxCategoryTab = selectedTab
+	pg.txCategoryTab.SetSelectedSegment(txTabs[selectedTab])
+	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
+	pg.searchEditor.Editor.SingleLine = true
+	pg.searchEditor.TextSize = pg.ConvertTextSize(l.Theme.TextSize)
+	// init the wallet selector if no wallet was pre-selected
+	if pg.selectedWallet == nil {
+		pg.multiWalletLayout = true
+		pg.initWalletSelector()
+		pg.isShowTitle = false
+	}
+	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTransactions)
+	pg.filterBtn = l.Theme.NewClickable(false)
+	pg.exportBtn = l.Theme.NewClickable(false)
+	pg.transactionList.Radius = cryptomaterial.Radius(14)
+	pg.transactionList.IsShadowEnabled = true
+	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
+		{Text: values.String(values.StrNewest)},
+		{Text: values.String(values.StrOldest)},
+	}, values.ProposalDropdownGroup, 1, 0, false)
+	pg.orderDropDown.Width = values.MarginPadding100
+	pg.materialLoader = material.Loader(pg.Theme.Base)
+	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
+	settingCommonDropdown(pg.Theme, pg.orderDropDown)
+	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
+	return pg
+}
+
 func (pg *TransactionsPage) DisableUniformTab() {
 	pg.txCategoryTab.DisableUniform(true)
 }
