@@ -87,7 +87,7 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset, backup func(sharedW.Asset))
 	pg.viewAllStakeButton.Font.Weight = font.Medium
 	pg.viewAllStakeButton.TextSize = values.TextSize16
 	pg.viewAllStakeButton.Inset = layout.UniformInset(0)
-	pg.viewAllTxButton.HighlightColor = color.NRGBA{}
+	pg.viewAllStakeButton.HighlightColor = color.NRGBA{}
 
 	pg.mixerRedirectButton, pg.mixerInfoButton = components.SubpageHeaderButtons(l)
 	pg.mixerRedirectButton.Icon = pg.Theme.Icons.NavigationArrowForward
