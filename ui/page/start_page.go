@@ -3,10 +3,10 @@ package page
 import (
 	"context"
 	"os"
+	"path"
 	"strings"
 	"time"
 
-	gioApp "gioui.org/app"
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -16,6 +16,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/appos"
+	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -146,10 +147,6 @@ func (sp *startPage) OnNavigatedTo() {
 		// Mobile devices typically have limited RAM available for applications.
 		// To optimize memory usage, ensure mobile users are using BadgerDB,
 		// as it is efficient and designed for low-memory environments.
-		if appos.Current().IsMobile() {
-			sp.checkDBFile()
-			return
-		}
 		sp.checkStartupSecurityAndStartApp()
 	} else {
 		sp.loading = false
@@ -228,12 +225,19 @@ func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 	if err != nil {
 		log.Errorf("Error opening wallet: %v", err)
 		if appos.Current().IsMobile() {
-			sp.showRemoveWalletWarning()
+			sp.showRemoveRootDirNotice()
 		}
 		return err
 	}
-
-	sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.ctx, sp.Load))
+	numberOfRAM, err := getNumberOfRAM()
+	if err != nil {
+		log.Errorf("Error getting number of ram: %v", err)
+	}
+	if numberOfRAM < 4 && sp.AssetsManager.NeedMigrate {
+		sp.showRemoveWalletWarning()
+	} else {
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.ctx, sp.Load))
+	}
 	return nil
 }
 
@@ -737,24 +741,6 @@ func (sp *startPage) updateSettings() {
 	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.UpdateAPI, true)
 }
 
-func (sp *startPage) checkDBFile() {
-	dbDriver := sp.AssetsManager.GetDBDriver()
-
-	isNewDB := dbDriver == sp.AssetsManager.BadgerDB()
-	numberOfRAM, err := getNumberOfRAM()
-	if err != nil {
-		log.Errorf("Error getting number of ram: %v", err)
-		return
-	}
-
-	if numberOfRAM < 4 && !isNewDB {
-		sp.showRemoveWalletWarning()
-		return
-	}
-
-	sp.checkStartupSecurityAndStartApp()
-}
-
 func (sp *startPage) checkStartupSecurityAndStartApp() {
 	if sp.AssetsManager.IsStartupSecuritySet() {
 		sp.unlock()
@@ -764,41 +750,53 @@ func (sp *startPage) checkStartupSecurityAndStartApp() {
 	}
 }
 
-func (sp *startPage) clearAppDir() {
-	homeDir, err := gioApp.DataDir()
-	if err != nil {
-		log.Error("unable to get home dir: %v", err)
-	}
-
-	err = os.RemoveAll(homeDir)
-	if err != nil {
-		log.Error("unable to remove home dir: %v", err)
-		return
-	}
-}
-
 func (sp *startPage) showRemoveWalletWarning() {
 	warningModal := modal.NewCustomModal(sp.Load).
 		Title(values.String(values.StrDataFileErrorTitle)).
-		Body(values.String(values.StrDataFileErrorBody)).
+		Body(values.String(values.StrWarningMigrate)).
+		SetCancelable(false).
 		SetNegativeButtonText(values.String(values.StrNo)).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		PositiveButtonStyle(sp.Theme.Color.Surface, sp.Theme.Color.Danger)
 
 	warningModal.SetNegativeButtonCallback(func() {
-		sp.checkStartupSecurityAndStartApp()
-		sp.AssetsManager.SetDBDriver("bdb")
-		warningModal.Dismiss()
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.ctx, sp.Load))
 	})
 
 	warningModal.SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-		sp.clearAppDir()
-		sp.AssetsManager.SetDBDriver("badgerdb")
-		sp.ParentWindow().Reload()
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewMigrationPage(sp.ctx, sp.Load))
 		return true
 	})
 
 	sp.ParentWindow().ShowModal(warningModal)
+}
+
+func (sp *startPage) showRemoveRootDirNotice() {
+	removeRootModal := modal.NewErrorModal(sp.Load, values.String(values.StrDataFileErrorBody), func(_ bool, _ *modal.InfoModal) bool {
+		return true
+	}).
+		Title(values.String(values.StrDataFileErrorTitle)).
+		Body(values.String(values.StrDataFileErrorBody)).
+		SetCancelable(false).
+		SetPositiveButtonText(values.String(values.StrOK))
+	removeRootModal.SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+		err := sp.AssetsManager.RemoveRootDir()
+		if err != nil {
+			log.Error("unable to remove root dir: %v", err)
+			return false
+		}
+		newmgr, err := libwallet.NewAssetsManager(path.Dir(sp.AssetsManager.RootDir()), sp.AssetsManager.ParamLogDir(), sp.AssetsManager.NetType(), sp.AssetsManager.DEXTestAddr())
+		if err != nil {
+			log.Errorf("Error create new asset manager: %v", err)
+			return false
+		}
+
+		sp.AssetsManager = newmgr
+		sp.ParentNavigator().ClearStackAndDisplay(NewStartPage(sp.ctx, sp.Load))
+		return true
+	})
+
+	sp.ParentWindow().ShowModal(removeRootModal)
 }
 
 // Function to get the number of RAM in GB

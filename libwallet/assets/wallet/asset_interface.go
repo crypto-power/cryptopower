@@ -39,6 +39,7 @@ type Asset interface {
 	DecryptSeed(privatePassphrase string) (string, error)
 	VerifySeedForWallet(seedMnemonic, privpass string) (bool, error)
 	ChangePrivatePassphraseForWallet(oldPrivatePassphrase, newPrivatePassphrase string, privatePassphraseType int32) error
+	GetPrivatePassphraseType() int32
 
 	RootDir() string
 	DataDir() string

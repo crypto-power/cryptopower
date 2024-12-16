@@ -1070,5 +1070,12 @@ const (
 	StrUnexpectedError                       = "unexpectedError"
 	StrDataFileErrorTitle                    = "dataFileErrorTitle"
 	StrDataFileErrorBody                     = "dataFileErrorBody"
+	StrWarningMigrate                        = "warningMigrate"
+	StrMigrateWallet                         = "migrateWallet"
+	StrWillMigrate                           = "willMigrate"
+	StrDoNotMigrate                          = "doNotMigrate"
+	StrMigrateNow                            = "migrateNow"
+	StrInputSeed                             = "inputSeed"
+	StrInputPassword                         = "inputPassword"
 	StrDatabaseType                          = "databaseType"
 )
