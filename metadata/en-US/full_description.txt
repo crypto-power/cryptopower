@@ -1,0 +1,17 @@
+Cryptopower is a self-custodial multi-coin wallet application designed for both desktop and mobile platforms. It offers support for creating wallets not only for Decred but also for other cryptocurrencies such as Bitcoin and Litecoin. The app is built using Gio, a Golang library for the implementation of cross-platform user interfaces.
+
+Features
+* Multi-Coin support - Native SPV wallets for Decred, Bitcoin and Litecoin.
+* Coin Control - It allows users to select exact addresses and outputs to be used in a transaction.
+* CoinShuffle++ - CoinShuffle++ (CSPP) is a mixing protocol used to create Decred CoinJoin transactions.
+* Staking - This allows users to purchase tickets via DCR’s PoS (Proof-Of-Stake) consensus implementation.
+* Governance - This allows users to vote on Decred Proposals, Consensus changes and Treasury Spendings.
+* Set gap limit - Users can choose a custom gap limit for use with address discovery.
+* Instant Exchange - Instant exchanging between assets using (Flyp.me, Godex, Changenow, Trocador).
+* Fee Rates API - This allows for custom fee selection when sending BTC transactions.
+* Transaction note - This allows for a note/description when sending transactions.
+* DCRDEX has been implemented with current trading pairs; LTC/DCR & DCR/BTC. It is currently under beta testing.
+* Users can now send transactions to multiple recipients at a go.
+* Users can now export transactions for better record keeping.
+* An improved User Interface for easier accessibility and use.
+* Users can switch between mainnet and testnet right from the settings page
