@@ -62,7 +62,6 @@ type OverviewPage struct {
 	viewAllRecentTxButton           cryptomaterial.Button
 	viewAllRecentStakesButton       cryptomaterial.Button
 
-
 	scrollContainer               *widget.List
 	mobileMarketOverviewContainer *widget.List
 
