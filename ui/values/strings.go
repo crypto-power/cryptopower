@@ -1078,4 +1078,5 @@ const (
 	StrInputSeed                             = "inputSeed"
 	StrInputPassword                         = "inputPassword"
 	StrDatabaseType                          = "databaseType"
+	StrChinese                               = "chinese"
 )

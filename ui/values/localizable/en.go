@@ -969,4 +969,5 @@ const EN = `
 "migrateNow" = "Migrate"
 "inputSeed" = "Input seed"
 "inputPassword" = "Input Password"
+"chinese" = "Chinese"
 `

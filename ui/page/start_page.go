@@ -158,6 +158,7 @@ func (sp *startPage) initPage() {
 		{Text: titler.String(values.StrEnglish)},
 		{Text: titler.String(values.StrFrench)},
 		{Text: titler.String(values.StrSpanish)},
+		{Text: titler.String(values.StrChinese)},
 	}, nil, values.MarginPadding120, values.StartPageDropdownGroup, false)
 
 	sp.onBoardingScreens = []onBoardingScreen{
