@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -55,6 +56,11 @@ type OverviewPage struct {
 	recentTradeList          *cryptomaterial.ClickableList
 	recentTransactions       *cryptomaterial.ClickableList
 	recentStakes             *cryptomaterial.ClickableList
+
+	viewAllRecentProposalListButton cryptomaterial.Button
+	viewAllRecentTradeListButton    cryptomaterial.Button
+	viewAllRecentTxButton           cryptomaterial.Button
+	viewAllRecentStakesButton       cryptomaterial.Button
 
 	scrollContainer               *widget.List
 	mobileMarketOverviewContainer *widget.List
@@ -167,6 +173,27 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 		listInfoWallets:       make([]*components.WalletSyncInfo, 0),
 	}
 
+	pg.viewAllRecentProposalListButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
+	pg.viewAllRecentProposalListButton.Font.Weight = font.Medium
+	pg.viewAllRecentProposalListButton.TextSize = values.TextSize16
+	pg.viewAllRecentProposalListButton.Inset = layout.UniformInset(0)
+	pg.viewAllRecentProposalListButton.HighlightColor = color.NRGBA{}
+	pg.viewAllRecentTradeListButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
+	pg.viewAllRecentTradeListButton.Font.Weight = font.Medium
+	pg.viewAllRecentTradeListButton.TextSize = values.TextSize16
+	pg.viewAllRecentTradeListButton.Inset = layout.UniformInset(0)
+	pg.viewAllRecentTradeListButton.HighlightColor = color.NRGBA{}
+	pg.viewAllRecentTxButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
+	pg.viewAllRecentTxButton.Font.Weight = font.Medium
+	pg.viewAllRecentTxButton.TextSize = values.TextSize16
+	pg.viewAllRecentTxButton.Inset = layout.UniformInset(0)
+	pg.viewAllRecentTxButton.HighlightColor = color.NRGBA{}
+	pg.viewAllRecentStakesButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
+	pg.viewAllRecentStakesButton.Font.Weight = font.Medium
+	pg.viewAllRecentStakesButton.TextSize = values.TextSize16
+	pg.viewAllRecentStakesButton.Inset = layout.UniformInset(0)
+	pg.viewAllRecentStakesButton.HighlightColor = color.NRGBA{}
+
 	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.mixerSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.mixerSlider.SelectedIndicatorColor = pg.Theme.Color.DeepBlue
@@ -231,6 +258,19 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 
 	if pg.forceRefreshRates.Clicked(gtx) {
 		go pg.AssetsManager.RateSource.Refresh(true)
+	}
+
+	if pg.viewAllRecentTxButton.Button.Clicked(gtx) {
+		pg.ParentNavigator().Display(transaction.NewTransactionsPage(pg.Load, nil))
+	}
+	if pg.viewAllRecentStakesButton.Button.Clicked(gtx) {
+		pg.ParentNavigator().Display(transaction.NewTransactionsPageWithType(pg.Load, 1, nil))
+	}
+	if pg.viewAllRecentTradeListButton.Button.Clicked(gtx) {
+		pg.ParentNavigator().Display(exchange.NewTradePage(pg.Load))
+	}
+	if pg.viewAllRecentProposalListButton.Button.Clicked(gtx) {
+		pg.ParentNavigator().Display(governance.NewGovernancePage(pg.Load, nil))
 	}
 
 	if clicked, selectedTxIndex := pg.recentTransactions.ItemClicked(); clicked {
@@ -933,7 +973,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 }
 
 func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
-	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
+	return pg.txContentWrapper(gtx, values.String(values.StrRecentTransactions), pg.viewAllRecentTxButton.Layout, func(gtx C) D {
 		if len(pg.transactions) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
@@ -966,7 +1006,7 @@ func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
 }
 
 func (pg *OverviewPage) recentStakingsLayout(gtx C) D {
-	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
+	return pg.txContentWrapper(gtx, values.String(values.StrStakingActivity), pg.viewAllRecentStakesButton.Layout, func(gtx C) D {
 		if len(pg.stakes) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
@@ -999,7 +1039,7 @@ func (pg *OverviewPage) recentStakingsLayout(gtx C) D {
 }
 
 func (pg *OverviewPage) recentTrades(gtx C) D {
-	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTrades), nil, func(gtx C) D {
+	return pg.txContentWrapper(gtx, values.String(values.StrRecentTrades), pg.viewAllRecentTradeListButton.Layout, func(gtx C) D {
 		if len(pg.orders) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
@@ -1032,7 +1072,7 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 }
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
-	return pg.pageContentWrapper(gtx, values.String(values.StrRecentProposals), nil, func(gtx C) D {
+	return pg.txContentWrapper(gtx, values.String(values.StrRecentProposals), pg.viewAllRecentProposalListButton.Layout, func(gtx C) D {
 		if len(pg.proposalItems) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
@@ -1158,6 +1198,42 @@ func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, altTitleL
 			}.Layout2(gtx, body)
 		}),
 	)
+}
+
+func (pg *OverviewPage) txContentWrapper(gtx C, sectionTitle string, redirectBtn, body layout.Widget) D {
+	return layout.Inset{
+		Bottom: values.MarginPadding16,
+	}.Layout(gtx, func(gtx C) D {
+		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Bottom: values.MarginPadding16,
+						}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									if sectionTitle == "" {
+										return D{}
+									}
+									txt := pg.Theme.Body1(sectionTitle)
+									txt.Font.Weight = font.SemiBold
+									return txt.Layout(gtx)
+								}),
+								layout.Flexed(1, func(gtx C) D {
+									if redirectBtn != nil {
+										return layout.E.Layout(gtx, redirectBtn)
+									}
+									return D{}
+								}),
+							)
+						})
+					}),
+					layout.Rigid(body),
+				)
+			})
+		})
+	})
 }
 
 func (pg *OverviewPage) centerLayout(gtx C, top, bottom unit.Dp, content layout.Widget) D {
