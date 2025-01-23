@@ -254,6 +254,13 @@ func (wallet *Wallet) GetAssetType() utils.AssetType {
 	return wallet.Type
 }
 
+// GetPrivatePassphraseType returns the current wallet's private passphrase type.
+func (wallet *Wallet) GetPrivatePassphraseType() int32 {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.PrivatePassphraseType
+}
+
 // Internal return the upstream wallet of the current asset created in the loader
 // package. Since its exported via the interface thus the need to be thread safe.
 func (wallet *Wallet) Internal() *loader.LoadedWallets {

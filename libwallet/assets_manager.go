@@ -38,6 +38,9 @@ const LogFilename = "cryptopower.log"
 // assetIdentifier use for listen balance of all wallet changed
 const assetIdentifier = "assets_manager"
 
+const BoltDB = "bdb"        // Bolt db driver
+const BadgerDB = "badgerdb" // Badger db driver
+
 // Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
 	DCR struct {
@@ -78,6 +81,8 @@ type AssetsManager struct {
 
 	//TODO: some time need show message for user. Change it if has other solution
 	toast *notification.Toast
+
+	NeedMigrate bool
 }
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
@@ -128,18 +133,49 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 	return mgr, nil
 }
 
+func fileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		return false
+	}
+	return true
+}
+
 // NewAssetsManager creates a new AssetsManager instance.
 func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType, dexTestAddr string) (*AssetsManager, error) {
 	errors.Separator = ":: "
+	needMigrate := false
+	isMobile := appos.Current().IsMobile()
+
+	dbDriver := BoltDB
+	if isMobile {
+		dbDriver = BadgerDB
+	}
+
+	if fileExists(filepath.Join(rootDir, fmt.Sprintf("%s-%s", string(netType), dbDriver))) {
+		// New db
+		rootDir = filepath.Join(rootDir, fmt.Sprintf("%s-%s", string(netType), dbDriver))
+	} else if fileExists(filepath.Join(rootDir, string(netType))) {
+		// old db
+		dbDriver = BoltDB
+		rootDir = filepath.Join(rootDir, string(netType))
+		needMigrate = isMobile
+	} else {
+		// db is not exist, create new
+		rootDir = filepath.Join(rootDir, fmt.Sprintf("%s-%s", string(netType), dbDriver))
+
+	}
 
 	// Create a root dir that has the path up the network folder.
-	rootDir = filepath.Join(rootDir, string(netType))
 	if err := os.MkdirAll(rootDir, utils.UserFilePerm); err != nil {
 		return nil, errors.Errorf("failed to create rootDir: %v", err)
 	}
 
 	// validate the network type before proceeding to initialize the othe fields.
-	dbDriver := "bdb" // TODO: Should be a constant.
+
 	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType, dexTestAddr)
 	if err != nil {
 		return nil, err
@@ -206,12 +242,27 @@ func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType, dexTest
 	}
 
 	mgr.listenForShutdown()
-
+	mgr.NeedMigrate = needMigrate
 	return mgr, nil
+}
+
+func (mgr *AssetsManager) RemoveRootDir() error {
+	err := os.RemoveAll(mgr.params.RootDir)
+	if err != nil {
+		return err
+	}
+	err = os.RemoveAll(mgr.params.LogDir)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (mgr *AssetsManager) RootDir() string {
 	return mgr.params.RootDir
+}
+func (mgr *AssetsManager) ParamLogDir() string {
+	return mgr.params.LogDir
 }
 
 func (mgr *AssetsManager) SetToast(toast *notification.Toast) {
@@ -388,6 +439,15 @@ func (mgr *AssetsManager) NetType() utils.NetworkType {
 // LogDir returns the log directory of the assets manager.
 func (mgr *AssetsManager) LogDir() string {
 	return filepath.Join(mgr.params.RootDir, logFileName)
+}
+
+func (mgr *AssetsManager) DEXTestAddr() string {
+	return mgr.params.DEXTestAddr
+}
+
+// DBDriver returns the db driver in use
+func (mgr *AssetsManager) DBDriver() string {
+	return mgr.params.DbDriver
 }
 
 // OpenWallets opens all wallets in the assets manager.
@@ -1021,4 +1081,12 @@ func (mgr *AssetsManager) RemoveAssetChange() {
 
 	// Remove listener on rate notification
 	mgr.RateSource.RemoveRateListener(assetIdentifier)
+}
+
+func (mgr *AssetsManager) BadgerDB() string {
+	return BadgerDB
+}
+
+func (mgr *AssetsManager) BoltDB() string {
+	return BoltDB
 }
