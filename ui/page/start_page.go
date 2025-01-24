@@ -18,7 +18,6 @@ import (
 	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -27,8 +26,8 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/root"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/preference"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/shirou/gopsutil/mem"
 )
 
 const (
@@ -151,7 +150,7 @@ func (sp *startPage) OnNavigatedTo() {
 		sp.checkStartupSecurityAndStartApp()
 	} else {
 		sp.loading = false
-		isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := sp.AssetsManager.IsInternalStorageSufficient(utils.DCRWalletAsset, sp.AssetsManager.NetType())
+		isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := sp.AssetsManager.IsInternalStorageSufficient(libutils.DCRWalletAsset, sp.AssetsManager.NetType())
 		if !isInternalStorageSufficient {
 			sp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
 		}
@@ -235,7 +234,7 @@ func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 		}
 		return err
 	}
-	numberOfRAM, err := getNumberOfRAM()
+	numberOfRAM, err := utils.GetNumberOfRAM()
 	if err != nil {
 		log.Errorf("Error getting number of ram: %v", err)
 	}
@@ -805,25 +804,17 @@ func (sp *startPage) showRemoveRootDirNotice() {
 	sp.ParentWindow().ShowModal(removeRootModal)
 }
 
-// Function to get the number of RAM in GB
-func getNumberOfRAM() (int, error) {
-	vmStat, err := mem.VirtualMemory()
-	if err != nil {
-		return 0, err
-	}
-	// Convert bytes to gigabytes
-	return int(vmStat.Total / (1024 * 1024 * 1024)), nil
-}
-
 func (sp *startPage) showLowStorageNotice(estimatedHeadersSize int64, freeInternalMemory uint64) {
 	lowStorageModal := modal.NewCustomModal(sp.Load).
 		Title(values.String(values.StrLowStorageSpaceTitle)).
-		Body((values.StringF(values.StrLowStorageSpaceBody, estimatedHeadersSize, freeInternalMemory))).
+		Body(values.StringF(values.StrLowStorageSpaceBody, estimatedHeadersSize, freeInternalMemory)).
 		SetCancelable(false).
-		SetNegativeButtonText(values.String(values.StrExit)).
-		SetNegativeButtonCallback(func() {
+		PositiveButtonStyle(sp.Theme.Color.Surface, sp.Theme.Color.Primary).
+		SetPositiveButtonText(values.String(values.StrExit)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			sp.AssetsManager.Shutdown()
 			os.Exit(0)
+			return true
 		})
 
 	sp.ParentWindow().ShowModal(lowStorageModal)

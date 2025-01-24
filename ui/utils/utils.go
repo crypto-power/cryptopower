@@ -19,6 +19,7 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/values"
+	"github.com/shirou/gopsutil/mem"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -180,4 +181,14 @@ func IsImportedAccount(assetType libutils.AssetType, acc *sharedW.Account) bool 
 	default:
 		return false
 	}
+}
+
+// GetNumberOfRAM returns the total number of RAM available in gigabytes.
+func GetNumberOfRAM() (int, error) {
+	vmStat, err := mem.VirtualMemory()
+	if err != nil {
+		return 0, err
+	}
+	// Convert bytes to gigabytes
+	return int(vmStat.Total / (1024 * 1024 * 1024)), nil
 }

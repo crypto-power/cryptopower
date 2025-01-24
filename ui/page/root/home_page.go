@@ -1140,7 +1140,7 @@ func (hp *HomePage) isUpdateAPIAllowed() bool {
 func (hp *HomePage) showLowStorageNotice(estimatedHeadersSize int64, freeInternalMemory uint64) {
 	lowStorageModal := modal.NewCustomModal(hp.Load).
 		Title(values.String(values.StrLowStorageSpaceTitle)).
-		Body((values.StringF(values.StrLowStorageSpaceBody, estimatedHeadersSize, freeInternalMemory))).
+		Body(values.StringF(values.StrLowStorageSpaceBody, estimatedHeadersSize, freeInternalMemory)).
 		SetCancelable(false).
 		SetNegativeButtonText(values.String(values.StrExit)).
 		SetNegativeButtonCallback(func() {

@@ -1081,4 +1081,6 @@ const (
 	StrChinese                               = "chinese"
 	StrLowStorageSpaceTitle                  = "lowStorageSpaceTitle"
 	StrLowStorageSpaceBody                   = "lowStorageSpaceBody"
+	StrWalletsCreationLimitTitle             = "walletCreationLimitTitle"
+	StrWalletsCreationLimitBody              = "walletCreationLimitBody"
 )
