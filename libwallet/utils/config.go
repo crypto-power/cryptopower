@@ -87,9 +87,6 @@ const (
 	LogLevelCritical = "critical"
 	DefaultLogLevel  = LogLevelInfo
 
-	GenesisTimestampMainnet = 1454954400
-	GenesisTimestampTestnet = 1533513600
-
 	// UserFilePerm contains permissions for the user only. Attempting to modify
 	// more permissions require a super user permission that isn't readily available.
 	UserFilePerm = fs.FileMode(0o700)

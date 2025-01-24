@@ -108,7 +108,7 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 			go wallet.CancelSync()
 			unlock(false)
 		} else {
-			isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := hp.AssetsManager.IsInternalStorageSufficient()
+			isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := hp.AssetsManager.IsInternalStorageSufficient(wallet.GetAssetType(), wallet.NetType())
 			if !isInternalStorageSufficient {
 				hp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
 				return
@@ -195,15 +195,15 @@ func (hp *HomePage) OnNavigatedTo() {
 	}
 
 	// Initiate the auto sync for all wallets with autosync set.
-	isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := hp.AssetsManager.IsInternalStorageSufficient()
-	if !isInternalStorageSufficient {
-		hp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
-	} else {
-		allWallets := hp.AssetsManager.AllWallets()
-		for _, wallet := range allWallets {
-			if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-				hp.startSyncing(wallet, func(_ bool) {})
-			}
+	allWallets := hp.AssetsManager.AllWallets()
+	for _, wallet := range allWallets {
+		isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := hp.AssetsManager.IsInternalStorageSufficient(wallet.GetAssetType(), wallet.NetType())
+		if !isInternalStorageSufficient {
+			hp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
+			return
+		}
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+			hp.startSyncing(wallet, func(_ bool) {})
 		}
 	}
 

@@ -9,6 +9,9 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 
 	"golang.org/x/crypto/bcrypt"
@@ -324,38 +327,42 @@ func (mgr *AssetsManager) SetDBDriver(dbDriver string) {
 	mgr.SaveAppConfigValue(sharedW.DBDriverConfigKey, dbDriver)
 }
 
-// GetGenesisTimestamp returns the genesis timestamp for the provided network.
-func (mgr *AssetsManager) GetGenesisTimestamp() int64 {
-	network := mgr.NetType()
-	switch network {
-	case utils.Mainnet:
-		return GenesisTimestampMainnet
-	case utils.Testnet:
-		return GenesisTimestampTestnet
+// GetGenesisTimestamp returns the genesis timestamp for the provided asset type and network.
+func (mgr *AssetsManager) GetGenesisTimestamp(assetType utils.AssetType, network utils.NetworkType) int64 {
+	switch assetType {
+	case utils.DCRWalletAsset:
+		return dcr.GetGenesisTimestamp(network)
+	case utils.BTCWalletAsset:
+		return btc.GetGenesisTimestamp(network)
+	case utils.LTCWalletAsset:
+		return ltc.GetGenesisTimestamp(network)
+	default:
+		return dcr.GetGenesisTimestamp(network) // Default to DCR
 	}
-	return 0
 }
 
-// GetTargetTimePerBlock returns the target time per block for the provided network.
-func (mgr *AssetsManager) GetTargetTimePerBlock() int64 {
-	network := mgr.NetType()
-	switch network {
-	case utils.Mainnet:
-		return TargetTimePerBlockMainnet
-	case utils.Testnet:
-		return TargetTimePerBlockTestnet
+// GetTargetTimePerBlock returns the target time per block for the provided asset type and network.
+func (mgr *AssetsManager) GetTargetTimePerBlock(assetType utils.AssetType, network utils.NetworkType) int64 {
+	switch assetType {
+	case utils.DCRWalletAsset:
+		return dcr.GetTargetTimePerBlock(network)
+	case utils.BTCWalletAsset:
+		return btc.GetTargetTimePerBlock(network)
+	case utils.LTCWalletAsset:
+		return ltc.GetTargetTimePerBlock(network)
+	default:
+		return dcr.GetTargetTimePerBlock(network) // Default to DCR
 	}
-	return 0
 }
 
 // IsInternalStorageSufficient checks if the available disk space is sufficient for the
 // wallet's operations.
-func (mgr *AssetsManager) IsInternalStorageSufficient() (bool, int64, uint64) {
+func (mgr *AssetsManager) IsInternalStorageSufficient(assetType utils.AssetType, network utils.NetworkType) (bool, int64, uint64) {
 	// Current timestamp in seconds
 	currentTime := time.Now().Unix()
 
 	// Calculate the estimated blocks since genesis
-	blocksSinceGenesis := (currentTime - mgr.GetGenesisTimestamp()) / mgr.GetTargetTimePerBlock()
+	blocksSinceGenesis := (currentTime - mgr.GetGenesisTimestamp(assetType, network)) / mgr.GetTargetTimePerBlock(assetType, network)
 
 	// Estimated space requirement in MB (1MB per 1000 blocks)
 	estimatedHeadersSize := blocksSinceGenesis / 1000

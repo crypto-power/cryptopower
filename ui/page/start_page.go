@@ -18,6 +18,7 @@ import (
 	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -150,7 +151,7 @@ func (sp *startPage) OnNavigatedTo() {
 		sp.checkStartupSecurityAndStartApp()
 	} else {
 		sp.loading = false
-		isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := sp.AssetsManager.IsInternalStorageSufficient()
+		isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := sp.AssetsManager.IsInternalStorageSufficient(utils.DCRWalletAsset, sp.AssetsManager.NetType())
 		if !isInternalStorageSufficient {
 			sp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
 		}
