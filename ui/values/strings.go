@@ -1079,4 +1079,6 @@ const (
 	StrInputPassword                         = "inputPassword"
 	StrDatabaseType                          = "databaseType"
 	StrChinese                               = "chinese"
+	StrLowStorageSpaceTitle                  = "lowStorageSpaceTitle"
+	StrLowStorageSpaceBody                   = "lowStorageSpaceBody"
 )

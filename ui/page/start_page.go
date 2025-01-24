@@ -148,12 +148,12 @@ func (sp *startPage) OnNavigatedTo() {
 		// To optimize memory usage, ensure mobile users are using BadgerDB,
 		// as it is efficient and designed for low-memory environments.
 		sp.checkStartupSecurityAndStartApp()
-		err := sp.AssetsManager.CheckStorageSpace()
-		if err != nil {
-			log.Errorf("Error checking storage space: %v", err)
-		}
 	} else {
 		sp.loading = false
+		isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := sp.AssetsManager.IsInternalStorageSufficient()
+		if !isInternalStorageSufficient {
+			sp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
+		}
 	}
 }
 
@@ -812,4 +812,18 @@ func getNumberOfRAM() (int, error) {
 	}
 	// Convert bytes to gigabytes
 	return int(vmStat.Total / (1024 * 1024 * 1024)), nil
+}
+
+func (sp *startPage) showLowStorageNotice(estimatedHeadersSize int64, freeInternalMemory uint64) {
+	lowStorageModal := modal.NewCustomModal(sp.Load).
+		Title(values.String(values.StrLowStorageSpaceTitle)).
+		Body((values.StringF(values.StrLowStorageSpaceBody, estimatedHeadersSize, freeInternalMemory))).
+		SetCancelable(false).
+		SetNegativeButtonText(values.String(values.StrExit)).
+		SetNegativeButtonCallback(func() {
+			sp.AssetsManager.Shutdown()
+			os.Exit(0)
+		})
+
+	sp.ParentWindow().ShowModal(lowStorageModal)
 }

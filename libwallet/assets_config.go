@@ -2,8 +2,6 @@ package libwallet
 
 import (
 	"fmt"
-	"runtime"
-	"syscall"
 	"time"
 
 	"decred.org/dcrwallet/v4/errors"
@@ -350,35 +348,9 @@ func (mgr *AssetsManager) GetTargetTimePerBlock() int64 {
 	return 0
 }
 
-// GetFreeDiskSpace returns the available disk space (in MB) for mobile devices.
-func GetFreeDiskSpace() (uint64, error) {
-	// Determine the path to check for available disk space
-	var path string
-	switch runtime.GOOS {
-	case "android", "ios":
-		// Use the root directory or temp directory for mobile platforms
-		path = "/"
-	default:
-		return 0, errors.New("unsupported platform: this function is for mobile devices only")
-	}
-
-	var stat syscall.Statfs_t
-
-	// Get file system statistics for the specified path
-	err := syscall.Statfs(path, &stat)
-	if err != nil {
-		return 0, err
-	}
-
-	// Calculate available space: free blocks * block size
-	freeBytes := stat.Bavail * uint64(stat.Bsize)
-
-	// Convert bytes to MB
-	return freeBytes / (1024 * 1024), nil
-}
-
-// CheckStorageSpace checks the available disk space.
-func (mgr *AssetsManager) CheckStorageSpace() error {
+// IsInternalStorageSufficient checks if the available disk space is sufficient for the
+// wallet's operations.
+func (mgr *AssetsManager) IsInternalStorageSufficient() (bool, int64, uint64) {
 	// Current timestamp in seconds
 	currentTime := time.Now().Unix()
 
@@ -389,16 +361,17 @@ func (mgr *AssetsManager) CheckStorageSpace() error {
 	estimatedHeadersSize := blocksSinceGenesis / 1000
 
 	// Get free internal memory in MB
-	freeInternalMemory, err := GetFreeDiskSpace()
+	freeInternalMemory, err := utils.GetFreeDiskSpace()
 	if err != nil {
-		return errors.E("Error checking free disk space: %v", err)
+		log.Infof("Error checking free disk space: %v", err)
+		return false, 0, 0
 	}
 
 	// Check if available space is insufficient
 	if uint64(estimatedHeadersSize) > freeInternalMemory {
-		fmt.Printf("Insufficient storage space. Estimated headers size: %d MB, Free internal memory: %d MB\n", estimatedHeadersSize, freeInternalMemory)
+		log.Infof("Insufficient storage space. Estimated headers size: %d MB, Free internal memory: %d MB\n", estimatedHeadersSize, freeInternalMemory)
+		return false, estimatedHeadersSize, freeInternalMemory
 	}
-	fmt.Printf("Estimated headers size: %d MB, Free internal memory: %d MB\n", estimatedHeadersSize, freeInternalMemory)
 
-	return nil
+	return true, 0, 0
 }

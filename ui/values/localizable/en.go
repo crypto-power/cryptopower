@@ -970,4 +970,6 @@ const EN = `
 "inputSeed" = "Input seed"
 "inputPassword" = "Input Password"
 "chinese" = "Chinese"
+"lowStorageSpaceTitle" = "Low storage space"
+"lowStorageSpaceBody" = "Your device storage space is low and is not enough to sync a wallet. Required space to sync a wallet is ~%dmb while your free internal memory is %dmb"
 `
