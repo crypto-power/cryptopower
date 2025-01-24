@@ -82,6 +82,9 @@ const (
 	LogLevelCritical = "critical"
 	DefaultLogLevel  = LogLevelInfo
 
+	GenesisTimestampMainnet = 1454954400
+	GenesisTimestampTestnet = 1533513600
+
 	// UserFilePerm contains permissions for the user only. Attempting to modify
 	// more permissions require a super user permission that isn't readily available.
 	UserFilePerm = fs.FileMode(0o700)
@@ -183,3 +186,15 @@ func TrimNonAphaNumeric(text string) string {
 	reg, _ := regexp.Compile("[^a-zA-Z0-9-]+")
 	return reg.ReplaceAllString(text, "")
 }
+
+// // GetGenesisTimestamp returns the genesis timestamp for the provided network.
+// func GetGenesisTimestamp(network string) int64 {
+// 	network := asset.NetType()
+// 	switch network {
+// 	case mg:
+// 		return GenesisTimestampMainnet
+// 	case "testnet":
+// 		return GenesisTimestampTestnet
+// 	}
+// 	return 0
+// }

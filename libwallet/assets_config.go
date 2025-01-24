@@ -2,6 +2,9 @@ package libwallet
 
 import (
 	"fmt"
+	"runtime"
+	"syscall"
+	"time"
 
 	"decred.org/dcrwallet/v4/errors"
 	"github.com/asdine/storm"
@@ -25,6 +28,16 @@ const (
 	walletsMetadataBucketName    = "metadata"
 	walletStartupPassphraseField = "startup-passphrase"
 	appConfigBucketName          = "app_config" // App level bucket.
+
+	// GenesisTimestampMainnet represents the genesis timestamp for the DCR mainnet.
+	GenesisTimestampMainnet = 1454954400
+	// GenesisTimestampTestnet represents the genesis timestamp for the DCR testnet.
+	GenesisTimestampTestnet = 1533513600
+
+	// TargetTimePerBlockMainnet represents the target time per block in seconds for DCR mainnet.
+	TargetTimePerBlockMainnet = 300
+	// TargetTimePerBlockTestnet represents the target time per block in seconds for DCR testnet.
+	TargetTimePerBlockTestnet = 120
 )
 
 // SaveAppConfigValue method manages all the write operations on the app's
@@ -311,4 +324,81 @@ func (mgr *AssetsManager) GetDBDriver() string {
 // SetDBDriver sets the db driver.
 func (mgr *AssetsManager) SetDBDriver(dbDriver string) {
 	mgr.SaveAppConfigValue(sharedW.DBDriverConfigKey, dbDriver)
+}
+
+// GetGenesisTimestamp returns the genesis timestamp for the provided network.
+func (mgr *AssetsManager) GetGenesisTimestamp() int64 {
+	network := mgr.NetType()
+	switch network {
+	case utils.Mainnet:
+		return GenesisTimestampMainnet
+	case utils.Testnet:
+		return GenesisTimestampTestnet
+	}
+	return 0
+}
+
+// GetTargetTimePerBlock returns the target time per block for the provided network.
+func (mgr *AssetsManager) GetTargetTimePerBlock() int64 {
+	network := mgr.NetType()
+	switch network {
+	case utils.Mainnet:
+		return TargetTimePerBlockMainnet
+	case utils.Testnet:
+		return TargetTimePerBlockTestnet
+	}
+	return 0
+}
+
+// GetFreeDiskSpace returns the available disk space (in MB) for mobile devices.
+func GetFreeDiskSpace() (uint64, error) {
+	// Determine the path to check for available disk space
+	var path string
+	switch runtime.GOOS {
+	case "android", "ios":
+		// Use the root directory or temp directory for mobile platforms
+		path = "/"
+	default:
+		return 0, errors.New("unsupported platform: this function is for mobile devices only")
+	}
+
+	var stat syscall.Statfs_t
+
+	// Get file system statistics for the specified path
+	err := syscall.Statfs(path, &stat)
+	if err != nil {
+		return 0, err
+	}
+
+	// Calculate available space: free blocks * block size
+	freeBytes := stat.Bavail * uint64(stat.Bsize)
+
+	// Convert bytes to MB
+	return freeBytes / (1024 * 1024), nil
+}
+
+// CheckStorageSpace checks the available disk space.
+func (mgr *AssetsManager) CheckStorageSpace() error {
+	// Current timestamp in seconds
+	currentTime := time.Now().Unix()
+
+	// Calculate the estimated blocks since genesis
+	blocksSinceGenesis := (currentTime - mgr.GetGenesisTimestamp()) / mgr.GetTargetTimePerBlock()
+
+	// Estimated space requirement in MB (1MB per 1000 blocks)
+	estimatedHeadersSize := blocksSinceGenesis / 1000
+
+	// Get free internal memory in MB
+	freeInternalMemory, err := GetFreeDiskSpace()
+	if err != nil {
+		return errors.E("Error checking free disk space: %v", err)
+	}
+
+	// Check if available space is insufficient
+	if uint64(estimatedHeadersSize) > freeInternalMemory {
+		fmt.Printf("Insufficient storage space. Estimated headers size: %d MB, Free internal memory: %d MB\n", estimatedHeadersSize, freeInternalMemory)
+	}
+	fmt.Printf("Estimated headers size: %d MB, Free internal memory: %d MB\n", estimatedHeadersSize, freeInternalMemory)
+
+	return nil
 }

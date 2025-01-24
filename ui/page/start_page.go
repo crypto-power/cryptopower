@@ -148,6 +148,10 @@ func (sp *startPage) OnNavigatedTo() {
 		// To optimize memory usage, ensure mobile users are using BadgerDB,
 		// as it is efficient and designed for low-memory environments.
 		sp.checkStartupSecurityAndStartApp()
+		err := sp.AssetsManager.CheckStorageSpace()
+		if err != nil {
+			log.Errorf("Error checking storage space: %v", err)
+		}
 	} else {
 		sp.loading = false
 	}
