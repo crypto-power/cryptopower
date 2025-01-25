@@ -52,8 +52,8 @@ func NewTradePage(l *load.Load) *TradePage {
 		},
 	}
 	filteredTabTitles := tabTitles
-	if appos.Current().IsMobile() {
-		// Remove dcrdex for mobile view, dcrdex isn't supported on mobile yet.
+	if appos.Current().IsIOS() {
+		// Remove dcrdex for ios view, dcrdex isn't supported on ios devices yet.
 		filteredTabTitles = filteredTabTitles[1:]
 	}
 
@@ -81,8 +81,8 @@ func (pg *TradePage) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) OnNavigatedTo() {
-	// on mobile view, we display the cex tab by default
-	if pg.IsMobileView() {
+	// on ios devices, we display the cex tab by default
+	if appos.Current().IsIOS() {
 		tab.SetSelectedSegment(tabTitles[1])
 		pg.Display(NewCreateOrderPage(pg.Load))
 	} else if activeTab := pg.CurrentPage(); activeTab != nil {
