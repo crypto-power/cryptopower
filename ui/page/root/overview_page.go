@@ -960,10 +960,18 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 					layout.Rigid(pg.recentStakingsLayout),
 				}
 			} else {
-				flexChilds = []layout.FlexChild{
-					layout.Flexed(.5, pg.recentTransactionsLayout),
-					layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout),
-					layout.Flexed(.5, pg.recentStakingsLayout),
+				if len(pg.stakes) == 0 {
+					// If no stakes, let recentTransactionsLayout take full width
+					flexChilds = []layout.FlexChild{
+						layout.Flexed(1, pg.recentTransactionsLayout), // Full width
+					}
+				} else {
+					// Split width between recentTransactionsLayout and recentStakingsLayout
+					flexChilds = []layout.FlexChild{
+						layout.Flexed(0.5, pg.recentTransactionsLayout),
+						layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout),
+						layout.Flexed(0.5, pg.recentStakingsLayout),
+					}
 				}
 			}
 
@@ -973,6 +981,9 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 }
 
 func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
+	if len(pg.transactions) == 0 {
+		return D{}
+	}
 	return pg.txContentWrapper(gtx, values.String(values.StrRecentTransactions), pg.viewAllRecentTxButton.Layout, func(gtx C) D {
 		if len(pg.transactions) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -1006,6 +1017,9 @@ func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
 }
 
 func (pg *OverviewPage) recentStakingsLayout(gtx C) D {
+	if len(pg.stakes) == 0 {
+		return D{}
+	}
 	return pg.txContentWrapper(gtx, values.String(values.StrStakingActivity), pg.viewAllRecentStakesButton.Layout, func(gtx C) D {
 		if len(pg.stakes) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -1039,6 +1053,9 @@ func (pg *OverviewPage) recentStakingsLayout(gtx C) D {
 }
 
 func (pg *OverviewPage) recentTrades(gtx C) D {
+	if len(pg.orders) == 0 {
+		return D{}
+	}
 	return pg.txContentWrapper(gtx, values.String(values.StrRecentTrades), pg.viewAllRecentTradeListButton.Layout, func(gtx C) D {
 		if len(pg.orders) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -1072,6 +1089,9 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 }
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
+	if len(pg.proposalItems) == 0 {
+		return D{}
+	}
 	return pg.txContentWrapper(gtx, values.String(values.StrRecentProposals), pg.viewAllRecentProposalListButton.Layout, func(gtx C) D {
 		if len(pg.proposalItems) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
