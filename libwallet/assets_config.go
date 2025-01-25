@@ -2,12 +2,16 @@ package libwallet
 
 import (
 	"fmt"
+	"time"
 
 	"decred.org/dcrwallet/v4/errors"
 	"github.com/asdine/storm"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 
 	"golang.org/x/crypto/bcrypt"
@@ -25,6 +29,16 @@ const (
 	walletsMetadataBucketName    = "metadata"
 	walletStartupPassphraseField = "startup-passphrase"
 	appConfigBucketName          = "app_config" // App level bucket.
+
+	// GenesisTimestampMainnet represents the genesis timestamp for the DCR mainnet.
+	GenesisTimestampMainnet = 1454954400
+	// GenesisTimestampTestnet represents the genesis timestamp for the DCR testnet.
+	GenesisTimestampTestnet = 1533513600
+
+	// TargetTimePerBlockMainnet represents the target time per block in seconds for DCR mainnet.
+	TargetTimePerBlockMainnet = 300
+	// TargetTimePerBlockTestnet represents the target time per block in seconds for DCR testnet.
+	TargetTimePerBlockTestnet = 120
 )
 
 // SaveAppConfigValue method manages all the write operations on the app's
@@ -311,4 +325,60 @@ func (mgr *AssetsManager) GetDBDriver() string {
 // SetDBDriver sets the db driver.
 func (mgr *AssetsManager) SetDBDriver(dbDriver string) {
 	mgr.SaveAppConfigValue(sharedW.DBDriverConfigKey, dbDriver)
+}
+
+// GetGenesisTimestamp returns the genesis timestamp for the provided asset type and network.
+func (mgr *AssetsManager) GetGenesisTimestamp(assetType utils.AssetType, network utils.NetworkType) int64 {
+	switch assetType {
+	case utils.DCRWalletAsset:
+		return dcr.GetGenesisTimestamp(network)
+	case utils.BTCWalletAsset:
+		return btc.GetGenesisTimestamp(network)
+	case utils.LTCWalletAsset:
+		return ltc.GetGenesisTimestamp(network)
+	default:
+		return dcr.GetGenesisTimestamp(network) // Default to DCR
+	}
+}
+
+// GetTargetTimePerBlock returns the target time per block for the provided asset type and network.
+func (mgr *AssetsManager) GetTargetTimePerBlock(assetType utils.AssetType, network utils.NetworkType) int64 {
+	switch assetType {
+	case utils.DCRWalletAsset:
+		return dcr.GetTargetTimePerBlock(network)
+	case utils.BTCWalletAsset:
+		return btc.GetTargetTimePerBlock(network)
+	case utils.LTCWalletAsset:
+		return ltc.GetTargetTimePerBlock(network)
+	default:
+		return dcr.GetTargetTimePerBlock(network) // Default to DCR
+	}
+}
+
+// IsInternalStorageSufficient checks if the available disk space is sufficient for the
+// wallet's operations.
+func (mgr *AssetsManager) IsInternalStorageSufficient(assetType utils.AssetType, network utils.NetworkType) (bool, int64, uint64) {
+	// Current timestamp in seconds
+	currentTime := time.Now().Unix()
+
+	// Calculate the estimated blocks since genesis
+	blocksSinceGenesis := (currentTime - mgr.GetGenesisTimestamp(assetType, network)) / mgr.GetTargetTimePerBlock(assetType, network)
+
+	// Estimated space requirement in MB (1MB per 1000 blocks)
+	estimatedHeadersSize := blocksSinceGenesis / 1000
+
+	// Get free internal memory in MB
+	freeInternalMemory, err := utils.GetFreeDiskSpace()
+	if err != nil {
+		log.Infof("Error checking free disk space: %v", err)
+		return false, 0, 0
+	}
+
+	// Check if available space is insufficient
+	if uint64(estimatedHeadersSize) > freeInternalMemory {
+		log.Infof("Insufficient storage space. Estimated headers size: %d MB, Free internal memory: %d MB\n", estimatedHeadersSize, freeInternalMemory)
+		return false, estimatedHeadersSize, freeInternalMemory
+	}
+
+	return true, 0, 0
 }

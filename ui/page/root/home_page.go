@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -107,6 +108,11 @@ func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 			go wallet.CancelSync()
 			unlock(false)
 		} else {
+			isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := hp.AssetsManager.IsInternalStorageSufficient(wallet.GetAssetType(), wallet.NetType())
+			if !isInternalStorageSufficient {
+				hp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
+				return
+			}
 			hp.startSyncing(wallet, unlock)
 		}
 	}
@@ -191,6 +197,11 @@ func (hp *HomePage) OnNavigatedTo() {
 	// Initiate the auto sync for all wallets with autosync set.
 	allWallets := hp.AssetsManager.AllWallets()
 	for _, wallet := range allWallets {
+		isInternalStorageSufficient, estimatedHeadersSize, freeInternalMemory := hp.AssetsManager.IsInternalStorageSufficient(wallet.GetAssetType(), wallet.NetType())
+		if !isInternalStorageSufficient {
+			hp.showLowStorageNotice(estimatedHeadersSize, freeInternalMemory)
+			return
+		}
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			hp.startSyncing(wallet, func(_ bool) {})
 		}
@@ -1124,4 +1135,23 @@ func (hp *HomePage) checkForUpdates() {
 
 func (hp *HomePage) isUpdateAPIAllowed() bool {
 	return hp.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.UpdateAPI)
+}
+
+func (hp *HomePage) showLowStorageNotice(estimatedHeadersSize int64, freeInternalMemory uint64) {
+	lowStorageModal := modal.NewCustomModal(hp.Load).
+		Title(values.String(values.StrLowStorageSpaceTitle)).
+		Body(values.StringF(values.StrLowStorageSpaceBody, estimatedHeadersSize, freeInternalMemory)).
+		SetCancelable(false).
+		SetNegativeButtonText(values.String(values.StrExit)).
+		SetNegativeButtonCallback(func() {
+			hp.AssetsManager.Shutdown()
+			os.Exit(0)
+		}).
+		PositiveButtonStyle(hp.Load.Theme.Color.Primary, hp.Load.Theme.Color.InvText).
+		SetPositiveButtonText(values.String(values.StrOK)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			return true
+		})
+
+	hp.ParentWindow().ShowModal(lowStorageModal)
 }

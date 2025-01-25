@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
@@ -23,6 +24,15 @@ const (
 	LegacyTestnetHDPath = "m / 44’ / 11’ / "
 	MainnetHDPath       = "m / 44' / 42' / "
 	LegacyMainnetHDPath = "m / 44’ / 20’ / "
+
+	// GenesisTimestampMainnet represents the genesis timestamp for the DCR mainnet.
+	GenesisTimestampMainnet = 1454954400
+	// GenesisTimestampTestnet represents the genesis timestamp for the DCR testnet.
+	GenesisTimestampTestnet = 1533513600
+	// TargetTimePerBlockMainnet represents the target time per block in seconds for DCR mainnet.
+	TargetTimePerBlockMainnet = 300
+	// TargetTimePerBlockTestnet represents the target time per block in seconds for DCR testnet.
+	TargetTimePerBlockTestnet = 120
 )
 
 // Returns a DCR amount that implements the asset amount interface.
@@ -53,4 +63,26 @@ func secondsToDuration(secs float64) time.Duration {
 
 func roundUp(n float64) int32 {
 	return int32(math.Round(n))
+}
+
+// GetGenesisTimestamp returns the genesis timestamp for the provided network.
+func GetGenesisTimestamp(network utils.NetworkType) int64 {
+	switch network {
+	case utils.Mainnet:
+		return GenesisTimestampMainnet
+	case utils.Testnet:
+		return GenesisTimestampTestnet
+	}
+	return 0
+}
+
+// GetTargetTimePerBlock returns the target time per block for the provided network.
+func GetTargetTimePerBlock(network utils.NetworkType) int64 {
+	switch network {
+	case utils.Mainnet:
+		return TargetTimePerBlockMainnet
+	case utils.Testnet:
+		return TargetTimePerBlockTestnet
+	}
+	return 0
 }

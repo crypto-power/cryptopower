@@ -970,4 +970,8 @@ const EN = `
 "inputSeed" = "Input seed"
 "inputPassword" = "Input Password"
 "chinese" = "Chinese"
+"lowStorageSpaceTitle" = "Low storage space"
+"lowStorageSpaceBody" = "Your device storage space is low and is not enough to sync a wallet. Required space to sync a wallet is ~%dmb while your free internal memory is %dmb"
+"walletCreationLimitTitle" = "Wallet creation limit"
+"walletCreationLimitBody" = "Limit of 1 wallet per 1 gig of ram on the device. You can create up to 1 wallet for every 1 gigabyte of RAM available on your device."
 `

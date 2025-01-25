@@ -21,6 +21,15 @@ const (
 	// MainnetHDPath is the BIP 84 HD path used for deriving addresses on the
 	// main network.
 	MainnetHDPath = "m / 84' / 0' / "
+
+	// GenesisTimestampMainnet represents the genesis timestamp for the BTC mainnet.
+	GenesisTimestampMainnet = 1317972665
+	// GenesisTimestampTestnet represents the genesis timestamp for the BTC testnet.
+	GenesisTimestampTestnet = 1486949366
+	// TargetTimePerBlockMainnet represents the target time per block in seconds for LTC mainnet.
+	TargetTimePerBlockMainnet = 150
+	// TargetTimePerBlockTestnet represents the target time per block in seconds for LTC testnet.
+	TargetTimePerBlockTestnet = 150
 )
 
 var wAddrMgrBkt = []byte("waddrmgr")
@@ -130,4 +139,26 @@ func hardenedKey(key uint32) uint32 {
 
 func secondsToDuration(secs float64) time.Duration {
 	return time.Duration(secs) * time.Second
+}
+
+// GetGenesisTimestamp returns the genesis timestamp for the provided network.
+func GetGenesisTimestamp(network utils.NetworkType) int64 {
+	switch network {
+	case utils.Mainnet:
+		return GenesisTimestampMainnet
+	case utils.Testnet:
+		return GenesisTimestampTestnet
+	}
+	return 0
+}
+
+// GetTargetTimePerBlock returns the target time per block for the provided network.
+func GetTargetTimePerBlock(network utils.NetworkType) int64 {
+	switch network {
+	case utils.Mainnet:
+		return TargetTimePerBlockMainnet
+	case utils.Testnet:
+		return TargetTimePerBlockTestnet
+	}
+	return 0
 }

@@ -12,6 +12,7 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/wallet"
 	"github.com/crypto-power/cryptopower/ui/utils"
@@ -202,6 +203,17 @@ func (pg *WalletSelectorPage) HandleUserInteractions(gtx C) {
 		// Create a local copy of asset for each iteration
 		asset := asset
 		if clickable.Clicked(gtx) {
+			if pg.Load.IsMobileView() {
+				availableRAM, err := utils.GetNumberOfRAM()
+				if err != nil {
+					log.Errorf("Error getting number of ram: %v", err)
+				}
+				if pg.AssetsManager.OpenedWalletsCount() >= int32(availableRAM) {
+					pg.showWalletLimitWarning()
+					return
+				}
+			}
+
 			pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 				pg.ParentWindow().CloseCurrentPage()
 				// enable sync for the newly created wallet
@@ -453,4 +465,15 @@ func (pg *WalletSelectorPage) layoutAddMoreRowSection(clk *cryptomaterial.Clicka
 			)
 		})
 	}
+}
+
+func (pg *WalletSelectorPage) showWalletLimitWarning() {
+	walletLimitModal := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrWalletsCreationLimitTitle)).
+		Body(values.String(values.StrWalletsCreationLimitBody)).
+		SetCancelable(true).
+		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Primary).
+		SetPositiveButtonText(values.String(values.StrOk))
+
+	pg.ParentWindow().ShowModal(walletLimitModal)
 }

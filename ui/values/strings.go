@@ -1079,4 +1079,8 @@ const (
 	StrInputPassword                         = "inputPassword"
 	StrDatabaseType                          = "databaseType"
 	StrChinese                               = "chinese"
+	StrLowStorageSpaceTitle                  = "lowStorageSpaceTitle"
+	StrLowStorageSpaceBody                   = "lowStorageSpaceBody"
+	StrWalletsCreationLimitTitle             = "walletCreationLimitTitle"
+	StrWalletsCreationLimitBody              = "walletCreationLimitBody"
 )
