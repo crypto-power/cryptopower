@@ -980,8 +980,8 @@ func (mgr *AssetsManager) DEXDBExists() bool {
 // initialized first so the DEX client can bind previously added wallets when it
 // starts.
 func (mgr *AssetsManager) InitializeDEX() {
-	// Ignore attempts to InitializeDEX on mobile.
-	if appos.Current().IsMobile() {
+	// Ignore attempts to InitializeDEX on iOS.
+	if appos.Current().IsIOS() {
 		return
 	}
 
