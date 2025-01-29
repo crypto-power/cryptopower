@@ -47,8 +47,6 @@ type HomePage struct {
 
 	*load.Load
 
-	dexCtx context.Context
-
 	ctx                 context.Context
 	ctxCancel           context.CancelFunc
 	sendReceiveNavItems []components.NavBarItem
@@ -77,12 +75,11 @@ type HomePage struct {
 	releaseResponse    *components.ReleaseResponse
 }
 
-func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
+func NewHomePage(l *load.Load) *HomePage {
 	hp := &HomePage{
 		Load:            l,
 		MasterPage:      app.NewMasterPage(HomePageID),
 		isConnected:     new(atomic.Bool),
-		dexCtx:          dexCtx,
 		copyRedirectURL: l.Theme.NewClickable(false),
 	}
 
@@ -221,14 +218,15 @@ func (hp *HomePage) OnNavigatedTo() {
 	})
 }
 
-// initDEX initializes a new dex client if dex is not ready.
+// initDEX initializes a new dex client if dex is not ready. If a dex client has
+// never been created before, initDEX will return early and do nothing.
 func (hp *HomePage) initDEX() {
-	if hp.AssetsManager.DEXCInitialized() {
+	if !hp.AssetsManager.DEXDBExists() || hp.AssetsManager.DEXCInitialized() {
 		return // do nothing
 	}
 
 	go func() {
-		hp.AssetsManager.InitializeDEX(hp.dexCtx)
+		hp.AssetsManager.InitializeDEX()
 
 		// If all went well, the dex client must be ready.
 		dexClient := hp.AssetsManager.DexClient()
@@ -527,9 +525,10 @@ func (hp *HomePage) displaySelectedPage(title string) {
 	case values.String(values.StrWallets):
 		pg = hp.walletSelectorPage
 	case values.String(values.StrTrade):
-		if !hp.AssetsManager.DEXCInitialized() {
-			// Attempt to initialize dex again.
-			hp.AssetsManager.InitializeDEX(hp.dexCtx)
+		if hp.AssetsManager.DEXDBExists() && !hp.AssetsManager.DEXCInitialized() {
+			// Attempt to initialize dex again, only if a dex client was created
+			// in a previous instance.
+			hp.AssetsManager.InitializeDEX()
 		}
 		pg = exchange.NewTradePage(hp.Load)
 	case values.String(values.StrGovernance):

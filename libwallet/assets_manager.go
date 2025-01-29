@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"decred.org/dcrdex/dex"
 	"decred.org/dcrwallet/v4/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
@@ -957,28 +958,44 @@ func (mgr *AssetsManager) DexClient() DEXClient {
 	return mgr.dexc
 }
 
+// UpdateDEXCtx will overwrite the current mgr.dexcCtx which is used to
+// initialize dex from anywhere. Must not be called in a goroutine.
+func (mgr *AssetsManager) UpdateDEXCtx(ctx context.Context) {
+	mgr.dexcCtx = ctx
+}
+
 func (mgr *AssetsManager) DEXCInitialized() bool {
 	mgr.dexcMtx.RLock()
 	defer mgr.dexcMtx.RUnlock()
 	return mgr.dexc != nil && mgr.dexc.IsInitialized()
 }
 
+// DEXDBExists will return true if a dex database already exists in the root
+// dir. mgr.RootDir() is the same dir used in creating a new dexc instance.
+func (mgr *AssetsManager) DEXDBExists() bool {
+	return dex.FileExists(filepath.Join(mgr.RootDir(), dexc.DBFileName))
+}
+
 // InitializeDEX initializes mgr.dexc. Support for Cryptopower wallets are
 // initialized first so the DEX client can bind previously added wallets when it
 // starts.
-func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
+func (mgr *AssetsManager) InitializeDEX() {
 	// Ignore attempts to InitializeDEX on mobile.
 	if appos.Current().IsMobile() {
 		return
 	}
 
-	// Prevent multiple initialization.
-	if mgr.DEXCInitialized() || !mgr.startingDEX.CompareAndSwap(false, true) {
-		log.Debug("Attempted to reinitialize a running dex client instance")
+	if mgr.dexcCtx == nil || mgr.dexcCtx.Err() != nil {
+		log.Debug("Attempted to initialize dex client instance without a valid context")
 		return
 	}
 
-	mgr.dexcCtx = ctx
+	// Prevent multiple initialization.
+	if mgr.DEXCInitialized() || !mgr.startingDEX.CompareAndSwap(false, true) {
+		log.Debug("Attempted to reinitialize a running DEX client instance")
+		return
+	}
+
 	defer func() {
 		mgr.startingDEX.Store(false)
 	}()
@@ -989,9 +1006,9 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 	setDEXWalletLoader(mgr.WalletWithID)
 
 	logDir := filepath.Dir(mgr.LogFile())
-	dexClient, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
+	dexClient, err := dexc.Start(mgr.dexcCtx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
 	if err != nil {
-		log.Errorf("Error starting dex client: %v", err)
+		log.Errorf("Error starting DEX client: %v", err)
 		return
 	}
 
@@ -1005,6 +1022,8 @@ func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
 		mgr.dexc = nil
 		mgr.dexcMtx.Unlock()
 	}()
+
+	log.Info("DEX client has been initialized successfully...")
 }
 
 func (mgr *AssetsManager) DeleteDEXData() error {
@@ -1021,7 +1040,7 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 		return err
 	}
 
-	log.Debug("Shutting down DEX client and removing dex data dir....")
+	log.Debug("Shutting down DEX client and removing DEX data dir....")
 
 	dexDBFile := mgr.dexc.DBPath()
 	shutdownChan := mgr.dexc.WaitForShutdown()

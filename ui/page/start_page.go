@@ -241,7 +241,7 @@ func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 	if numberOfRAM < 4 && sp.AssetsManager.NeedMigrate {
 		sp.showRemoveWalletWarning()
 	} else {
-		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.ctx, sp.Load))
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
 	}
 	return nil
 }
@@ -266,7 +266,7 @@ func (sp *startPage) HandleUserInteractions(gtx C) {
 				newWallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, true)
 			}
 			sp.setLanguagePref(false)
-			sp.ParentNavigator().Display(root.NewHomePage(sp.ctx, sp.Load))
+			sp.ParentNavigator().Display(root.NewHomePage(sp.Load))
 		})
 		sp.ParentNavigator().Display(createWalletPage)
 	}
@@ -765,7 +765,7 @@ func (sp *startPage) showRemoveWalletWarning() {
 		PositiveButtonStyle(sp.Theme.Color.Surface, sp.Theme.Color.Danger)
 
 	warningModal.SetNegativeButtonCallback(func() {
-		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.ctx, sp.Load))
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
 	})
 
 	warningModal.SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
