@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -30,6 +31,7 @@ type DEXPage struct {
 	splashPageInfoButton cryptomaterial.IconButton
 	splashPageContainer  *widget.List
 	startTradingBtn      cryptomaterial.Button
+	createWalletBtn      cryptomaterial.Button
 	showSplashPage       bool
 	dexIsLoading         bool
 	materialLoader       material.LoaderStyle
@@ -41,6 +43,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		Load:              l,
 		openTradeMainPage: l.Theme.NewClickable(false),
 		startTradingBtn:   l.Theme.Button(values.String(values.StrStartTrading)),
+		createWalletBtn:   l.Theme.Button(values.String(values.StrCreateANewWallet)),
 		splashPageContainer: &widget.List{List: layout.List{
 			Alignment: layout.Middle,
 			Axis:      layout.Vertical,
@@ -124,7 +127,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 	}
 
 	if hasMultipleWallets := pg.isMultipleAssetTypeWalletAvailable(); !hasMultipleWallets {
-		return components.DisablePageWithOverlay(pg.Load, nil, gtx, values.String(values.StrMultipleAssetRequiredMsg), "", nil)
+		return components.DisablePageWithOverlay(pg.Load, nil, gtx, values.String(values.StrMultipleAssetRequiredMsg), "", &pg.createWalletBtn)
 	}
 
 	return pg.CurrentPage().Layout(gtx)
@@ -153,9 +156,11 @@ func (pg *DEXPage) HandleUserInteractions(gtx C) {
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions(gtx)
 	}
+
 	if pg.splashPageInfoButton.Button.Clicked(gtx) {
 		pg.showInfoModal()
 	}
+
 	if pg.startTradingBtn.Button.Clicked(gtx) {
 		if !pg.AssetsManager.DEXDBExists() && !pg.AssetsManager.DEXCInitialized() {
 			// Attempt to initialize dex again.
@@ -167,6 +172,13 @@ func (pg *DEXPage) HandleUserInteractions(gtx C) {
 				pg.showSplashPage = false
 			}()
 		}
+	}
+
+	if pg.createWalletBtn.Button.Clicked(gtx) {
+		assetToCreate := pg.AssetsManager.AssetToCreate()
+		pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
+			pg.walletCreationSuccessFunc()
+		}, assetToCreate))
 	}
 }
 
@@ -195,4 +207,10 @@ func pendingBondConfirmation(am *libwallet.AssetsManager, host string) (string, 
 		}
 	}
 	return "", nil, nil
+}
+
+func (pg *DEXPage) walletCreationSuccessFunc() {
+	pg.OnNavigatedTo()
+	pg.ParentWindow().CloseCurrentPage()
+	pg.ParentWindow().Reload()
 }

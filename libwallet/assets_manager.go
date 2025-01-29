@@ -21,6 +21,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/notification"
 	"github.com/crypto-power/cryptopower/ui/values"
 	bolt "go.etcd.io/bbolt"
@@ -1108,4 +1109,30 @@ func (mgr *AssetsManager) BadgerDB() string {
 
 func (mgr *AssetsManager) BoltDB() string {
 	return BoltDB
+}
+
+// AssetToCreate checks if there is any asset type that has not been created
+// and returns the first one.
+func (mgr *AssetsManager) AssetToCreate() libutils.AssetType {
+	assetToCreate := mgr.AllAssetTypes()
+	wallets := mgr.AllWallets()
+
+	assetsNotCreated := make([]libutils.AssetType, 0)
+
+	for _, asset := range assetToCreate {
+		assetExists := false
+
+		for _, wallet := range wallets {
+			if wallet.GetAssetType() == asset {
+				assetExists = true
+				break
+			}
+		}
+
+		if !assetExists {
+			assetsNotCreated = append(assetsNotCreated, asset)
+		}
+	}
+
+	return assetsNotCreated[0]
 }

@@ -419,7 +419,7 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.createWalletBtn.Button.Clicked(gtx) {
-		assetToCreate := pg.AssetToCreate()
+		assetToCreate := pg.AssetsManager.AssetToCreate()
 		pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 			pg.walletCreationSuccessFunc(false, assetToCreate)
 		}, assetToCreate))
@@ -1463,30 +1463,4 @@ func (pg *CreateOrderPage) fetchInstantExchangeCurrencies() error {
 	pg.fetchingRate = false
 	pg.rateError = err != nil
 	return err
-}
-
-// AssetToCreate check if there is any asset type that has not been created
-// and returns the first one.
-func (pg *CreateOrderPage) AssetToCreate() libutils.AssetType {
-	assetToCreate := pg.AssetsManager.AllAssetTypes()
-	wallets := pg.AssetsManager.AllWallets()
-
-	assetsNotCreated := make([]libutils.AssetType, 0)
-
-	for _, asset := range assetToCreate {
-		assetExists := false
-
-		for _, wallet := range wallets {
-			if wallet.GetAssetType() == asset {
-				assetExists = true
-				break
-			}
-		}
-
-		if !assetExists {
-			assetsNotCreated = append(assetsNotCreated, asset)
-		}
-	}
-
-	return assetsNotCreated[0]
 }
