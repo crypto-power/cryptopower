@@ -101,6 +101,9 @@ func CreateWindow(appInfo *load.AppInfo) (*Window, error) {
 	startPage := page.NewStartPage(win.ctx, win.load)
 	win.load.AppInfo.ReadyForDisplay(win.Window, startPage)
 
+	// Set DEX ctx to enable initializing dex from any page.
+	appInfo.AssetsManager.UpdateDEXCtx(win.ctx)
+
 	return win, nil
 }
 

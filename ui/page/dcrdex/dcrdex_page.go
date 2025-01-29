@@ -77,7 +77,12 @@ func (pg *DEXPage) OnNavigatedTo() {
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().OnNavigatedTo()
 	} else {
-		pg.prepareInitialPage()
+		pg.dexIsLoading = true
+		go func() {
+			pg.prepareInitialPage()
+			pg.dexIsLoading = false
+			pg.showSplashPage = false
+		}()
 	}
 }
 
@@ -89,25 +94,19 @@ func (pg *DEXPage) prepareInitialPage() {
 		return
 	}
 
-	pg.dexIsLoading = true
-	go func() {
-		<-dexClient.Ready()
+	<-dexClient.Ready()
 
-		showOnBoardingPage := true
-		if len(dexClient.Exchanges()) != 0 { // has at least one exchange
-			_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager, "")
-			showOnBoardingPage = pendingBond != nil
-		}
+	showOnBoardingPage := true
+	if len(dexClient.Exchanges()) != 0 { // has at least one exchange
+		_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager, "")
+		showOnBoardingPage = pendingBond != nil
+	}
 
-		if showOnBoardingPage {
-			pg.Display(NewDEXOnboarding(pg.Load, "", nil))
-		} else {
-			pg.Display(NewDEXMarketPage(pg.Load, ""))
-		}
-
-		pg.dexIsLoading = false
-		pg.showSplashPage = false
-	}()
+	if showOnBoardingPage {
+		pg.Display(NewDEXOnboarding(pg.Load, "", nil))
+	} else {
+		pg.Display(NewDEXMarketPage(pg.Load, ""))
+	}
 }
 
 // Layout draws the page UI components into the provided layout context to be
@@ -116,10 +115,6 @@ func (pg *DEXPage) prepareInitialPage() {
 func (pg *DEXPage) Layout(gtx C) D {
 	if !pg.AssetsManager.DEXCInitialized() || pg.CurrentPage() == nil { // dexc must have been reset.
 		pg.showSplashPage = true
-		if !pg.dexIsLoading {
-			pg.ParentNavigator().CloseAllPages()
-			pg.prepareInitialPage()
-		}
 	}
 
 	if pg.showSplashPage || pg.dexIsLoading {
@@ -162,7 +157,16 @@ func (pg *DEXPage) HandleUserInteractions(gtx C) {
 		pg.showInfoModal()
 	}
 	if pg.startTradingBtn.Button.Clicked(gtx) {
-		pg.showSplashPage = false
+		if !pg.AssetsManager.DEXDBExists() && !pg.AssetsManager.DEXCInitialized() {
+			// Attempt to initialize dex again.
+			pg.dexIsLoading = true
+			go func() {
+				pg.AssetsManager.InitializeDEX()
+				pg.prepareInitialPage()
+				pg.dexIsLoading = false
+				pg.showSplashPage = false
+			}()
+		}
 	}
 }
 

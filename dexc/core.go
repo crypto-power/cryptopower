@@ -28,6 +28,10 @@ const (
 	// number in the settings map used to connect an existing Cryptopower wallet
 	// to the DEX client.
 	WalletAccountNumberConfigKey = "accountnumber"
+
+	// DBFileName is the database name for a dexc instance. Changing this
+	// without proper migration might lead to unexpected behaviors.
+	DBFileName = "dexc.db"
 )
 
 // DEXClient represents the Decred DEX client and embeds *core.Core.
@@ -168,7 +172,7 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 		return nil, err
 	}
 
-	dbPath := filepath.Join(root, "dexc.db")
+	dbPath := filepath.Join(root, DBFileName)
 	cfg := &core.Config{
 		DBPath:             dbPath,
 		Net:                dexNet,

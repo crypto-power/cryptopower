@@ -80,11 +80,11 @@ func (mp *MigrationPage) HandleUserInteractions(gtx C) {
 		}
 
 		mp.AssetsManager = newmgr
-		mp.ParentWindow().ClearStackAndDisplay(NewHomePage(mp.ctx, mp.Load))
+		mp.ParentWindow().ClearStackAndDisplay(NewHomePage(mp.Load))
 	}
 
 	if mp.cancelButton.Clicked(gtx) {
-		mp.ParentWindow().ClearStackAndDisplay(NewHomePage(mp.ctx, mp.Load))
+		mp.ParentWindow().ClearStackAndDisplay(NewHomePage(mp.Load))
 	}
 
 	for i := range mp.inputPasswordButtons {
