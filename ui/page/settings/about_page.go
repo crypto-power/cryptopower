@@ -1,11 +1,14 @@
 package settings
 
 import (
+	"time"
+
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -14,15 +17,11 @@ const AboutPageID = "About"
 
 type AboutPage struct {
 	*load.Load
-	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
-	// that helps this Page satisfy the app.Page interface. It also defines
-	// helper methods for accessing the PageNavigator that displayed this page
-	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	card      cryptomaterial.Card
-	container *layout.List
-
+	card           cryptomaterial.Card
+	container      *layout.List
+	versionRow     *cryptomaterial.Clickable
 	version        cryptomaterial.Label
 	versionValue   cryptomaterial.Label
 	buildDate      cryptomaterial.Label
@@ -33,6 +32,9 @@ type AboutPage struct {
 	licenseRow     *cryptomaterial.Clickable
 	backButton     cryptomaterial.IconButton
 	shadowBox      *cryptomaterial.Shadow
+
+	versionTapCount int       // Tap counter
+	lastTapTime     time.Time // Track last tap time
 }
 
 func NewAboutPage(l *load.Load) *AboutPage {
@@ -41,6 +43,7 @@ func NewAboutPage(l *load.Load) *AboutPage {
 		GenericPageModal: app.NewGenericPageModal(AboutPageID),
 		card:             l.Theme.Card(),
 		container:        &layout.List{Axis: layout.Vertical},
+		versionRow:       l.Theme.NewClickable(true),
 		version:          l.Theme.Body1(values.String(values.StrVersion)),
 		versionValue:     l.Theme.Body1(l.AppInfo.Version()),
 		buildDate:        l.Theme.Body1(values.String(values.StrBuildDate)),
@@ -49,11 +52,16 @@ func NewAboutPage(l *load.Load) *AboutPage {
 		license:          l.Theme.Body1(values.String(values.StrLicense)),
 		licenseRow:       l.Theme.NewClickable(true),
 		shadowBox:        l.Theme.Shadow(),
+		versionTapCount:  0,
+		lastTapTime:      time.Time{},
 	}
 
 	pg.licenseRow.Radius = cryptomaterial.BottomRadius(14)
-
 	pg.backButton = components.GetBackButton(l)
+
+	pg.versionRow.Hoverable = false
+	pg.versionRow.Radius = cryptomaterial.TopRadius(14)
+
 	col := pg.Theme.Color.GrayText2
 	pg.versionValue.Color = col
 	pg.buildDateValue.Color = col
@@ -65,16 +73,8 @@ func NewAboutPage(l *load.Load) *AboutPage {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
-// Part of the load.Page interface.
-func (pg *AboutPage) OnNavigatedTo() {
-}
+func (pg *AboutPage) OnNavigatedTo() {}
 
-// Layout draws the page UI components into the provided C
-// to be eventually drawn on screen.
-// Part of the load.Page interface.
 func (pg *AboutPage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx)
 }
@@ -134,8 +134,10 @@ func (pg *AboutPage) layoutRows(gtx C) D {
 	}
 	w := []func(gtx C) D{
 		func(gtx C) D {
-			return components.Container{Padding: in}.Layout(gtx, func(gtx C) D {
-				return components.EndToEndRow(gtx, pg.version.Layout, pg.versionValue.Layout)
+			return pg.versionRow.Layout(gtx, func(gtx C) D {
+				return components.Container{Padding: in}.Layout(gtx, func(gtx C) D {
+					return components.EndToEndRow(gtx, pg.version.Layout, pg.versionValue.Layout)
+				})
 			})
 		},
 		func(gtx C) D {
@@ -148,26 +150,19 @@ func (pg *AboutPage) layoutRows(gtx C) D {
 				return components.EndToEndRow(gtx, pg.network.Layout, pg.networkValue.Layout)
 			})
 		},
-
 		func(gtx C) D {
-			licenseRowLayout := func(gtx C) D {
-				return pg.licenseRow.Layout(gtx, func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return in.Layout(gtx, pg.license.Layout)
-						}),
-						layout.Flexed(1, func(gtx C) D {
-							return layout.E.Layout(gtx, func(gtx C) D {
-								return in.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).Layout24dp)
-							})
-						}),
-					)
-				})
-			}
-			if pg.licenseRow.IsHovered() {
-				return pg.shadowBox.Layout(gtx, licenseRowLayout)
-			}
-			return licenseRowLayout(gtx)
+			return pg.licenseRow.Layout(gtx, func(gtx C) D {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return in.Layout(gtx, pg.license.Layout)
+					}),
+					layout.Flexed(1, func(gtx C) D {
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return in.Layout(gtx, pg.Theme.NewIcon(pg.Theme.Icons.ChevronRight).Layout24dp)
+						})
+					}),
+				)
+			})
 		},
 	}
 
@@ -188,11 +183,6 @@ func (pg *AboutPage) layoutRows(gtx C) D {
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
-// Part of the load.Page interface.
 func (pg *AboutPage) HandleUserInteractions(gtx C) {
 	if pg.licenseRow.Clicked(gtx) {
 		pg.ParentNavigator().Display(NewLicensePage(pg.Load))
@@ -201,6 +191,31 @@ func (pg *AboutPage) HandleUserInteractions(gtx C) {
 	if pg.backButton.Button.Clicked(gtx) {
 		pg.ParentNavigator().CloseCurrentPage()
 	}
+
+	if pg.versionRow.Clicked(gtx) {
+		now := time.Now()
+		if now.Sub(pg.lastTapTime) > 5*time.Second {
+			pg.versionTapCount = 0
+		}
+
+		pg.versionTapCount++
+		pg.lastTapTime = now
+
+		if pg.versionTapCount >= 5 {
+			pg.versionTapCount = 0
+			pg.showSecretModal()
+		}
+	}
+}
+
+func (pg *AboutPage) showSecretModal() {
+	secretModal := modal.NewCustomModal(pg.Load).
+		SetCancelable(true).
+		SetupWithTemplate(modal.StakeyImageTemplate).
+		SetContentAlignment(layout.W, layout.Center, layout.Center).
+		SetPositiveButtonText("") // No positive button
+
+	pg.ParentWindow().ShowModal(secretModal)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
