@@ -68,7 +68,6 @@ type CreateOrderPage struct {
 	viewAllButton                            cryptomaterial.Button
 	navToSettingsBtn                         cryptomaterial.Button
 	createWalletBtn                          cryptomaterial.Button
-	splashPageInfoButton                     cryptomaterial.IconButton
 	splashPageContainer                      *widget.List
 	startTradingBtn                          cryptomaterial.Button
 	isFirstVisit                             bool
@@ -138,9 +137,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		startTradingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
 		isFirstVisit:    isFirstVisit,
 	}
-
-	// Init splash page more info widget
-	_, pg.splashPageInfoButton = components.SubpageHeaderButtons(pg.Load)
 
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(5)
@@ -369,10 +365,6 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 			Body(values.String(values.StrCreateOrderPageInfo)).
 			PositiveButtonWidth(values.MarginPadding100)
 		pg.ParentWindow().ShowModal(info)
-	}
-
-	if pg.splashPageInfoButton.Button.Clicked(gtx) {
-		pg.showInfoModal()
 	}
 
 	if pg.startTradingBtn.Clicked(gtx) {

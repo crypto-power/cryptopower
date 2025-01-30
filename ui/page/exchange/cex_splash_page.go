@@ -6,7 +6,6 @@ import (
 	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
-	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -49,7 +48,6 @@ func (pg *CreateOrderPage) splashPage(gtx C) D {
 							}),
 						)
 					}),
-					layout.Stacked(pg.splashPageInfoButton.Layout),
 				)
 			})
 		}),
@@ -59,12 +57,4 @@ func (pg *CreateOrderPage) splashPage(gtx C) D {
 			})
 		}),
 	)
-}
-
-func (pg *CreateOrderPage) showInfoModal() {
-	info := modal.NewCustomModal(pg.Load).
-		Title(values.String(values.StrCentralizedExchangeCex)).
-		Body(values.String(values.StrTradeSettingsMsg)).
-		SetPositiveButtonText(values.String(values.StrGotIt))
-	pg.ParentWindow().ShowModal(info)
 }

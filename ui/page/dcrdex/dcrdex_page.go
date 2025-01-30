@@ -27,14 +27,13 @@ type DEXPage struct {
 
 	*load.Load
 
-	openTradeMainPage    *cryptomaterial.Clickable
-	splashPageInfoButton cryptomaterial.IconButton
-	splashPageContainer  *widget.List
-	startTradingBtn      cryptomaterial.Button
-	createWalletBtn      cryptomaterial.Button
-	showSplashPage       bool
-	dexIsLoading         bool
-	materialLoader       material.LoaderStyle
+	openTradeMainPage   *cryptomaterial.Clickable
+	splashPageContainer *widget.List
+	startTradingBtn     cryptomaterial.Button
+	createWalletBtn     cryptomaterial.Button
+	showSplashPage      bool
+	dexIsLoading        bool
+	materialLoader      material.LoaderStyle
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
@@ -56,8 +55,6 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		dp.showSplashPage = false
 	}
 
-	// Init splash page more info widget.
-	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
 	return dp
 }
 
@@ -155,10 +152,6 @@ func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
 func (pg *DEXPage) HandleUserInteractions(gtx C) {
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions(gtx)
-	}
-
-	if pg.splashPageInfoButton.Button.Clicked(gtx) {
-		pg.showInfoModal()
 	}
 
 	if pg.startTradingBtn.Button.Clicked(gtx) {
