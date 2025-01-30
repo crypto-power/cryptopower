@@ -139,7 +139,7 @@ type clickableOrder struct {
 // selectServer to select the provided server.
 func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 	th := l.Theme
-	if l.IsMobileView() {
+	if appos.Current().IsMobile() {
 		orderTypes = []cryptomaterial.DropDownItem{
 			{
 				Text: values.String(values.StrMarket), // Only Market Order for mobile
@@ -675,7 +675,7 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 	}
 
 	key := values.Str24hVolume
-	if pg.IsMobileView() {
+	if appos.Current().IsMobile() {
 		key = values.Str24hVol
 	}
 
