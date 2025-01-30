@@ -22,6 +22,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/libwallet"
 
@@ -54,14 +55,7 @@ var (
 	// they are displayed sided by side.
 	orderFormAndOrderBookHeight = values.MarginPadding620
 
-	orderTypes = []cryptomaterial.DropDownItem{
-		{
-			Text: values.String(values.StrLimit),
-		},
-		{
-			Text: values.String(values.StrMarket),
-		},
-	}
+	orderTypes []cryptomaterial.DropDownItem
 
 	buyAndSellBtnStrings = []string{
 		values.StrBuy,
@@ -145,6 +139,22 @@ type clickableOrder struct {
 // selectServer to select the provided server.
 func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 	th := l.Theme
+	if appos.Current().IsMobile() {
+		orderTypes = []cryptomaterial.DropDownItem{
+			{
+				Text: values.String(values.StrMarket), // Only Market Order for mobile
+			},
+		}
+	} else {
+		orderTypes = []cryptomaterial.DropDownItem{
+			{
+				Text: values.String(values.StrLimit),
+			},
+			{
+				Text: values.String(values.StrMarket),
+			},
+		}
+	}
 	pg := &DEXMarketPage{
 		Load:                               l,
 		GenericPageModal:                   app.NewGenericPageModal(DEXMarketPageID),
@@ -194,7 +204,6 @@ func NewDEXMarketPage(l *load.Load, selectServer string) *DEXMarketPage {
 	pg.immediateOrderCheckbox.Font.Weight = font.SemiBold
 
 	pg.refreshOrderForm()
-
 	return pg
 }
 
@@ -565,9 +574,50 @@ func (pg *DEXMarketPage) Layout(gtx C) D {
 }
 
 func (pg *DEXMarketPage) serverAndCurrencySelection(gtx C) D {
+	if appos.Current().IsMobile() {
+		return cryptomaterial.LinearLayout{
+			Width:      cryptomaterial.MatchParent,
+			Height:     cryptomaterial.WrapContent,
+			Margin:     layout.Inset{Top: dp5, Bottom: dp5},
+			Background: pg.Theme.Color.Surface,
+			Padding:    layout.UniformInset(dp16),
+			Border: cryptomaterial.Border{
+				Radius: cryptomaterial.Radius(8),
+			},
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Flex{Axis: vertical}.Layout(gtx,
+							layout.Rigid(pg.semiBoldLabelText(values.String(values.StrServer)).Layout),
+							layout.Rigid(func(gtx C) D {
+								pg.serverSelector.Background = &pg.Theme.Color.Surface
+								pg.serverSelector.BorderColor = &pg.Theme.Color.Gray5
+								return layout.Inset{Top: dp2}.Layout(gtx, pg.serverSelector.Layout)
+							}),
+						)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: vertical}.Layout(gtx,
+								layout.Rigid(pg.semiBoldLabelText(values.String(values.StrCurrencyPair)).Layout),
+								layout.Rigid(func(gtx C) D {
+									pg.marketSelector.Background = &pg.Theme.Color.Surface
+									pg.marketSelector.BorderColor = &pg.Theme.Color.Gray5
+									return layout.Inset{Top: dp2}.Layout(gtx, pg.marketSelector.Layout)
+								}),
+							)
+						})
+					}),
+				)
+			}),
+		)
+	}
+
+	// Desktop: Arrange elements side by side
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
-		Height:     gtx.Dp(100),
+		Height:     cryptomaterial.WrapContent,
 		Margin:     layout.Inset{Top: dp5, Bottom: dp5},
 		Background: pg.Theme.Color.Surface,
 		Padding:    layout.UniformInset(dp16),
@@ -624,6 +674,11 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 		baseVol24 = fmt.Sprintf("%f", mkt.MsgRateToConventional(mkt.SpotPrice.Vol24))
 	}
 
+	key := values.Str24hVolume
+	if appos.Current().IsMobile() {
+		key = values.Str24hVol
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
 		Height:     cryptomaterial.WrapContent,
@@ -652,13 +707,14 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 			}
 			return pg.priceAndVolumeColumn(gtx,
 				values.String(values.Str24HChange), change24Layout,
-				values.StringF(values.Str24hVolume, convertAssetIDToAssetType(pg.selectedMarketOrderBook.base)), baseVol24,
+
+				values.StringF(key, convertAssetIDToAssetType(pg.selectedMarketOrderBook.base)), baseVol24,
 			)
 		}),
 		layout.Flexed(0.33, func(gtx C) D {
 			return pg.priceAndVolumeColumn(gtx,
 				values.String(values.Str24hHigh), pg.semiBoldLabelSize14(high24).Layout,
-				values.StringF(values.Str24hVolume, convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)), quoteVol24,
+				values.StringF(key, convertAssetIDToAssetType(pg.selectedMarketOrderBook.quote)), quoteVol24,
 			)
 		}),
 	)

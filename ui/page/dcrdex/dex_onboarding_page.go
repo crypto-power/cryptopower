@@ -19,6 +19,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/appos"
 	"github.com/crypto-power/cryptopower/dexc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -269,15 +270,16 @@ func (pg *DEXOnboarding) Layout(gtx C) D {
 		return D{}
 	}
 
+	padding := layout.Inset{
+		Right: dp10,
+		Left:  dp10,
+	}
 	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
+		Width:       cryptomaterial.WrapContent,
 		Height:      cryptomaterial.MatchParent,
 		Orientation: layout.Vertical,
 		Background:  pg.Theme.Color.Surface,
-		Margin: layout.Inset{
-			Right: dp20,
-			Left:  dp20,
-		},
+		Padding:     padding,
 		Border: cryptomaterial.Border{
 			Radius: cryptomaterial.Radius(8),
 		},
@@ -295,8 +297,10 @@ func (pg *DEXOnboarding) Layout(gtx C) D {
 					return pg.Theme.Separator().Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Max.X = gtx.Dp(formWidth)
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					if !appos.Current().IsMobile() {
+						gtx.Constraints.Max.X = gtx.Dp(formWidth)
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					}
 					return pg.onBoardingSteps[pg.currentStep].stepFn(gtx)
 				}),
 			)
@@ -328,7 +332,9 @@ func (pg *DEXOnboarding) onBoardingStepRow(gtx C) D {
 				layout.Stacked(func(gtx C) D {
 					dp30 := values.MarginPadding30
 					sep := pg.Theme.Separator()
-					sep.Width = gtx.Dp(values.MarginPadding500)
+					if !appos.Current().IsMobile() {
+						sep.Width = gtx.Dp(values.MarginPadding500)
+					}
 					sep.Height = gtx.Dp(values.MarginPadding3)
 					return layout.Inset{Bottom: values.MarginPadding35, Right: dp30, Left: dp30}.Layout(gtx, sep.Layout)
 				}),
@@ -1132,7 +1138,11 @@ func (pg *DEXOnboarding) setAddServerStep() {
 	}
 
 	pg.serverDropDown = pg.Theme.DropDown(dropdownServers, nil, values.DEXServerDropdownGroup, false)
-	pg.serverDropDown.Width = formWidth
+	width := formWidth
+	if appos.Current().IsMobile() {
+		width = values.MarginPadding280
+	}
+	pg.serverDropDown.Width = width
 	pg.serverDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
 	pg.currentStep = onBoardingStepAddServer

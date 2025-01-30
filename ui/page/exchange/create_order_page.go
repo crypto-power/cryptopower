@@ -68,7 +68,6 @@ type CreateOrderPage struct {
 	viewAllButton                            cryptomaterial.Button
 	navToSettingsBtn                         cryptomaterial.Button
 	createWalletBtn                          cryptomaterial.Button
-	splashPageInfoButton                     cryptomaterial.IconButton
 	splashPageContainer                      *widget.List
 	startTradingBtn                          cryptomaterial.Button
 	isFirstVisit                             bool
@@ -138,9 +137,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		startTradingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
 		isFirstVisit:    isFirstVisit,
 	}
-
-	// Init splash page more info widget
-	_, pg.splashPageInfoButton = components.SubpageHeaderButtons(pg.Load)
 
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(5)
@@ -371,10 +367,6 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.splashPageInfoButton.Button.Clicked(gtx) {
-		pg.showInfoModal()
-	}
-
 	if pg.startTradingBtn.Clicked(gtx) {
 		pg.isFirstVisit = false
 		pg.AssetsManager.SaveAppConfigValue(sharedW.IsCEXFirstVisitConfigKey, pg.isFirstVisit)
@@ -419,7 +411,7 @@ func (pg *CreateOrderPage) HandleUserInteractions(gtx C) {
 	}
 
 	if pg.createWalletBtn.Button.Clicked(gtx) {
-		assetToCreate := pg.AssetToCreate()
+		assetToCreate := pg.AssetsManager.AssetToCreate()
 		pg.ParentWindow().Display(components.NewCreateWallet(pg.Load, func(_ sharedW.Asset) {
 			pg.walletCreationSuccessFunc(false, assetToCreate)
 		}, assetToCreate))
@@ -1463,30 +1455,4 @@ func (pg *CreateOrderPage) fetchInstantExchangeCurrencies() error {
 	pg.fetchingRate = false
 	pg.rateError = err != nil
 	return err
-}
-
-// AssetToCreate check if there is any asset type that has not been created
-// and returns the first one.
-func (pg *CreateOrderPage) AssetToCreate() libutils.AssetType {
-	assetToCreate := pg.AssetsManager.AllAssetTypes()
-	wallets := pg.AssetsManager.AllWallets()
-
-	assetsNotCreated := make([]libutils.AssetType, 0)
-
-	for _, asset := range assetToCreate {
-		assetExists := false
-
-		for _, wallet := range wallets {
-			if wallet.GetAssetType() == asset {
-				assetExists = true
-				break
-			}
-		}
-
-		if !assetExists {
-			assetsNotCreated = append(assetsNotCreated, asset)
-		}
-	}
-
-	return assetsNotCreated[0]
 }
