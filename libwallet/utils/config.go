@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"syscall"
 	"time"
 
 	"gioui.org/app"
@@ -194,31 +193,28 @@ func GetFreeDiskSpace() (uint64, error) {
 	var path string
 	var err error
 	switch runtime.GOOS {
-	case "android", "ios":
-		path, err = app.DataDir()
+	case "android", "ios", "linux", "darwin", "windows":
+		if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+			path, err = app.DataDir()
+			if err != nil {
+				return 0, err
+			}
+		} else {
+			path, err = os.UserHomeDir()
+			if err != nil {
+				return 0, err
+			}
+		}
+
+		freeSpace, err := DiskSpace(path)
 		if err != nil {
 			return 0, err
 		}
-	case "linux", "darwin", "windows":
-		path, err = os.UserHomeDir()
-		if err != nil {
-			return 0, err
-		}
+
+		return freeSpace, nil
+
 	default:
 		return 0, nil
 	}
 
-	var stat syscall.Statfs_t
-
-	// Get file system statistics for the specified path
-	err = syscall.Statfs(path, &stat)
-	if err != nil {
-		return 0, err
-	}
-
-	// Calculate available space: free blocks * block size
-	freeBytes := stat.Bavail * uint64(stat.Bsize)
-
-	// Convert bytes to MB
-	return freeBytes / (1024 * 1024), nil
 }
