@@ -138,15 +138,15 @@ func (hp *HomePage) initPageItems() {
 	}
 
 	// Add trade tab only if not on macOS
-	if !appos.Current().IsDarwin() {
-		// Determine the insertion point, which is second to last position
-		insertionPoint := len(navigationTabTitles) - 1
-		if insertionPoint < 0 {
-			insertionPoint = 0
-		}
-		// Append at the second to last position
-		navigationTabTitles = append(navigationTabTitles[:insertionPoint], append([]string{values.String(values.StrTrade)}, navigationTabTitles[insertionPoint:]...)...)
+	// if !appos.Current().IsDarwin() {
+	// Determine the insertion point, which is second to last position
+	insertionPoint := len(navigationTabTitles) - 1
+	if insertionPoint < 0 {
+		insertionPoint = 0
 	}
+	// Append at the second to last position
+	navigationTabTitles = append(navigationTabTitles[:insertionPoint], append([]string{values.String(values.StrTrade)}, navigationTabTitles[insertionPoint:]...)...)
+	// }
 
 	hp.navigationTab = hp.Theme.Tab(layout.Horizontal, false, navigationTabTitles)
 
