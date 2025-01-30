@@ -45,13 +45,13 @@ type (
 )
 
 var PageNavigationMap = map[string]string{
-	values.String(values.StrInfo):         info.InfoID,
-	values.String(values.StrSend):         send.SendPageID,
-	values.String(values.StrReceive):      receive.ReceivePageID,
-	values.String(values.StrTransactions): transaction.TransactionsPageID,
-	values.String(values.StrSettings):     WalletSettingsPageID,
-	values.String(values.StrPrivacy):      privacy.AccountMixerPageID,
-	values.String(values.StrStaking):      staking.OverviewPageID,
+	values.StrInfo:         info.InfoID,
+	values.StrSend:         send.SendPageID,
+	values.StrReceive:      receive.ReceivePageID,
+	values.StrTransactions: transaction.TransactionsPageID,
+	values.StrSettings:     WalletSettingsPageID,
+	values.StrPrivacy:      privacy.AccountMixerPageID,
+	values.StrStaking:      staking.OverviewPageID,
 }
 
 // SingleWalletMasterPage is a master page for interacting with a single wallet.
@@ -204,16 +204,16 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 // initTabOptions initializes the page navigation tabs
 func (swmp *SingleWalletMasterPage) initTabOptions() {
 	commonTabs := []string{
-		values.String(values.StrInfo),
-		values.String(values.StrReceive),
-		values.String(values.StrTransactions),
-		values.String(values.StrAccounts),
-		values.String(values.StrSettings),
+		values.StrInfo,
+		values.StrReceive,
+		values.StrTransactions,
+		values.StrAccounts,
+		values.StrSettings,
 	}
 
 	if !swmp.selectedWallet.IsWatchingOnlyWallet() {
 		// Add 'Send' to the tabs for non-watching-only wallets.
-		sendTab := []string{values.String(values.StrSend)}
+		sendTab := []string{values.StrSend}
 		// Insert 'Send' after 'StrInfo'.
 		commonTabs = append(commonTabs[:1], append(sendTab, commonTabs[1:]...)...)
 	}
@@ -225,11 +225,11 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 
 		// Conditionally add 'StrStakeShuffle' if the wallet is not a watch-only wallet.
 		if !swmp.selectedWallet.IsWatchingOnlyWallet() {
-			dcrSpecificTabs = append(dcrSpecificTabs, values.String(values.StrStakeShuffle))
+			dcrSpecificTabs = append(dcrSpecificTabs, values.StrStakeShuffle)
 		}
 
 		// Always add 'StrStaking' for DCR asset type wallets.
-		dcrSpecificTabs = append(dcrSpecificTabs, values.String(values.StrStaking))
+		dcrSpecificTabs = append(dcrSpecificTabs, values.StrStaking)
 
 		// Find the correct insertion index for DCR-specific tabs before 'StrAccounts'.
 		insertIndex := 3 // Default position before 'StrAccounts' in the commonTabs.
@@ -393,17 +393,17 @@ func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
 
 	var pg app.Page
 	switch swmp.PageNavigationTab.SelectedSegment() {
-	case values.String(values.StrSend):
+	case values.StrSend:
 		pg = send.NewSendPage(swmp.Load, swmp.selectedWallet)
-	case values.String(values.StrReceive):
+	case values.StrReceive:
 		pg = receive.NewReceivePage(swmp.Load, swmp.selectedWallet)
-	case values.String(values.StrInfo):
+	case values.StrInfo:
 		pg = info.NewInfoPage(swmp.Load, swmp.selectedWallet, swmp.backup)
-	case values.String(values.StrTransactions):
+	case values.StrTransactions:
 		txPage := transaction.NewTransactionsPage(swmp.Load, swmp.selectedWallet)
 		txPage.DisableUniformTab()
 		pg = txPage
-	case values.String(values.StrStakeShuffle):
+	case values.StrStakeShuffle:
 		dcrW := swmp.selectedWallet.(*dcr.Asset)
 		if dcrW != nil {
 			if !dcrW.AccountMixerConfigIsSet() {
@@ -412,16 +412,16 @@ func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
 				pg = privacy.NewAccountMixerPage(swmp.Load, dcrW)
 			}
 		}
-	case values.String(values.StrStaking):
+	case values.StrStaking:
 		dcrW := swmp.selectedWallet.(*dcr.Asset)
 		if dcrW == nil {
 			log.Error(values.ErrDCRSupportedOnly)
 		} else {
 			pg = staking.NewStakingPage(swmp.Load, dcrW)
 		}
-	case values.String(values.StrAccounts):
+	case values.StrAccounts:
 		pg = accounts.NewAccountPage(swmp.Load, swmp.selectedWallet)
-	case values.String(values.StrSettings):
+	case values.StrSettings:
 		pg = NewSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc, swmp.changeTab)
 	}
 

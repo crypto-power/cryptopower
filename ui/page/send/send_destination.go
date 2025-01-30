@@ -15,8 +15,8 @@ import (
 )
 
 var tabOptions = []string{
-	values.String(values.StrAddress),
-	values.String(values.StrWallets),
+	values.StrAddress,
+	values.StrWallets,
 }
 
 type destination struct {
@@ -167,7 +167,7 @@ func (dst *destination) clearAddressInput() {
 // isSendToAddress returns the current tab selection status without depending
 // on a buffered state.
 func (dst *destination) isSendToAddress() bool {
-	return dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
+	return dst.accountSwitch.SelectedSegment() == values.StrAddress
 }
 
 func (dst *destination) HandleDropdownInteraction(gtx C) {

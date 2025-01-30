@@ -20,9 +20,9 @@ const (
 var tab *cryptomaterial.SegmentedControl
 
 var tabTitles = []string{
-	values.String(values.StrDcrDex),
-	values.String(values.StrCentralizedExchange),
-	values.String(values.StrTradeHistory),
+	values.StrDcrDex,
+	values.StrCentralizedExchange,
+	values.StrTradeHistory,
 }
 
 type TradePage struct {

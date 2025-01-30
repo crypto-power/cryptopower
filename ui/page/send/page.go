@@ -56,9 +56,9 @@ type Page struct {
 
 	infoButton cryptomaterial.IconButton
 	// retryExchange cryptomaterial.Button // TODO not included in design
-	nextButton     cryptomaterial.Button
-	closeButton    cryptomaterial.Button
-	addRecipentBtn *cryptomaterial.Clickable
+	nextButton      cryptomaterial.Button
+	closeButton     cryptomaterial.Button
+	addRecipientBtn *cryptomaterial.Clickable
 
 	isFetchingExchangeRate bool
 
@@ -112,7 +112,7 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		authoredTxData:    &authoredTxData{},
 		exchangeRate:      -1,
 		navigateToSyncBtn: l.Theme.Button(values.String(values.StrStartSync)),
-		addRecipentBtn:    l.Theme.NewClickable(false),
+		addRecipientBtn:   l.Theme.NewClickable(false),
 		recipients:        make([]*recipient, 0),
 	}
 
@@ -645,7 +645,7 @@ func (pg *Page) HandleUserInteractions(gtx C) {
 		})
 	}
 
-	if pg.addRecipentBtn.Clicked(gtx) {
+	if pg.addRecipientBtn.Clicked(gtx) {
 		pg.addRecipient()
 	}
 

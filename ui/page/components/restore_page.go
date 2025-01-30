@@ -22,8 +22,8 @@ import (
 const CreateRestorePageID = "Restore"
 
 var tabTitles = []string{
-	values.String(values.StrSeedWords),
-	values.String(values.StrHex),
+	values.StrSeedWords,
+	values.StrHex,
 }
 
 type Restore struct {

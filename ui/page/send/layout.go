@@ -173,19 +173,19 @@ func (pg *Page) recipientsLayout(gtx C) D {
 		if pg.modalLayout == nil && len(pg.recipients) < 3 {
 			flexChilds = append(flexChilds, layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.E.Layout(gtx, pg.addRecipentBtnLayout)
+				return layout.E.Layout(gtx, pg.addRecipientBtnLayout)
 			}))
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexChilds...)
 	})
 }
 
-func (pg *Page) addRecipentBtnLayout(gtx C) D {
+func (pg *Page) addRecipientBtnLayout(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
 		Height:     cryptomaterial.WrapContent,
 		Background: pg.Theme.Color.SurfaceHighlight,
-		Clickable:  pg.addRecipentBtn,
+		Clickable:  pg.addRecipientBtn,
 		Alignment:  layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(pg.Theme.AddIcon().Layout24dp),

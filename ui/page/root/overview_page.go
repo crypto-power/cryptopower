@@ -305,7 +305,7 @@ func (pg *OverviewPage) HandleUserInteractions(gtx C) {
 		swmp := wallet.NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
 		pg.ParentWindow().Display(swmp)
 		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
-		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
+		swmp.PageNavigationTab.SetSelectedSegment(values.StrStakeShuffle)
 	}
 
 	for _, info := range pg.listInfoWallets {
