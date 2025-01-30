@@ -194,7 +194,7 @@ func (vm *voteModal) Handle(gtx C) {
 		swmp := wallet.NewSingleWalletMasterPage(vm.Load, selectedWallet, walletCallbackFunc)
 		vm.ParentWindow().Display(swmp)
 		swmp.Display(staking.NewStakingPage(vm.Load, selectedWallet)) // Display staking page on the main page.]
-		swmp.PageNavigationTab.SetSelectedSegment(values.String(values.StrStaking))
+		swmp.PageNavigationTab.SetSelectedSegment(values.StrStaking)
 	}
 }
 

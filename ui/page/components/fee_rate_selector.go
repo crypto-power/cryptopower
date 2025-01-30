@@ -66,8 +66,8 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 	fs.SaveRate = fs.Theme.Button(values.String(values.StrSave))
 
 	fs.feeRateSwitch = fs.Theme.SegmentedControl([]string{
-		values.String(values.StrFetched),
-		values.String(values.StrManual),
+		values.StrFetched,
+		values.StrManual,
 	}, cryptomaterial.SegmentTypeDynamicSplit)
 	fs.feeRateSwitch.SetEnableSwipe(false)
 	fs.feeRateSwitch.DisableUniform(true)
@@ -154,7 +154,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 						return layoutBody(gtx)
 					}
 
-					if fs.feeRateSwitch.SelectedSegment() == values.String(values.StrFetched) {
+					if fs.feeRateSwitch.SelectedSegment() == values.StrFetched {
 						fs.fetchedRatesDropDown.Width = gtx.Metric.PxToDp(gtx.Constraints.Max.X)
 						layoutBody = fs.fetchedRatesDropDown.Layout
 					}

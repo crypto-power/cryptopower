@@ -64,8 +64,8 @@ var (
 	}
 
 	buyAndSellBtnStrings = []string{
-		values.String(values.StrBuy),
-		values.String(values.StrSell),
+		values.StrBuy,
+		values.StrSell,
 	}
 
 	vertical   = layout.Vertical
@@ -1983,7 +1983,7 @@ func (pg *DEXMarketPage) isMarketOrder() bool {
 }
 
 func (pg *DEXMarketPage) isSellOrder() bool {
-	return pg.toggleBuyAndSellBtn.SelectedSegment() == values.String(values.StrSell)
+	return pg.toggleBuyAndSellBtn.SelectedSegment() == values.StrSell
 }
 
 func (pg *DEXMarketPage) notifyError(errMsg string) {

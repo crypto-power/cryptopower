@@ -46,8 +46,8 @@ type multiWalletTx struct {
 }
 
 var txTabs = []string{
-	values.String(values.StrTxRegular),
-	values.String(values.StrStakingTx),
+	values.StrTxRegular,
+	values.StrStakingTx,
 }
 
 // TransactionsPage shows transactions for a specific wallet or for all wallets.
@@ -189,7 +189,7 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 // display transactions for multiple wallets.
 func (pg *TransactionsPage) initWalletSelector() {
 	pg.assetWallets = pg.AssetsManager.AllWallets()
-	if pg.txCategoryTab.SelectedSegment() != values.String(values.StrTxRegular) {
+	if pg.txCategoryTab.SelectedSegment() != values.StrTxRegular {
 		pg.assetWallets = pg.AssetsManager.AllDCRWallets()
 	}
 
@@ -240,7 +240,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
 
 	// only show tx count for regular txs, not staking
-	if pg.txCategoryTab.SelectedSegment() == values.String(values.StrTxOverview) {
+	if pg.txCategoryTab.SelectedSegment() == values.StrTxOverview {
 		pg.showLoader = true
 
 		wallets := pg.assetWallets

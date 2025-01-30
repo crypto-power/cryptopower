@@ -235,12 +235,12 @@ func (rp *recipient) recipientLayout(index int, showIcon bool) layout.Widget {
 				}
 
 				if !rp.isSendToAddress() {
-					layoutBody = rp.walletAccountlayout()
+					layoutBody = rp.walletAccountLayout()
 				}
 
 				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody, rp.IsMobileView())
 			}),
-			layout.Rigid(rp.addressAndAmountlayout),
+			layout.Rigid(rp.addressAndAmountLayout),
 			layout.Rigid(rp.txLabelSection),
 		)
 	}
@@ -261,7 +261,7 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 	)
 }
 
-func (rp *recipient) walletAccountlayout() layout.Widget {
+func (rp *recipient) walletAccountLayout() layout.Widget {
 	return func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
@@ -299,7 +299,7 @@ func (rp *recipient) contentWrapper(gtx C, title string, content layout.Widget) 
 	})
 }
 
-func (rp *recipient) addressAndAmountlayout(gtx C) D {
+func (rp *recipient) addressAndAmountLayout(gtx C) D {
 	widget := func(gtx C) D { return rp.amount.amountEditor.Layout(gtx) }
 	if rp.pageParam().exchangeRate != -1 && rp.pageParam().usdExchangeSet {
 		widget = func(gtx C) D {

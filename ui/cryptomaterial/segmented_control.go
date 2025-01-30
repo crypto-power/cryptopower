@@ -33,8 +33,8 @@ type SegmentedControl struct {
 	ContentPadding layout.Inset
 	Alignment      layout.Alignment
 
-	selectedIndex int
-	segmentTitles []string
+	selectedIndex               int
+	segmentTitlesTranslationKey []string
 
 	changed bool
 	mu      sync.Mutex
@@ -52,23 +52,23 @@ type SegmentedControl struct {
 }
 
 // Segmented control is a linear set of two or more segments, each of which functions as a button.
-func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType) *SegmentedControl {
+func (t *Theme) SegmentedControl(segmentTitlesTranslationKey []string, segmentType SegmentType) *SegmentedControl {
 	list := t.NewClickableList(layout.Horizontal)
 	list.IsHoverable = false
 
 	sc := &SegmentedControl{
-		list:                 list,
-		theme:                t,
-		segmentTitles:        segmentTitles,
-		leftNavBtn:           t.NewClickable(false),
-		rightNavBtn:          t.NewClickable(false),
-		leftNavBtnVisible:    false,
-		rightNavBtnVisible:   true,
-		isSwipeActionEnabled: true,
-		segmentType:          segmentType,
-		slideAction:          NewSlideAction(),
-		slideActionTitle:     NewSlideAction(),
-		Padding:              layout.UniformInset(values.MarginPadding8),
+		list:                        list,
+		theme:                       t,
+		segmentTitlesTranslationKey: segmentTitlesTranslationKey,
+		leftNavBtn:                  t.NewClickable(false),
+		rightNavBtn:                 t.NewClickable(false),
+		leftNavBtnVisible:           false,
+		rightNavBtnVisible:          true,
+		isSwipeActionEnabled:        true,
+		segmentType:                 segmentType,
+		slideAction:                 NewSlideAction(),
+		slideActionTitle:            NewSlideAction(),
+		Padding:                     layout.UniformInset(values.MarginPadding8),
 		ContentPadding: layout.Inset{
 			Top: values.MarginPadding14,
 		},
@@ -170,12 +170,12 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return sc.slideActionTitle.DragLayout(gtx, func(gtx C) D {
-				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+				return sc.list.Layout(gtx, len(sc.segmentTitlesTranslationKey), func(gtx C, i int) D {
 					isSelectedSegment := sc.SelectedIndex() == i
 					textSize16 := values.TextSizeTransform(sc.isMobileView, values.TextSize16)
 					return layout.Center.Layout(gtx, func(gtx C) D {
 						bg := sc.theme.Color.SurfaceHighlight
-						txt := sc.theme.DecoratedText(textSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
+						txt := sc.theme.DecoratedText(textSize16, values.String(sc.segmentTitlesTranslationKey[i]), sc.theme.Color.GrayText1, font.SemiBold)
 						border := Border{Radius: Radius(0)}
 						if isSelectedSegment {
 							bg = sc.theme.Color.Surface
@@ -223,11 +223,11 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 			return sc.leftNavBtn.Layout(gtx, sc.theme.NewIcon(sc.theme.Icons.ChevronLeft).Layout24dp)
 		}),
 		layout.Flexed(flexWidthCenter, func(gtx C) D {
-			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+			return sc.list.Layout(gtx, len(sc.segmentTitlesTranslationKey), func(gtx C, i int) D {
 				isSelectedSegment := sc.SelectedIndex() == i
 				return layout.Center.Layout(gtx, func(gtx C) D {
 					bg := sc.theme.Color.Gray2
-					txt := sc.theme.DecoratedText(values.TextSize14, sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
+					txt := sc.theme.DecoratedText(values.TextSize14, values.String(sc.segmentTitlesTranslationKey[i]), sc.theme.Color.GrayText2, font.SemiBold)
 					border := Border{Radius: Radius(8)}
 					if isSelectedSegment {
 						bg = sc.theme.Color.LightBlue8
@@ -237,7 +237,7 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 					paddingTB := values.MarginPadding8
 					paddingLR := values.MarginPadding32
 					pr := values.MarginPadding6
-					if i == len(sc.segmentTitles) { // no need to add padding to the last item
+					if i == len(sc.segmentTitlesTranslationKey) { // no need to add padding to the last item
 						pr = values.MarginPadding0
 					}
 
@@ -283,11 +283,11 @@ func (sc *SegmentedControl) groupTileMaxLayout(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			textSize16 := values.TextSizeTransform(sc.isMobileView, values.TextSize16)
 			return sc.slideActionTitle.DragLayout(gtx, func(gtx C) D {
-				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+				return sc.list.Layout(gtx, len(sc.segmentTitlesTranslationKey), func(gtx C, i int) D {
 					isSelectedSegment := sc.SelectedIndex() == i
 					return layout.Center.Layout(gtx, func(gtx C) D {
 						bg := sc.theme.Color.SurfaceHighlight
-						txt := sc.theme.DecoratedText(textSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
+						txt := sc.theme.DecoratedText(textSize16, values.String(sc.segmentTitlesTranslationKey[i]), sc.theme.Color.GrayText1, font.SemiBold)
 						border := Border{Radius: Radius(0)}
 						if isSelectedSegment {
 							bg = sc.theme.Color.Surface
@@ -296,7 +296,7 @@ func (sc *SegmentedControl) groupTileMaxLayout(gtx C) D {
 						}
 						return LinearLayout{
 							// subtract padding on the x-axis values.MarginPadding4 x2
-							Width:      (layoutSize - gtx.Dp(values.MarginPadding8)) / len(sc.segmentTitles),
+							Width:      (layoutSize - gtx.Dp(values.MarginPadding8)) / len(sc.segmentTitlesTranslationKey),
 							Height:     WrapContent,
 							Background: bg,
 							Border:     border,
@@ -317,11 +317,11 @@ func (sc *SegmentedControl) dynamicSplitTileLayout(gtx C) D {
 		Height:      WrapContent,
 		Orientation: layout.Horizontal,
 	}.Layout2(gtx, func(gtx C) D {
-		return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+		return sc.list.Layout(gtx, len(sc.segmentTitlesTranslationKey), func(gtx C, i int) D {
 			isSelectedSegment := sc.SelectedIndex() == i
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				bg := sc.theme.Color.Surface
-				txt := sc.theme.DecoratedText(values.TextSizeTransform(sc.isMobileView, values.TextSize14), sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
+				txt := sc.theme.DecoratedText(values.TextSizeTransform(sc.isMobileView, values.TextSize14), values.String(sc.segmentTitlesTranslationKey[i]), sc.theme.Color.GrayText2, font.SemiBold)
 				border := Border{Radius: Radius(12), Color: sc.theme.Color.Gray10}
 				if isSelectedSegment {
 					bg = sc.theme.Color.Gray2
@@ -331,7 +331,7 @@ func (sc *SegmentedControl) dynamicSplitTileLayout(gtx C) D {
 				paddingTB := values.MarginPadding4
 				paddingLR := values.MarginPadding12
 				pr := values.MarginPadding6
-				if i == len(sc.segmentTitles) { // no need to add padding to the last item
+				if i == len(sc.segmentTitlesTranslationKey) { // no need to add padding to the last item
 					pr = values.MarginPadding0
 				}
 
@@ -388,7 +388,7 @@ func (sc *SegmentedControl) updateArrowVisibility() {
 		sc.leftNavBtnVisible = true
 	}
 
-	if sc.list.Position.First+sc.list.Position.Count >= len(sc.segmentTitles) {
+	if sc.list.Position.First+sc.list.Position.Count >= len(sc.segmentTitlesTranslationKey) {
 		sc.rightNavBtnVisible = false
 	} else {
 		sc.rightNavBtnVisible = true
@@ -404,7 +404,7 @@ func (sc *SegmentedControl) SelectedIndex() int {
 func (sc *SegmentedControl) SelectedSegment() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	return sc.segmentTitles[sc.selectedIndex]
+	return sc.segmentTitlesTranslationKey[sc.selectedIndex]
 }
 
 func (sc *SegmentedControl) Changed() bool {
@@ -418,7 +418,7 @@ func (sc *SegmentedControl) Changed() bool {
 func (sc *SegmentedControl) SetSelectedSegment(segment string) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	for i, item := range sc.segmentTitles {
+	for i, item := range sc.segmentTitlesTranslationKey {
 		if item == segment {
 			sc.selectedIndex = i
 			break
@@ -427,7 +427,7 @@ func (sc *SegmentedControl) SetSelectedSegment(segment string) {
 }
 
 func (sc *SegmentedControl) handleActionEvent(isNext bool) {
-	l := len(sc.segmentTitles) - 1 // index starts at 0
+	l := len(sc.segmentTitlesTranslationKey) - 1 // index starts at 0
 	if isNext {
 		if sc.selectedIndex == l {
 			if !sc.allowCycle {
