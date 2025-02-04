@@ -1,0 +1,1 @@
+A cross-platform SPV (DCR, BTC & LTC) privacy wallet built with go.
