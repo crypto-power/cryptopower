@@ -8,6 +8,9 @@ ARG BUILDNAME
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.35.2
 
 ENV GO111MODULE on
+ENV CGO_ENABLED=0
+ENV GOOS=$BUILDOS
+ENV GOARCH=$BUILDARCH
 
 RUN go version
 
