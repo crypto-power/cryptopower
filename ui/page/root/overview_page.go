@@ -242,6 +242,10 @@ func (pg *OverviewPage) OnNavigatedTo() {
 		info.Init()
 		info.ListenForNotifications() // stopped in OnNavigatedFrom()
 	}
+	pg.listenForBalanceChange(func() {
+		pg.updateAssetsSliders()
+		go pg.updateAssetsUSDBalance()
+	})
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -1263,6 +1267,38 @@ func (pg *OverviewPage) centerLayout(gtx C, top, bottom unit.Dp, content layout.
 			Bottom: bottom,
 		}.Layout(gtx, content)
 	})
+}
+
+func (pg *OverviewPage) listenForBalanceChange(listen func()) {
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransactionConfirmed: func(_ int, _ string, _ int32) {
+			listen()
+		},
+		OnTransaction: func(_ int, _ *sharedW.Transaction) {
+			listen()
+		},
+	}
+
+	// Listen for ntfns for all wallets.
+	for _, w := range pg.AssetsManager.AllWallets() {
+		w.RemoveTxAndBlockNotificationListener(OverviewPageID)
+		err := w.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, OverviewPageID)
+		if err != nil {
+			log.Errorf("Error adding tx and block notification listener: %v", err)
+			return
+		}
+	}
+	// add rate listener
+	rateListener := &ext.RateListener{
+		OnRateUpdated: func() {
+			listen()
+		},
+	}
+	if !pg.AssetsManager.RateSource.IsRateListenerExist(OverviewPageID) {
+		if err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID); err != nil {
+			log.Error("Can't listen rate notification ")
+		}
+	}
 }
 
 func (pg *OverviewPage) listenForMixerNotifications() {
