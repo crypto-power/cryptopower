@@ -82,26 +82,36 @@ func (s *Scroll[T]) SetIsHaveKeySearch(isHaveKeySearch bool) {
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator, isResetList bool) {
+// isResetList = false and loadNewItem = true: Reloads the item list but does not alter the current scroll position
+func (s *Scroll[T]) FetchScrollDataHandler(isScrollUp bool, window app.WindowNavigator, isResetList, loadNewItem bool) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
 		s.isLoadingItems = false
 	}
 
-	if isResetList {
+	if isResetList || loadNewItem {
 		s.loadedAllItems = false
 		s.isLoadingItems = false
-		s.offset = 0
 		s.itemsCount = -1
 		s.data = nil
 		s.cacheData = nil
-		s.list.Position.Offset = 0
+		s.offset = 0
+
+		if isResetList {
+			s.list.Position.Offset = 0
+		}
 	}
 	s.mu.Unlock()
 	if s.data == nil || len(s.data.items) == 0 {
 		s.fetchScrollData(isScrollUp, window)
 	}
+}
+
+// FetchScrollData is a mutex protected fetchScrollData function. At the end of
+// the function call a window reload is triggered. Returns that latest records.
+func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator, isResetList bool) {
+	s.FetchScrollDataHandler(isScrollUp, window, isResetList, false)
 }
 
 // fetchScrollData fetchs the scroll data and manages data returned depending on

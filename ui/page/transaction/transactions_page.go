@@ -180,7 +180,14 @@ func (pg *TransactionsPage) DisableUniformTab() {
 func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.refreshAvailableTxType()
 
-	pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
+	pg.listenForTxNotifications(func(walletID int) {
+		// Listen for all new txs but ignore ntfns if the wallet sending the
+		// ntfn is not the currently selected wallet.
+		if pg.selectedWallet != nil && pg.selectedWallet.GetWalletID() != walletID {
+			return // ignore tx
+		}
+		pg.scroll.FetchScrollDataHandler(false, pg.ParentWindow(), false, true)
+	}) // tx ntfn listener is stopped in OnNavigatedFrom().
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
@@ -757,16 +764,13 @@ func exportTxs(assets []sharedW.Asset, fileName string) error {
 	return nil
 }
 
-func (pg *TransactionsPage) listenForTxNotifications() {
+func (pg *TransactionsPage) listenForTxNotifications(fetchHandler func(int)) {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransactionConfirmed: func(walletID int, _ string, _ int32) {
+			fetchHandler(walletID)
+		},
 		OnTransaction: func(walletID int, _ *sharedW.Transaction) {
-			// Listen for all new txs but ignore ntfns if the wallet sending the
-			// ntfn is not the currently selected wallet.
-			if pg.selectedWallet != nil && pg.selectedWallet.GetWalletID() != walletID {
-				return // ignore tx
-			}
-
-			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
+			fetchHandler(walletID)
 		},
 	}
 
