@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strconv"
 
 	"gioui.org/io/event"
@@ -725,7 +724,13 @@ func (swmp *SingleWalletMasterPage) postTransactionNotification(t *sharedW.Trans
 		notification = fmt.Sprintf("[%s] %s", wal.GetWalletName(), notification)
 	}
 
-	initializeBeepNotification(notification)
+	// push notification
+	walIcon, err := utils.GetWalletNotifyIconPath(wal.GetAssetType())
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	utils.PushAppNotificationsWithIcon(notification, walIcon)
 }
 
 func (swmp *SingleWalletMasterPage) postProposalNotification(propName string, status libutils.ProposalStatus) {
@@ -746,20 +751,7 @@ func (swmp *SingleWalletMasterPage) postProposalNotification(propName string, st
 	default:
 		notification = values.StringF(values.StrNewProposalUpdate, propName)
 	}
-	initializeBeepNotification(notification)
-}
-
-func initializeBeepNotification(n string) {
-	absoluteWdPath, err := utils.GetAbsolutePath()
-	if err != nil {
-		log.Error(err.Error())
-	}
-
-	err = beeep.Notify(values.String(values.StrAppWallet), n,
-		filepath.Join(absoluteWdPath, "ui/assets/decredicons/ic_dcr_qr.png"))
-	if err != nil {
-		log.Info("could not initiate desktop notification, reason:", err.Error())
-	}
+	utils.PushAppNotifications(notification)
 }
 
 // listenForNotifications starts a goroutine to watch for notifications
