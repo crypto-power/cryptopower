@@ -828,8 +828,10 @@ func (pg *AppSettingsPage) updateSettingOptions() {
 func (pg *AppSettingsPage) updatePrivacySettings() {
 	privacyOn := pg.AssetsManager.IsPrivacyModeOn()
 	pg.setInitialSwitchStatus(pg.privacyActive, privacyOn)
+	// Disable Transaction Notification switch when privacy is on
+	pg.setInitialSwitchStatus(pg.transactionNotification, pg.AssetsManager.IsTransactionNotificationsOn())
+	pg.transactionNotification.SetEnabled(!privacyOn)
 	if !privacyOn {
-		pg.setInitialSwitchStatus(pg.transactionNotification, pg.AssetsManager.IsTransactionNotificationsOn())
 		pg.setInitialSwitchStatus(pg.governanceAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI))
 		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI))
 		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI))

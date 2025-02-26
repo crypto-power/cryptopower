@@ -213,10 +213,11 @@ func (mgr *AssetsManager) SetUserAgent(data string) {
 }
 
 // IsTransactionNotificationsOn checks if the transaction notifications is set.
+// When privacy mode is enabled, Tx notification is also disabled.
 func (mgr *AssetsManager) IsTransactionNotificationsOn() bool {
 	var data bool
 	mgr.ReadAppConfigValue(sharedW.TransactionNotificationConfigKey, &data)
-	return data && mgr.IsPrivacyModeOn()
+	return data && !mgr.IsPrivacyModeOn()
 }
 
 // SetTransactionsNotifications sets the transaction notifications for the app.
