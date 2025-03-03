@@ -1122,6 +1122,13 @@ func (pg *OverviewPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transaction, s
 	return mtx.Transaction, pg.AssetsManager.WalletWithID(mtx.walletID)
 }
 
+// Update balance/USD balance and transaction list when there is a new tx
+func (pg *OverviewPage) ListenForNewTx() {
+	pg.loadTransactions()
+	pg.updateAssetsSliders()
+	pg.updateAssetsUSDBalance()
+}
+
 func (pg *OverviewPage) updateAssetsUSDBalance() {
 	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
 		assetsTotalUSDBalance, err := pg.AssetsManager.CalculateAssetsUSDBalance(pg.assetsTotalBalance)

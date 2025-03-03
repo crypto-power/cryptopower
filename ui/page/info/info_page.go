@@ -319,6 +319,14 @@ func (pg *WalletInfo) reloadMixerBalances() {
 	}
 }
 
+// Reload tx list when there is new tx. Called from parent page
+func (pg *WalletInfo) ListenForNewTx(walletID int) {
+	if walletID != pg.wallet.GetWalletID() {
+		return
+	}
+	pg.loadTransactions()
+}
+
 func (pg *WalletInfo) loadTransactions() {
 	pg.showMaterialLoader = true
 	mapInfo, _ := components.TxPageDropDownFields(pg.wallet.GetAssetType(), 0)

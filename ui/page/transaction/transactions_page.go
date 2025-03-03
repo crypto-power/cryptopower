@@ -180,7 +180,6 @@ func (pg *TransactionsPage) DisableUniformTab() {
 func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.refreshAvailableTxType()
 
-	pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
@@ -757,28 +756,12 @@ func exportTxs(assets []sharedW.Asset, fileName string) error {
 	return nil
 }
 
-func (pg *TransactionsPage) listenForTxNotifications() {
-	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(walletID int, _ *sharedW.Transaction) {
-			// Listen for all new txs but ignore ntfns if the wallet sending the
-			// ntfn is not the currently selected wallet.
-			if pg.selectedWallet != nil && pg.selectedWallet.GetWalletID() != walletID {
-				return // ignore tx
-			}
-
-			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
-		},
+// Update transaction list when there is new tx or new confirmed status
+func (pg *TransactionsPage) ListenForTxNotification(walletID int) {
+	if pg.selectedWallet != nil && pg.selectedWallet.GetWalletID() != walletID {
+		return
 	}
-
-	// Listen for ntfns for all wallets.
-	for _, w := range pg.assetWallets {
-		w.RemoveTxAndBlockNotificationListener(TransactionsPageID)
-		err := w.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, TransactionsPageID)
-		if err != nil {
-			log.Errorf("Error adding tx and block notification listener: %v", err)
-			return
-		}
-	}
+	pg.scroll.FetchScrollDataHandler(false, pg.ParentWindow(), false, true)
 }
 
 func (pg *TransactionsPage) stopTxNotificationsListener() {

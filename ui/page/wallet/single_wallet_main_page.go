@@ -187,7 +187,9 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 	// set active tab value
 	swmp.activeTab[swmp.PageNavigationTab.SelectedSegment()] = swmp.CurrentPageID()
 
-	swmp.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
+	swmp.listenForNotifications(func(walletID int) {
+		go swmp.ListenNewTxForSubPage(walletID)
+	}) // ntfn listeners are stopped in OnNavigatedFrom().
 
 	if swmp.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
 		if swmp.selectedWallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && swmp.isGovernanceAPIAllowed() {
@@ -198,6 +200,19 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 				_ = swmp.AssetsManager.Politeia.Sync(context.TODO()) // TODO: Politeia should be given a ctx when initialized.
 			}()
 		}
+	}
+}
+
+// Call the subpage component update functions when there is a new tx
+func (swmp *SingleWalletMasterPage) ListenNewTxForSubPage(walletID int) {
+	switch swmp.CurrentPageID() {
+	case transaction.TransactionsPageID:
+		swmp.CurrentPage().(*transaction.TransactionsPage).ListenForTxNotification(walletID)
+		return
+	case info.InfoID:
+		swmp.CurrentPage().(*info.WalletInfo).ListenForNewTx(walletID)
+	default:
+		return
 	}
 }
 
@@ -764,7 +779,7 @@ func initializeBeepNotification(n string) {
 
 // listenForNotifications starts a goroutine to watch for notifications
 // and update the UI accordingly.
-func (swmp *SingleWalletMasterPage) listenForNotifications() {
+func (swmp *SingleWalletMasterPage) listenForNotifications(listenForSubpage func(int)) {
 	syncProgressListener := &sharedW.SyncProgressListener{
 		OnSyncCompleted: func() {
 			swmp.updateBalance()
@@ -778,7 +793,7 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 	}
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(_ int, transaction *sharedW.Transaction) {
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
 			swmp.updateBalance()
 			if swmp.AssetsManager.IsTransactionNotificationsOn() {
 				// TODO: SPV wallets only receive mempool tx ntfn for txs that
@@ -788,6 +803,10 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 				swmp.postTransactionNotification(transaction)
 			}
 			swmp.ParentWindow().Reload()
+			listenForSubpage(walletID)
+		},
+		OnTransactionConfirmed: func(walletID int, _ string, _ int32) {
+			listenForSubpage(walletID)
 		},
 		// OnBlockAttached is also called whenever OnTransactionConfirmed is
 		// called, so use OnBlockAttached. Also, OnTransactionConfirmed may be
