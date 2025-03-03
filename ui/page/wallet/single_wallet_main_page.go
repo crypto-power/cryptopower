@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -700,39 +699,6 @@ func (swmp *SingleWalletMasterPage) totalAssetBalance(gtx C) D {
 	return components.LayoutBalanceWithUnitSize(gtx, swmp.Load, swmp.walletBalance.String(), textSize)
 }
 
-func (swmp *SingleWalletMasterPage) postTransactionNotification(t *sharedW.Transaction) {
-	var notification string
-	wal := swmp.selectedWallet
-	switch t.Type {
-	case dcr.TxTypeRegular:
-		if t.Direction != dcr.TxDirectionReceived {
-			return
-		}
-		// remove trailing zeros from amount and convert to string
-		amount := strconv.FormatFloat(wal.ToAmount(t.Amount).ToCoin(), 'f', -1, 64)
-		notification = values.StringF(values.StrDcrReceived, amount)
-	case dcr.TxTypeVote:
-		reward := strconv.FormatFloat(wal.ToAmount(t.VoteReward).ToCoin(), 'f', -1, 64)
-		notification = values.StringF(values.StrTicketVoted, reward)
-	case dcr.TxTypeRevocation:
-		notification = values.String(values.StrTicketRevoked)
-	default:
-		return
-	}
-
-	if swmp.AssetsManager.OpenedWalletsCount() > 1 {
-		notification = fmt.Sprintf("[%s] %s", wal.GetWalletName(), notification)
-	}
-
-	// push notification
-	walIcon, err := utils.GetWalletNotifyIconPath(wal.GetAssetType())
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-	utils.PushAppNotificationsWithIcon(notification, walIcon)
-}
-
 func (swmp *SingleWalletMasterPage) postProposalNotification(propName string, status libutils.ProposalStatus) {
 	proposalNotification := swmp.selectedWallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false) ||
 		!swmp.AssetsManager.IsPrivacyModeOn()
@@ -770,14 +736,17 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 	}
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(_ int, transaction *sharedW.Transaction) {
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
 			swmp.updateBalance()
 			if swmp.AssetsManager.IsTransactionNotificationsOn() {
 				// TODO: SPV wallets only receive mempool tx ntfn for txs that
 				// were broadcast by the wallet. We should probably be posting
 				// desktop ntfns for txs received from external parties, which
 				// will can be gotten from the OnTransactionConfirmed callback.
-				swmp.postTransactionNotification(transaction)
+				notification, assetType := swmp.AssetsManager.GetWalletNotification(walletID, transaction)
+				if notification != "" {
+					utils.PostTransactionNotification(notification, assetType)
+				}
 			}
 			swmp.ParentWindow().Reload()
 		},

@@ -1060,14 +1060,11 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 	return os.Remove(dexDBFile)
 }
 
-func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
-	// Reload total balance on new tx.
+// Listener for new tx arrived
+func (mgr *AssetsManager) ListenForNewTx(listen func(int, *sharedW.Transaction)) {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransactionConfirmed: func(_ int, _ string, _ int32) {
-			listen()
-		},
-		OnTransaction: func(_ int, _ *sharedW.Transaction) {
-			listen()
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+			listen(walletID, transaction)
 		},
 	}
 
@@ -1079,7 +1076,28 @@ func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
 			}
 		}
 	}
+}
 
+// Listener for tx confirmed
+func (mgr *AssetsManager) ListenForTxConfirmed(listen func(int)) {
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransactionConfirmed: func(walletID int, _ string, _ int32) {
+			listen(walletID)
+		},
+	}
+
+	// add tx listener
+	for _, wallet := range mgr.AllWallets() {
+		if !wallet.IsNotificationListenerExist(assetIdentifier) {
+			if err := wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, assetIdentifier); err != nil {
+				log.Errorf("Can't listen tx and block notification for %s wallet", wallet.GetWalletName())
+			}
+		}
+	}
+}
+
+// Listener for rate change
+func (mgr *AssetsManager) ListenForRateChange(listen func()) {
 	// add rate listener
 	rateListener := &ext.RateListener{
 		OnRateUpdated: func() {
@@ -1091,6 +1109,31 @@ func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
 			log.Error("Can't listen rate notification ")
 		}
 	}
+}
+
+// Get tx notification when new tx arrived
+func (mgr *AssetsManager) GetWalletNotification(walletID int, tx *sharedW.Transaction) (notification string, assetType libutils.AssetType) {
+	wal := mgr.WalletWithID(walletID)
+	assetType = wal.GetAssetType()
+	switch tx.Type {
+	case dcr.TxTypeRegular:
+		if tx.Direction != dcr.TxDirectionReceived {
+			return
+		}
+		// remove trailing zeros from amount and convert to string
+		amount := strconv.FormatFloat(wal.ToAmount(tx.Amount).ToCoin(), 'f', -1, 64)
+		notification = values.StringF(values.StrDcrReceived, amount)
+	case dcr.TxTypeVote:
+		reward := strconv.FormatFloat(wal.ToAmount(tx.VoteReward).ToCoin(), 'f', -1, 64)
+		notification = values.StringF(values.StrTicketVoted, reward)
+	case dcr.TxTypeRevocation:
+		notification = values.String(values.StrTicketRevoked)
+	default:
+		return
+	}
+
+	notification = fmt.Sprintf("[%s] %s", wal.GetWalletName(), notification)
+	return
 }
 
 func (mgr *AssetsManager) RemoveAssetChange() {

@@ -212,8 +212,14 @@ func (hp *HomePage) OnNavigatedTo() {
 	if hp.isUpdateAPIAllowed() {
 		go hp.checkForUpdates()
 	}
-
-	hp.AssetsManager.WatchBalanceChange(func() {
+	hp.AssetsManager.ListenForNewTx(func(walletID int, transaction *sharedW.Transaction) {
+		go hp.CalculateAssetsUSDBalance()
+		// get notifications
+		notification, assetType := hp.AssetsManager.GetWalletNotification(walletID, transaction)
+		// post notifications
+		go utils.PostTransactionNotification(notification, assetType)
+	})
+	hp.AssetsManager.ListenForRateChange(func() {
 		go hp.CalculateAssetsUSDBalance()
 	})
 }

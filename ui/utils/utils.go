@@ -158,6 +158,17 @@ func PushNotifications(title, content string) error {
 	return nil
 }
 
+// Create and push transaction notification
+func PostTransactionNotification(notification string, assetType libutils.AssetType) {
+	// push notification
+	walIcon, err := GetWalletNotifyIconPath(libutils.AssetType(assetType))
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	PushAppNotificationsWithIcon(notification, walIcon)
+}
+
 // Get absolute file path from relative path
 func GetAssetFilePath(relativePath string) (absoluteFilePath string, err error) {
 	absoluteWdPath, err := GetProjectPath()
