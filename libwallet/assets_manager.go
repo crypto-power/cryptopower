@@ -1115,21 +1115,26 @@ func (mgr *AssetsManager) ListenForRateChange(listen func()) {
 func (mgr *AssetsManager) GetWalletNotification(walletID int, tx *sharedW.Transaction) (notification string, assetType libutils.AssetType) {
 	wal := mgr.WalletWithID(walletID)
 	assetType = wal.GetAssetType()
-	switch tx.Type {
-	case dcr.TxTypeRegular:
-		if tx.Direction != dcr.TxDirectionReceived {
+	if assetType == libutils.DCRWalletAsset {
+		switch tx.Type {
+		case dcr.TxTypeRegular:
+			if tx.Direction != dcr.TxDirectionReceived {
+				return
+			}
+			// remove trailing zeros from amount and convert to string
+			amount := strconv.FormatFloat(wal.ToAmount(tx.Amount).ToCoin(), 'f', -1, 64)
+			notification = values.StringF(values.StrDcrReceived, amount)
+		case dcr.TxTypeVote:
+			reward := strconv.FormatFloat(wal.ToAmount(tx.VoteReward).ToCoin(), 'f', -1, 64)
+			notification = values.StringF(values.StrTicketVoted, reward)
+		case dcr.TxTypeRevocation:
+			notification = values.String(values.StrTicketRevoked)
+		default:
 			return
 		}
-		// remove trailing zeros from amount and convert to string
+	} else {
 		amount := strconv.FormatFloat(wal.ToAmount(tx.Amount).ToCoin(), 'f', -1, 64)
-		notification = values.StringF(values.StrDcrReceived, amount)
-	case dcr.TxTypeVote:
-		reward := strconv.FormatFloat(wal.ToAmount(tx.VoteReward).ToCoin(), 'f', -1, 64)
-		notification = values.StringF(values.StrTicketVoted, reward)
-	case dcr.TxTypeRevocation:
-		notification = values.String(values.StrTicketRevoked)
-	default:
-		return
+		notification = values.StringF(values.StrAmountReceived, amount, assetType.String())
 	}
 
 	notification = fmt.Sprintf("[%s] %s", wal.GetWalletName(), notification)

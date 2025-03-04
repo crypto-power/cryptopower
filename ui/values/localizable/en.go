@@ -167,6 +167,7 @@ const EN = `
 "dcrCaps" = "DCR"
 "dcrDex" = "DCRDEX"
 "dcrReceived" = "You have received %s DCR"
+"amountReceived" = "You have received %s %s"
 "debug" = "Debug"
 "decentralized" = "Decentralized Exchange (DEX)"
 "default" = "default"

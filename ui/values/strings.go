@@ -278,6 +278,7 @@ const (
 	StrDCRCaps                               = "dcrCaps"
 	StrDcrDex                                = "dcrDex"
 	StrDcrReceived                           = "dcrReceived"
+	StrAmountReceived                        = "amountReceived"
 	StrDebug                                 = "debug"
 	StrDecentralized                         = "decentralized"
 	StrDefault                               = "default"

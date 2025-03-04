@@ -436,6 +436,7 @@ const ES = `
 "yourAddress" = "Su dirección"
 "receiveInfo" = "Cada vez que recibe un pago, se genera una nueva dirección para proteger su privacidad".
 "dcrReceived" = "Has recibido %s DCR"
+"amountReceived" = "Has recibido %s %s"
 "ticketVoted" = "Un ticket acaba de votar\nRecompensa de voto: %s DCR"
 "ticketRevoked" = "Se revocó un ticket"
 "proposalAddedNotif" = "Se agregó una nueva propuesta Nombre: %s"

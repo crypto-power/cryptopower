@@ -414,6 +414,7 @@ const FR = `
 "yourAddress" = "Votre adresse"
 "receiveInfo" = ""Chaque fois que vous recevez un paiement, une nouvelle adresse est générée pour protéger votre vie privée."
 "dcrReceived" = "Vous avez reçu %s DCR"
+"amountReceived" = "Vous avez reçu %s %s"
 "ticketVoted" = "Un ticket vient d'être voté\nRécompense de vote: %s DCR"
 "ticketRevoked" = "Un ticket a été annulé"
 "proposalAddedNotif" = "Une nouvelle proposition a été ajoutée Nom: %s"
