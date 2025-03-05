@@ -8,7 +8,7 @@ import (
 	"decred.org/dcrwallet/v4/errors"
 	w "decred.org/dcrwallet/v4/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 func (asset *Asset) RescanBlocks() error {
@@ -18,11 +18,11 @@ func (asset *Asset) RescanBlocks() error {
 func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 	netBackend, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
-		return errors.E(utils.ErrNotConnected)
+		return errors.E(values.String(values.StrConnectNetworkFailed))
 	}
 
 	if asset.IsRescanning() || !asset.IsSynced() {
-		return errors.E(utils.ErrInvalid)
+		return errors.E(values.String(values.StrRescanInvalid))
 	}
 
 	go func() {

@@ -604,6 +604,8 @@ const (
 	StrRescanningBlocks                      = "rescanningBlocks"
 	StrRescanningHeaders                     = "rescanningHeaders"
 	StrRescanProgressNotification            = "rescanProgressNotification"
+	StrRescanInvalid                         = "rescanInvalid"
+	StrConnectNetworkFailed                  = "connectNetworkFailed"
 	StrRestore                               = "restore"
 	StrRestoreExistingWallet                 = "restoreExistingWallet"
 	StrRestoreWallet                         = "restoreWallet"
