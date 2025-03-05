@@ -523,10 +523,18 @@ func (wsi *WalletSyncInfo) progressBarRow(gtx C) D {
 
 // progressStatusRow lays out the progress status when the wallet is syncing.
 func (wsi *WalletSyncInfo) progressStatusDetails() (progress int, timeLeft string) {
-	sp := wsi.FetchSyncProgress()
-	progress = sp.SyncProgress()
-	timeLeft = sp.RemainingSyncTime()
-
+	if wsi.wallet.IsRescanning() {
+		sp := wsi.FetchRescanUpdate()
+		if sp == nil {
+			return
+		}
+		progress = int(sp.RescanProgress)
+		timeLeft = sp.RescanTimeRemaining.String()
+	} else {
+		sp := wsi.FetchSyncProgress()
+		progress = sp.SyncProgress()
+		timeLeft = sp.RemainingSyncTime()
+	}
 	if wsi.wallet.IsSyncing() || wsi.wallet.IsRescanning() {
 		timeLeft = values.StringF(values.StrTimeLeftFmt, timeLeft)
 		if progress == 0 {
@@ -577,10 +585,10 @@ func (wsi *WalletSyncInfo) FetchRescanUpdate() *sharedW.HeadersRescanProgressRep
 
 func (wsi *WalletSyncInfo) syncStatusIcon(gtx C) D {
 	icon := wsi.Theme.Icons.SyncingIcon
-	if wsi.wallet.IsSynced() {
-		icon = wsi.Theme.Icons.SuccessIcon
-	} else if wsi.wallet.IsSyncing() {
+	if wsi.wallet.IsRescanning() || wsi.wallet.IsSyncing() {
 		icon = wsi.Theme.Icons.SyncingIcon
+	} else if wsi.wallet.IsSynced() {
+		icon = wsi.Theme.Icons.SuccessIcon
 	}
 
 	i := layout.Inset{Left: values.MarginPadding16}
