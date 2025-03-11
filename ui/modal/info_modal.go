@@ -85,6 +85,14 @@ func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 	return md
 }
 
+// NewWarningModal returns the default warning modal UI component.
+func NewWarningModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
+	icon := l.Theme.Icons.OrangeAlert
+	md := newModal(l, title, icon, clicked)
+	md.SetContentAlignment(layout.Center, layout.Center, layout.Center)
+	return md
+}
+
 // DefaultClickFunc returns the default click function satisfying the positive
 // btn click function.
 func DefaultClickFunc() ClickFunc {
