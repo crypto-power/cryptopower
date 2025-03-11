@@ -194,6 +194,8 @@ func (lp *ListPreferenceModal) Handle(gtx C) {
 		lp.Dismiss()
 	}
 
+	lp.optionsRadioGroup.Update(gtx)
+
 	if lp.btnCancel.Button.Clicked(gtx) {
 		lp.Modal.Dismiss()
 	}

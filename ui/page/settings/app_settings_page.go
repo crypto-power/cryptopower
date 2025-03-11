@@ -16,6 +16,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/ext"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/logger"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -131,6 +132,35 @@ func NewAppSettingsPage(l *load.Load) *AppSettingsPage {
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) OnNavigatedTo() {
 	pg.updateSettingOptions()
+	pg.ListenForRateWarningMsgChange()
+}
+
+func (pg *AppSettingsPage) ListenForRateWarningMsgChange() {
+	// add rate listener
+	warningMsgListener := &ext.WarningMsgListener{
+		OnWarningMsgUpdated: func(warning string) {
+			if warning != "" {
+				go pg.showAutoChangeRateSourceNotice(warning)
+			}
+		},
+	}
+	if !pg.AssetsManager.RateSource.IsWarningMsgListenerExist(AppSettingsPageID) {
+		if err := pg.AssetsManager.RateSource.AddWarningMsgListener(warningMsgListener, AppSettingsPageID); err != nil {
+			log.Error("Can't listen warning message.")
+		}
+	}
+}
+
+// Show warning about fetch exchange rate setting
+// when exchange is changed due to unable to fetch rate
+func (pg *AppSettingsPage) showAutoChangeRateSourceNotice(warnMsg string) {
+	lowStorageModal := modal.NewWarningModal(pg.Load, values.String(values.StrFetchRateWarningTitle),
+		func(_ bool, _ *modal.InfoModal) bool {
+			return true
+		}).
+		Body(warnMsg).
+		SetPositiveButtonText(values.String(values.StrOK))
+	pg.ParentWindow().ShowModal(lowStorageModal)
 }
 
 // Layout draws the page UI components into the provided C
@@ -847,6 +877,8 @@ func (pg *AppSettingsPage) updatePrivacySettings() {
 // Part of the load.Page interface.
 func (pg *AppSettingsPage) OnNavigatedFrom() {
 	utils.ZeroBytes(pg.dexSeed)
+	// remove fetch exchange rate warning msg listener
+	pg.AssetsManager.RateSource.RemoveWarningMsgListener(AppSettingsPageID)
 }
 
 func (pg *AppSettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, isChecked bool) {

@@ -125,12 +125,20 @@ type RateSource interface {
 	ToggleSource(newSource string) error
 	AddRateListener(listener *RateListener, uniqueIdentifier string) error
 	RemoveRateListener(uniqueIdentifier string)
+	AddWarningMsgListener(listener *WarningMsgListener, uniqueIdentifier string) error
+	RemoveWarningMsgListener(uniqueIdentifier string)
 	IsRateListenerExist(uniqueIdentifier string) bool
+	IsWarningMsgListenerExist(uniqueIdentifier string) bool
 }
 
 // RateListener listens for new tickers and rate source change notifications.
 type RateListener struct {
 	OnRateUpdated func()
+}
+
+// WarningMsgListener listens for new fetch exchange rate settings warning message.
+type WarningMsgListener struct {
+	OnWarningMsgUpdated func(string)
 }
 
 type tickerFunc func(market values.Market) (*Ticker, error)
@@ -140,21 +148,21 @@ type tickerFunc func(market values.Market) (*Ticker, error)
 // should not be used for actual buy or sell orders except to display reasonable
 // estimates. CommonRateSource is embedded in all of the rate sources supported.
 type CommonRateSource struct {
-	ctx           context.Context
-	source        string
-	disabled      bool
-	mtx           sync.RWMutex
-	tickers       map[values.Market]*Ticker
-	refreshing    bool
-	cond          *sync.Cond
-	getTicker     tickerFunc
-	sourceChanged chan *struct{}
-	lastUpdate    time.Time
-
+	ctx                       context.Context
+	source                    string
+	disabled                  bool
+	mtx                       sync.RWMutex
+	tickers                   map[values.Market]*Ticker
+	refreshing                bool
+	cond                      *sync.Cond
+	getTicker                 tickerFunc
+	sourceChanged             chan *struct{}
+	lastUpdate                time.Time
 	disableConversionExchange func()
 
 	notificationListenersMu sync.RWMutex
 	ratesListeners          map[string]*RateListener
+	warningMsgListeners     map[string]*WarningMsgListener
 }
 
 // Used to initialize a rate source.
@@ -170,6 +178,7 @@ func NewCommonRateSource(ctx context.Context, source string, disableConversionEx
 		sourceChanged:             make(chan *struct{}),
 		disableConversionExchange: disableConversionExchange,
 		ratesListeners:            make(map[string]*RateListener),
+		warningMsgListeners:       make(map[string]*WarningMsgListener),
 	}
 	s.getTicker = s.sourceGetTickerFunc(source)
 	s.cond = sync.NewCond(&s.mtx)
@@ -220,6 +229,17 @@ func (cs *CommonRateSource) isDisabled() bool {
 	return cs.disabled
 }
 
+func (cs *CommonRateSource) AddWarningMsgListener(listener *WarningMsgListener, uniqueIdentifier string) error {
+	if _, ok := cs.warningMsgListeners[uniqueIdentifier]; ok {
+		return errors.New(utils.ErrListenerAlreadyExist)
+	}
+
+	cs.notificationListenersMu.Lock()
+	defer cs.notificationListenersMu.Unlock()
+	cs.warningMsgListeners[uniqueIdentifier] = listener
+	return nil
+}
+
 func (cs *CommonRateSource) AddRateListener(listener *RateListener, uniqueIdentifier string) error {
 	if _, ok := cs.ratesListeners[uniqueIdentifier]; ok {
 		return errors.New(utils.ErrListenerAlreadyExist)
@@ -236,6 +256,17 @@ func (cs *CommonRateSource) IsRateListenerExist(uniqueIdentifier string) bool {
 	return ok
 }
 
+func (cs *CommonRateSource) IsWarningMsgListenerExist(uniqueIdentifier string) bool {
+	_, ok := cs.warningMsgListeners[uniqueIdentifier]
+	return ok
+}
+
+func (cs *CommonRateSource) RemoveWarningMsgListener(uniqueIdentifier string) {
+	cs.notificationListenersMu.Lock()
+	defer cs.notificationListenersMu.Unlock()
+	delete(cs.warningMsgListeners, uniqueIdentifier)
+}
+
 func (cs *CommonRateSource) RemoveRateListener(uniqueIdentifier string) {
 	cs.notificationListenersMu.Lock()
 	defer cs.notificationListenersMu.Unlock()
@@ -246,6 +277,14 @@ func (cs *CommonRateSource) pushlishRateUpdated() {
 	for _, listener := range cs.ratesListeners {
 		if listener.OnRateUpdated != nil {
 			listener.OnRateUpdated()
+		}
+	}
+}
+
+func (cs *CommonRateSource) pushlishWarningMsgUpdated(warningMsg string) {
+	for _, listener := range cs.warningMsgListeners {
+		if listener.OnWarningMsgUpdated != nil {
+			listener.OnWarningMsgUpdated(warningMsg)
 		}
 	}
 }
@@ -413,21 +452,24 @@ func (cs *CommonRateSource) retryGetTicker(market values.Market) (*Ticker, error
 	}
 	// fetch ticker from available exchanges
 	log.Infof("fetching from other exchanges")
+	invalidSource := cs.source
 	for _, source := range sources {
-		if source == cs.source {
+		if source == invalidSource {
 			continue
 		}
 		getTickerFn := cs.sourceGetTickerFunc(source)
 		select {
 		case <-cs.ctx.Done():
 			log.Errorf("fetching ticker canceled: %v", cs.ctx.Err())
+			cs.source = invalidSource
 			return nil, cs.ctx.Err()
 		default:
 			log.Infof("fetching %s rate from %v", market, source)
+			cs.source = source
 			newTicker, err = getTickerFn(market)
 			if err == nil {
+				cs.pushlishWarningMsgUpdated(fmt.Sprintf(values.String(values.StrFetchRateWarningContent), invalidSource, source))
 				log.Infof("%s is chosen", source)
-				cs.source = source
 				return newTicker, nil
 			}
 		}
