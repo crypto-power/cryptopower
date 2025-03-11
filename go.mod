@@ -17,12 +17,12 @@ require (
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.8
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/btcsuite/btcwallet v0.16.10-0.20240815225602-6ecae9c12fde
-	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.4
-	github.com/btcsuite/btcwallet/wallet/txrules v1.2.1
-	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.4
-	github.com/btcsuite/btcwallet/walletdb v1.4.2
-	github.com/btcsuite/btcwallet/wtxmgr v1.5.3
+	github.com/btcsuite/btcwallet v0.16.10
+	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.5
+	github.com/btcsuite/btcwallet/wallet/txrules v1.2.2
+	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.5
+	github.com/btcsuite/btcwallet/walletdb v1.4.4
+	github.com/btcsuite/btcwallet/wtxmgr v1.5.4
 	github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4
 	github.com/dcrlabs/ltcwallet v0.0.0-20240823165752-3e026e8da010
 	github.com/decred/dcrd/addrmgr/v2 v2.0.4
@@ -59,11 +59,12 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/yeqown/go-qrcode v1.5.1
-	go.etcd.io/bbolt v1.3.9
+	go.etcd.io/bbolt v1.3.11
 	golang.org/x/crypto v0.26.0
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
 	golang.org/x/image v0.10.0
 	golang.org/x/sync v0.8.0
+	golang.org/x/sys v0.23.0
 	golang.org/x/text v0.17.0
 )
 
@@ -149,11 +150,11 @@ require (
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/golang/glog v1.1.0 // indirect
+	github.com/golang/glog v1.1.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/trillian v1.4.1 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
@@ -206,7 +207,6 @@ require (
 	github.com/zquestz/grab v0.0.0-20190224022517-abcee96e61b1 // indirect
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
