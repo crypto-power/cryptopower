@@ -684,17 +684,10 @@ func (pg *TransactionsPage) HandleUserInteractions(gtx C) {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	for {
-		event, ok := pg.searchEditor.Editor.Update(gtx)
-		if !ok {
-			break
-		}
-
-		if gtx.Source.Focused(pg.searchEditor.Editor) {
-			switch event.(type) {
-			case widget.ChangeEvent:
-				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
-			}
+	// When focus on search editor
+	if gtx.Source.Focused(pg.searchEditor.Editor) {
+		if pg.searchEditor.Changed() {
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 		}
 	}
 }

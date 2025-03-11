@@ -1063,6 +1063,8 @@ const (
 	StrRateBinanceWarning                    = "rateBinanceWarning"
 	StrRateBittrexWarning                    = "rateBittrexWarning"
 	StrRateKucoinWarning                     = "rateKucoinWarning"
+	StrFetchRateWarningTitle                 = "fetchRateWarningTitle"
+	StrFetchRateWarningContent               = "fetchRateWarningContent"
 	StrRestrictedDetail                      = "restrictDetail"
 	StrRateUnavailable                       = "rateUnavailable"
 	StrPrivacy                               = "privacy"
