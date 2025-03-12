@@ -22,6 +22,7 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/lifecycle"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/notification"
@@ -255,6 +256,8 @@ func (win *Window) HandleEvents() {
 			case giouiApp.FrameEvent:
 				ops := win.handleFrameEvent(evt)
 				evt.Frame(ops)
+			case giouiApp.ViewEvent:
+				lifecycle.RegisterAppLifecycle()
 			default:
 				log.Tracef("Unhandled window event %v\n", e)
 			}
