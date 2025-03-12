@@ -212,10 +212,31 @@ func (hp *HomePage) OnNavigatedTo() {
 	if hp.isUpdateAPIAllowed() {
 		go hp.checkForUpdates()
 	}
-
-	hp.AssetsManager.WatchBalanceChange(func() {
+	// When the new tx has been registered
+	hp.AssetsManager.ListenForTxAndBlockNotification(func(walletID int) {
+		go hp.CalculateAssetsUSDBalance()
+		go hp.UpdateSubpageWhenHasNewTx(walletID)
+	})
+	// When rate change
+	hp.AssetsManager.ListenForRate(func() {
 		go hp.CalculateAssetsUSDBalance()
 	})
+}
+
+// Call the update function for subpages when there is a new tx
+func (hp *HomePage) UpdateSubpageWhenHasNewTx(walletID int) {
+	switch hp.CurrentPageID() {
+	// if overview page
+	case OverviewPageID:
+		hp.CurrentPage().(*OverviewPage).ListenForNewTx()
+		return
+	// if transactions history page
+	case transaction.TransactionsPageID:
+		hp.CurrentPage().(*transaction.TransactionsPage).ListenForTxNotification(walletID)
+		return
+	default:
+		return
+	}
 }
 
 // initDEX initializes a new dex client if dex is not ready. If a dex client has

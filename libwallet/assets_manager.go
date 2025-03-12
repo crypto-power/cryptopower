@@ -1060,14 +1060,15 @@ func (mgr *AssetsManager) DeleteDEXData() error {
 	return os.Remove(dexDBFile)
 }
 
-func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
+// Listen when new tx is registered
+func (mgr *AssetsManager) ListenForTxAndBlockNotification(listen func(int)) {
 	// Reload total balance on new tx.
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransactionConfirmed: func(_ int, _ string, _ int32) {
-			listen()
+		OnTransactionConfirmed: func(walletID int, _ string, _ int32) {
+			listen(walletID)
 		},
-		OnTransaction: func(_ int, _ *sharedW.Transaction) {
-			listen()
+		OnTransaction: func(walletID int, _ *sharedW.Transaction) {
+			listen(walletID)
 		},
 	}
 
@@ -1079,8 +1080,10 @@ func (mgr *AssetsManager) WatchBalanceChange(listen func()) {
 			}
 		}
 	}
+}
 
-	// add rate listener
+// Listen when rate changes
+func (mgr *AssetsManager) ListenForRate(listen func()) {
 	rateListener := &ext.RateListener{
 		OnRateUpdated: func() {
 			listen()
