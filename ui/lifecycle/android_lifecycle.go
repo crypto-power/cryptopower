@@ -14,18 +14,16 @@ import "C"
 import (
 	giouiApp "gioui.org/app"
 	"git.wow.st/gmp/jni"
-
-	"github.com/crypto-power/cryptopower/ui/utils"
 )
 
 //export Java_org_gioui_x_lifecycle_AppLifecycleListener_onAppForeground
 func Java_org_gioui_x_lifecycle_AppLifecycleListener_onAppForeground() {
-	utils.PushAppNotifications("✅ App lên foreground")
+	// TODO: Handling when the application returns to the foreground
 }
 
 //export Java_org_gioui_x_lifecycle_AppLifecycleListener_onAppBackground
 func Java_org_gioui_x_lifecycle_AppLifecycleListener_onAppBackground() {
-	utils.PushAppNotifications("🛑 App vào background")
+	// TODO: Handling when the application runs in the background
 }
 
 const (

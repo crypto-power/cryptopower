@@ -6,6 +6,7 @@ require (
 	decred.org/dcrdex v1.0.0
 	decred.org/dcrwallet/v4 v4.2.0
 	gioui.org v0.8.0
+	git.sr.ht/~jackmordaunt/go-toast v1.0.0
 	git.wow.st/gmp/jni v0.0.0-20210610011705-34026c7e22d0
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -43,7 +44,9 @@ require (
 	github.com/decred/vspd/types/v2 v2.1.0
 	github.com/decred/vspd/types/v3 v3.0.0
 	github.com/dgraph-io/badger v1.6.2
+	github.com/esiqveland/notify v0.11.0
 	github.com/gen2brain/beeep v0.0.0-20220402123239-6a3042f4b71a
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/gomarkdown/markdown v0.0.0-20230922105210-14b16010c2ee
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0
@@ -64,16 +67,14 @@ require (
 	golang.org/x/exp/shiny v0.0.0-20240707233637-46b078467d37
 	golang.org/x/image v0.18.0
 	golang.org/x/sync v0.8.0
+	golang.org/x/sys v0.23.0
 	golang.org/x/text v0.17.0
 )
 
 require (
 	decred.org/cspp/v2 v2.3.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect
-	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.8 // indirect
-	gioui.org/x v0.8.1 // indirect
-	git.sr.ht/~jackmordaunt/go-toast v1.0.0 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -132,7 +133,6 @@ require (
 	github.com/decred/vspd/client/v4 v4.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/esiqveland/notify v0.11.0 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.14.8 // indirect
 	github.com/ethereum/go-verkle v0.1.1-0.20240306133620-7d920df305f0 // indirect
@@ -148,7 +148,6 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-text/typesetting v0.2.1 // indirect
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
-	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
@@ -206,10 +205,10 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
+	github.com/yuin/goldmark v1.4.13 // indirect
 	github.com/zquestz/grab v0.0.0-20190224022517-abcee96e61b1 // indirect
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
 	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect

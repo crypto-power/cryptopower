@@ -19,6 +19,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/notify"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/shirou/gopsutil/mem"
 
@@ -26,7 +27,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/widget"
-	"gioui.org/x/notify"
 	"golang.org/x/text/message"
 )
 

@@ -3,9 +3,7 @@
 
 package utils
 
-import (
-	"gioui.org/x/notify"
-)
+import "github.com/crypto-power/cryptopower/ui/notify"
 
 // // Create notifier with icon
 func CreateNewNotifierWithIcon(iconPath string) (notifier notify.Notifier, err error) {
