@@ -1045,7 +1045,7 @@ func confirms(txHeight, curHeight int32) int32 {
 	}
 }
 
-// accountInfo returns the account name of the wallet.
+// accountName returns the account name of the wallet.
 func (dw *DEXWallet) accountName() string {
 	accountName, err := dw.w.AccountName(GetScope(), uint32(dw.acctNum))
 	if err == nil {
