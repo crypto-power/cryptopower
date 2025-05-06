@@ -12,7 +12,7 @@ import (
 
 var log = slog.Disabled
 
-// UseLoggers sets the subsystem logs to use the provided loggers.
+// UseLogger sets the subsystem logs to use the provided loggers.
 func UseLogger(logger slog.Logger) {
 	log = logger
 	loader.UseLogger(logger)

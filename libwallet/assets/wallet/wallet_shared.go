@@ -368,7 +368,7 @@ func (wallet *Wallet) EnableSyncShuttingDown() {
 	wallet.isSyncShuttingDown.Store(true)
 }
 
-// EnableSyncShuttingDown marks the end of the sync shutdown process.
+// EndSyncShuttingDown marks the end of the sync shutdown process.
 func (wallet *Wallet) EndSyncShuttingDown() {
 	wallet.isSyncShuttingDown.Store(false)
 }
