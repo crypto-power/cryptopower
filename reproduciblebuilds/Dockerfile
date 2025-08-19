@@ -1,4 +1,4 @@
-FROM golang:1.21 as builder
+FROM golang:1.22 AS builder
 
 #Set build arguments
 ARG BUILDOS
