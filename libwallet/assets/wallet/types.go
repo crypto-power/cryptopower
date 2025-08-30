@@ -445,3 +445,8 @@ func (s WordSeedType) AllWords() []string {
 		return []string{}
 	}
 }
+
+type AccountMixerNotificationListener struct {
+	OnAccountMixerStarted func(walletID int)
+	OnAccountMixerEnded   func(walletID int)
+}

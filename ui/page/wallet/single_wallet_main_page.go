@@ -13,6 +13,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -233,29 +234,30 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 		commonTabs = append(commonTabs[:1], append(sendTab, commonTabs[1:]...)...)
 	}
 
-	// Insert DCR-specific tabs if the wallet's asset type is DCR,
-	// and adjust the logic to exclude 'StrStakeShuffle' for watching-only wallets.
-	if swmp.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
-		dcrSpecificTabs := []string{}
+	// Add StrStakeShuffle for DCR & BTC assets and exclude StrStakeShuffle for watching-only wallets.
+	assetType := swmp.selectedWallet.GetAssetType()
+	if assetType == libutils.DCRWalletAsset || assetType == libutils.BTCWalletAsset {
+		specificTabs := []string{}
 
-		// Conditionally add 'StrStakeShuffle' if the wallet is not a watch-only wallet.
+		// Add StakeShuffle for both DCR & BTC assets when not a watch-only wallet
 		if !swmp.selectedWallet.IsWatchingOnlyWallet() {
-			dcrSpecificTabs = append(dcrSpecificTabs, values.StrStakeShuffle)
+			specificTabs = append(specificTabs, values.StrStakeShuffle)
 		}
 
-		// Always add 'StrStaking' for DCR asset type wallets.
-		dcrSpecificTabs = append(dcrSpecificTabs, values.StrStaking)
+		// Add StrStaking only for DCR
+		if assetType == libutils.DCRWalletAsset {
+			specificTabs = append(specificTabs, values.StrStaking)
+		}
 
-		// Find the correct insertion index for DCR-specific tabs before 'StrAccounts'.
+		// Insert before StrAccounts
 		insertIndex := 3 // Default position before 'StrAccounts' in the commonTabs.
-
 		// If 'Send' has been added, adjust the insertIndex accordingly.
-		if !swmp.selectedWallet.IsWatchingOnlyWallet() {
+		if !swmp.selectedWallet.IsWatchingOnlyWallet() { 
 			insertIndex++
 		}
 
-		// Update the commonTabs with DCR-specific items at the determined index.
-		commonTabs = append(commonTabs[:insertIndex], append(dcrSpecificTabs, commonTabs[insertIndex:]...)...)
+		// Update the commonTabs with DCR & BTC specific items at the determined index.
+		commonTabs = append(commonTabs[:insertIndex], append(specificTabs, commonTabs[insertIndex:]...)...)
 	}
 
 	swmp.PageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
@@ -419,13 +421,23 @@ func (swmp *SingleWalletMasterPage) navigateToSelectedTab() {
 		txPage.DisableUniformTab()
 		pg = txPage
 	case values.StrStakeShuffle:
-		dcrW := swmp.selectedWallet.(*dcr.Asset)
-		if dcrW != nil {
-			if !dcrW.AccountMixerConfigIsSet() {
-				pg = privacy.NewSetupPrivacyPage(swmp.Load, dcrW)
+		switch w := swmp.selectedWallet.(type) {
+		case *dcr.Asset:
+			if !w.AccountMixerConfigIsSet() {
+				pg = privacy.NewSetupPrivacyPage(swmp.Load, w)
 			} else {
-				pg = privacy.NewAccountMixerPage(swmp.Load, dcrW)
+				pg = privacy.NewAccountMixerPage(swmp.Load, w)
 			}
+
+		case *btc.Asset:
+			if !w.AccountMixerConfigIsSet() {
+				pg = privacy.NewSetupPrivacyPage(swmp.Load, w)
+			} else {
+				pg = privacy.NewAccountMixerPage(swmp.Load, w)
+			}
+
+		default:
+			// no supported wallet selected
 		}
 	case values.StrStaking:
 		dcrW := swmp.selectedWallet.(*dcr.Asset)
