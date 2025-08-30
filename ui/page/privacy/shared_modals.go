@@ -2,7 +2,7 @@ package privacy
 
 import (
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -28,7 +28,7 @@ func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError
 	conf.window.ShowModal(info)
 }
 
-func showModalSetupMixerInfo(conf *sharedModalConfig, dcrWallet *dcr.Asset) {
+func showModalSetupMixerInfo(conf *sharedModalConfig, wallet sharedW.Asset) {
 	info := modal.NewCustomModal(conf.Load).
 		Title(values.String(values.StrMultipleMixerAccNeeded)).
 		SetupWithTemplate(modal.SetupMixerInfoTemplate).
@@ -36,20 +36,20 @@ func showModalSetupMixerInfo(conf *sharedModalConfig, dcrWallet *dcr.Asset) {
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		SetPositiveButtonText(values.String(values.StrInitiateSetup)).
 		SetPositiveButtonCallback(func(movefundsChecked bool, _ *modal.InfoModal) bool {
-			showModalSetupMixerAcct(conf, dcrWallet, movefundsChecked)
+			showModalSetupMixerAcct(conf, wallet, movefundsChecked)
 			return true
 		})
 	conf.window.ShowModal(info)
 }
 
-func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, movefundsChecked bool) {
-	if dcrWallet.GetAssetType() != utils.DCRWalletAsset {
+func showModalSetupMixerAcct(conf *sharedModalConfig, wallet sharedW.Asset, movefundsChecked bool) {
+	if wallet.GetAssetType() != utils.DCRWalletAsset || wallet.GetAssetType() != utils.BTCWalletAsset {
 		log.Warnf("Mixer Account for (%v) not supported.",
-			dcrWallet.GetAssetType())
+			wallet.GetAssetType())
 		return
 	}
 
-	accounts, _ := dcrWallet.GetAccountsRaw()
+	accounts, _ := wallet.GetAccountsRaw()
 	for _, acct := range accounts.Accounts {
 		if acct.Name == values.String(values.StrMixed) || acct.Name == values.String(values.StrUnmixed) {
 			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
@@ -70,14 +70,14 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 		Title(values.String(values.StrConfirmToCreateAccs)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			defer pm.Dismiss()
-			err := dcrWallet.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
+			err := wallet.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 			if err != nil {
 				pm.SetError(err.Error())
 				return false
 			}
 
 			if movefundsChecked {
-				err := moveFundsFromDefaultToUnmixed(conf, dcrWallet, password)
+				err := moveFundsFromDefaultToUnmixed(conf, wallet, password)
 				if err != nil {
 					log.Error(err)
 					txt := values.StringF(values.StrErrorMovingFunds, err.Error())
@@ -86,7 +86,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 				}
 			}
 
-			conf.pageNavigator.Display(NewAccountMixerPage(conf.Load, dcrWallet))
+			conf.pageNavigator.Display(NewAccountMixerPage(conf.Load, wallet))
 
 			return true
 		})
@@ -95,8 +95,8 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 
 // moveFundsFromDefaultToUnmixed moves funds from the default wallet account to the
 // newly created unmixed account
-func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, dcrWallet *dcr.Asset, password string) error {
-	acc, err := dcrWallet.GetAccountsRaw()
+func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, wallet sharedW.Asset, password string) error {
+	acc, err := wallet.GetAccountsRaw()
 	if err != nil {
 		return err
 	}
@@ -110,33 +110,33 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, dcrWallet *dcr.Asset
 		return nil
 	}
 
-	destinationAccount := dcrWallet.UnmixedAccountNumber()
+	destinationAccount := wallet.UnmixedAccountNumber()
 
-	destinationAddress, err := dcrWallet.CurrentAddress(destinationAccount)
+	destinationAddress, err := wallet.CurrentAddress(destinationAccount)
 	if err != nil {
 		return err
 	}
 
-	err = dcrWallet.NewUnsignedTx(sourceAccount.Number, nil)
+	err = wallet.NewUnsignedTx(sourceAccount.Number, nil)
 	if err != nil {
 		return err
 	}
 
 	// get tx fees
-	feeAndSize, err := dcrWallet.EstimateFeeAndSize()
+	feeAndSize, err := wallet.EstimateFeeAndSize()
 	if err != nil {
 		return err
 	}
 
 	// calculate max amount to be sent
 	amountAtom := sourceAccount.Balance.Spendable.ToInt() - feeAndSize.Fee.UnitValue
-	err = dcrWallet.AddSendDestination(0, destinationAddress, amountAtom, true)
+	err = wallet.AddSendDestination(0, destinationAddress, amountAtom, true)
 	if err != nil {
 		return err
 	}
 
 	// send fund
-	_, err = dcrWallet.Broadcast(password, "")
+	_, err = wallet.Broadcast(password, "")
 	if err != nil {
 		return err
 	}

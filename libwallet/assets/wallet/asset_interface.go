@@ -118,4 +118,14 @@ type Asset interface {
 	RemoveSendDestination(id int)
 	SendDestination(id int) *TransactionDestination
 	UpdateSendDestination(id int, address string, atomAmount int64, sendMax bool) error
+
+	CreateMixerAccounts(mixedAccount, unmixedAccount, privPass string) error
+	IsAccountMixerActive() bool
+	UnmixedAccountNumber() int32
+	MixedAccountNumber() int32
+	StartAccountMixer(walletPassphrase string) error
+	StopAccountMixer() error
+	// AddAccountMixerNotificationListener(accountMixerNotificationListener *AccountMixerNotificationListener, uniqueIdentifier string) error
+	RemoveAccountMixerNotificationListener(uniqueIdentifier string)
+	// SetAccountMixerConfig(mixedAccount, unmixedAccount int32, privPass string) error
 }

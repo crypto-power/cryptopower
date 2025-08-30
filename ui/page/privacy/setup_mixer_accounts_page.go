@@ -6,7 +6,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -23,7 +23,7 @@ type SetupMixerAccountsPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	dcrWallet *dcr.Asset
+	wallet sharedW.Asset
 
 	backButton           cryptomaterial.IconButton
 	infoButton           cryptomaterial.IconButton
@@ -34,11 +34,11 @@ type SetupMixerAccountsPage struct {
 	manualEnabled bool
 }
 
-func NewSetupMixerAccountsPage(l *load.Load, dcrWallet *dcr.Asset) *SetupMixerAccountsPage {
+func NewSetupMixerAccountsPage(l *load.Load, wallet sharedW.Asset) *SetupMixerAccountsPage {
 	pg := &SetupMixerAccountsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SetupMixerAccountsPageID),
-		dcrWallet:        dcrWallet,
+		wallet:           wallet,
 	}
 	pg.nextIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationArrowForward)
 	pg.nextIcon.Color = pg.Theme.Color.Gray1
@@ -54,7 +54,7 @@ func NewSetupMixerAccountsPage(l *load.Load, dcrWallet *dcr.Asset) *SetupMixerAc
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *SetupMixerAccountsPage) OnNavigatedTo() {
-	accts, err := pg.dcrWallet.GetAccountsRaw()
+	accts, err := pg.wallet.GetAccountsRaw()
 	if err != nil {
 		log.Errorf("Unable to get accounts to set up mixer: %v", err)
 		return
@@ -192,7 +192,7 @@ func (pg *SetupMixerAccountsPage) HandleUserInteractions(gtx C) {
 			window:        pg.ParentWindow(),
 			pageNavigator: pg.ParentNavigator(),
 			checkBox:      pg.Theme.CheckBox(new(widget.Bool), values.String(values.StrMoveFundsFrmDefaultToUnmixed)),
-		}, pg.dcrWallet)
+		}, pg.wallet)
 	}
 
 	if pg.manualSetupClickable.Clicked(gtx) {
@@ -201,7 +201,7 @@ func (pg *SetupMixerAccountsPage) HandleUserInteractions(gtx C) {
 			info := modal.NewErrorModal(pg.Load, notEnoughAccounts, modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(info)
 		} else {
-			pg.ParentNavigator().Display(NewManualMixerSetupPage(pg.Load, pg.dcrWallet))
+			pg.ParentNavigator().Display(NewManualMixerSetupPage(pg.Load, pg.wallet))
 		}
 	}
 }
