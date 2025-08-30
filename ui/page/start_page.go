@@ -398,6 +398,10 @@ func (sp *startPage) welcomePage(gtx C) D {
 
 func (sp *startPage) loadingSection(gtx C) D {
 	return sp.pageLayout(gtx, func(gtx C) D {
+
+		// Media query: check if device height is less than 600
+		isSmallScreen := gtx.Constraints.Max.Y < gtx.Dp(600)
+
 		return layout.Flex{Alignment: layout.Middle, Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return sp.logo.LayoutSize(gtx, values.MarginPadding150)
@@ -450,8 +454,14 @@ func (sp *startPage) loadingSection(gtx C) D {
 				if sp.loading {
 					return D{}
 				}
-				inset := layout.Inset{Top: values.MarginPadding100}
-				if sp.IsMobileView() {
+
+				topMargin := values.MarginPadding100
+				if isSmallScreen {
+					topMargin = values.MarginPadding10
+				}
+				inset := layout.Inset{Top: topMargin}
+
+				if sp.IsMobileView() && !isSmallScreen {
 					inset.Top += values.MarginPadding168
 				}
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
