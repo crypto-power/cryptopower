@@ -175,20 +175,6 @@ func (g *Grid) Layout(gtx layout.Context, num int, el GridElement) layout.Dimens
 	})
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func axisPoint(a layout.Axis, main, cross int) image.Point {
 	if a == layout.Horizontal {
 		return image.Point{main, cross}
