@@ -1,5 +1,4 @@
 //go:build linux || android || ios || darwin
-// +build linux android ios darwin
 
 package utils
 
