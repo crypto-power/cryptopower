@@ -8,7 +8,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -29,7 +29,7 @@ type SetupPrivacyPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	wallet *dcr.Asset
+	wallet sharedW.Asset
 
 	toPrivacySetup cryptomaterial.Button
 
@@ -37,7 +37,7 @@ type SetupPrivacyPage struct {
 	infoButton cryptomaterial.IconButton
 }
 
-func NewSetupPrivacyPage(l *load.Load, wallet *dcr.Asset) *SetupPrivacyPage {
+func NewSetupPrivacyPage(l *load.Load, wallet sharedW.Asset) *SetupPrivacyPage {
 	pg := &SetupPrivacyPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SetupPrivacyPageID),
@@ -62,8 +62,9 @@ func (pg *SetupPrivacyPage) OnNavigatedTo() {}
 // Part of the load.Page interface.
 func (pg *SetupPrivacyPage) Layout(gtx C) D {
 	stakeShuffleDesc := fmt.Sprintf("%s\n%s",
-		values.String(values.StrSetUpStakeShuffleIntroDesc),
-		values.String(values.StrSetUpStakeShuffleIntroSubDesc))
+		values.StringF(values.StrSetUpStakeShuffleIntroDesc, pg.wallet.GetAssetType().String()),
+		values.StringF(values.StrSetUpStakeShuffleIntroSubDesc, pg.wallet.GetAssetType().String()),
+	)
 
 	inset := layout.Inset{
 		Top:    values.MarginPadding24,

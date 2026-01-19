@@ -5,8 +5,10 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -36,15 +38,15 @@ type ManualMixerSetupPage struct {
 
 	pageContainer *widget.List
 
-	dcrWallet *dcr.Asset
+	wallet sharedW.Asset
 }
 
-func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSetupPage {
+func NewManualMixerSetupPage(l *load.Load, wallet sharedW.Asset) *ManualMixerSetupPage {
 	pg := &ManualMixerSetupPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ManualMixerSetupPageID),
 		toPrivacySetup:   l.Theme.Button(values.String(values.StrSetUp)),
-		dcrWallet:        dcrWallet,
+		wallet:           wallet,
 		pageContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -77,7 +79,7 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 
 			return true
 		}).
-		Setup(dcrWallet)
+		Setup(wallet)
 
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewAccountDropdown(l).
@@ -90,8 +92,19 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 				mixedAccNo = mixedAcc.Number
 			}
 
+			var defaultAccNum int32 = -1
+			switch wal.GetAssetType() {
+			case libutils.DCRWalletAsset:
+				defaultAccNum = dcr.DefaultAccountNum
+			case libutils.BTCWalletAsset:
+				defaultAccNum = btc.DefaultAccountNum
+			}
+
 			// Imported, watch only and default wallet accounts are invalid to use as an unmixed account
-			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum && !utils.IsImportedAccount(dcrWallet.GetAssetType(), account)
+			accountIsValid := account.Number != load.MaxInt32 &&
+				!wal.IsWatchingOnlyWallet() &&
+				(defaultAccNum < 0 || account.Number != defaultAccNum) &&
+				!utils.IsImportedAccount(wal.GetAssetType(), account)
 
 			// Account is invalid if already selected by mixed account selector.
 			if !accountIsValid || account.Number == mixedAccNo {
@@ -100,7 +113,7 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 
 			return true
 		}).
-		Setup(dcrWallet)
+		Setup(wallet)
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.backButton = components.GetBackButton(l)
@@ -113,8 +126,8 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
-	_ = pg.mixedAccountSelector.Setup(pg.dcrWallet)
-	_ = pg.unmixedAccountSelector.Setup(pg.dcrWallet)
+	_ = pg.mixedAccountSelector.Setup(pg.wallet)
+	_ = pg.unmixedAccountSelector.Setup(pg.wallet)
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -269,26 +282,36 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 			}
 			mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
 			unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number
-			err := pg.dcrWallet.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
-			if err != nil {
-				return errfunc(err)
+
+			switch w := pg.wallet.(type) {
+			case *dcr.Asset:
+				err := w.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
+				if err != nil {
+					return errfunc(err)
+				}
+
+			case *btc.Asset:
+				err := w.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
+				if err != nil {
+					return errfunc(err)
+				}
 			}
 
 			// rename mixed account
-			err = pg.dcrWallet.RenameAccount(mixedAcctNumber, values.String(values.StrMixed))
+			err := pg.wallet.RenameAccount(mixedAcctNumber, values.String(values.StrMixed))
 			if err != nil {
 				return errfunc(err)
 			}
 
 			// rename unmixed account
-			err = pg.dcrWallet.RenameAccount(unmixedAcctNumber, values.String(values.StrUnmixed))
+			err = pg.wallet.RenameAccount(unmixedAcctNumber, values.String(values.StrUnmixed))
 			if err != nil {
 				return errfunc(err)
 			}
 
 			pm.Dismiss()
 
-			pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load, pg.dcrWallet))
+			pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load, pg.wallet))
 
 			return true
 		})
