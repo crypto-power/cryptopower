@@ -134,6 +134,17 @@ func (dw *DEXWallet) RawRequest(_ context.Context, _ string, _ []json.RawMessage
 	return nil, errors.New("RawRequest not available on spv")
 }
 
+// AddressUsed reports whether the address has received any funds, including
+// unconfirmed transactions.
+func (dw *DEXWallet) AddressUsed(address string) (bool, error) {
+	addr, err := decodeAddress(address, dw.w.ChainParams())
+	if err != nil {
+		return false, err
+	}
+	received, err := dw.w.TotalReceivedForAddr(addr, 0)
+	return received != 0, err
+}
+
 // Part of dexbtc.Wallet interface.
 func (dw *DEXWallet) OwnsAddress(addr btcutil.Address) (bool, error) {
 	return dw.w.HaveAddress(addr)

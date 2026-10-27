@@ -19,10 +19,10 @@ import (
 	dexdcr "decred.org/dcrdex/client/asset/dcr"
 	"decred.org/dcrdex/dex"
 
-	wallettypes "decred.org/dcrwallet/v4/rpc/jsonrpc/types"
+	wallettypes "decred.org/dcrwallet/v5/rpc/jsonrpc/types"
 
-	walleterrors "decred.org/dcrwallet/v4/errors"
-	dcrwallet "decred.org/dcrwallet/v4/wallet"
+	walleterrors "decred.org/dcrwallet/v5/errors"
+	dcrwallet "decred.org/dcrwallet/v5/wallet"
 	"github.com/decred/dcrd/blockchain/stake/v5"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
@@ -119,6 +119,17 @@ func (dw *DEXWallet) Accounts() dexdcr.XCWalletAccounts {
 		UnmixedAccount: unMixedAcctName,
 		TradingAccount: accts.PrimaryAccount,
 	}
+}
+
+// AddressUsed reports whether the address has received any funds, including
+// unconfirmed transactions.
+func (dw *DEXWallet) AddressUsed(ctx context.Context, address string) (bool, error) {
+	addr, err := stdaddr.DecodeAddress(address, dw.w.ChainParams())
+	if err != nil {
+		return false, err
+	}
+	received, err := dw.w.TotalReceivedForAddr(ctx, addr, 0)
+	return received != 0, err
 }
 
 // AddressInfo returns information for the provided address. It is an error

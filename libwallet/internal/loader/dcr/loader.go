@@ -10,15 +10,14 @@ import (
 	"path/filepath"
 	"sync"
 
-	"decred.org/dcrwallet/v4/errors"
-	"decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v5/errors"
+	"decred.org/dcrwallet/v5/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/decred/dcrd/txscript/v4/stdaddr"
 
-	_ "decred.org/dcrwallet/v4/wallet/drivers/bdb" // driver loaded during init
+	_ "decred.org/dcrwallet/v5/wallet/drivers/bdb" // driver loaded during init
 )
 
 const walletDbName = "wallet.db"
@@ -58,11 +57,7 @@ type dcrLoader struct {
 
 // StakeOptions contains the various options necessary for stake mining.
 type StakeOptions struct {
-	VotingEnabled       bool
-	VotingAddress       stdaddr.StakeAddress
-	PoolAddress         stdaddr.StakeAddress
-	PoolFees            float64
-	StakePoolColdExtKey string
+	VotingEnabled bool
 }
 
 // Confirm the dcrLoader implements the assets loader interface.
@@ -162,13 +157,10 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 		DB:                      db,
 		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		VotingAddress:           so.VotingAddress,
-		PoolAddress:             so.PoolAddress,
-		PoolFees:                so.PoolFees,
+		MixingEnabled:           true,
 		GapLimit:                l.gapLimit,
 		AccountGapLimit:         l.accountGapLimit,
 		DisableCoinTypeUpgrades: l.disableCoinTypeUpgrades,
-		StakePoolColdExtKey:     so.StakePoolColdExtKey,
 		ManualTickets:           l.manualTickets,
 		AllowHighFees:           l.allowHighFees,
 		RelayFee:                l.relayFee,
@@ -225,13 +217,10 @@ func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		DB:                      db,
 		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		VotingAddress:           so.VotingAddress,
-		PoolAddress:             so.PoolAddress,
-		PoolFees:                so.PoolFees,
+		MixingEnabled:           true,
 		GapLimit:                l.gapLimit,
 		AccountGapLimit:         l.accountGapLimit,
 		DisableCoinTypeUpgrades: l.disableCoinTypeUpgrades,
-		StakePoolColdExtKey:     so.StakePoolColdExtKey,
 		ManualTickets:           l.manualTickets,
 		AllowHighFees:           l.allowHighFees,
 		RelayFee:                l.relayFee,
@@ -289,13 +278,10 @@ func (l *dcrLoader) OpenExistingWallet(ctx context.Context, walletID string, pub
 		DB:                      db,
 		PubPassphrase:           pubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		VotingAddress:           so.VotingAddress,
-		PoolAddress:             so.PoolAddress,
-		PoolFees:                so.PoolFees,
+		MixingEnabled:           true,
 		GapLimit:                l.gapLimit,
 		AccountGapLimit:         l.accountGapLimit,
 		DisableCoinTypeUpgrades: l.disableCoinTypeUpgrades,
-		StakePoolColdExtKey:     so.StakePoolColdExtKey,
 		ManualTickets:           l.manualTickets,
 		AllowHighFees:           l.allowHighFees,
 		RelayFee:                l.relayFee,

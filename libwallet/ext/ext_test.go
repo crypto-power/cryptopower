@@ -596,8 +596,9 @@ func TestGetAddress(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
-			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
+			originalURL := backendURL["mainnet"][BlockBook]
+			t.Cleanup(func() { backendURL["mainnet"][BlockBook] = originalURL })
+			backendURL["mainnet"][BlockBook] = tc.server.URL + "/"
 			resp, err := service.GetAddress("DsTxPUVFxXeNgu5fzozr4mTR4tqqMaKcvpY")
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)

@@ -6,9 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"decred.org/dcrwallet/v4/vsp"
-	dcrW "decred.org/dcrwallet/v4/wallet"
-	"decred.org/dcrwallet/v4/wallet/txrules"
+	dcrW "decred.org/dcrwallet/v5/wallet"
+	"decred.org/dcrwallet/v5/wallet/txrules"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/dcr"
@@ -32,7 +31,7 @@ type Asset struct {
 	TxAuthoredInfo *TxAuthor
 
 	// VSP data
-	vspClients map[string]*vsp.Client
+	vspClients map[string]*dcrW.VSPClient
 	vspMu      sync.RWMutex
 	vsps       []*VSP
 
@@ -65,7 +64,6 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 
 	stakeOptions := &dcr.StakeOptions{
 		VotingEnabled: false,
-		VotingAddress: nil,
 	}
 
 	dirName := ""
@@ -126,7 +124,7 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 		},
 		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
-		vspClients:                        make(map[string]*vsp.Client),
+		vspClients:                        make(map[string]*dcrW.VSPClient),
 		dbMutex:                           &dbMutex,
 	}
 
@@ -199,7 +197,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		vspClients:                        make(map[string]*vsp.Client),
+		vspClients:                        make(map[string]*dcrW.VSPClient),
 		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
 		dbMutex:                           &dbMutex,
@@ -227,7 +225,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver, &dbMutex)
 	dcrWallet := &Asset{
 		Wallet:      w,
-		vspClients:  make(map[string]*vsp.Client),
+		vspClients:  make(map[string]*dcrW.VSPClient),
 		chainParams: chainParams,
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
