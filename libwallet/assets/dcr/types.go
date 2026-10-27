@@ -3,9 +3,8 @@ package dcr
 import (
 	"fmt"
 
-	"decred.org/dcrwallet/v4/vsp"
-	"decred.org/dcrwallet/v4/wallet"
-	"decred.org/dcrwallet/v4/wallet/udb"
+	"decred.org/dcrwallet/v5/wallet"
+	"decred.org/dcrwallet/v5/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -91,7 +90,7 @@ type TicketBuyerConfig struct {
 	PurchaseAccount   int32
 	BalanceToMaintain int64
 
-	VspClient *vsp.Client
+	VspClient *wallet.VSPClient
 }
 
 // VSPFeeStatus represents the current fee status of a ticket.
@@ -132,7 +131,7 @@ type VSPTicketInfo struct {
 	FeeTxHash   string
 	FeeTxStatus VSPFeeStatus
 	// Client defines the vsp client needed to process more tickets requests.
-	Client *vsp.Client
+	Client *wallet.VSPClient
 	// ConfirmedByVSP is nil if the ticket status could not be obtained
 	// from the VSP, false if the VSP hasn't confirmed the fee and true
 	// if the VSP has fully registered the ticket.

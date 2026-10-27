@@ -3,9 +3,8 @@ package dcr
 import (
 	"errors"
 
-	"decred.org/dcrwallet/v4/ticketbuyer"
-	w "decred.org/dcrwallet/v4/wallet"
-	"decred.org/dcrwallet/v4/wallet/udb"
+	"decred.org/dcrwallet/v5/ticketbuyer"
+	"decred.org/dcrwallet/v5/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -157,16 +156,14 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 		return errors.New(utils.ErrNoMixableOutput)
 	}
 
-	tb := ticketbuyer.New(asset.Internal().DCR)
-	tb.AccessConfig(func(c *ticketbuyer.Config) {
-		c.MixedAccountBranch = cfg.MixedAccountBranch
-		c.MixedAccount = cfg.MixedAccount
-		c.ChangeAccount = cfg.ChangeAccount
-		c.Mixing = cfg.Mixing
-		c.TicketSplitAccount = cfg.TicketSplitAccount
-		c.BuyTickets = false
-		c.MixChange = true
-		// c.VotingAccount = 0 // TODO: VotingAccount should be configurable.
+	tb := ticketbuyer.New(asset.Internal().DCR, ticketbuyer.Config{
+		MixedAccountBranch: cfg.MixedAccountBranch,
+		MixedAccount:       cfg.MixedAccount,
+		ChangeAccount:      cfg.ChangeAccount,
+		Mixing:             cfg.Mixing,
+		TicketSplitAccount: cfg.TicketSplitAccount,
+		BuyTickets:         false,
+		MixChange:          true,
 	})
 
 	err := asset.UnlockWallet(walletPassphrase)
@@ -230,15 +227,10 @@ func (asset *Asset) StopAccountMixer() error {
 }
 
 func (asset *Asset) accountHasMixableOutput(accountNumber int32) bool {
-	policy := w.OutputSelectionPolicy{
-		Account:               uint32(accountNumber),
-		RequiredConfirmations: asset.RequiredConfirmations(),
-	}
-
 	// fetch all utxos in account to extract details for the utxos selected by user
 	// use targetAmount = 0 to fetch ALL utxos in account
 	ctx, _ := asset.ShutdownContextWithCancel()
-	inputDetail, err := asset.Internal().DCR.SelectInputs(ctx, dcrutil.Amount(0), policy)
+	inputDetail, err := asset.Internal().DCR.SelectInputs(ctx, dcrutil.Amount(0), uint32(accountNumber), asset.RequiredConfirmations())
 	if err != nil {
 		return false
 	}

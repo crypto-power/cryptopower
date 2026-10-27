@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v4/errors"
-	"decred.org/dcrwallet/v4/p2p"
-	"decred.org/dcrwallet/v4/spv"
-	w "decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v5/errors"
+	"decred.org/dcrwallet/v5/p2p"
+	"decred.org/dcrwallet/v5/spv"
+	w "decred.org/dcrwallet/v5/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/decred/dcrd/addrmgr/v2"
+	"github.com/decred/dcrd/addrmgr/v3"
 )
 
 // reading/writing of properties of this struct are protected by mutex.x
@@ -214,7 +214,7 @@ func (asset *Asset) SpvSync() error {
 	asset.syncing = true
 
 	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
-	addrManager := addrmgr.New(asset.DataDir(), net.LookupIP) // TODO: be mindful of tor
+	addrManager := addrmgr.New(asset.DataDir()) // TODO: be mindful of tor
 	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
 
 	// Set the node to only connect to remote peers whose advertised best block

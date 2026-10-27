@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"decred.org/dcrwallet/v4/errors"
+	"decred.org/dcrwallet/v5/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 )

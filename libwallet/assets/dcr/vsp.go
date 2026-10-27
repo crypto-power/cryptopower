@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"decred.org/dcrwallet/v4/vsp"
+	"decred.org/dcrwallet/v5/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	vspdClient "github.com/decred/vspd/client/v3"
@@ -20,7 +20,7 @@ const (
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
-func (asset *Asset) VSPClient(account int32, host string, pubKey []byte) (*vsp.Client, error) {
+func (asset *Asset) VSPClient(account int32, host string, pubKey []byte) (*wallet.VSPClient, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -40,13 +40,10 @@ func (asset *Asset) VSPClient(account int32, host string, pubKey []byte) (*vsp.C
 	return client, nil
 }
 
-func (asset *Asset) createVspClient(account int32, host string, pubKey []byte) (*vsp.Client, error) {
-	cfg := vsp.Config{
+func (asset *Asset) createVspClient(account int32, host string, pubKey []byte) (*wallet.VSPClient, error) {
+	cfg := wallet.VSPClientConfig{
 		URL:    host,
 		PubKey: base64.StdEncoding.EncodeToString(pubKey),
-		Dialer: nil, // optional, but consider providing a value
-		Wallet: asset.Internal().DCR,
-		Params: asset.Internal().DCR.ChainParams(),
 	}
 
 	// When the account number provided is greater than -1, the provided account
@@ -59,13 +56,13 @@ func (asset *Asset) createVspClient(account int32, host string, pubKey []byte) (
 		account = asset.AutoTicketsBuyerConfig().PurchaseAccount
 	}
 
-	cfg.Policy = &vsp.Policy{
+	cfg.Policy = &wallet.VSPPolicy{
 		MaxFee:     0.2e8,
 		FeeAcct:    uint32(account),
 		ChangeAcct: uint32(account),
 	}
 
-	return vsp.New(cfg, log)
+	return asset.Internal().DCR.NewVSPClient(cfg, log, nil)
 }
 
 // KnownVSPs returns a list of known VSPs. This list may be updated by calling

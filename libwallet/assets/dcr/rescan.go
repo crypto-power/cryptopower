@@ -5,8 +5,8 @@ import (
 	"math"
 	"time"
 
-	"decred.org/dcrwallet/v4/errors"
-	w "decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v5/errors"
+	w "decred.org/dcrwallet/v5/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/values"
 )

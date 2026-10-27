@@ -3,6 +3,7 @@ package politeia
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -262,7 +263,7 @@ func (c *politeiaClient) sendVotes(votes []tkv1.CastVote) error {
 
 	for _, receipt := range reply.Receipts {
 		if receipt.ErrorContext != "" {
-			return fmt.Errorf(receipt.ErrorContext)
+			return errors.New(receipt.ErrorContext)
 		}
 	}
 	return nil

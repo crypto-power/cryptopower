@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v4/errors"
-	w "decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v5/errors"
+	w "decred.org/dcrwallet/v5/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
@@ -123,11 +123,10 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	defer asset.LockWallet()
 
 	request := &w.PurchaseTicketsRequest{
-		Count:                int(numTickets),
-		SourceAccount:        uint32(account),
-		MinConf:              asset.RequiredConfirmations(),
-		VSPFeePercent:        vspClient.FeePercentage,
-		VSPFeePaymentProcess: vspClient.Process,
+		Count:         int(numTickets),
+		SourceAccount: uint32(account),
+		MinConf:       asset.RequiredConfirmations(),
+		VSPClient:     vspClient,
 
 		// VotingAccount used to derive addresses for specifying voting rights.
 		// It is used when VotingAddress == nil, or Mixing == true
@@ -465,12 +464,11 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	// which can be used to link the tickets eventually purchased with the
 	// split outputs.
 	request := &w.PurchaseTicketsRequest{
-		Count:                1,
-		SourceAccount:        uint32(cfg.PurchaseAccount),
-		Expiry:               expiry,
-		MinConf:              asset.RequiredConfirmations(),
-		VSPFeePercent:        cfg.VspClient.FeePercentage,
-		VSPFeePaymentProcess: cfg.VspClient.Process,
+		Count:         1,
+		SourceAccount: uint32(cfg.PurchaseAccount),
+		Expiry:        expiry,
+		MinConf:       asset.RequiredConfirmations(),
+		VSPClient:     cfg.VspClient,
 
 		// VotingAccount used to derive addresses for specifying voting rights.
 		// It is used when VotingAddress == nil, or Mixing == true

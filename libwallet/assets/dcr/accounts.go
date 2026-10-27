@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"decred.org/dcrwallet/v4/errors"
-	w "decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v5/errors"
+	w "decred.org/dcrwallet/v5/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/addresshelper"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -184,28 +184,28 @@ func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, err
 		return nil, utils.ErrDCRNotInitialized
 	}
 
-	policy := w.OutputSelectionPolicy{
-		Account:               uint32(account),
-		RequiredConfirmations: asset.RequiredConfirmations(),
-	}
-
 	ctx, _ := asset.ShutdownContextWithCancel()
-	unspents, err := asset.Internal().DCR.UnspentOutputs(ctx, policy)
+	inputs, err := asset.Internal().DCR.SelectInputs(ctx, 0, uint32(account), asset.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
 
-	unspentOutputs := make([]*sharedW.UnspentOutput, 0, len(unspents))
-	for _, utxo := range unspents {
-		hash := utxo.OutPoint.Hash
-		if asset.Internal().DCR.LockedOutpoint(&hash, utxo.OutPoint.Index) {
+	unspentOutputs := make([]*sharedW.UnspentOutput, 0, len(inputs.Inputs))
+	for _, input := range inputs.Inputs {
+		outpoint := input.PreviousOutPoint
+		if asset.Internal().DCR.LockedOutpoint(&outpoint.Hash, outpoint.Index) {
 			continue // utxo is locked.
 		}
 
-		addresses := addresshelper.PkScriptAddresses(asset.chainParams, utxo.Output.PkScript)
+		tx, err := w.UnstableAPI(asset.Internal().DCR).TxDetails(ctx, &outpoint.Hash)
+		if err != nil {
+			return nil, err
+		}
+		output := tx.MsgTx.TxOut[outpoint.Index]
+		addresses := addresshelper.PkScriptAddresses(asset.chainParams, output.PkScript)
 
 		var confirmations int32
-		inputBlockHeight := utxo.ContainingBlock.Height
+		inputBlockHeight := tx.Height()
 		if inputBlockHeight != -1 {
 			confirmations = asset.GetBestBlockHeight() - inputBlockHeight + 1
 		}
@@ -216,15 +216,15 @@ func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, err
 		}
 
 		unspentOutputs = append(unspentOutputs, &sharedW.UnspentOutput{
-			TxID:          utxo.OutPoint.Hash.String(),
-			Vout:          utxo.OutPoint.Index,
+			TxID:          outpoint.Hash.String(),
+			Vout:          outpoint.Index,
 			Address:       addr,
-			Amount:        Amount(utxo.Output.Value),
-			ScriptPubKey:  hex.EncodeToString(utxo.Output.PkScript),
-			ReceiveTime:   utxo.ReceiveTime,
+			Amount:        Amount(output.Value),
+			ScriptPubKey:  hex.EncodeToString(output.PkScript),
+			ReceiveTime:   tx.Received,
 			Confirmations: confirmations,
 			Spendable:     true,
-			Tree:          utxo.OutPoint.Tree,
+			Tree:          outpoint.Tree,
 		})
 	}
 
