@@ -4,7 +4,7 @@ A cross-platform desktop wallet built with [gio](https://gioui.org/).
 
 **Links**
 
-* Website: https://cryptopower.dev
+* Website: https://www.dreacotwallet.com
 * App Store: https://apps.apple.com/ca/app/cryptopower-wallet/id6472668308
 * Google Play: https://play.google.com/store/apps/details?id=com.dreacotdigital.cryptopower.mainnet
 * APK: https://github.com/crypto-power/cryptopower/releases
