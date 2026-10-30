@@ -7,6 +7,8 @@ import (
 	"github.com/lightninglabs/neutrino"
 )
 
+
+
 // Amount implements the Asset amount interface for the BTC asset
 type Amount btcutil.Amount
 
@@ -38,4 +40,20 @@ type ExtraNeutrinoChainService interface {
 
 	ConnectedCount() int32
 	Peers() []*neutrino.ServerPeer
+}
+
+type CSPPConfig struct {
+	// Mixing option activates the new version of the coins mixer which is a
+	// replacement of the old client-server mechanism. Now peer to peer
+	// mechanism is in place. Ref: https://github.com/decred/dcrwallet/pull/2351
+	Mixing             bool
+	MixedAccount       uint32
+	MixedAccountBranch uint32
+	TicketSplitAccount uint32
+	ChangeAccount      uint32
+}
+
+type AccountMixerNotificationListener struct {
+	OnAccountMixerStarted func(walletID int)
+	OnAccountMixerEnded   func(walletID int)
 }

@@ -27,3 +27,19 @@ func (a Amount) MulF64(f float64) sharedW.AssetAmount {
 func (a Amount) ToInt() int64 {
 	return int64(ltcutil.Amount(a))
 }
+
+type CSPPConfig struct {
+	// Mixing option activates the new version of the coins mixer which is a
+	// replacement of the old client-server mechanism. Now peer to peer
+	// mechanism is in place. Ref: https://github.com/decred/dcrwallet/pull/2351
+	Mixing             bool
+	MixedAccount       uint32
+	MixedAccountBranch uint32
+	TicketSplitAccount uint32
+	ChangeAccount      uint32
+}
+
+type AccountMixerNotificationListener struct {
+	OnAccountMixerStarted func(walletID int)
+	OnAccountMixerEnded   func(walletID int)
+}
